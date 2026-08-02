@@ -1,0 +1,72 @@
+<div class="p-8 max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Categorías</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Organizá tus productos por categoría</p>
+        </div>
+        <a
+            href="{{ route('categories.create') }}"
+            wire:navigate
+            class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
+        >
+            <x-heroicon-o-plus class="w-4 h-4" />
+            Nueva categoría
+        </a>
+    </div>
+
+    @if (session('error'))
+        <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-4 text-sm text-red-800 dark:text-red-400 mb-6">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">
+        @if ($categories->isEmpty())
+            <div class="p-12 text-center text-gray-400 dark:text-gray-500">
+                <x-heroicon-o-tag class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
+                <p class="text-sm">Todavía no agregaste categorías.</p>
+                <a href="{{ route('categories.create') }}" wire:navigate class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
+                    Agregar la primera
+                </a>
+            </div>
+        @else
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
+                        <th class="px-5 py-3 font-medium">Nombre</th>
+                        <th class="px-5 py-3 font-medium">Descripción</th>
+                        <th class="px-5 py-3 font-medium">Productos</th>
+                        <th class="px-5 py-3 font-medium"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($categories as $category)
+                        <tr wire:key="category-{{ $category->id }}" class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <td class="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{{ $category->name }}</td>
+                            <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ $category->description ?: '—' }}</td>
+                            <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $category->products_count }}</td>
+                            <td class="px-5 py-3">
+                                <div class="flex justify-end gap-2">
+                                    <a
+                                        href="{{ route('categories.edit', $category) }}"
+                                        wire:navigate
+                                        class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
+                                    >
+                                        <x-heroicon-o-pencil class="w-4 h-4" />
+                                    </a>
+                                    <button
+                                        wire:click="delete({{ $category->id }})"
+                                        wire:confirm="¿Eliminar la categoría &quot;{{ $category->name }}&quot;?"
+                                        class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
+                                    >
+                                        <x-heroicon-o-trash class="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+    </div>
+</div>
