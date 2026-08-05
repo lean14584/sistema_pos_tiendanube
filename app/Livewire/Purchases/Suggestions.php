@@ -48,13 +48,14 @@ class Suggestions extends Component
 
                 return [
                     'product' => $product,
+                    'soldQty' => $sold,
                     'dailyAvg' => $dailyAvg,
                     'suggestedQty' => $suggestedQty,
                     'lastProvider' => $lastProviderByProduct->get($product->id)?->purchase?->provider?->name,
                 ];
             })
             ->filter(fn (array $row) => $row['suggestedQty'] > 0)
-            ->sortByDesc('suggestedQty')
+            ->sortByDesc('soldQty')
             ->values();
 
         return view('livewire.purchases.suggestions', [

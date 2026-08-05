@@ -3,7 +3,7 @@
         <div>
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Sugerencias de compra</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Según la venta de los últimos {{ $lookbackDays }} días, para cubrir {{ $coverageDays }} días de stock
+                Productos con stock bajo, priorizados por mayor venta en los últimos {{ $lookbackDays }} días
             </p>
         </div>
         <a
@@ -26,11 +26,12 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
+                        <th class="px-5 py-3 font-medium text-right">Prioridad</th>
                         <th class="px-5 py-3 font-medium">Producto</th>
                         <th class="px-5 py-3 font-medium">Categoría</th>
                         <th class="px-5 py-3 font-medium text-right">Stock actual</th>
                         <th class="px-5 py-3 font-medium text-right">Mínimo</th>
-                        <th class="px-5 py-3 font-medium text-right">Venta prom./día</th>
+                        <th class="px-5 py-3 font-medium text-right">Vendido ({{ $lookbackDays }}d)</th>
                         <th class="px-5 py-3 font-medium text-right">Cantidad sugerida</th>
                         <th class="px-5 py-3 font-medium">Último proveedor</th>
                     </tr>
@@ -39,11 +40,12 @@
                     @foreach ($suggestions as $row)
                         @php $product = $row['product']; @endphp
                         <tr wire:key="suggestion-{{ $product->id }}" class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors {{ $product->stock < $product->min_stock ? 'bg-red-50/70 dark:bg-red-500/10' : '' }}">
+                            <td class="px-5 py-3 text-right font-semibold text-gray-400 dark:text-gray-500">{{ $loop->iteration }}</td>
                             <td class="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{{ $product->name }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $product->category?->name ?? '—' }}</td>
                             <td class="px-5 py-3 text-right {{ $product->stock < $product->min_stock ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">{{ $product->stock }}</td>
                             <td class="px-5 py-3 text-right text-gray-500 dark:text-gray-400">{{ $product->min_stock }}</td>
-                            <td class="px-5 py-3 text-right text-gray-500 dark:text-gray-400">{{ number_format($row['dailyAvg'], 2) }}</td>
+                            <td class="px-5 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{{ rtrim(rtrim(number_format($row['soldQty'], 2), '0'), '.') }}</td>
                             <td class="px-5 py-3 text-right font-semibold text-indigo-600 dark:text-indigo-400">{{ $row['suggestedQty'] }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $row['lastProvider'] ?? '—' }}</td>
                         </tr>
