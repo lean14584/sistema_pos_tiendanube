@@ -92,6 +92,20 @@
             </div>
         </div>
 
+        @if ($purchase->payments->isNotEmpty())
+            <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+                <p class="text-xs uppercase text-gray-400 dark:text-gray-500 mb-2">Métodos de pago</p>
+                <div class="space-y-1">
+                    @foreach ($purchase->payments as $payment)
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">{{ $payment->method->label() }}</span>
+                            <span class="text-gray-900 dark:text-gray-100 font-medium">${{ number_format($payment->amount, 2) }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @if ($purchase->notes)
             <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
                 <p class="text-xs uppercase text-gray-400 dark:text-gray-500 mb-1">Notas</p>

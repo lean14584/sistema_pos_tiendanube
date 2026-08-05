@@ -4,6 +4,7 @@ namespace App\Livewire\Purchases;
 
 use App\Enums\InvoiceStatus;
 use App\Models\Purchase;
+use App\Support\CashLinker;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -33,6 +34,9 @@ class Show extends Component
             ])->all();
 
             StockAdjuster::apply($items, -1);
+
+            $this->purchase->payments->each(fn ($payment) => CashLinker::unlinkPurchasePayment($payment));
+
             $this->purchase->delete();
         });
 
@@ -41,7 +45,7 @@ class Show extends Component
 
     public function render()
     {
-        $this->purchase->load('provider', 'items');
+        $this->purchase->load('provider', 'items', 'payments');
 
         return view('livewire.purchases.show', [
             'statuses' => InvoiceStatus::cases(),

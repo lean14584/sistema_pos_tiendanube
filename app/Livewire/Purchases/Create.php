@@ -3,10 +3,12 @@
 namespace App\Livewire\Purchases;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobante;
 use App\Models\Product;
 use App\Models\Provider;
 use App\Models\Purchase;
+use App\Support\CashLinker;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -37,6 +39,9 @@ class Create extends Component
 
     /** @var array<int, array{product_id: int, description: string, quantity: string, unit_price: string}> */
     public array $items = [];
+
+    /** @var array<int, array{method: string, amount: string}> */
+    public array $payments = [];
 
     public string $productQuery = '';
 
@@ -96,6 +101,30 @@ class Create extends Component
         return $this->subtotal() + $this->taxAmount();
     }
 
+    public function paidTotal(): float
+    {
+        return collect($this->payments)->sum(fn ($p) => (float) $p['amount']);
+    }
+
+    public function remaining(): float
+    {
+        return max(0, round($this->total() - $this->paidTotal(), 2));
+    }
+
+    public function addPayment(): void
+    {
+        $this->payments[] = [
+            'method' => 'efectivo',
+            'amount' => (string) $this->remaining(),
+        ];
+    }
+
+    public function removePayment(int $index): void
+    {
+        unset($this->payments[$index]);
+        $this->payments = array_values($this->payments);
+    }
+
     public function save(): void
     {
         $this->validate([
@@ -136,6 +165,13 @@ class Create extends Component
 
             StockAdjuster::apply($this->items, 1);
 
+            foreach ($this->payments as $payment) {
+                if ((float) $payment['amount'] > 0) {
+                    $created = $purchase->payments()->create($payment);
+                    CashLinker::linkPurchasePayment($purchase, $created);
+                }
+            }
+
             return $purchase;
         });
 
@@ -155,6 +191,7 @@ class Create extends Component
             'providers' => Provider::orderBy('name')->get(),
             'statuses' => InvoiceStatus::cases(),
             'tiposComprobante' => TipoComprobante::cases(),
+            'paymentMethods' => PaymentMethod::cases(),
         ]);
     }
 }

@@ -3,10 +3,12 @@
 namespace App\Livewire\Purchases;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobante;
 use App\Models\Product;
 use App\Models\Provider;
 use App\Models\Purchase;
+use App\Support\CashLinker;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -40,6 +42,9 @@ class Edit extends Component
     /** @var array<int, array{product_id: int, description: string, quantity: string, unit_price: string}> */
     public array $items = [];
 
+    /** @var array<int, array{method: string, amount: string}> */
+    public array $payments = [];
+
     public string $productQuery = '';
 
     public function mount(Purchase $purchase): void
@@ -60,6 +65,11 @@ class Edit extends Component
             'description' => $item->description,
             'quantity' => (string) $item->quantity,
             'unit_price' => (string) $item->unit_price,
+        ])->all();
+
+        $this->payments = $purchase->payments->map(fn ($payment) => [
+            'method' => $payment->method->value,
+            'amount' => (string) $payment->amount,
         ])->all();
     }
 
@@ -113,6 +123,30 @@ class Edit extends Component
         return $this->subtotal() + $this->taxAmount();
     }
 
+    public function paidTotal(): float
+    {
+        return collect($this->payments)->sum(fn ($p) => (float) $p['amount']);
+    }
+
+    public function remaining(): float
+    {
+        return max(0, round($this->total() - $this->paidTotal(), 2));
+    }
+
+    public function addPayment(): void
+    {
+        $this->payments[] = [
+            'method' => 'efectivo',
+            'amount' => (string) $this->remaining(),
+        ];
+    }
+
+    public function removePayment(int $index): void
+    {
+        unset($this->payments[$index]);
+        $this->payments = array_values($this->payments);
+    }
+
     public function save(): void
     {
         $this->validate([
@@ -159,6 +193,16 @@ class Edit extends Component
             }
 
             StockAdjuster::apply($this->items, 1);
+
+            $this->purchase->payments->each(fn ($payment) => CashLinker::unlinkPurchasePayment($payment));
+            $this->purchase->payments()->delete();
+
+            foreach ($this->payments as $payment) {
+                if ((float) $payment['amount'] > 0) {
+                    $created = $this->purchase->payments()->create($payment);
+                    CashLinker::linkPurchasePayment($this->purchase, $created);
+                }
+            }
         });
 
         $this->redirect(route('purchases.show', $this->purchase), navigate: true);
@@ -170,6 +214,7 @@ class Edit extends Component
             'providers' => Provider::orderBy('name')->get(),
             'statuses' => InvoiceStatus::cases(),
             'tiposComprobante' => TipoComprobante::cases(),
+            'paymentMethods' => PaymentMethod::cases(),
         ]);
     }
 }

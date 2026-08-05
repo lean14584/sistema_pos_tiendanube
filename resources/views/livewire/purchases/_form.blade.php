@@ -148,6 +148,40 @@
         </div>
     </div>
 
+    <div>
+        <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Métodos de pago</label>
+            <button type="button" wire:click="addPayment" class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">
+                <x-heroicon-o-plus class="w-3.5 h-3.5" />
+                Agregar método de pago
+            </button>
+        </div>
+
+        @if (count($payments) === 0)
+            <p class="text-sm text-gray-400 dark:text-gray-500">Sin método de pago registrado todavía — la compra queda en cuenta corriente del proveedor.</p>
+        @else
+            <div class="space-y-2">
+                @foreach ($payments as $index => $payment)
+                    <div wire:key="payment-{{ $index }}" class="flex items-center gap-2">
+                        <select wire:model="payments.{{ $index }}.method" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            @foreach ($paymentMethods as $method)
+                                <option value="{{ $method->value }}">{{ $method->label() }}</option>
+                            @endforeach
+                        </select>
+                        <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-32 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <button type="button" wire:click="removePayment({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
+                            <x-heroicon-o-trash class="w-4 h-4" />
+                        </button>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+        <p class="text-xs mt-2 {{ $this->remaining() > 0.005 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}">
+            Pagado: ${{ number_format($this->paidTotal(), 2) }} de ${{ number_format($this->total(), 2) }}
+            @if ($this->remaining() > 0.005) · Resta ${{ number_format($this->remaining(), 2) }} (queda en cuenta corriente) @endif
+        </p>
+    </div>
+
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>

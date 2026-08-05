@@ -9,7 +9,9 @@ use App\Models\CashSession;
 use App\Models\ClientPayment;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
+use App\Models\Purchase;
 use App\Models\ProviderPayment;
+use App\Models\PurchasePayment;
 
 class CashLinker
 {
@@ -110,5 +112,33 @@ class CashLinker
     public static function unlinkInvoicePayment(InvoicePayment $payment): void
     {
         CashMovement::where('source_id', "invoice_payment_{$payment->id}")->delete();
+    }
+
+    /**
+     * Método de pago cargado al momento de registrar la compra (distinto de
+     * ProviderPayment, que salda saldo pendiente de cuenta corriente después).
+     */
+    public static function linkPurchasePayment(Purchase $purchase, PurchasePayment $payment): void
+    {
+        $session = self::openSession();
+
+        if (! $session) {
+            return;
+        }
+
+        CashMovement::create([
+            'session_id' => $session->id,
+            'type' => CashMovementType::Egreso,
+            'concept' => "Compra {$purchase->number} · {$purchase->provider->name} · {$payment->method->label()}",
+            'amount' => $payment->amount,
+            'source' => CashMovementSource::Compra,
+            'source_id' => "purchase_payment_{$payment->id}",
+            'date' => $purchase->issue_date,
+        ]);
+    }
+
+    public static function unlinkPurchasePayment(PurchasePayment $payment): void
+    {
+        CashMovement::where('source_id', "purchase_payment_{$payment->id}")->delete();
     }
 }
