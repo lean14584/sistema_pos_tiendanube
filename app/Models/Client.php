@@ -33,4 +33,16 @@ class Client extends Model
     {
         return $this->hasMany(ClientPayment::class);
     }
+
+    public static function consumidorFinal(): self
+    {
+        return self::firstOrCreate(
+            ['name' => 'Consumidor Final'],
+            [
+                'email' => 'consumidor.final@localhost',
+                'condicion_iva' => CondicionIva::ConsumidorFinal,
+                'tipo_documento' => TipoDocumento::SinIdentificar,
+            ]
+        );
+    }
 }

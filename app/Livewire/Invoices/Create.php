@@ -45,6 +45,7 @@ class Create extends Component
     {
         $this->issue_date = now()->toDateString();
         $this->due_date = now()->addDays(15)->toDateString();
+        $this->client_id = (string) Client::consumidorFinal()->id;
     }
 
     #[Computed]

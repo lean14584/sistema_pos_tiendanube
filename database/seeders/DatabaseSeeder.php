@@ -53,6 +53,8 @@ class DatabaseSeeder extends Seeder
             Product::create(['name' => 'Servicio de instalación', 'price' => 5000, 'stock' => 0]),
         ];
 
+        Client::consumidorFinal();
+
         $clients = [
             Client::create(['name' => 'Almacén Don José', 'email' => 'donjose@example.com', 'phone' => '11-4444-1111', 'tax_id' => '20-11111111-1']),
             Client::create(['name' => 'Kiosco La Esquina', 'email' => 'laesquina@example.com', 'phone' => '11-4444-2222']),

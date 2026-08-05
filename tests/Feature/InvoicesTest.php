@@ -23,6 +23,39 @@ class InvoicesTest extends TestCase
         return User::factory()->create(['role' => Role::Admin, 'active' => true]);
     }
 
+    public function test_el_formulario_de_nueva_factura_preselecciona_consumidor_final(): void
+    {
+        $component = Livewire::actingAs($this->admin())->test('invoices.create');
+
+        $consumidorFinal = Client::where('name', 'Consumidor Final')->first();
+
+        $this->assertNotNull($consumidorFinal);
+        $this->assertSame((string) $consumidorFinal->id, $component->get('client_id'));
+    }
+
+    public function test_consumidor_final_no_se_duplica_entre_facturas(): void
+    {
+        Livewire::actingAs($this->admin())->test('invoices.create');
+        Livewire::actingAs($this->admin())->test('invoices.create');
+
+        $this->assertSame(1, Client::where('name', 'Consumidor Final')->count());
+    }
+
+    public function test_puede_reemplazarse_consumidor_final_por_otro_cliente(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+
+        Livewire::actingAs($this->admin())
+            ->test('invoices.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id)
+            ->call('save');
+
+        $invoice = Invoice::first();
+        $this->assertSame($client->id, $invoice->client_id);
+    }
+
     public function test_can_create_invoice_with_product_item_and_split_payments(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
