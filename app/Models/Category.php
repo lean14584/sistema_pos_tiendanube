@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Observers\CategoryObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy(CategoryObserver::class)]
 #[Fillable(['name', 'description', 'tiendanube_category_id'])]
 class Category extends Model
 {

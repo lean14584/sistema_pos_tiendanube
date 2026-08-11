@@ -25,7 +25,12 @@ class Index extends Component
     public ?string $error = null;
 
     /** Eventos que se registran para la sincronización automática. */
-    private const WEBHOOK_EVENTS = ['order/created', 'order/paid', 'product/updated', 'product/created'];
+    private const WEBHOOK_EVENTS = [
+        'order/created', 'order/paid',
+        'product/updated', 'product/created',
+        'customer/created', 'customer/updated',
+        'category/created', 'category/updated',
+    ];
 
     public function mount(): void
     {
@@ -108,13 +113,21 @@ class Index extends Component
         });
     }
 
-    public function syncClients(): void
+    public function importClients(): void
     {
         $this->correr(function (TiendanubeSync $sync) {
-            $traidos = $sync->pullCustomers();
-            $enviados = $sync->pushCustomers();
+            $r = $sync->pullCustomers();
 
-            return "Clientes: {$traidos['creados']} traídos, {$enviados['enviados']} enviados a Tiendanube.";
+            return "Clientes: {$r['creados']} traídos, {$r['actualizados']} actualizados.";
+        });
+    }
+
+    public function pushClients(): void
+    {
+        $this->correr(function (TiendanubeSync $sync) {
+            $r = $sync->pushCustomers();
+
+            return "Clientes enviados a Tiendanube: {$r['creados']} creados, {$r['actualizados']} actualizados".($r['errores'] ? ", {$r['errores']} con error." : '.');
         });
     }
 
@@ -149,11 +162,18 @@ class Index extends Component
             }
 
             $url = route('tiendanube.webhook');
+            $registrados = 0;
             foreach (self::WEBHOOK_EVENTS as $event) {
-                $client->createWebhook($event, $url);
+                try {
+                    $client->createWebhook($event, $url);
+                    $registrados++;
+                } catch (\Throwable $e) {
+                    // Un evento que la tienda no soporte no debe frenar al resto.
+                    report($e);
+                }
             }
 
-            return 'Sincronización automática activada ('.count(self::WEBHOOK_EVENTS).' eventos).';
+            return "Sincronización automática activada ({$registrados} eventos).";
         });
     }
 

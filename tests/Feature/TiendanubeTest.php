@@ -3,11 +3,17 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Jobs\PushToTiendanubeJob;
+use App\Models\Category;
+use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Tiendanube\TiendanubeClient;
+use App\Services\Tiendanube\TiendanubeSync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -211,30 +217,47 @@ class TiendanubeTest extends TestCase
         $this->assertEquals(8, $local->fresh()->stock);
     }
 
-    public function test_sincronizar_clientes_trae_y_envia(): void
+    public function test_importar_clientes_trae_de_tiendanube(): void
     {
         $this->conectar();
         Http::fake(function ($request) {
-            $url = $request->url();
-            if (str_contains($url, '/customers') && $request->method() === 'GET') {
+            if (str_contains($request->url(), '/customers') && $request->method() === 'GET') {
                 return Http::response([['id' => 5, 'name' => 'Bruno', 'email' => 'bruno@test.com']], 200);
-            }
-            if (str_contains($url, '/customers') && $request->method() === 'POST') {
-                return Http::response(['id' => 99], 201);
             }
 
             return Http::response([], 200);
         });
 
-        // Cliente local sin vincular (para el push).
-        \App\Models\Client::create(['name' => 'Local', 'email' => 'local@test.com']);
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('importClients');
+
+        $this->assertDatabaseHas('clients', ['email' => 'bruno@test.com', 'tiendanube_customer_id' => 5]);
+    }
+
+    public function test_empujar_clientes_crea_los_nuevos_y_actualiza_los_vinculados(): void
+    {
+        // Se crean sin la conexión puesta para que el observer no dispare nada.
+        Client::create(['name' => 'Local', 'email' => 'local@test.com']);
+        Client::create(['name' => 'Vinculado', 'email' => 'vinc@test.com', 'tiendanube_customer_id' => 7]);
+
+        $this->conectar();
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/customers') && $request->method() === 'POST') {
+                return Http::response(['id' => 99], 201);
+            }
+
+            return Http::response([], 200); // PUT de actualización
+        });
 
         Livewire::actingAs($this->admin())
             ->test('tiendanube.index')
-            ->call('syncClients');
+            ->call('pushClients');
 
-        $this->assertDatabaseHas('clients', ['email' => 'bruno@test.com', 'tiendanube_customer_id' => 5]);
+        // El nuevo se creó y quedó vinculado:
         $this->assertDatabaseHas('clients', ['email' => 'local@test.com', 'tiendanube_customer_id' => 99]);
+        // El vinculado se actualizó vía PUT /customers/7:
+        Http::assertSent(fn ($r) => $r->method() === 'PUT' && str_contains($r->url(), '/customers/7'));
     }
 
     public function test_importar_categorias_trae_de_tiendanube(): void
@@ -317,7 +340,7 @@ class TiendanubeTest extends TestCase
             ->test('tiendanube.index')
             ->call('enableWebhooks');
 
-        Http::assertSentCount(5); // 1 GET (listar) + 4 POST (eventos)
+        Http::assertSentCount(9); // 1 GET (listar) + 8 POST (eventos)
     }
 
     public function test_webhook_de_pedido_crea_la_factura(): void
@@ -338,17 +361,106 @@ class TiendanubeTest extends TestCase
 
     public function test_webhook_de_producto_actualiza_stock(): void
     {
+        // Producto creado antes de conectar: el observer no dispara push.
+        $local = Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 0, 'tiendanube_product_id' => 11, 'tiendanube_variant_id' => 91]);
+
         $this->conectar();
         Http::fake([
             '*/products/11' => Http::response(['id' => 11, 'variants' => [['id' => 91, 'stock' => 20]]], 200),
         ]);
 
-        $local = Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 0, 'tiendanube_product_id' => 11, 'tiendanube_variant_id' => 91]);
-
         $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'product/updated', 'id' => 11])
             ->assertOk();
 
         $this->assertEquals(20, $local->fresh()->stock);
+    }
+
+    public function test_webhook_de_cliente_actualiza_el_local(): void
+    {
+        // Creado antes de conectar para que el observer no dispare push.
+        Client::create(['name' => 'Viejo', 'email' => 'x@test.com', 'tiendanube_customer_id' => 5]);
+
+        $this->conectar();
+        Http::fake([
+            '*/customers/5' => Http::response(['id' => 5, 'name' => 'Nuevo Nombre', 'email' => 'x@test.com'], 200),
+        ]);
+
+        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'customer/updated', 'id' => 5])
+            ->assertOk();
+
+        $this->assertDatabaseHas('clients', ['tiendanube_customer_id' => 5, 'name' => 'Nuevo Nombre']);
+    }
+
+    public function test_webhook_de_categoria_actualiza_la_local(): void
+    {
+        // Creada antes de conectar para que el observer no dispare push.
+        Category::create(['name' => 'Vieja', 'tiendanube_category_id' => 501]);
+
+        $this->conectar();
+        Http::fake([
+            '*/categories/501' => Http::response(['id' => 501, 'name' => ['es' => 'Nueva Cat']], 200),
+        ]);
+
+        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'category/updated', 'id' => 501])
+            ->assertOk();
+
+        $this->assertDatabaseHas('categories', ['tiendanube_category_id' => 501, 'name' => 'Nueva Cat']);
+    }
+
+    public function test_cambiar_un_producto_lo_empuja_solo(): void
+    {
+        $this->conectar();
+        Bus::fake();
+
+        $p = Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 5]);
+
+        Bus::assertDispatchedAfterResponse(
+            PushToTiendanubeJob::class,
+            fn (PushToTiendanubeJob $job) => $job->model->is($p),
+        );
+    }
+
+    public function test_traer_datos_de_tiendanube_no_dispara_push_de_vuelta(): void
+    {
+        $this->conectar();
+        $this->fakeApi();
+        Bus::fake();
+
+        // Importar escribe local, pero está silenciado: no debe re-empujar.
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('importProducts');
+
+        Bus::assertNotDispatchedAfterResponse(PushToTiendanubeJob::class);
+    }
+
+    public function test_sin_conexion_no_se_dispara_push_automatico(): void
+    {
+        Bus::fake();
+
+        // Sin credenciales cargadas: guardar no debe intentar sincronizar.
+        Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 5]);
+
+        Bus::assertNotDispatchedAfterResponse(PushToTiendanubeJob::class);
+    }
+
+    public function test_el_job_empuja_el_producto_a_tiendanube(): void
+    {
+        // Creado antes de conectar para aislar el efecto al job.
+        $p = Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 4]);
+
+        $this->conectar();
+        Http::fake(function ($request) {
+            if ($request->method() === 'POST' && str_contains($request->url(), '/products')) {
+                return Http::response(['id' => 77, 'variants' => [['id' => 777]]], 201);
+            }
+
+            return Http::response([], 200);
+        });
+
+        (new PushToTiendanubeJob($p))->handle(app(TiendanubeSync::class), app(TiendanubeClient::class));
+
+        $this->assertDatabaseHas('products', ['id' => $p->id, 'tiendanube_product_id' => 77, 'tiendanube_variant_id' => 777]);
     }
 
     public function test_webhook_con_firma_invalida_se_rechaza(): void

@@ -186,6 +186,28 @@ class TiendanubeClient
     }
 
     /**
+     * @param  array<string,mixed>  $payload
+     */
+    public function updateCustomer(int $customerId, array $payload): void
+    {
+        $res = $this->http()->put("/customers/{$customerId}", $payload);
+        $res->throw();
+    }
+
+    /**
+     * Un único cliente (se usa al procesar un webhook de cliente).
+     *
+     * @return array<string,mixed>
+     */
+    public function getCustomer(int $customerId): array
+    {
+        $res = $this->http()->get("/customers/{$customerId}");
+        $res->throw();
+
+        return $res->json();
+    }
+
+    /**
      * @return array<int, array<string,mixed>>
      */
     public function getCategories(int $page = 1): array
@@ -206,6 +228,28 @@ class TiendanubeClient
     public function createCategory(array $payload): array
     {
         $res = $this->http()->post('/categories', $payload);
+        $res->throw();
+
+        return $res->json();
+    }
+
+    /**
+     * @param  array<string,mixed>  $payload
+     */
+    public function updateCategory(int $categoryId, array $payload): void
+    {
+        $res = $this->http()->put("/categories/{$categoryId}", $payload);
+        $res->throw();
+    }
+
+    /**
+     * Una única categoría (se usa al procesar un webhook de categoría).
+     *
+     * @return array<string,mixed>
+     */
+    public function getCategory(int $categoryId): array
+    {
+        $res = $this->http()->get("/categories/{$categoryId}");
         $res->throw();
 
         return $res->json();

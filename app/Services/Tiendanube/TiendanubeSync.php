@@ -7,12 +7,17 @@ use App\Models\Category;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Support\TiendanubeSyncGuard;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Sincronización de datos entre Tiendanube y el sistema. Cada método devuelve
  * un resumen de lo hecho para mostrarlo en pantalla.
+ *
+ * Todo lo que ESCRIBE localmente datos que vienen DE Tiendanube (importar,
+ * traer, webhooks) se corre dentro de TiendanubeSyncGuard::mute() para que no
+ * dispare los observers que empujarían de vuelta a Tiendanube (evita el eco).
  */
 class TiendanubeSync
 {
@@ -26,47 +31,49 @@ class TiendanubeSync
      */
     public function importProducts(): array
     {
-        $creados = 0;
-        $actualizados = 0;
-        $perPage = config('tiendanube.per_page');
+        return TiendanubeSyncGuard::mute(function () {
+            $creados = 0;
+            $actualizados = 0;
+            $perPage = config('tiendanube.per_page');
 
-        for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
-            $productos = $this->client->getProducts($page);
+            for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
+                $productos = $this->client->getProducts($page);
 
-            if (empty($productos)) {
-                break;
-            }
+                if (empty($productos)) {
+                    break;
+                }
 
-            foreach ($productos as $tn) {
-                $variante = $tn['variants'][0] ?? [];
+                foreach ($productos as $tn) {
+                    $variante = $tn['variants'][0] ?? [];
 
-                $existente = Product::where('tiendanube_product_id', $tn['id'])->first();
+                    $existente = Product::where('tiendanube_product_id', $tn['id'])->first();
 
-                $datos = [
-                    'name' => $this->texto($tn['name'] ?? ''),
-                    'price' => $this->numero($variante['price'] ?? 0),
-                    'stock' => (int) ($variante['stock'] ?? 0),
-                    'sku' => $variante['sku'] ?? null,
-                    'category_id' => $this->resolverCategoria($tn['categories'] ?? []),
-                    'tiendanube_product_id' => $tn['id'],
-                    'tiendanube_variant_id' => $variante['id'] ?? null,
-                ];
+                    $datos = [
+                        'name' => $this->texto($tn['name'] ?? ''),
+                        'price' => $this->numero($variante['price'] ?? 0),
+                        'stock' => (int) ($variante['stock'] ?? 0),
+                        'sku' => $variante['sku'] ?? null,
+                        'category_id' => $this->resolverCategoria($tn['categories'] ?? []),
+                        'tiendanube_product_id' => $tn['id'],
+                        'tiendanube_variant_id' => $variante['id'] ?? null,
+                    ];
 
-                if ($existente) {
-                    $existente->update($datos);
-                    $actualizados++;
-                } else {
-                    Product::create($datos);
-                    $creados++;
+                    if ($existente) {
+                        $existente->update($datos);
+                        $actualizados++;
+                    } else {
+                        Product::create($datos);
+                        $creados++;
+                    }
+                }
+
+                if (count($productos) < $perPage) {
+                    break;
                 }
             }
 
-            if (count($productos) < $perPage) {
-                break;
-            }
-        }
-
-        return ['creados' => $creados, 'actualizados' => $actualizados];
+            return ['creados' => $creados, 'actualizados' => $actualizados];
+        });
     }
 
     /**
@@ -112,7 +119,7 @@ class TiendanubeSync
             return false;
         }
 
-        $this->crearFacturaDesdePedido($tn);
+        TiendanubeSyncGuard::mute(fn () => $this->crearFacturaDesdePedido($tn));
 
         return true;
     }
@@ -147,8 +154,8 @@ class TiendanubeSync
     }
 
     /**
-     * Empuja los productos locales a Tiendanube: crea los que no están
-     * vinculados (y guarda el id que devuelve TN) y actualiza los vinculados.
+     * Empuja los productos locales a Tiendanube (crea los no vinculados y
+     * actualiza los vinculados).
      *
      * @return array{creados:int, actualizados:int}
      */
@@ -158,49 +165,60 @@ class TiendanubeSync
         $actualizados = 0;
 
         Product::query()->with('category')->each(function (Product $p) use (&$creados, &$actualizados) {
-            $categorias = $this->categoriasParaTiendanube($p);
-
-            if ($p->tiendanube_product_id) {
-                $payload = ['name' => ['es' => $p->name]];
-                if ($categorias) {
-                    $payload['categories'] = $categorias;
-                }
-                $this->client->updateProduct((int) $p->tiendanube_product_id, $payload);
-
-                if ($p->tiendanube_variant_id) {
-                    $this->client->updateVariant(
-                        (int) $p->tiendanube_product_id,
-                        (int) $p->tiendanube_variant_id,
-                        ['price' => $this->precio($p->price), 'stock' => (int) $p->stock, 'sku' => $p->sku],
-                    );
-                }
-
-                $actualizados++;
-            } else {
-                $payload = [
-                    'name' => ['es' => $p->name],
-                    'variants' => [[
-                        'price' => $this->precio($p->price),
-                        'stock' => (int) $p->stock,
-                        'sku' => $p->sku,
-                    ]],
-                ];
-                if ($categorias) {
-                    $payload['categories'] = $categorias;
-                }
-
-                $tn = $this->client->createProduct($payload);
-
-                $p->update([
-                    'tiendanube_product_id' => $tn['id'] ?? null,
-                    'tiendanube_variant_id' => $tn['variants'][0]['id'] ?? null,
-                ]);
-
-                $creados++;
-            }
+            $this->pushProduct($p) === 'created' ? $creados++ : $actualizados++;
         });
 
         return ['creados' => $creados, 'actualizados' => $actualizados];
+    }
+
+    /**
+     * Empuja un único producto a Tiendanube: lo crea si no está vinculado
+     * (guardando el id que devuelve TN) o lo actualiza si ya lo está.
+     * Devuelve 'created' o 'updated'.
+     */
+    public function pushProduct(Product $p): string
+    {
+        $p->loadMissing('category');
+        $categorias = $this->categoriasParaTiendanube($p);
+
+        if ($p->tiendanube_product_id) {
+            $payload = ['name' => ['es' => $p->name]];
+            if ($categorias) {
+                $payload['categories'] = $categorias;
+            }
+            $this->client->updateProduct((int) $p->tiendanube_product_id, $payload);
+
+            if ($p->tiendanube_variant_id) {
+                $this->client->updateVariant(
+                    (int) $p->tiendanube_product_id,
+                    (int) $p->tiendanube_variant_id,
+                    ['price' => $this->precio($p->price), 'stock' => (int) $p->stock, 'sku' => $p->sku],
+                );
+            }
+
+            return 'updated';
+        }
+
+        $payload = [
+            'name' => ['es' => $p->name],
+            'variants' => [[
+                'price' => $this->precio($p->price),
+                'stock' => (int) $p->stock,
+                'sku' => $p->sku,
+            ]],
+        ];
+        if ($categorias) {
+            $payload['categories'] = $categorias;
+        }
+
+        $tn = $this->client->createProduct($payload);
+
+        TiendanubeSyncGuard::mute(fn () => $p->update([
+            'tiendanube_product_id' => $tn['id'] ?? null,
+            'tiendanube_variant_id' => $tn['variants'][0]['id'] ?? null,
+        ]));
+
+        return 'created';
     }
 
     /**
@@ -211,31 +229,33 @@ class TiendanubeSync
      */
     public function pullStock(): array
     {
-        $actualizados = 0;
-        $perPage = config('tiendanube.per_page');
+        return TiendanubeSyncGuard::mute(function () {
+            $actualizados = 0;
+            $perPage = config('tiendanube.per_page');
 
-        for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
-            $productos = $this->client->getProducts($page);
+            for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
+                $productos = $this->client->getProducts($page);
 
-            if (empty($productos)) {
-                break;
-            }
+                if (empty($productos)) {
+                    break;
+                }
 
-            foreach ($productos as $tn) {
-                $local = Product::where('tiendanube_product_id', $tn['id'])->first();
+                foreach ($productos as $tn) {
+                    $local = Product::where('tiendanube_product_id', $tn['id'])->first();
 
-                if ($local) {
-                    $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
-                    $actualizados++;
+                    if ($local) {
+                        $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+                        $actualizados++;
+                    }
+                }
+
+                if (count($productos) < $perPage) {
+                    break;
                 }
             }
 
-            if (count($productos) < $perPage) {
-                break;
-            }
-        }
-
-        return ['actualizados' => $actualizados];
+            return ['actualizados' => $actualizados];
+        });
     }
 
     /**
@@ -245,74 +265,103 @@ class TiendanubeSync
      */
     public function pullCustomers(): array
     {
-        $creados = 0;
-        $actualizados = 0;
-        $perPage = config('tiendanube.per_page');
+        return TiendanubeSyncGuard::mute(function () {
+            $creados = 0;
+            $actualizados = 0;
+            $perPage = config('tiendanube.per_page');
 
-        for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
-            $clientes = $this->client->getCustomers($page);
+            for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
+                $clientes = $this->client->getCustomers($page);
 
-            if (empty($clientes)) {
-                break;
-            }
+                if (empty($clientes)) {
+                    break;
+                }
 
-            foreach ($clientes as $tn) {
-                $email = $tn['email'] ?? null;
-                $existente = Client::where('tiendanube_customer_id', $tn['id'])
-                    ->orWhere(fn ($q) => $email ? $q->where('email', $email) : $q->whereRaw('1=0'))
-                    ->first();
+                foreach ($clientes as $tn) {
+                    $email = $tn['email'] ?? null;
+                    $existente = Client::where('tiendanube_customer_id', $tn['id'])
+                        ->orWhere(fn ($q) => $email ? $q->where('email', $email) : $q->whereRaw('1=0'))
+                        ->first();
 
-                $datos = [
-                    'name' => $this->texto($tn['name'] ?? 'Cliente Tiendanube'),
-                    'email' => $email,
-                    'phone' => $tn['phone'] ?? null,
-                    'tiendanube_customer_id' => $tn['id'],
-                ];
+                    $datos = [
+                        'name' => $this->texto($tn['name'] ?? 'Cliente Tiendanube'),
+                        'email' => $email,
+                        'phone' => $tn['phone'] ?? null,
+                        'tiendanube_customer_id' => $tn['id'],
+                    ];
 
-                if ($existente) {
-                    $existente->update($datos);
-                    $actualizados++;
-                } else {
-                    Client::create($datos);
-                    $creados++;
+                    if ($existente) {
+                        $existente->update($datos);
+                        $actualizados++;
+                    } else {
+                        Client::create($datos);
+                        $creados++;
+                    }
+                }
+
+                if (count($clientes) < $perPage) {
+                    break;
                 }
             }
 
-            if (count($clientes) < $perPage) {
-                break;
-            }
-        }
-
-        return ['creados' => $creados, 'actualizados' => $actualizados];
+            return ['creados' => $creados, 'actualizados' => $actualizados];
+        });
     }
 
     /**
-     * Empuja a Tiendanube los clientes locales con email que todavía no están
-     * vinculados.
+     * Empuja a Tiendanube los clientes locales con email: crea los que no están
+     * vinculados y actualiza los que sí.
      *
-     * @return array{enviados:int, errores:int}
+     * @return array{creados:int, actualizados:int, errores:int}
      */
     public function pushCustomers(): array
     {
-        $enviados = 0;
+        $creados = 0;
+        $actualizados = 0;
         $errores = 0;
 
-        Client::whereNotNull('email')
-            ->whereNull('tiendanube_customer_id')
-            ->each(function (Client $c) use (&$enviados, &$errores) {
-                try {
-                    $tn = $this->client->createCustomer([
-                        'name' => $c->name,
-                        'email' => $c->email,
-                    ]);
-                    $c->update(['tiendanube_customer_id' => $tn['id'] ?? null]);
-                    $enviados++;
-                } catch (\Throwable $e) {
-                    $errores++;
-                }
-            });
+        Client::whereNotNull('email')->each(function (Client $c) use (&$creados, &$actualizados, &$errores) {
+            try {
+                match ($this->pushClient($c)) {
+                    'created' => $creados++,
+                    'updated' => $actualizados++,
+                    default => null,
+                };
+            } catch (\Throwable $e) {
+                $errores++;
+            }
+        });
 
-        return ['enviados' => $enviados, 'errores' => $errores];
+        return ['creados' => $creados, 'actualizados' => $actualizados, 'errores' => $errores];
+    }
+
+    /**
+     * Empuja un único cliente a Tiendanube. Devuelve 'created', 'updated' o
+     * 'skipped' (Consumidor Final o sin email real no se empujan).
+     */
+    public function pushClient(Client $c): string
+    {
+        if (! $c->email || $c->name === 'Consumidor Final') {
+            return 'skipped';
+        }
+
+        if ($c->tiendanube_customer_id) {
+            $this->client->updateCustomer((int) $c->tiendanube_customer_id, [
+                'name' => $c->name,
+                'phone' => $c->phone,
+            ]);
+
+            return 'updated';
+        }
+
+        $tn = $this->client->createCustomer([
+            'name' => $c->name,
+            'email' => $c->email,
+        ]);
+
+        TiendanubeSyncGuard::mute(fn () => $c->update(['tiendanube_customer_id' => $tn['id'] ?? null]));
+
+        return 'created';
     }
 
     /**
@@ -321,14 +370,54 @@ class TiendanubeSync
      */
     public function updateStockFromTiendanube(int $tiendanubeProductId): void
     {
-        $local = Product::where('tiendanube_product_id', $tiendanubeProductId)->first();
+        TiendanubeSyncGuard::mute(function () use ($tiendanubeProductId) {
+            $local = Product::where('tiendanube_product_id', $tiendanubeProductId)->first();
 
-        if (! $local) {
-            return;
-        }
+            if (! $local) {
+                return;
+            }
 
-        $tn = $this->client->getProduct($tiendanubeProductId);
-        $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+            $tn = $this->client->getProduct($tiendanubeProductId);
+            $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+        });
+    }
+
+    /**
+     * Trae/actualiza un cliente puntual desde Tiendanube (webhook customer/*).
+     */
+    public function updateCustomerFromTiendanube(int $tiendanubeCustomerId): void
+    {
+        TiendanubeSyncGuard::mute(function () use ($tiendanubeCustomerId) {
+            $tn = $this->client->getCustomer($tiendanubeCustomerId);
+
+            $datos = [
+                'name' => $this->texto($tn['name'] ?? 'Cliente Tiendanube'),
+                'email' => $tn['email'] ?? null,
+                'phone' => $tn['phone'] ?? null,
+                'tiendanube_customer_id' => $tiendanubeCustomerId,
+            ];
+
+            $existente = Client::where('tiendanube_customer_id', $tiendanubeCustomerId)->first();
+
+            $existente ? $existente->update($datos) : Client::create($datos);
+        });
+    }
+
+    /**
+     * Trae/actualiza una categoría puntual desde Tiendanube (webhook category/*).
+     */
+    public function updateCategoryFromTiendanube(int $tiendanubeCategoryId): void
+    {
+        TiendanubeSyncGuard::mute(function () use ($tiendanubeCategoryId) {
+            $tn = $this->client->getCategory($tiendanubeCategoryId);
+            $nombre = $this->texto($tn['name'] ?? 'Sin categoría');
+
+            $existente = Category::where('tiendanube_category_id', $tiendanubeCategoryId)->first();
+
+            $existente
+                ? $existente->update(['name' => $nombre])
+                : Category::create(['name' => $nombre, 'tiendanube_category_id' => $tiendanubeCategoryId]);
+        });
     }
 
     /**
@@ -338,59 +427,77 @@ class TiendanubeSync
      */
     public function pullCategories(): array
     {
-        $creados = 0;
-        $actualizados = 0;
-        $perPage = config('tiendanube.per_page');
+        return TiendanubeSyncGuard::mute(function () {
+            $creados = 0;
+            $actualizados = 0;
+            $perPage = config('tiendanube.per_page');
 
-        for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
-            $categorias = $this->client->getCategories($page);
+            for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
+                $categorias = $this->client->getCategories($page);
 
-            if (empty($categorias)) {
-                break;
-            }
+                if (empty($categorias)) {
+                    break;
+                }
 
-            foreach ($categorias as $tn) {
-                $existente = Category::where('tiendanube_category_id', $tn['id'])->first();
-                $nombre = $this->texto($tn['name'] ?? 'Sin categoría');
+                foreach ($categorias as $tn) {
+                    $existente = Category::where('tiendanube_category_id', $tn['id'])->first();
+                    $nombre = $this->texto($tn['name'] ?? 'Sin categoría');
 
-                if ($existente) {
-                    $existente->update(['name' => $nombre]);
-                    $actualizados++;
-                } else {
-                    Category::create(['name' => $nombre, 'tiendanube_category_id' => $tn['id']]);
-                    $creados++;
+                    if ($existente) {
+                        $existente->update(['name' => $nombre]);
+                        $actualizados++;
+                    } else {
+                        Category::create(['name' => $nombre, 'tiendanube_category_id' => $tn['id']]);
+                        $creados++;
+                    }
+                }
+
+                if (count($categorias) < $perPage) {
+                    break;
                 }
             }
 
-            if (count($categorias) < $perPage) {
-                break;
-            }
-        }
-
-        return ['creados' => $creados, 'actualizados' => $actualizados];
+            return ['creados' => $creados, 'actualizados' => $actualizados];
+        });
     }
 
     /**
-     * Empuja a Tiendanube las categorías locales que todavía no están
-     * vinculadas (crea la categoría allá y guarda su id).
+     * Empuja a Tiendanube las categorías locales: crea las que no están
+     * vinculadas y actualiza el nombre de las que sí.
      *
-     * @return array{enviados:int, errores:int}
+     * @return array{creados:int, actualizados:int, errores:int}
      */
     public function pushCategories(): array
     {
-        $enviados = 0;
+        $creados = 0;
+        $actualizados = 0;
         $errores = 0;
 
-        Category::whereNull('tiendanube_category_id')->each(function (Category $c) use (&$enviados, &$errores) {
+        Category::query()->each(function (Category $c) use (&$creados, &$actualizados, &$errores) {
             try {
-                $this->ensureCategoryInTiendanube($c);
-                $enviados++;
+                $this->pushCategory($c) === 'created' ? $creados++ : $actualizados++;
             } catch (\Throwable $e) {
                 $errores++;
             }
         });
 
-        return ['enviados' => $enviados, 'errores' => $errores];
+        return ['creados' => $creados, 'actualizados' => $actualizados, 'errores' => $errores];
+    }
+
+    /**
+     * Empuja una única categoría a Tiendanube. Devuelve 'created' o 'updated'.
+     */
+    public function pushCategory(Category $c): string
+    {
+        if ($c->tiendanube_category_id) {
+            $this->client->updateCategory((int) $c->tiendanube_category_id, ['name' => ['es' => $c->name]]);
+
+            return 'updated';
+        }
+
+        $this->ensureCategoryInTiendanube($c);
+
+        return 'created';
     }
 
     /**
@@ -424,7 +531,7 @@ class TiendanubeSync
         $id = $tn['id'] ?? null;
 
         if ($id) {
-            $c->update(['tiendanube_category_id' => $id]);
+            TiendanubeSyncGuard::mute(fn () => $c->update(['tiendanube_category_id' => $id]));
         }
 
         return $id ? (int) $id : null;

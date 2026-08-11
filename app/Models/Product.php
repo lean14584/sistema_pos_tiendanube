@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use App\Observers\ProductObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy(ProductObserver::class)]
 #[Fillable(['category_id', 'name', 'sku', 'price', 'cost_price', 'stock', 'min_stock', 'description', 'tiendanube_product_id', 'tiendanube_variant_id'])]
 class Product extends Model
 {

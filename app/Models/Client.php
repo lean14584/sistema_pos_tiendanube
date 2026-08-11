@@ -4,10 +4,13 @@ namespace App\Models;
 
 use App\Enums\CondicionIva;
 use App\Enums\TipoDocumento;
+use App\Observers\ClientObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy(ClientObserver::class)]
 #[Fillable(['name', 'email', 'phone', 'address', 'tax_id', 'condicion_iva', 'tipo_documento', 'tiendanube_customer_id'])]
 class Client extends Model
 {

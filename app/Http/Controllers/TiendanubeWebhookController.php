@@ -30,13 +30,16 @@ class TiendanubeWebhookController extends Controller
             return response('ok', 200);
         }
 
-        // "order/*" trae el id del pedido; "product/*" el del producto.
+        // El evento trae el recurso y el id: "order/paid" → pedido, "product/*"
+        // → producto, "customer/*" → cliente, "category/*" → categoría.
         [$recurso] = explode('/', $event, 2) + [''];
 
         try {
             match ($recurso) {
                 'order' => $sync->importOrder($client->getOrder($id)),
                 'product' => $sync->updateStockFromTiendanube($id),
+                'customer' => $sync->updateCustomerFromTiendanube($id),
+                'category' => $sync->updateCategoryFromTiendanube($id),
                 default => null,
             };
         } catch (\Throwable $e) {
