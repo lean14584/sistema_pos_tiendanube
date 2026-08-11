@@ -52,6 +52,9 @@ Route::post('/logout', LogoutController::class)->middleware('auth')->name('logou
 // Webhook público de Mercado Pago (sin auth ni CSRF; se valida contra la API).
 Route::match(['get', 'post'], '/mp/webhook', \App\Http\Controllers\MercadoPagoWebhookController::class)->name('mp.webhook');
 
+// Webhook público de Tiendanube (sin auth ni CSRF; firma HMAC opcional).
+Route::post('/tiendanube/webhook', \App\Http\Controllers\TiendanubeWebhookController::class)->name('tiendanube.webhook');
+
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
 

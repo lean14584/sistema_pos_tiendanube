@@ -144,4 +144,141 @@ class TiendanubeTest extends TestCase
             ->call('importProducts')
             ->assertSet('error', 'Primero cargá y guardá el Store ID y el Access Token.');
     }
+
+    public function test_empujar_productos_crea_los_nuevos_y_guarda_el_id(): void
+    {
+        $this->conectar();
+        Http::fake(function ($request) {
+            if ($request->method() === 'POST' && str_contains($request->url(), '/products')) {
+                return Http::response(['id' => 77, 'variants' => [['id' => 777]]], 201);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $p = Product::create(['name' => 'Gorra', 'price' => 500, 'stock' => 4]);
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('pushProducts');
+
+        $p->refresh();
+        $this->assertEquals(77, $p->tiendanube_product_id);
+        $this->assertEquals(777, $p->tiendanube_variant_id);
+    }
+
+    public function test_empujar_productos_actualiza_los_vinculados(): void
+    {
+        $this->conectar();
+        Http::fake(fn ($request) => Http::response([], 200));
+
+        Product::create(['name' => 'Gorra', 'price' => 500, 'stock' => 4, 'tiendanube_product_id' => 11, 'tiendanube_variant_id' => 91]);
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('pushProducts');
+
+        Http::assertSent(fn ($r) => $r->method() === 'PUT' && str_contains($r->url(), '/products/11/variants/91') && $r['stock'] === 4);
+    }
+
+    public function test_traer_stock_actualiza_el_local(): void
+    {
+        $this->conectar();
+        $this->fakeApi(); // /products devuelve id 11 con stock 8
+
+        $local = Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 0, 'tiendanube_product_id' => 11, 'tiendanube_variant_id' => 91]);
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('pullStock');
+
+        $this->assertEquals(8, $local->fresh()->stock);
+    }
+
+    public function test_sincronizar_clientes_trae_y_envia(): void
+    {
+        $this->conectar();
+        Http::fake(function ($request) {
+            $url = $request->url();
+            if (str_contains($url, '/customers') && $request->method() === 'GET') {
+                return Http::response([['id' => 5, 'name' => 'Bruno', 'email' => 'bruno@test.com']], 200);
+            }
+            if (str_contains($url, '/customers') && $request->method() === 'POST') {
+                return Http::response(['id' => 99], 201);
+            }
+
+            return Http::response([], 200);
+        });
+
+        // Cliente local sin vincular (para el push).
+        \App\Models\Client::create(['name' => 'Local', 'email' => 'local@test.com']);
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('syncClients');
+
+        $this->assertDatabaseHas('clients', ['email' => 'bruno@test.com', 'tiendanube_customer_id' => 5]);
+        $this->assertDatabaseHas('clients', ['email' => 'local@test.com', 'tiendanube_customer_id' => 99]);
+    }
+
+    public function test_activar_webhooks_registra_los_eventos(): void
+    {
+        $this->conectar();
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/webhooks') && $request->method() === 'GET') {
+                return Http::response([], 200);
+            }
+
+            return Http::response(['id' => 1], 201);
+        });
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('enableWebhooks');
+
+        Http::assertSentCount(5); // 1 GET (listar) + 4 POST (eventos)
+    }
+
+    public function test_webhook_de_pedido_crea_la_factura(): void
+    {
+        $this->conectar();
+        Http::fake([
+            '*/orders/555' => Http::response([
+                'id' => 555, 'number' => 1001, 'contact_name' => 'Ana', 'contact_email' => 'ana@test.com',
+                'products' => [['name' => ['es' => 'Remera'], 'price' => '1500.00', 'quantity' => 2]],
+            ], 200),
+        ]);
+
+        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'order/paid', 'id' => 555])
+            ->assertOk();
+
+        $this->assertDatabaseHas('invoices', ['tiendanube_order_id' => 555]);
+    }
+
+    public function test_webhook_de_producto_actualiza_stock(): void
+    {
+        $this->conectar();
+        Http::fake([
+            '*/products/11' => Http::response(['id' => 11, 'variants' => [['id' => 91, 'stock' => 20]]], 200),
+        ]);
+
+        $local = Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 0, 'tiendanube_product_id' => 11, 'tiendanube_variant_id' => 91]);
+
+        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'product/updated', 'id' => 11])
+            ->assertOk();
+
+        $this->assertEquals(20, $local->fresh()->stock);
+    }
+
+    public function test_webhook_con_firma_invalida_se_rechaza(): void
+    {
+        CompanySettings::current()->update([
+            'tiendanube_store_id' => '123',
+            'tiendanube_token' => 'tok_abc',
+            'tiendanube_webhook_secret' => 'secreto',
+        ]);
+
+        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'order/paid', 'id' => 555], ['x-linkedstore-hmac-sha256' => 'firma-mala'])
+            ->assertStatus(401);
+    }
 }

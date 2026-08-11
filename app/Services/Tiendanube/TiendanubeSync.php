@@ -87,14 +87,7 @@ class TiendanubeSync
             }
 
             foreach ($pedidos as $tn) {
-                if (Invoice::where('tiendanube_order_id', $tn['id'])->exists()) {
-                    $omitidos++;
-
-                    continue;
-                }
-
-                $this->crearFacturaDesdePedido($tn);
-                $importados++;
+                $this->importOrder($tn) ? $importados++ : $omitidos++;
             }
 
             if (count($pedidos) < $perPage) {
@@ -103,6 +96,23 @@ class TiendanubeSync
         }
 
         return ['importados' => $importados, 'omitidos' => $omitidos];
+    }
+
+    /**
+     * Importa un pedido puntual (lo usa también el webhook). Devuelve true si
+     * creó la factura, false si el pedido ya estaba importado.
+     *
+     * @param  array<string,mixed>  $tn
+     */
+    public function importOrder(array $tn): bool
+    {
+        if (Invoice::where('tiendanube_order_id', $tn['id'])->exists()) {
+            return false;
+        }
+
+        $this->crearFacturaDesdePedido($tn);
+
+        return true;
     }
 
     /**
@@ -132,6 +142,187 @@ class TiendanubeSync
             });
 
         return ['enviados' => $enviados, 'errores' => $errores];
+    }
+
+    /**
+     * Empuja los productos locales a Tiendanube: crea los que no están
+     * vinculados (y guarda el id que devuelve TN) y actualiza los vinculados.
+     *
+     * @return array{creados:int, actualizados:int}
+     */
+    public function pushProducts(): array
+    {
+        $creados = 0;
+        $actualizados = 0;
+
+        Product::query()->each(function (Product $p) use (&$creados, &$actualizados) {
+            if ($p->tiendanube_product_id) {
+                $this->client->updateProduct((int) $p->tiendanube_product_id, [
+                    'name' => ['es' => $p->name],
+                ]);
+
+                if ($p->tiendanube_variant_id) {
+                    $this->client->updateVariant(
+                        (int) $p->tiendanube_product_id,
+                        (int) $p->tiendanube_variant_id,
+                        ['price' => $this->precio($p->price), 'stock' => (int) $p->stock, 'sku' => $p->sku],
+                    );
+                }
+
+                $actualizados++;
+            } else {
+                $tn = $this->client->createProduct([
+                    'name' => ['es' => $p->name],
+                    'variants' => [[
+                        'price' => $this->precio($p->price),
+                        'stock' => (int) $p->stock,
+                        'sku' => $p->sku,
+                    ]],
+                ]);
+
+                $p->update([
+                    'tiendanube_product_id' => $tn['id'] ?? null,
+                    'tiendanube_variant_id' => $tn['variants'][0]['id'] ?? null,
+                ]);
+
+                $creados++;
+            }
+        });
+
+        return ['creados' => $creados, 'actualizados' => $actualizados];
+    }
+
+    /**
+     * Trae el stock de Tiendanube y lo copia al stock local de los productos
+     * vinculados (Tiendanube → sistema).
+     *
+     * @return array{actualizados:int}
+     */
+    public function pullStock(): array
+    {
+        $actualizados = 0;
+        $perPage = config('tiendanube.per_page');
+
+        for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
+            $productos = $this->client->getProducts($page);
+
+            if (empty($productos)) {
+                break;
+            }
+
+            foreach ($productos as $tn) {
+                $local = Product::where('tiendanube_product_id', $tn['id'])->first();
+
+                if ($local) {
+                    $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+                    $actualizados++;
+                }
+            }
+
+            if (count($productos) < $perPage) {
+                break;
+            }
+        }
+
+        return ['actualizados' => $actualizados];
+    }
+
+    /**
+     * Trae los clientes de Tiendanube y los crea/actualiza localmente.
+     *
+     * @return array{creados:int, actualizados:int}
+     */
+    public function pullCustomers(): array
+    {
+        $creados = 0;
+        $actualizados = 0;
+        $perPage = config('tiendanube.per_page');
+
+        for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
+            $clientes = $this->client->getCustomers($page);
+
+            if (empty($clientes)) {
+                break;
+            }
+
+            foreach ($clientes as $tn) {
+                $email = $tn['email'] ?? null;
+                $existente = Client::where('tiendanube_customer_id', $tn['id'])
+                    ->orWhere(fn ($q) => $email ? $q->where('email', $email) : $q->whereRaw('1=0'))
+                    ->first();
+
+                $datos = [
+                    'name' => $this->texto($tn['name'] ?? 'Cliente Tiendanube'),
+                    'email' => $email,
+                    'phone' => $tn['phone'] ?? null,
+                    'tiendanube_customer_id' => $tn['id'],
+                ];
+
+                if ($existente) {
+                    $existente->update($datos);
+                    $actualizados++;
+                } else {
+                    Client::create($datos);
+                    $creados++;
+                }
+            }
+
+            if (count($clientes) < $perPage) {
+                break;
+            }
+        }
+
+        return ['creados' => $creados, 'actualizados' => $actualizados];
+    }
+
+    /**
+     * Empuja a Tiendanube los clientes locales con email que todavía no están
+     * vinculados.
+     *
+     * @return array{enviados:int, errores:int}
+     */
+    public function pushCustomers(): array
+    {
+        $enviados = 0;
+        $errores = 0;
+
+        Client::whereNotNull('email')
+            ->whereNull('tiendanube_customer_id')
+            ->each(function (Client $c) use (&$enviados, &$errores) {
+                try {
+                    $tn = $this->client->createCustomer([
+                        'name' => $c->name,
+                        'email' => $c->email,
+                    ]);
+                    $c->update(['tiendanube_customer_id' => $tn['id'] ?? null]);
+                    $enviados++;
+                } catch (\Throwable $e) {
+                    $errores++;
+                }
+            });
+
+        return ['enviados' => $enviados, 'errores' => $errores];
+    }
+
+    /**
+     * Actualiza el stock local de un producto puntual desde Tiendanube (lo usa
+     * el webhook product/updated).
+     */
+    public function updateStockFromTiendanube(int $tiendanubeProductId): void
+    {
+        $local = Product::where('tiendanube_product_id', $tiendanubeProductId)->first();
+
+        if (! $local) {
+            return;
+        }
+
+        $tn = $this->client->getProduct($tiendanubeProductId);
+        $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+    }
+
+    private function precio(mixed $valor): string
+    {
+        return number_format((float) $valor, 2, '.', '');
     }
 
     /**

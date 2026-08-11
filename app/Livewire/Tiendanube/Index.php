@@ -17,16 +17,22 @@ class Index extends Component
 
     public string $tiendanube_token = '';
 
+    public string $tiendanube_webhook_secret = '';
+
     /** Resultado de la última acción, para mostrar en pantalla. */
     public ?string $resultado = null;
 
     public ?string $error = null;
+
+    /** Eventos que se registran para la sincronización automática. */
+    private const WEBHOOK_EVENTS = ['order/created', 'order/paid', 'product/updated', 'product/created'];
 
     public function mount(): void
     {
         $this->company = CompanySettings::current();
         $this->tiendanube_store_id = (string) $this->company->tiendanube_store_id;
         $this->tiendanube_token = (string) $this->company->tiendanube_token;
+        $this->tiendanube_webhook_secret = (string) $this->company->tiendanube_webhook_secret;
     }
 
     public function saveCredentials(): void
@@ -34,6 +40,7 @@ class Index extends Component
         $data = $this->validate([
             'tiendanube_store_id' => ['nullable', 'string', 'max:50'],
             'tiendanube_token' => ['nullable', 'string', 'max:255'],
+            'tiendanube_webhook_secret' => ['nullable', 'string', 'max:255'],
         ]);
 
         $this->company->update($data);
@@ -80,6 +87,72 @@ class Index extends Component
             $r = $sync->pushStock();
 
             return "Stock enviado a Tiendanube: {$r['enviados']} productos".($r['errores'] ? ", {$r['errores']} con error." : '.');
+        });
+    }
+
+    public function pushProducts(): void
+    {
+        $this->correr(function (TiendanubeSync $sync) {
+            $r = $sync->pushProducts();
+
+            return "Productos enviados a Tiendanube: {$r['creados']} creados, {$r['actualizados']} actualizados.";
+        });
+    }
+
+    public function pullStock(): void
+    {
+        $this->correr(function (TiendanubeSync $sync) {
+            $r = $sync->pullStock();
+
+            return "Stock traído de Tiendanube: {$r['actualizados']} productos actualizados.";
+        });
+    }
+
+    public function syncClients(): void
+    {
+        $this->correr(function (TiendanubeSync $sync) {
+            $traidos = $sync->pullCustomers();
+            $enviados = $sync->pushCustomers();
+
+            return "Clientes: {$traidos['creados']} traídos, {$enviados['enviados']} enviados a Tiendanube.";
+        });
+    }
+
+    public function enableWebhooks(): void
+    {
+        $this->correr(function (TiendanubeSync $sync) {
+            $client = app(TiendanubeClient::class);
+
+            // Limpia los que hubiera para no duplicar, y registra el set.
+            foreach ($client->listWebhooks() as $w) {
+                if (isset($w['id'])) {
+                    $client->deleteWebhook((int) $w['id']);
+                }
+            }
+
+            $url = route('tiendanube.webhook');
+            foreach (self::WEBHOOK_EVENTS as $event) {
+                $client->createWebhook($event, $url);
+            }
+
+            return 'Sincronización automática activada ('.count(self::WEBHOOK_EVENTS).' eventos).';
+        });
+    }
+
+    public function disableWebhooks(): void
+    {
+        $this->correr(function (TiendanubeSync $sync) {
+            $client = app(TiendanubeClient::class);
+            $borrados = 0;
+
+            foreach ($client->listWebhooks() as $w) {
+                if (isset($w['id'])) {
+                    $client->deleteWebhook((int) $w['id']);
+                    $borrados++;
+                }
+            }
+
+            return "Sincronización automática desactivada ({$borrados} eventos quitados).";
         });
     }
 

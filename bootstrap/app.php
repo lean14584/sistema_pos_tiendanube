@@ -16,9 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'module' => \App\Http\Middleware\EnsureModuleAccess::class,
         ]);
 
-        // Mercado Pago llama a este endpoint sin token CSRF.
+        // Mercado Pago y Tiendanube llaman a estos endpoints sin token CSRF.
         $middleware->validateCsrfTokens(except: [
             'mp/webhook',
+            'tiendanube/webhook',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -54,6 +54,12 @@
                     Se guarda en el servidor. Lo sacás autorizando tu app en el panel de Tiendanube.
                 </p>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client secret <span class="text-gray-400 font-normal">(opcional, para validar webhooks)</span></label>
+                <input type="password" wire:model="tiendanube_webhook_secret" placeholder="••••••••••••"
+                    class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                @error('tiendanube_webhook_secret') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            </div>
 
             <div class="flex flex-col sm:flex-row gap-2 pt-1">
                 <button type="submit"
@@ -70,32 +76,73 @@
         </form>
     </div>
 
-    {{-- Acciones de sincronización --}}
-    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Sincronización</h2>
+    {{-- Traer de Tiendanube --}}
+    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Traer de Tiendanube <span class="text-sm font-normal text-gray-400">→ sistema</span></h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Necesita la conexión guardada.</p>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button wire:click="importProducts" wire:loading.attr="disabled" wire:target="importProducts"
-                class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/60 disabled:opacity-60 transition-colors">
-                <x-heroicon-o-cube class="w-6 h-6 text-indigo-500" />
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Importar productos</span>
-                <span wire:loading wire:target="importProducts" class="text-xs text-gray-400">Importando...</span>
-            </button>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            @php
+                $accionesTraer = [
+                    ['m' => 'importProducts', 'i' => 'cube', 'l' => 'Importar productos'],
+                    ['m' => 'importOrders', 'i' => 'shopping-cart', 'l' => 'Importar pedidos'],
+                    ['m' => 'pullStock', 'i' => 'arrow-down-tray', 'l' => 'Traer stock'],
+                    ['m' => 'syncClients', 'i' => 'users', 'l' => 'Sincronizar clientes'],
+                ];
+            @endphp
+            @foreach ($accionesTraer as $a)
+                <button wire:click="{{ $a['m'] }}" wire:loading.attr="disabled" wire:target="{{ $a['m'] }}"
+                    class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/60 disabled:opacity-60 transition-colors">
+                    <x-dynamic-component :component="'heroicon-o-'.$a['i']" class="w-6 h-6 text-indigo-500" />
+                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ $a['l'] }}</span>
+                    <span wire:loading wire:target="{{ $a['m'] }}" class="text-xs text-gray-400">Procesando...</span>
+                </button>
+            @endforeach
+        </div>
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">«Sincronizar clientes» trae y también envía los clientes locales.</p>
+    </div>
 
-            <button wire:click="importOrders" wire:loading.attr="disabled" wire:target="importOrders"
+    {{-- Enviar a Tiendanube --}}
+    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Enviar a Tiendanube <span class="text-sm font-normal text-gray-400">sistema →</span></h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button wire:click="pushProducts" wire:loading.attr="disabled" wire:target="pushProducts"
                 class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/60 disabled:opacity-60 transition-colors">
-                <x-heroicon-o-shopping-cart class="w-6 h-6 text-indigo-500" />
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Importar pedidos</span>
-                <span wire:loading wire:target="importOrders" class="text-xs text-gray-400">Importando...</span>
+                <x-heroicon-o-cloud-arrow-up class="w-6 h-6 text-indigo-500" />
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Empujar productos</span>
+                <span class="text-[11px] text-gray-400 dark:text-gray-500">crea/actualiza en la tienda</span>
+                <span wire:loading wire:target="pushProducts" class="text-xs text-gray-400">Enviando...</span>
             </button>
 
             <button wire:click="syncStock" wire:loading.attr="disabled" wire:target="syncStock"
                 class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/60 disabled:opacity-60 transition-colors">
                 <x-heroicon-o-arrow-path class="w-6 h-6 text-indigo-500" />
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Sincronizar stock</span>
-                <span class="text-[11px] text-gray-400 dark:text-gray-500">sistema → Tiendanube</span>
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Enviar stock</span>
+                <span class="text-[11px] text-gray-400 dark:text-gray-500">stock local → tienda</span>
                 <span wire:loading wire:target="syncStock" class="text-xs text-gray-400">Enviando...</span>
+            </button>
+        </div>
+    </div>
+
+    {{-- Sincronización automática --}}
+    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Sincronización automática <span class="text-sm font-normal text-gray-400">(webhooks)</span></h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Cuando entra una venta o cambia un producto en la tienda, se refleja solo. Requiere que el sistema tenga una URL pública.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+            <button wire:click="enableWebhooks" wire:loading.attr="disabled" wire:target="enableWebhooks"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-60 transition-all">
+                <x-heroicon-o-bolt class="w-4 h-4" />
+                <span wire:loading.remove wire:target="enableWebhooks">Activar</span>
+                <span wire:loading wire:target="enableWebhooks">Activando...</span>
+            </button>
+            <button wire:click="disableWebhooks" wire:loading.attr="disabled" wire:target="disableWebhooks"
+                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60 transition-colors">
+                <span wire:loading.remove wire:target="disableWebhooks">Desactivar</span>
+                <span wire:loading wire:target="disableWebhooks">Desactivando...</span>
             </button>
         </div>
     </div>
