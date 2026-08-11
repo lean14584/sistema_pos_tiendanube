@@ -8,6 +8,7 @@ use App\Enums\TipoComprobanteInterno;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,8 @@ class Create extends Component
     public string $notes = '';
 
     public string $status = 'draft';
+
+    public bool $printOnSave = true;
 
     /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string}> */
     public array $items = [];
@@ -191,6 +194,14 @@ class Create extends Component
 
             return $invoice;
         });
+
+        if ($this->printOnSave) {
+            try {
+                app(TicketPrinterService::class)->imprimir($invoice);
+            } catch (\Throwable $e) {
+                session()->flash('error', 'La factura se guardó, pero no se pudo imprimir el ticket: '.$e->getMessage());
+            }
+        }
 
         $this->redirect(route('invoices.show', $invoice), navigate: true);
     }
