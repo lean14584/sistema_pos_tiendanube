@@ -88,6 +88,7 @@
                     ['m' => 'importOrders', 'i' => 'shopping-cart', 'l' => 'Importar pedidos'],
                     ['m' => 'pullStock', 'i' => 'arrow-down-tray', 'l' => 'Traer stock'],
                     ['m' => 'syncClients', 'i' => 'users', 'l' => 'Sincronizar clientes'],
+                    ['m' => 'syncCategories', 'i' => 'tag', 'l' => 'Sincronizar categorías'],
                 ];
             @endphp
             @foreach ($accionesTraer as $a)
@@ -99,7 +100,7 @@
                 </button>
             @endforeach
         </div>
-        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">«Sincronizar clientes» trae y también envía los clientes locales.</p>
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">«Sincronizar clientes» y «Sincronizar categorías» traen y también envían los locales.</p>
     </div>
 
     {{-- Enviar a Tiendanube --}}

@@ -237,6 +237,59 @@ class TiendanubeTest extends TestCase
         $this->assertDatabaseHas('clients', ['email' => 'local@test.com', 'tiendanube_customer_id' => 99]);
     }
 
+    public function test_sincronizar_categorias_trae_y_envia(): void
+    {
+        $this->conectar();
+        Http::fake(function ($request) {
+            $url = $request->url();
+            if (str_contains($url, '/categories') && $request->method() === 'GET') {
+                return Http::response([['id' => 501, 'name' => ['es' => 'Indumentaria']]], 200);
+            }
+            if (str_contains($url, '/categories') && $request->method() === 'POST') {
+                return Http::response(['id' => 777], 201);
+            }
+
+            return Http::response([], 200);
+        });
+
+        // Categoría local sin vincular (para el push).
+        \App\Models\Category::create(['name' => 'Bazar']);
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('syncCategories');
+
+        // Traída de Tiendanube:
+        $this->assertDatabaseHas('categories', ['name' => 'Indumentaria', 'tiendanube_category_id' => 501]);
+        // Local empujada y vinculada:
+        $this->assertDatabaseHas('categories', ['name' => 'Bazar', 'tiendanube_category_id' => 777]);
+    }
+
+    public function test_empujar_productos_incluye_la_categoria(): void
+    {
+        $this->conectar();
+        Http::fake(function ($request) {
+            if ($request->method() === 'POST' && str_contains($request->url(), '/products')) {
+                return Http::response(['id' => 77, 'variants' => [['id' => 777]]], 201);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $cat = \App\Models\Category::create(['name' => 'Indumentaria', 'tiendanube_category_id' => 501]);
+        Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 4, 'category_id' => $cat->id]);
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('pushProducts');
+
+        Http::assertSent(function ($r) {
+            return $r->method() === 'POST'
+                && str_contains($r->url(), '/products')
+                && $r['categories'] === [501];
+        });
+    }
+
     public function test_activar_webhooks_registra_los_eventos(): void
     {
         $this->conectar();

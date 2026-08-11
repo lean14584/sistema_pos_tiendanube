@@ -118,6 +118,16 @@ class Index extends Component
         });
     }
 
+    public function syncCategories(): void
+    {
+        $this->correr(function (TiendanubeSync $sync) {
+            $traidas = $sync->pullCategories();
+            $enviadas = $sync->pushCategories();
+
+            return "Categorías: {$traidas['creados']} traídas, {$enviadas['enviados']} enviadas a Tiendanube.";
+        });
+    }
+
     public function enableWebhooks(): void
     {
         $this->correr(function (TiendanubeSync $sync) {

@@ -188,6 +188,32 @@ class TiendanubeClient
     /**
      * @return array<int, array<string,mixed>>
      */
+    public function getCategories(int $page = 1): array
+    {
+        $res = $this->http()->get('/categories', [
+            'page' => $page,
+            'per_page' => config('tiendanube.per_page'),
+        ]);
+        $res->throw();
+
+        return $res->json() ?? [];
+    }
+
+    /**
+     * @param  array<string,mixed>  $payload
+     * @return array<string,mixed>
+     */
+    public function createCategory(array $payload): array
+    {
+        $res = $this->http()->post('/categories', $payload);
+        $res->throw();
+
+        return $res->json();
+    }
+
+    /**
+     * @return array<int, array<string,mixed>>
+     */
     public function listWebhooks(): array
     {
         $res = $this->http()->get('/webhooks');

@@ -157,11 +157,15 @@ class TiendanubeSync
         $creados = 0;
         $actualizados = 0;
 
-        Product::query()->each(function (Product $p) use (&$creados, &$actualizados) {
+        Product::query()->with('category')->each(function (Product $p) use (&$creados, &$actualizados) {
+            $categorias = $this->categoriasParaTiendanube($p);
+
             if ($p->tiendanube_product_id) {
-                $this->client->updateProduct((int) $p->tiendanube_product_id, [
-                    'name' => ['es' => $p->name],
-                ]);
+                $payload = ['name' => ['es' => $p->name]];
+                if ($categorias) {
+                    $payload['categories'] = $categorias;
+                }
+                $this->client->updateProduct((int) $p->tiendanube_product_id, $payload);
 
                 if ($p->tiendanube_variant_id) {
                     $this->client->updateVariant(
@@ -173,14 +177,19 @@ class TiendanubeSync
 
                 $actualizados++;
             } else {
-                $tn = $this->client->createProduct([
+                $payload = [
                     'name' => ['es' => $p->name],
                     'variants' => [[
                         'price' => $this->precio($p->price),
                         'stock' => (int) $p->stock,
                         'sku' => $p->sku,
                     ]],
-                ]);
+                ];
+                if ($categorias) {
+                    $payload['categories'] = $categorias;
+                }
+
+                $tn = $this->client->createProduct($payload);
 
                 $p->update([
                     'tiendanube_product_id' => $tn['id'] ?? null,
@@ -320,6 +329,105 @@ class TiendanubeSync
 
         $tn = $this->client->getProduct($tiendanubeProductId);
         $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+    }
+
+    /**
+     * Trae las categorías de Tiendanube y las crea/actualiza localmente.
+     *
+     * @return array{creados:int, actualizados:int}
+     */
+    public function pullCategories(): array
+    {
+        $creados = 0;
+        $actualizados = 0;
+        $perPage = config('tiendanube.per_page');
+
+        for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
+            $categorias = $this->client->getCategories($page);
+
+            if (empty($categorias)) {
+                break;
+            }
+
+            foreach ($categorias as $tn) {
+                $existente = Category::where('tiendanube_category_id', $tn['id'])->first();
+                $nombre = $this->texto($tn['name'] ?? 'Sin categoría');
+
+                if ($existente) {
+                    $existente->update(['name' => $nombre]);
+                    $actualizados++;
+                } else {
+                    Category::create(['name' => $nombre, 'tiendanube_category_id' => $tn['id']]);
+                    $creados++;
+                }
+            }
+
+            if (count($categorias) < $perPage) {
+                break;
+            }
+        }
+
+        return ['creados' => $creados, 'actualizados' => $actualizados];
+    }
+
+    /**
+     * Empuja a Tiendanube las categorías locales que todavía no están
+     * vinculadas (crea la categoría allá y guarda su id).
+     *
+     * @return array{enviados:int, errores:int}
+     */
+    public function pushCategories(): array
+    {
+        $enviados = 0;
+        $errores = 0;
+
+        Category::whereNull('tiendanube_category_id')->each(function (Category $c) use (&$enviados, &$errores) {
+            try {
+                $this->ensureCategoryInTiendanube($c);
+                $enviados++;
+            } catch (\Throwable $e) {
+                $errores++;
+            }
+        });
+
+        return ['enviados' => $enviados, 'errores' => $errores];
+    }
+
+    /**
+     * Categorías (ids de Tiendanube) a mandar en el payload de un producto.
+     * Si la categoría local todavía no existe en Tiendanube, la crea.
+     *
+     * @return array<int, int>
+     */
+    private function categoriasParaTiendanube(Product $p): array
+    {
+        if (! $p->category) {
+            return [];
+        }
+
+        $id = $this->ensureCategoryInTiendanube($p->category);
+
+        return $id ? [$id] : [];
+    }
+
+    /**
+     * Garantiza que la categoría local exista en Tiendanube; devuelve su id
+     * de Tiendanube (y lo guarda localmente si tuvo que crearla).
+     */
+    private function ensureCategoryInTiendanube(Category $c): ?int
+    {
+        if ($c->tiendanube_category_id) {
+            return (int) $c->tiendanube_category_id;
+        }
+
+        $tn = $this->client->createCategory(['name' => ['es' => $c->name]]);
+        $id = $tn['id'] ?? null;
+
+        if ($id) {
+            $c->update(['tiendanube_category_id' => $id]);
+        }
+
+        return $id ? (int) $id : null;
     }
 
     /**
