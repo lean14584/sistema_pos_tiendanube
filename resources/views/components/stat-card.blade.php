@@ -1,11 +1,19 @@
-@props(['label', 'value', 'icon', 'accent' => 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-500/10'])
+@props(['label', 'value', 'icon', 'color' => 'indigo'])
 
-<div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 hover:shadow-md hover:-translate-y-0.5 transition-all p-5 flex items-center gap-4">
-    <div class="w-11 h-11 rounded-xl flex items-center justify-center ring-1 ring-inset ring-black/5 dark:ring-white/10 {{ $accent }}">
-        <x-dynamic-component :component="'heroicon-o-' . $icon" class="w-5 h-5" />
-    </div>
-    <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ $label }}</p>
-        <p class="text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">{{ $value }}</p>
-    </div>
+@php
+    // Clases literales (no concatenadas) para que Tailwind las detecte al compilar.
+    $colors = [
+        'emerald' => 'from-emerald-500 to-emerald-600 shadow-emerald-500/30',
+        'amber' => 'from-amber-500 to-amber-600 shadow-amber-500/30',
+        'red' => 'from-red-500 to-red-600 shadow-red-500/30',
+        'sky' => 'from-sky-500 to-sky-600 shadow-sky-500/30',
+        'indigo' => 'from-indigo-500 to-indigo-600 shadow-indigo-500/30',
+    ];
+    $c = $colors[$color] ?? $colors['indigo'];
+@endphp
+
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-br {{ $c }} text-white p-5 shadow-lg hover:-translate-y-0.5 transition-all">
+    <p class="text-3xl font-bold tracking-tight leading-none">{{ $value }}</p>
+    <p class="text-sm font-medium text-white/90 mt-2">{{ $label }}</p>
+    <x-dynamic-component :component="'heroicon-o-' . $icon" class="w-24 h-24 absolute -right-4 -bottom-4 text-white/20 pointer-events-none" />
 </div>

@@ -13,11 +13,11 @@
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <x-stat-card label="Total facturado (pagado)" value="${{ number_format($stats['totalRevenue'], 2) }}" icon="currency-dollar" accent="text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:text-emerald-400 dark:from-emerald-500/15 dark:to-emerald-500/5" />
-        <x-stat-card label="Pendiente de cobro" value="${{ number_format($stats['pendingAmount'], 2) }}" icon="clock" accent="text-amber-600 bg-gradient-to-br from-amber-50 to-amber-100/60 dark:text-amber-400 dark:from-amber-500/15 dark:to-amber-500/5" />
-        <x-stat-card label="Facturas vencidas" value="{{ $stats['overdueCount'] }}" icon="exclamation-triangle" accent="text-red-600 bg-gradient-to-br from-red-50 to-red-100/60 dark:text-red-400 dark:from-red-500/15 dark:to-red-500/5" />
-        <x-stat-card label="Total de facturas" value="{{ $stats['totalInvoices'] }}" icon="document-text" accent="text-indigo-600 bg-gradient-to-br from-indigo-50 to-indigo-100/60 dark:text-indigo-400 dark:from-indigo-500/15 dark:to-indigo-500/5" />
-        <x-stat-card label="Alertas de stock" value="{{ $lowStockCount }}" icon="cube" accent="text-red-600 bg-gradient-to-br from-red-50 to-red-100/60 dark:text-red-400 dark:from-red-500/15 dark:to-red-500/5" />
+        <x-stat-card label="Total facturado (pagado)" value="${{ number_format($stats['totalRevenue'], 2) }}" icon="currency-dollar" color="emerald" />
+        <x-stat-card label="Pendiente de cobro" value="${{ number_format($stats['pendingAmount'], 2) }}" icon="clock" color="amber" />
+        <x-stat-card label="Facturas vencidas" value="{{ $stats['overdueCount'] }}" icon="exclamation-triangle" color="red" />
+        <x-stat-card label="Total de facturas" value="{{ $stats['totalInvoices'] }}" icon="document-text" color="sky" />
+        <x-stat-card label="Alertas de stock" value="{{ $lowStockCount }}" icon="cube" color="indigo" />
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">

@@ -52,18 +52,18 @@
 
 <aside
     x-bind:class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-    class="fixed inset-y-0 left-0 z-40 w-64 shrink-0 border-r border-gray-200 bg-gradient-to-b from-white to-gray-50/50 dark:border-gray-800 dark:from-gray-900 dark:to-gray-900/80 flex flex-col transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-40 w-64 shrink-0 border-r border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950 text-slate-300 flex flex-col transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0"
 >
-    <div class="h-16 flex items-center gap-2.5 px-6 border-b border-gray-200 dark:border-gray-800">
+    <div class="h-16 flex items-center gap-2.5 px-6 border-b border-white/10">
         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-sm shadow-indigo-600/30">
             <x-heroicon-o-receipt-percent class="w-4 h-4 text-white" />
         </div>
-        <span class="font-semibold text-gray-900 dark:text-gray-100 text-lg tracking-tight flex-1">{{ config('app.name') }}</span>
+        <span class="font-semibold text-white text-lg tracking-tight flex-1">{{ config('app.name') }}</span>
         <button
             type="button"
             x-on:click="sidebarOpen = false"
             aria-label="Cerrar menú"
-            class="lg:hidden p-1 -mr-1 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+            class="lg:hidden p-1 -mr-1 rounded-md text-slate-400 hover:bg-slate-800 hover:text-white"
         >
             <x-heroicon-o-x-mark class="w-5 h-5" />
         </button>
@@ -76,8 +76,8 @@
                 href="{{ $item['href'] }}"
                 @if (! empty($item['target'])) target="{{ $item['target'] }}" @else wire:navigate @endif
                 class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all {{ $active
-                    ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-600/10 dark:bg-indigo-500/10 dark:text-indigo-400 dark:ring-indigo-400/10'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100' }}"
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
             >
                 <x-dynamic-component :component="'heroicon-o-' . $item['icon']" class="w-4 h-4" />
                 <span class="flex-1">{{ $item['label'] }}</span>
@@ -91,20 +91,20 @@
     </nav>
 
     @if ($user)
-        <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800">
+        <div class="px-4 py-3 border-t border-white/10">
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-8 h-8 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-semibold">
+                    <div class="w-8 h-8 shrink-0 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs font-semibold">
                         {{ strtoupper(mb_substr($user->name, 0, 2)) }}
                     </div>
                     <div class="min-w-0">
-                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $user->name }}</p>
-                        <p class="text-xs text-gray-400 dark:text-gray-500">{{ $user->role->label() }}</p>
+                        <p class="text-sm font-medium text-white truncate">{{ $user->name }}</p>
+                        <p class="text-xs text-slate-400">{{ $user->role->label() }}</p>
                     </div>
                 </div>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" title="Cerrar sesión" class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all">
+                    <button type="submit" title="Cerrar sesión" class="p-1.5 rounded-md text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 transition-all">
                         <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
                     </button>
                 </form>
@@ -120,14 +120,14 @@
                 }"
                 class="flex items-center justify-between px-2"
             >
-                <span class="text-xs text-gray-400 dark:text-gray-500">Tema oscuro</span>
+                <span class="text-xs text-slate-400">Tema oscuro</span>
                 <button
                     type="button"
                     role="switch"
                     x-bind:aria-checked="isDark"
                     aria-label="Cambiar entre tema claro y oscuro"
                     x-on:click="toggle()"
-                    class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-gray-200 transition-colors dark:bg-indigo-600"
+                    class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-slate-700 transition-colors dark:bg-indigo-600"
                 >
                     <span
                         class="flex h-4 w-4 items-center justify-center rounded-full bg-white shadow transition-transform"
