@@ -55,6 +55,9 @@ Route::match(['get', 'post'], '/mp/webhook', \App\Http\Controllers\MercadoPagoWe
 // Webhook público de Tiendanube (sin auth ni CSRF; firma HMAC opcional).
 Route::post('/tiendanube/webhook', \App\Http\Controllers\TiendanubeWebhookController::class)->name('tiendanube.webhook');
 
+// Kiosco público de consulta de precios (para dejar fijo en el salón).
+Route::get('/precios', \App\Livewire\PriceCheck\Kiosk::class)->name('precios');
+
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
 

@@ -29,6 +29,7 @@
         ['module' => 'users', 'pattern' => 'users.*', 'href' => route('users.index'), 'label' => 'Usuarios', 'icon' => 'shield-check'],
         ['module' => 'messages', 'pattern' => 'messages.*', 'href' => route('messages.index'), 'label' => 'Mensajes', 'icon' => 'chat-bubble-left-right', 'badge' => $unreadMessagesCount],
         ['module' => 'tasks', 'pattern' => 'tasks.*', 'href' => route('tasks.index'), 'label' => 'Tareas', 'icon' => 'check-circle', 'badge' => $openTasksCount],
+        ['module' => 'price-check', 'pattern' => 'precios', 'href' => route('precios'), 'label' => 'Consultar precios', 'icon' => 'magnifying-glass', 'target' => '_blank'],
         ['module' => 'company-settings', 'pattern' => 'company-settings.*', 'href' => route('company-settings.edit'), 'label' => 'Datos de la empresa', 'icon' => 'building-office'],
         ['module' => 'company-settings', 'pattern' => 'tiendanube.*', 'href' => route('tiendanube.index'), 'label' => 'Tiendanube', 'icon' => 'shopping-bag'],
         ['module' => 'audit', 'pattern' => 'audit.*', 'href' => route('audit.index'), 'label' => 'Auditoría', 'icon' => 'clipboard-document-check'],
@@ -73,7 +74,7 @@
             @php $active = request()->routeIs($item['pattern']); @endphp
             <a
                 href="{{ $item['href'] }}"
-                wire:navigate
+                @if (! empty($item['target'])) target="{{ $item['target'] }}" @else wire:navigate @endif
                 class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all {{ $active
                     ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-600/10 dark:bg-indigo-500/10 dark:text-indigo-400 dark:ring-indigo-400/10'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100' }}"

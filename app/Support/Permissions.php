@@ -11,10 +11,10 @@ class Permissions
         'admin' => [
             'dashboard', 'quotes', 'invoices', 'clients', 'products', 'categories',
             'providers', 'purchases', 'cash-register', 'reports', 'users', 'messages', 'tasks',
-            'company-settings', 'audit', 'libro-iva',
+            'company-settings', 'audit', 'libro-iva', 'price-check',
         ],
-        'vendedor' => ['dashboard', 'quotes', 'invoices', 'clients', 'products', 'categories', 'reports', 'messages', 'tasks'],
-        'cajero' => ['dashboard', 'clients', 'providers', 'cash-register', 'messages', 'tasks'],
+        'vendedor' => ['dashboard', 'quotes', 'invoices', 'clients', 'products', 'categories', 'reports', 'messages', 'tasks', 'price-check'],
+        'cajero' => ['dashboard', 'invoices', 'clients', 'cash-register', 'products', 'messages', 'tasks', 'price-check'],
     ];
 
     public static function canAccess(Role $role, string $module): bool

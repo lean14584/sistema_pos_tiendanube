@@ -33,14 +33,16 @@ class DashboardTest extends TestCase
             ->assertSee('500.00');
     }
 
-    public function test_cajero_does_not_see_invoice_links_on_dashboard(): void
+    public function test_cajero_ahora_puede_facturar_desde_el_dashboard(): void
     {
+        // El cajero pasó a tener permiso de facturas (atiende la caja), así
+        // que sí debe ver el acceso a "Nueva factura" en el dashboard.
         $cajero = User::factory()->create(['role' => Role::Cajero, 'active' => true]);
 
         $response = $this->actingAs($cajero)->get('/');
 
         $response->assertOk();
-        $response->assertDontSee('Nueva factura');
+        $response->assertSee('Nueva factura');
     }
 
     public function test_dashboard_shows_top_selling_products(): void
