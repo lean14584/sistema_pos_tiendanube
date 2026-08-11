@@ -3,6 +3,7 @@
 namespace App\Services\Tiendanube;
 
 use App\Enums\TipoComprobanteInterno;
+use App\Models\Category;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
@@ -46,6 +47,7 @@ class TiendanubeSync
                     'price' => $this->numero($variante['price'] ?? 0),
                     'stock' => (int) ($variante['stock'] ?? 0),
                     'sku' => $variante['sku'] ?? null,
+                    'category_id' => $this->resolverCategoria($tn['categories'] ?? []),
                     'tiendanube_product_id' => $tn['id'],
                     'tiendanube_variant_id' => $variante['id'] ?? null,
                 ];
@@ -318,6 +320,29 @@ class TiendanubeSync
 
         $tn = $this->client->getProduct($tiendanubeProductId);
         $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+    }
+
+    /**
+     * Devuelve el id de la categoría local correspondiente a la primera
+     * categoría del producto de Tiendanube, creándola si no existe (sin
+     * duplicar, gracias al vínculo tiendanube_category_id).
+     *
+     * @param  array<int, array<string,mixed>>  $categorias
+     */
+    private function resolverCategoria(array $categorias): ?int
+    {
+        $cat = $categorias[0] ?? null;
+
+        if (! $cat || ! isset($cat['id'])) {
+            return null;
+        }
+
+        $local = Category::firstOrCreate(
+            ['tiendanube_category_id' => $cat['id']],
+            ['name' => $this->texto($cat['name'] ?? 'Sin categoría')],
+        );
+
+        return $local->id;
     }
 
     private function precio(mixed $valor): string

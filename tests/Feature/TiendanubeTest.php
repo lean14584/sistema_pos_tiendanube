@@ -36,8 +36,8 @@ class TiendanubeTest extends TestCase
             // Las variantes se listan bajo /products, así que este patrón va primero.
             '*/products/*/variants/*' => Http::response([], 200),
             '*/products*' => Http::response([
-                ['id' => 11, 'name' => ['es' => 'Remera'], 'variants' => [['id' => 91, 'price' => '1500.00', 'stock' => 8, 'sku' => 'REM-1']]],
-                ['id' => 12, 'name' => ['es' => 'Buzo'], 'variants' => [['id' => 92, 'price' => '3000.00', 'stock' => 3, 'sku' => 'BUZ-1']]],
+                ['id' => 11, 'name' => ['es' => 'Remera'], 'categories' => [['id' => 501, 'name' => ['es' => 'Indumentaria']]], 'variants' => [['id' => 91, 'price' => '1500.00', 'stock' => 8, 'sku' => 'REM-1']]],
+                ['id' => 12, 'name' => ['es' => 'Buzo'], 'categories' => [['id' => 501, 'name' => ['es' => 'Indumentaria']]], 'variants' => [['id' => 92, 'price' => '3000.00', 'stock' => 3, 'sku' => 'BUZ-1']]],
             ], 200),
             '*/orders*' => Http::response([
                 [
@@ -94,6 +94,22 @@ class TiendanubeTest extends TestCase
         // Segunda corrida: actualiza, no duplica.
         $c->call('importProducts');
         $this->assertSame(2, Product::count());
+    }
+
+    public function test_importar_productos_crea_y_asigna_la_categoria(): void
+    {
+        $this->conectar();
+        $this->fakeApi();
+
+        Livewire::actingAs($this->admin())->test('tiendanube.index')->call('importProducts');
+
+        // Las dos productos comparten la misma categoría de Tiendanube (501):
+        // se crea una sola categoría local y ambos quedan asignados.
+        $this->assertSame(1, \App\Models\Category::where('tiendanube_category_id', 501)->count());
+        $categoria = \App\Models\Category::where('tiendanube_category_id', 501)->first();
+        $this->assertSame('Indumentaria', $categoria->name);
+        $this->assertSame($categoria->id, Product::where('tiendanube_product_id', 11)->first()->category_id);
+        $this->assertSame($categoria->id, Product::where('tiendanube_product_id', 12)->first()->category_id);
     }
 
     public function test_importar_pedidos_crea_factura_y_no_duplica(): void
