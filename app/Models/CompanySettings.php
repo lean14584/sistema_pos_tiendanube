@@ -4,11 +4,12 @@ namespace App\Models;
 
 use App\Concerns\Auditable;
 use App\Enums\CondicionIva;
+use App\Enums\TipoComprobanteInterno;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'punto_venta', 'condicion_iva'])]
+#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'punto_venta', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada'])]
 class CompanySettings extends Model
 {
     use Auditable;
@@ -17,7 +18,41 @@ class CompanySettings extends Model
     {
         return [
             'condicion_iva' => CondicionIva::class,
+            'factura_a_habilitada' => 'boolean',
+            'factura_b_habilitada' => 'boolean',
         ];
+    }
+
+    /**
+     * Tipos de comprobante elegibles en el formulario de factura, ya
+     * filtrados por lo que la empresa tiene habilitado. Remito X y Devolución
+     * son internos (siempre disponibles); Factura A/B dependen de los toggles.
+     *
+     * @return array<int, TipoComprobanteInterno>
+     */
+    public function tiposComprobanteSeleccionables(): array
+    {
+        return array_values(array_filter(
+            TipoComprobanteInterno::seleccionablesEnFactura(),
+            fn (TipoComprobanteInterno $t) => match ($t) {
+                TipoComprobanteInterno::FacturaA => $this->factura_a_habilitada,
+                TipoComprobanteInterno::FacturaB => $this->factura_b_habilitada,
+                default => true,
+            }
+        ));
+    }
+
+    /**
+     * Tipo de comprobante por defecto para una factura nueva: prioriza B,
+     * después A, y si no hay ninguna fiscal habilitada cae a Remito X.
+     */
+    public function tipoComprobantePorDefecto(): TipoComprobanteInterno
+    {
+        return match (true) {
+            $this->factura_b_habilitada => TipoComprobanteInterno::FacturaB,
+            $this->factura_a_habilitada => TipoComprobanteInterno::FacturaA,
+            default => TipoComprobanteInterno::RemitoX,
+        };
     }
 
     /**

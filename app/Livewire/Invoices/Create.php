@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
 use App\Models\Client;
+use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Services\TicketPrinterService;
@@ -49,6 +50,9 @@ class Create extends Component
         $this->issue_date = now()->toDateString();
         $this->due_date = now()->addDays(15)->toDateString();
         $this->client_id = (string) Client::consumidorFinal()->id;
+        // Arranca en un tipo que la empresa tenga habilitado (evita quedar
+        // en Factura B cuando B está apagada, por ejemplo).
+        $this->tipo_comprobante_interno = CompanySettings::current()->tipoComprobantePorDefecto()->value;
     }
 
     #[Computed]
@@ -157,6 +161,12 @@ class Create extends Component
 
         $tipo = TipoComprobanteInterno::from($this->tipo_comprobante_interno);
 
+        if (! in_array($tipo, CompanySettings::current()->tiposComprobanteSeleccionables(), true)) {
+            $this->addError('tipo_comprobante_interno', 'Ese tipo de comprobante está deshabilitado en la configuración.');
+
+            return;
+        }
+
         $invoice = DB::transaction(function () use ($validItems, $tipo) {
             $invoice = Invoice::create([
                 'number' => $this->nextNumber(),
@@ -225,7 +235,7 @@ class Create extends Component
             'clients' => Client::orderBy('name')->get(),
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
-            'tipoComprobanteInternoOptions' => TipoComprobanteInterno::seleccionablesEnFactura(),
+            'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
             'esNotaCredito' => false,
         ]);
     }

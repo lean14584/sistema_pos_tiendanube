@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
 use App\Models\Client;
+use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Support\CashLinker;
@@ -179,6 +180,16 @@ class Edit extends Component
 
         $tipoNuevo = TipoComprobanteInterno::from($this->tipo_comprobante_interno);
 
+        // Se permite un tipo deshabilitado sólo si ya era el de la factura
+        // (para no bloquear la edición de un comprobante viejo); cambiarlo a
+        // uno deshabilitado, no.
+        $permitidos = CompanySettings::current()->tiposComprobanteSeleccionables();
+        if ($tipoNuevo !== $this->invoice->tipo_comprobante_interno && ! in_array($tipoNuevo, $permitidos, true)) {
+            $this->addError('tipo_comprobante_interno', 'Ese tipo de comprobante está deshabilitado en la configuración.');
+
+            return;
+        }
+
         DB::transaction(function () use ($validItems, $tipoNuevo) {
             $tipoViejo = $this->invoice->tipo_comprobante_interno;
             // Nunca se cambia desde este formulario (las Notas de Crédito
@@ -234,11 +245,19 @@ class Edit extends Component
 
     public function render()
     {
+        // Los tipos habilitados, más el actual de la factura por si quedó
+        // deshabilitado después de crearla (así se sigue viendo/pudiendo dejar).
+        $opciones = CompanySettings::current()->tiposComprobanteSeleccionables();
+        if (! in_array($this->invoice->tipo_comprobante_interno, $opciones, true)
+            && in_array($this->invoice->tipo_comprobante_interno, TipoComprobanteInterno::seleccionablesEnFactura(), true)) {
+            $opciones[] = $this->invoice->tipo_comprobante_interno;
+        }
+
         return view('livewire.invoices.edit', [
             'clients' => Client::orderBy('name')->get(),
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
-            'tipoComprobanteInternoOptions' => TipoComprobanteInterno::seleccionablesEnFactura(),
+            'tipoComprobanteInternoOptions' => $opciones,
             'esNotaCredito' => $this->invoice->related_invoice_id !== null,
         ]);
     }
