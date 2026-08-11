@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'module' => \App\Http\Middleware\EnsureModuleAccess::class,
         ]);
+
+        // Mercado Pago llama a este endpoint sin token CSRF.
+        $middleware->validateCsrfTokens(except: [
+            'mp/webhook',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

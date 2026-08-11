@@ -49,6 +49,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', Login::class)->middleware('guest')->name('login');
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
 
+// Webhook público de Mercado Pago (sin auth ni CSRF; se valida contra la API).
+Route::match(['get', 'post'], '/mp/webhook', \App\Http\Controllers\MercadoPagoWebhookController::class)->name('mp.webhook');
+
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
 

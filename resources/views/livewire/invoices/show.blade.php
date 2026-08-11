@@ -4,6 +4,18 @@
         Facturas
     </a>
 
+    @if (session('status'))
+        <div class="mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-3 text-sm">
+            {{ session('status') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-4 text-sm text-red-800 dark:text-red-400 mb-6">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="flex items-start justify-between mb-8">
         <div>
             <div class="flex items-center gap-3">
@@ -26,6 +38,28 @@
                 <x-heroicon-o-arrow-down-tray class="w-4 h-4" />
                 PDF
             </a>
+            <button
+                wire:click="printTicket"
+                wire:loading.attr="disabled"
+                wire:target="printTicket"
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] disabled:opacity-60 transition-all"
+            >
+                <x-heroicon-o-printer class="w-4 h-4" />
+                <span wire:loading.remove wire:target="printTicket">Imprimir Ticket</span>
+                <span wire:loading wire:target="printTicket">Imprimiendo...</span>
+            </button>
+            @if ($mpConfigured && $invoice->status !== App\Enums\InvoiceStatus::Paid)
+                <button
+                    wire:click="startQrCharge"
+                    wire:loading.attr="disabled"
+                    wire:target="startQrCharge"
+                    class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-sky-500/30 hover:from-sky-600 hover:to-cyan-600 disabled:opacity-60 active:scale-[0.98] transition-all"
+                >
+                    <x-heroicon-o-qr-code class="w-4 h-4" />
+                    <span wire:loading.remove wire:target="startQrCharge">Cobrar con QR</span>
+                    <span wire:loading wire:target="startQrCharge">Generando...</span>
+                </button>
+            @endif
             @if ($invoice->status === App\Enums\InvoiceStatus::Draft && ! $invoice->isFiscal && $invoice->tipo_comprobante_interno->esFiscal())
                 <button
                     wire:click="emitirAfip"
@@ -122,6 +156,7 @@
             </div>
         </div>
 
+        <div class="overflow-x-auto">
         <table class="w-full text-sm mb-6">
             <thead>
                 <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -142,6 +177,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
 
         <div class="flex justify-end">
             <div class="w-full max-w-xs space-y-2 text-sm">
@@ -181,4 +217,71 @@
             </div>
         @endif
     </div>
+
+    {{-- Modal de cobro con QR de Mercado Pago --}}
+    @if ($showQrModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-gray-900/60" wire:click="{{ $qrState === 'waiting' ? 'cancelQrCharge' : 'closeQrModal' }}"></div>
+
+            <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div class="bg-gradient-to-r from-sky-500 to-cyan-500 px-6 py-4 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <x-heroicon-o-qr-code class="w-5 h-5" />
+                            <h2 class="font-semibold">Cobrar con Mercado Pago</h2>
+                        </div>
+                        <button wire:click="{{ $qrState === 'waiting' ? 'cancelQrCharge' : 'closeQrModal' }}" class="text-white/80 hover:text-white">
+                            <x-heroicon-o-x-mark class="w-5 h-5" />
+                        </button>
+                    </div>
+                    <p class="text-sm text-white/90 mt-1">Factura {{ $invoice->number }} · ${{ number_format($invoice->total, 2) }}</p>
+                </div>
+
+                <div class="p-6 text-center">
+                    @if ($qrState === 'error')
+                        <div class="py-6">
+                            <x-heroicon-o-exclamation-triangle class="w-12 h-12 mx-auto text-red-500 mb-3" />
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $qrError }}</p>
+                        </div>
+                    @elseif ($qrState === 'paid')
+                        <div class="py-8">
+                            <x-heroicon-o-check-circle class="w-16 h-16 mx-auto text-emerald-500 mb-3" />
+                            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">¡Pago recibido!</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">La factura quedó marcada como pagada.</p>
+                            <button wire:click="closeQrModal" class="mt-5 inline-flex items-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition-colors">
+                                Listo
+                            </button>
+                        </div>
+                    @else
+                        {{-- waiting: mostrar el QR y hacer polling --}}
+                        <div wire:poll.{{ $pollSeconds }}s="pollQr">
+                            @if ($qrImage)
+                                <div class="inline-block rounded-xl border border-gray-200 dark:border-gray-700 bg-white p-3">
+                                    <img src="{{ $qrImage }}" alt="QR de pago" class="w-52 h-52 object-contain">
+                                </div>
+                            @else
+                                <div class="w-52 h-52 mx-auto rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-xs text-gray-400 p-4">
+                                    Usá el QR fijo pegado en la caja: ya tiene cargado el monto de esta factura.
+                                </div>
+                            @endif
+
+                            <div class="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <svg class="animate-spin w-4 h-4 text-sky-500" viewBox="0 0 24 24" fill="none">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                Esperando el pago del cliente...
+                            </div>
+
+                            <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">El cliente escanea el QR, paga, y la factura se marca sola.</p>
+
+                            <button wire:click="cancelQrCharge" class="mt-5 inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                Cancelar cobro
+                            </button>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
