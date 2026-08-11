@@ -2,6 +2,7 @@
 
 namespace App\Livewire\PriceCheck;
 
+use App\Models\CompanySettings;
 use App\Models\Product;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -51,10 +52,31 @@ class Kiosk extends Component
 
         // Que la pantalla vuelva a enfocar el input para el próximo escaneo.
         $this->dispatch('scanned');
+
+        // Si hay algo para mostrar, arranca el temporizador de auto-reset.
+        if ($this->product || $this->notFound) {
+            $this->dispatch('result-shown');
+        }
+    }
+
+    /**
+     * Vuelve al estado inicial (lo llama el temporizador a los 10 segundos).
+     */
+    public function resetView(): void
+    {
+        $this->product = null;
+        $this->notFound = false;
+        $this->code = '';
+        $this->dispatch('scanned');
     }
 
     public function render()
     {
-        return view('livewire.price-check.kiosk');
+        $company = CompanySettings::current();
+
+        return view('livewire.price-check.kiosk', [
+            'logoUrl' => $company->logo_path ? asset('storage/'.$company->logo_path) : null,
+            'companyName' => $company->display_name,
+        ]);
     }
 }

@@ -45,7 +45,32 @@ class PriceCheckAndRolesTest extends TestCase
             ->set('code', 'NO-EXISTE')
             ->call('search')
             ->assertSet('notFound', true)
-            ->assertSet('product', null);
+            ->assertSet('product', null)
+            ->assertDispatched('result-shown'); // dispara el auto-reset de 10s
+    }
+
+    public function test_reset_vuelve_al_estado_inicial(): void
+    {
+        Product::create(['name' => 'Coca 1.5L', 'price' => 1800, 'stock' => 10, 'sku' => '7790001']);
+
+        Livewire::test('price-check.kiosk')
+            ->set('code', '7790001')
+            ->call('search')
+            ->assertSet('product.name', 'Coca 1.5L')
+            ->call('resetView')
+            ->assertSet('product', null)
+            ->assertSet('notFound', false)
+            ->assertSet('code', '');
+    }
+
+    public function test_muestra_el_logo_de_la_empresa_si_hay_uno(): void
+    {
+        \App\Models\CompanySettings::current()->update(['logo_path' => 'company-logos/mi-logo.png']);
+
+        $url = Livewire::test('price-check.kiosk')->viewData('logoUrl');
+
+        $this->assertNotNull($url);
+        $this->assertStringContainsString('company-logos/mi-logo.png', $url);
     }
 
     // --- Permisos por rol ---

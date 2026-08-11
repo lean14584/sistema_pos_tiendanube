@@ -1,12 +1,16 @@
 <div
     class="min-h-screen flex flex-col items-center justify-center p-6"
-    x-data
+    x-data="{ timer: null }"
     x-init="$refs.code.focus()"
     x-on:scanned.window="$nextTick(() => $refs.code.focus())"
+    x-on:result-shown.window="clearTimeout(timer); timer = setTimeout(() => $wire.resetView(), 10000)"
     x-on:click="$refs.code.focus()"
 >
     <div class="w-full max-w-2xl">
         <div class="text-center mb-8">
+            @if ($logoUrl)
+                <img src="{{ $logoUrl }}" alt="{{ $companyName }}" class="h-20 sm:h-24 mx-auto mb-4 object-contain drop-shadow">
+            @endif
             <h1 class="text-3xl sm:text-4xl font-bold text-white drop-shadow">Consultá tu precio</h1>
             <p class="text-white/80 mt-2 text-lg">Pasá el producto por el lector</p>
         </div>
