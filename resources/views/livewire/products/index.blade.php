@@ -57,6 +57,7 @@
                 @endif
             </div>
         @else
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -117,6 +118,55 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($products as $product)
+                    @php
+                        $alerts = collect([
+                            $product->margin_alert ? 'Precio de venta por debajo del precio de compra' : null,
+                            $product->stock_alert ? 'Stock por debajo del mínimo' : null,
+                        ])->filter();
+                    @endphp
+                    <div wire:key="product-card-{{ $product->id }}" class="p-4 {{ $alerts->isNotEmpty() ? 'bg-red-50/70 dark:bg-red-500/10' : '' }}">
+                        <div class="flex items-start justify-between gap-3 mb-1.5">
+                            <div class="min-w-0 flex items-center gap-1.5">
+                                @if ($alerts->isNotEmpty())
+                                    <span title="{{ $alerts->implode(' · ') }}">
+                                        <x-heroicon-o-exclamation-triangle class="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />
+                                    </span>
+                                @endif
+                                <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</p>
+                            </div>
+                            <div class="flex gap-1 shrink-0">
+                                <a
+                                    href="{{ route('products.edit', $product) }}"
+                                    wire:navigate
+                                    class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                >
+                                    <x-heroicon-o-pencil class="w-4 h-4" />
+                                </a>
+                                <button
+                                    wire:click="delete({{ $product->id }})"
+                                    wire:confirm="¿Eliminar el producto &quot;{{ $product->name }}&quot;?"
+                                    class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                                >
+                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ $product->sku ?: '—' }} · {{ $product->category?->name ?? '—' }}</p>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="{{ $product->margin_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
+                                ${{ number_format($product->price, 2) }}
+                            </span>
+                            <span class="{{ $product->stock_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
+                                Stock: {{ $product->stock }}
+                            </span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         @endif
     </div>
 </div>

@@ -14,6 +14,10 @@
     background-color: color-mix(in srgb, #6366f1 30%, transparent);
 }
 
+[x-cloak] {
+    display: none !important;
+}
+
 * {
     scrollbar-width: thin;
     scrollbar-color: rgb(203 213 225) transparent;

@@ -30,6 +30,7 @@
                 </a>
             </div>
         @else
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -67,6 +68,37 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($categories as $category)
+                    <div wire:key="category-card-{{ $category->id }}" class="p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $category->name }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ $category->description ?: '—' }}</p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ $category->products_count }} producto{{ $category->products_count === 1 ? '' : 's' }}</p>
+                            </div>
+                            <div class="flex gap-1 shrink-0">
+                                <a
+                                    href="{{ route('categories.edit', $category) }}"
+                                    wire:navigate
+                                    class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                >
+                                    <x-heroicon-o-pencil class="w-4 h-4" />
+                                </a>
+                                <button
+                                    wire:click="delete({{ $category->id }})"
+                                    wire:confirm="¿Eliminar la categoría &quot;{{ $category->name }}&quot;?"
+                                    class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                                >
+                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         @endif
     </div>
 </div>

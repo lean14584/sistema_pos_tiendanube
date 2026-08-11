@@ -61,6 +61,7 @@
 
         @if (count($items) > 0)
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mt-3">
+                <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-800/50">
                         <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -95,6 +96,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
         @else
             <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Buscá un producto arriba para agregarlo al presupuesto.</p>

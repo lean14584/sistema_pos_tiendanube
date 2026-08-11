@@ -1,10 +1,10 @@
 <div class="p-8 max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <div>
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Presupuestos</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Cotizaciones para tus clientes</p>
         </div>
-        <a href="{{ route('quotes.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
+        <a href="{{ route('quotes.create') }}" wire:navigate class="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
             <x-heroicon-o-plus class="w-4 h-4" />
             Nuevo presupuesto
         </a>
@@ -39,6 +39,7 @@
                 <p class="text-sm">No se encontraron presupuestos.</p>
             </div>
         @else
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -67,6 +68,34 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($quotes as $quote)
+                    <a
+                        href="{{ route('quotes.show', $quote) }}"
+                        wire:navigate
+                        wire:key="quote-card-{{ $quote->id }}"
+                        class="block p-4 active:bg-gray-50 dark:active:bg-gray-800/50 transition-colors"
+                    >
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <div class="min-w-0">
+                                <p class="font-medium text-indigo-600 dark:text-indigo-400">{{ $quote->number }}</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $quote->client->name ?? 'Cliente desconocido' }}</p>
+                            </div>
+                            <x-status-badge :status="$quote->status" />
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <p class="text-gray-500 dark:text-gray-400">
+                                {{ $quote->issue_date->format('d/m/Y') }}
+                                <span class="mx-1">·</span>
+                                válido hasta {{ $quote->valid_until->format('d/m/Y') }}
+                            </p>
+                            <p class="font-semibold text-gray-900 dark:text-gray-100">${{ number_format($quote->total, 2) }}</p>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
 
             <div class="p-4 border-t border-gray-100 dark:border-gray-800">
                 {{ $quotes->links() }}

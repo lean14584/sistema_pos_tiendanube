@@ -74,6 +74,7 @@
                 <p class="text-sm">No hay comprobantes {{ $tab === 'compras' ? 'de compra' : 'fiscales' }} en el período seleccionado.</p>
             </div>
         @else
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800/50">
                     <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -103,6 +104,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         @endif
     </div>
 </div>

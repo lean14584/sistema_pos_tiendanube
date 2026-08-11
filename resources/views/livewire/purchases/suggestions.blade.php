@@ -1,5 +1,5 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <div>
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Sugerencias de compra</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -9,7 +9,7 @@
         <a
             href="{{ route('purchases.create') }}"
             wire:navigate
-            class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
+            class="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
         >
             <x-heroicon-o-plus class="w-4 h-4" />
             Nueva compra
@@ -23,6 +23,7 @@
                 <p class="text-sm">El stock proyectado alcanza para los próximos {{ $coverageDays }} días.</p>
             </div>
         @else
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -52,6 +53,44 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($suggestions as $row)
+                    @php $product = $row['product']; @endphp
+                    <div wire:key="suggestion-card-{{ $product->id }}" class="p-4 {{ $product->stock < $product->min_stock ? 'bg-red-50/70 dark:bg-red-500/10' : '' }}">
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <div class="min-w-0 flex items-start gap-2">
+                                <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[11px] font-semibold flex items-center justify-center">{{ $loop->iteration }}</span>
+                                <div class="min-w-0">
+                                    <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $product->category?->name ?? '—' }}</p>
+                                </div>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500">Sugerido</p>
+                                <p class="font-semibold text-indigo-600 dark:text-indigo-400">{{ $row['suggestedQty'] }}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-sm pl-7">
+                            <div>
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500">Stock / mín.</p>
+                                <p class="{{ $product->stock < $product->min_stock ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300' }}">
+                                    {{ $product->stock }} <span class="text-gray-400 dark:text-gray-500">/ {{ $product->min_stock }}</span>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500">Vendido ({{ $lookbackDays }}d)</p>
+                                <p class="font-medium text-gray-900 dark:text-gray-100">{{ rtrim(rtrim(number_format($row['soldQty'], 2), '0'), '.') }}</p>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500">Proveedor</p>
+                                <p class="text-gray-600 dark:text-gray-400 truncate">{{ $row['lastProvider'] ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         @endif
     </div>
 </div>

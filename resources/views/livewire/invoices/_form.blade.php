@@ -2,34 +2,45 @@
     $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors';
 @endphp
 
-<form wire:submit="save" class="space-y-6 max-w-3xl">
-    @if ($esNotaCredito)
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ App\Enums\TipoComprobanteInterno::from($tipo_comprobante_interno)->label() }}
-                <span class="text-gray-400 dark:text-gray-500">— una Nota de Crédito no puede convertirse en otro tipo de comprobante.</span>
-            </p>
-        </div>
-    @else
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de comprobante</label>
-            <div class="inline-flex rounded-lg border border-gray-300 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900/50">
-                @foreach ($tipoComprobanteInternoOptions as $option)
-                    <button
-                        type="button"
-                        wire:click="$set('tipo_comprobante_interno', '{{ $option->value }}')"
-                        class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors {{ $tipo_comprobante_interno === $option->value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/60 dark:hover:bg-gray-800' }}"
-                    >
-                        {{ $option->label() }}
-                    </button>
-                @endforeach
+<form wire:submit="save" class="space-y-4 max-w-3xl">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+        @if ($esNotaCredito)
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ App\Enums\TipoComprobanteInterno::from($tipo_comprobante_interno)->label() }}
+                    <span class="text-gray-400 dark:text-gray-500">— una Nota de Crédito no puede convertirse en otro tipo de comprobante.</span>
+                </p>
             </div>
-            @error('tipo_comprobante_interno') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-        </div>
-    @endif
+        @else
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
+                <div class="flex w-full rounded-lg border border-gray-300 dark:border-gray-700 p-0.5 bg-gray-50 dark:bg-gray-900/50">
+                    @foreach ($tipoComprobanteInternoOptions as $option)
+                        <button
+                            type="button"
+                            wire:click="$set('tipo_comprobante_interno', '{{ $option->value }}')"
+                            class="flex-1 px-3 py-1.5 rounded-md text-sm font-medium text-center transition-colors {{ $tipo_comprobante_interno === $option->value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/60 dark:hover:bg-gray-800' }}"
+                        >
+                            {{ $option->label() }}
+                        </button>
+                    @endforeach
+                </div>
+                @error('tipo_comprobante_interno') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+        @endif
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+            <select wire:model="status" class="{{ $inputClass }}">
+                @foreach ($statuses as $s)
+                    <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente *</label>
             <select wire:model="client_id" required class="{{ $inputClass }}">
@@ -51,7 +62,7 @@
     </div>
 
     <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ítems *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Ítems *</label>
 
         <div class="relative">
             <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -86,33 +97,34 @@
         @error('items') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
 
         @if (count($items) > 0)
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mt-3">
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mt-2">
+                <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-800/50">
                         <tr class="text-left text-gray-500 dark:text-gray-400">
-                            <th class="px-4 py-2 font-medium">Descripción</th>
-                            <th class="px-4 py-2 font-medium w-24">Cant.</th>
-                            <th class="px-4 py-2 font-medium w-32">Precio unit.</th>
-                            <th class="px-4 py-2 font-medium w-28 text-right">Total</th>
-                            <th class="px-2 py-2 w-10"></th>
+                            <th class="px-3 py-1.5 font-medium">Descripción</th>
+                            <th class="px-3 py-1.5 font-medium w-24">Cant.</th>
+                            <th class="px-3 py-1.5 font-medium w-32">Precio unit.</th>
+                            <th class="px-3 py-1.5 font-medium w-28 text-right">Total</th>
+                            <th class="px-2 py-1.5 w-10"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($items as $index => $item)
                             <tr wire:key="item-{{ $index }}" class="border-t border-gray-100 dark:border-gray-800">
-                                <td class="px-4 py-2">
-                                    <input type="text" wire:model="items.{{ $index }}.description" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <td class="px-3 py-1">
+                                    <input type="text" wire:model="items.{{ $index }}.description" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
-                                <td class="px-4 py-2">
-                                    <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <td class="px-3 py-1">
+                                    <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
-                                <td class="px-4 py-2">
-                                    <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <td class="px-3 py-1">
+                                    <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
-                                <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">
+                                <td class="px-3 py-1 text-right text-gray-700 dark:text-gray-300">
                                     ${{ number_format((float) $item['quantity'] * (float) $item['unit_price'], 2) }}
                                 </td>
-                                <td class="px-2 py-2 text-center">
+                                <td class="px-2 py-1 text-center">
                                     <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
                                         <x-heroicon-o-trash class="w-4 h-4" />
                                     </button>
@@ -121,18 +133,19 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
         @else
             <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Buscá un producto arriba para agregarlo a la factura.</p>
         @endif
 
-        <button type="button" wire:click="addFreeformItem" class="mt-2 text-xs text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors">
+        <button type="button" wire:click="addFreeformItem" class="mt-1.5 text-xs text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors">
             + Agregar ítem sin producto
         </button>
     </div>
 
     <div class="flex justify-end">
-        <div class="w-full max-w-xs space-y-2 text-sm">
+        <div class="w-full max-w-xs space-y-1.5 text-sm">
             <div class="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Subtotal</span>
                 <span>${{ number_format($this->subtotal(), 2) }}</span>
@@ -145,7 +158,7 @@
                 <span>Monto impuesto</span>
                 <span>${{ number_format($this->taxAmount(), 2) }}</span>
             </div>
-            <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
+            <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-1.5 border-t border-gray-200 dark:border-gray-800">
                 <span>Total</span>
                 <span>${{ number_format($this->total(), 2) }}</span>
             </div>
@@ -155,7 +168,7 @@
     @if ($tipo_comprobante_interno !== 'remito_x')
         @php $esDevolucion = $tipo_comprobante_interno === 'devolucion'; @endphp
         <div>
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center justify-between mb-1.5">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {{ $esDevolucion ? 'Reintegro al cliente' : 'Métodos de pago' }}
                 </label>
@@ -170,15 +183,15 @@
                     {{ $esDevolucion ? 'Sin reintegro registrado todavía.' : 'Sin método de pago registrado todavía.' }}
                 </p>
             @else
-                <div class="space-y-2">
+                <div class="space-y-1.5">
                     @foreach ($payments as $index => $payment)
                         <div wire:key="payment-{{ $index }}" class="flex items-center gap-2">
-                            <select wire:model="payments.{{ $index }}.method" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <select wire:model="payments.{{ $index }}.method" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 @foreach ($paymentMethods as $method)
                                     <option value="{{ $method->value }}">{{ $method->label() }}</option>
                                 @endforeach
                             </select>
-                            <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-32 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-32 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             <button type="button" wire:click="removePayment({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
                                 <x-heroicon-o-trash class="w-4 h-4" />
                             </button>
@@ -193,23 +206,19 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
-            <select wire:model="status" class="{{ $inputClass }}">
-                @foreach ($statuses as $s)
-                    <option value="{{ $s->value }}">{{ $s->label() }}</option>
-                @endforeach
-            </select>
-        </div>
-    </div>
-
     <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
-        <textarea wire:model="notes" rows="3" placeholder="Condiciones de pago, agradecimiento, etc." class="{{ $inputClass }}"></textarea>
+        <textarea wire:model="notes" rows="2" placeholder="Condiciones de pago, agradecimiento, etc." class="{{ $inputClass }}"></textarea>
     </div>
 
-    <div class="flex gap-3 pt-2">
+    @isset($printOnSave)
+        <div class="flex items-center gap-2">
+            <input type="checkbox" wire:model="printOnSave" id="printOnSave" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0">
+            <label for="printOnSave" class="text-sm text-gray-700 dark:text-gray-300">Imprimir ticket al guardar</label>
+        </div>
+    @endisset
+
+    <div class="flex gap-3 pt-1">
         <button type="submit" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
             {{ $submitLabel }}
         </button>

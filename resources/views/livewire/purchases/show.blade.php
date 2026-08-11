@@ -54,6 +54,7 @@
             </div>
         </div>
 
+        <div class="overflow-x-auto">
         <table class="w-full text-sm mb-6">
             <thead>
                 <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -74,6 +75,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
 
         <div class="flex justify-end">
             <div class="w-full max-w-xs space-y-2 text-sm">

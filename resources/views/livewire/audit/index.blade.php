@@ -51,6 +51,7 @@
                 <p class="text-sm">No hay actividad registrada con estos filtros.</p>
             </div>
         @else
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -94,6 +95,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
 
             <div class="p-4 border-t border-gray-100 dark:border-gray-800">
                 {{ $logs->links() }}

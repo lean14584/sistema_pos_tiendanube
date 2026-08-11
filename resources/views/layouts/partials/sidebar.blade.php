@@ -40,15 +40,34 @@
         : [];
 @endphp
 
-<aside class="w-64 shrink-0 border-r border-gray-200 bg-gradient-to-b from-white to-gray-50/50 dark:border-gray-800 dark:from-gray-900 dark:to-gray-900/80 flex flex-col">
+<div
+    x-show="sidebarOpen"
+    x-cloak
+    x-on:click="sidebarOpen = false"
+    x-transition.opacity
+    class="fixed inset-0 z-30 bg-gray-900/50 lg:hidden"
+></div>
+
+<aside
+    x-bind:class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    class="fixed inset-y-0 left-0 z-40 w-64 shrink-0 border-r border-gray-200 bg-gradient-to-b from-white to-gray-50/50 dark:border-gray-800 dark:from-gray-900 dark:to-gray-900/80 flex flex-col transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0"
+>
     <div class="h-16 flex items-center gap-2.5 px-6 border-b border-gray-200 dark:border-gray-800">
         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-sm shadow-indigo-600/30">
             <x-heroicon-o-receipt-percent class="w-4 h-4 text-white" />
         </div>
-        <span class="font-semibold text-gray-900 dark:text-gray-100 text-lg tracking-tight">{{ config('app.name') }}</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100 text-lg tracking-tight flex-1">{{ config('app.name') }}</span>
+        <button
+            type="button"
+            x-on:click="sidebarOpen = false"
+            aria-label="Cerrar menú"
+            class="lg:hidden p-1 -mr-1 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+        >
+            <x-heroicon-o-x-mark class="w-5 h-5" />
+        </button>
     </div>
 
-    <nav class="flex-1 px-3 py-4 space-y-0.5">
+    <nav x-on:click="sidebarOpen = false" class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         @foreach ($visibleItems as $item)
             @php $active = request()->routeIs($item['pattern']); @endphp
             <a

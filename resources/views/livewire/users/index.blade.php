@@ -23,6 +23,7 @@
                 <p class="text-sm">Todavía no agregaste usuarios.</p>
             </div>
         @else
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -67,6 +68,40 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($users as $user)
+                    <div wire:key="user-card-{{ $user->id }}" class="p-4">
+                        <div class="flex items-start justify-between gap-3 mb-1.5">
+                            <div class="min-w-0">
+                                <p class="font-medium text-gray-900 dark:text-gray-100 truncate">
+                                    {{ $user->name }}
+                                    @if ($user->id === auth()->id())
+                                        <span class="text-xs text-indigo-600 dark:text-indigo-400">(vos)</span>
+                                    @endif
+                                </p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $user->username }} · {{ $user->role->label() }}</p>
+                            </div>
+                            <div class="flex gap-1 shrink-0">
+                                <a href="{{ route('users.edit', $user) }}" wire:navigate class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+                                    <x-heroicon-o-pencil class="w-4 h-4" />
+                                </a>
+                                <button
+                                    wire:click="delete({{ $user->id }})"
+                                    wire:confirm="¿Eliminar al usuario &quot;{{ $user->name }}&quot;?"
+                                    class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                                >
+                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {{ $user->active ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20' : 'bg-gray-100 text-gray-700 ring-gray-500/20 dark:bg-gray-500/10 dark:text-gray-400 dark:ring-gray-500/20' }}">
+                            {{ $user->active ? 'Activo' : 'Inactivo' }}
+                        </span>
+                    </div>
+                @endforeach
+            </div>
 
             <div class="p-4 border-t border-gray-100 dark:border-gray-800">
                 {{ $users->links() }}
