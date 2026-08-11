@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['category_id', 'name', 'sku', 'price', 'cost_price', 'stock', 'min_stock', 'description'])]
+#[Fillable(['category_id', 'name', 'sku', 'price', 'cost_price', 'stock', 'min_stock', 'description', 'tiendanube_product_id', 'tiendanube_variant_id'])]
 class Product extends Model
 {
     use Auditable;

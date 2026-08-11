@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'number', 'client_id', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
     'tipo_comprobante_interno', 'related_invoice_id', 'afecta_stock', 'mp_external_reference',
+    'tiendanube_order_id',
 ])]
 class Invoice extends Model
 {

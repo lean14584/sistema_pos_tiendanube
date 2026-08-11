@@ -132,6 +132,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/', CompanySettingsEdit::class)->name('edit');
     });
 
+    Route::middleware('module:company-settings')->prefix('tiendanube')->name('tiendanube.')->group(function () {
+        Route::get('/', \App\Livewire\Tiendanube\Index::class)->name('index');
+    });
+
     Route::middleware('module:audit')->get('auditoria', AuditIndex::class)->name('audit.index');
 
     Route::middleware('module:libro-iva')->prefix('libro-iva')->name('libro-iva.')->group(function () {

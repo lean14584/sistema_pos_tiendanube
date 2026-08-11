@@ -30,6 +30,7 @@
         ['module' => 'messages', 'pattern' => 'messages.*', 'href' => route('messages.index'), 'label' => 'Mensajes', 'icon' => 'chat-bubble-left-right', 'badge' => $unreadMessagesCount],
         ['module' => 'tasks', 'pattern' => 'tasks.*', 'href' => route('tasks.index'), 'label' => 'Tareas', 'icon' => 'check-circle', 'badge' => $openTasksCount],
         ['module' => 'company-settings', 'pattern' => 'company-settings.*', 'href' => route('company-settings.edit'), 'label' => 'Datos de la empresa', 'icon' => 'building-office'],
+        ['module' => 'company-settings', 'pattern' => 'tiendanube.*', 'href' => route('tiendanube.index'), 'label' => 'Tiendanube', 'icon' => 'shopping-bag'],
         ['module' => 'audit', 'pattern' => 'audit.*', 'href' => route('audit.index'), 'label' => 'Auditoría', 'icon' => 'clipboard-document-check'],
         ['module' => 'libro-iva', 'pattern' => 'libro-iva.*', 'href' => route('libro-iva.index'), 'label' => 'Libro IVA', 'icon' => 'receipt-percent'],
     ];
