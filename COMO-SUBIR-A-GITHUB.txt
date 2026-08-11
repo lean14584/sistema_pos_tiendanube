@@ -1,0 +1,118 @@
+===========================================================
+  CÓMO SUBIR MIS CAMBIOS A GITHUB
+  Proyecto: sistema_pos_tiendanube
+  Repo:     https://github.com/lean14584/sistema_pos_tiendanube
+===========================================================
+
+Carpeta del proyecto (la que SÍ se sube a GitHub):
+  C:\Users\Leandro\Desktop\Claude\demo-claudecode-laravel
+
+OJO: la copia de Laragon (C:\laragon\www\pos-tiendanube) es SOLO
+para correr el sistema. Esa carpeta NO se sube a GitHub.
+
+
+-----------------------------------------------------------
+  EL CICLO DE SIEMPRE (4 pasos)
+-----------------------------------------------------------
+
+Abrí PowerShell en la carpeta del proyecto:
+(Explorador de Windows -> barra de dirección -> escribí "powershell" -> Enter)
+o bien:
+
+  cd C:\Users\Leandro\Desktop\Claude\demo-claudecode-laravel
+
+
+1) VER QUÉ CAMBIÉ
+   git status
+   (opcional, ver detalle línea por línea)   git diff    (salir con la tecla q)
+
+2) PREPARAR LOS CAMBIOS
+   git add -A
+   (-A = todos: nuevos, modificados y borrados)
+
+3) GUARDAR EL PUNTO (con un mensaje corto de qué hiciste)
+   git commit -m "Descripción corta de lo que hice"
+
+4) SUBIR A GITHUB
+   git push
+
+
+-----------------------------------------------------------
+  RESUMEN PARA PEGAR DE UNA
+-----------------------------------------------------------
+
+  cd C:\Users\Leandro\Desktop\Claude\demo-claudecode-laravel
+  git add -A
+  git commit -m "Lo que hice"
+  git push
+
+
+-----------------------------------------------------------
+  ¿CÓMO SÉ QUE SUBIÓ BIEN?
+-----------------------------------------------------------
+
+  git status
+
+  Tiene que decir:
+    Your branch is up to date with 'origin/main'
+    nothing to commit, working tree clean
+
+  También lo ves entrando a:
+    https://github.com/lean14584/sistema_pos_tiendanube
+
+
+-----------------------------------------------------------
+  EJEMPLOS DE BUENOS MENSAJES DE COMMIT
+-----------------------------------------------------------
+
+  git commit -m "Agregar filtro por fecha en reporte de ventas"
+  git commit -m "Corregir total del ticket cuando hay descuento"
+  git commit -m "Cambiar color del boton de cobro"
+
+
+-----------------------------------------------------------
+  SITUACIONES COMUNES
+-----------------------------------------------------------
+
+* "nothing to commit"
+  No cambiaste nada nuevo, o te olvidaste el "git add -A".
+  Revisá con: git status
+
+* Ver el historial de commits:
+  git log --oneline        (salir con q)
+
+* Deshacer cambios en un archivo ANTES de hacer commit
+  (lo vuelve a como estaba, SIN vuelta atrás):
+  git restore ruta\del\archivo.php
+
+
+-----------------------------------------------------------
+  AUTENTICACIÓN (login)
+-----------------------------------------------------------
+
+* La primera vez GitHub abrió el navegador para loguear.
+  Hay que entrar con la cuenta:  lean14584
+* Después Windows guarda las credenciales y ya no lo pide.
+* GitHub NO acepta contraseña escrita en la terminal:
+  el login siempre es por navegador (o por token).
+
+* Si algún día toma otra cuenta y querés cambiarla:
+  Panel de control -> Administrador de credenciales ->
+  Credenciales de Windows -> buscá "git:https://github.com"
+  -> Quitar -> volvé a hacer git push (te pide login de nuevo).
+
+
+-----------------------------------------------------------
+  ERRORES TÍPICOS AL PUSHEAR
+-----------------------------------------------------------
+
+  Repository not found
+     -> Estás con otra cuenta, o el repo no existe.
+        Confirmá que sea la cuenta lean14584.
+
+  Authentication failed
+     -> Login incorrecto. Reintentá (ver sección credenciales).
+
+  terminal prompts disabled
+     -> No se pudo abrir el navegador. Corré el push desde
+        PowerShell o Git Bash normal (no dentro de un editor).
