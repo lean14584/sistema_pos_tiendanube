@@ -87,8 +87,8 @@
                     ['m' => 'importProducts', 'i' => 'cube', 'l' => 'Importar productos'],
                     ['m' => 'importOrders', 'i' => 'shopping-cart', 'l' => 'Importar pedidos'],
                     ['m' => 'pullStock', 'i' => 'arrow-down-tray', 'l' => 'Traer stock'],
+                    ['m' => 'importCategories', 'i' => 'tag', 'l' => 'Importar categorías'],
                     ['m' => 'syncClients', 'i' => 'users', 'l' => 'Sincronizar clientes'],
-                    ['m' => 'syncCategories', 'i' => 'tag', 'l' => 'Sincronizar categorías'],
                 ];
             @endphp
             @foreach ($accionesTraer as $a)
@@ -100,20 +100,28 @@
                 </button>
             @endforeach
         </div>
-        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">«Sincronizar clientes» y «Sincronizar categorías» traen y también envían los locales.</p>
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">«Sincronizar clientes» trae y también envía los locales.</p>
     </div>
 
     {{-- Enviar a Tiendanube --}}
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 mb-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Enviar a Tiendanube <span class="text-sm font-normal text-gray-400">sistema →</span></h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button wire:click="pushProducts" wire:loading.attr="disabled" wire:target="pushProducts"
                 class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/60 disabled:opacity-60 transition-colors">
                 <x-heroicon-o-cloud-arrow-up class="w-6 h-6 text-indigo-500" />
                 <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Empujar productos</span>
                 <span class="text-[11px] text-gray-400 dark:text-gray-500">crea/actualiza en la tienda</span>
                 <span wire:loading wire:target="pushProducts" class="text-xs text-gray-400">Enviando...</span>
+            </button>
+
+            <button wire:click="pushCategories" wire:loading.attr="disabled" wire:target="pushCategories"
+                class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/60 disabled:opacity-60 transition-colors">
+                <x-heroicon-o-tag class="w-6 h-6 text-indigo-500" />
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Empujar categorías</span>
+                <span class="text-[11px] text-gray-400 dark:text-gray-500">crea las que falten en la tienda</span>
+                <span wire:loading wire:target="pushCategories" class="text-xs text-gray-400">Enviando...</span>
             </button>
 
             <button wire:click="syncStock" wire:loading.attr="disabled" wire:target="syncStock"

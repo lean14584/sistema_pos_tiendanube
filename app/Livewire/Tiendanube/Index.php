@@ -118,13 +118,21 @@ class Index extends Component
         });
     }
 
-    public function syncCategories(): void
+    public function importCategories(): void
     {
         $this->correr(function (TiendanubeSync $sync) {
-            $traidas = $sync->pullCategories();
-            $enviadas = $sync->pushCategories();
+            $r = $sync->pullCategories();
 
-            return "Categorías: {$traidas['creados']} traídas, {$enviadas['enviados']} enviadas a Tiendanube.";
+            return "Categorías: {$r['creados']} traídas, {$r['actualizados']} actualizadas.";
+        });
+    }
+
+    public function pushCategories(): void
+    {
+        $this->correr(function (TiendanubeSync $sync) {
+            $r = $sync->pushCategories();
+
+            return "Categorías enviadas a Tiendanube: {$r['enviados']} enviadas".($r['errores'] ? ", {$r['errores']} con error." : '.');
         });
     }
 

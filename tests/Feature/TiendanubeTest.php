@@ -237,15 +237,29 @@ class TiendanubeTest extends TestCase
         $this->assertDatabaseHas('clients', ['email' => 'local@test.com', 'tiendanube_customer_id' => 99]);
     }
 
-    public function test_sincronizar_categorias_trae_y_envia(): void
+    public function test_importar_categorias_trae_de_tiendanube(): void
     {
         $this->conectar();
         Http::fake(function ($request) {
-            $url = $request->url();
-            if (str_contains($url, '/categories') && $request->method() === 'GET') {
+            if (str_contains($request->url(), '/categories') && $request->method() === 'GET') {
                 return Http::response([['id' => 501, 'name' => ['es' => 'Indumentaria']]], 200);
             }
-            if (str_contains($url, '/categories') && $request->method() === 'POST') {
+
+            return Http::response([], 200);
+        });
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('importCategories');
+
+        $this->assertDatabaseHas('categories', ['name' => 'Indumentaria', 'tiendanube_category_id' => 501]);
+    }
+
+    public function test_empujar_categorias_crea_las_locales_sin_vincular(): void
+    {
+        $this->conectar();
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/categories') && $request->method() === 'POST') {
                 return Http::response(['id' => 777], 201);
             }
 
@@ -257,10 +271,8 @@ class TiendanubeTest extends TestCase
 
         Livewire::actingAs($this->admin())
             ->test('tiendanube.index')
-            ->call('syncCategories');
+            ->call('pushCategories');
 
-        // Traída de Tiendanube:
-        $this->assertDatabaseHas('categories', ['name' => 'Indumentaria', 'tiendanube_category_id' => 501]);
         // Local empujada y vinculada:
         $this->assertDatabaseHas('categories', ['name' => 'Bazar', 'tiendanube_category_id' => 777]);
     }
