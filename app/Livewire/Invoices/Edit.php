@@ -124,6 +124,20 @@ class Edit extends Component
         return collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
     }
 
+    public function netoGravado(): float
+    {
+        return collect($this->items)
+            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
+            ->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+    }
+
+    public function netoExento(): float
+    {
+        return collect($this->items)
+            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) <= 0)
+            ->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+    }
+
     public function taxAmount(): float
     {
         return collect($this->items)->sum(

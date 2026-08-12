@@ -155,9 +155,15 @@
     <div class="flex justify-end">
         <div class="w-full max-w-xs space-y-1.5 text-sm">
             <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Subtotal (neto)</span>
-                <span>${{ number_format($this->subtotal(), 2) }}</span>
+                <span>Neto gravado</span>
+                <span>${{ number_format($this->netoGravado(), 2) }}</span>
             </div>
+            @if ($this->netoExento() > 0)
+                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Exento / no gravado</span>
+                    <span>${{ number_format($this->netoExento(), 2) }}</span>
+                </div>
+            @endif
             @foreach ($this->ivaBreakdown() as $linea)
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>

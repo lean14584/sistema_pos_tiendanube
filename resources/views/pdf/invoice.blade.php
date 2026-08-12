@@ -199,9 +199,9 @@
             <td style="width: 60%;"></td>
             <td style="width: 40%;">
                 <table class="totals-box">
-                    <tr><td>Subtotal (neto)</td><td class="text-right">${{ number_format($invoice->subtotal, 2) }}</td></tr>
+                    <tr><td>Neto gravado</td><td class="text-right">${{ number_format($invoice->neto_gravado, 2) }}</td></tr>
                     @if ($invoice->neto_exento > 0)
-                        <tr><td>Exento</td><td class="text-right">${{ number_format($invoice->neto_exento, 2) }}</td></tr>
+                        <tr><td>Exento / no gravado</td><td class="text-right">${{ number_format($invoice->neto_exento, 2) }}</td></tr>
                     @endif
                     @foreach ($invoice->ivaPorAlicuota() as $linea)
                         <tr><td>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</td><td class="text-right">${{ number_format($linea['iva'], 2) }}</td></tr>

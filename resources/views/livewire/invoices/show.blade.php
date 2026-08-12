@@ -182,12 +182,12 @@
         <div class="flex justify-end">
             <div class="w-full max-w-xs space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Subtotal (neto)</span>
-                    <span>${{ number_format($invoice->subtotal, 2) }}</span>
+                    <span>Neto gravado</span>
+                    <span>${{ number_format($invoice->neto_gravado, 2) }}</span>
                 </div>
                 @if ($invoice->neto_exento > 0)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                        <span>Exento</span>
+                        <span>Exento / no gravado</span>
                         <span>${{ number_format($invoice->neto_exento, 2) }}</span>
                     </div>
                 @endif

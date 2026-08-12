@@ -143,7 +143,7 @@ class TicketPrinterService
     private function armarTotales(Invoice $invoice): void
     {
         $this->addRule();
-        $this->addColumns('Subtotal', '$'.$this->money($invoice->subtotal));
+        $this->addColumns('Neto gravado', '$'.$this->money($invoice->neto_gravado));
 
         if ($invoice->neto_exento > 0) {
             $this->addColumns('Exento', '$'.$this->money($invoice->neto_exento));
