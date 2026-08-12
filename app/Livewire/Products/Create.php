@@ -8,10 +8,12 @@ use App\Models\Product;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 #[Layout('layouts.app')]
 class Create extends Component
 {
+    use WithFileUploads;
     public string $name = '';
 
     public string $sku = '';
@@ -30,6 +32,9 @@ class Create extends Component
 
     public string $category_id = '';
 
+    /** Foto recién seleccionada, pendiente de guardar. */
+    public $image = null;
+
     public function save(): void
     {
         $data = $this->validate([
@@ -42,11 +47,17 @@ class Create extends Component
             'min_stock' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string'],
             'category_id' => ['nullable', 'exists:categories,id'],
+            'image' => ['nullable', 'image', 'max:4096'],
         ]);
 
         $data['cost_price'] = $data['cost_price'] !== '' ? $data['cost_price'] : null;
         $data['min_stock'] = $data['min_stock'] !== '' ? $data['min_stock'] : null;
         $data['category_id'] = $data['category_id'] !== '' ? $data['category_id'] : null;
+
+        if ($this->image) {
+            $data['image_path'] = $this->image->store('products', 'public');
+        }
+        unset($data['image']);
 
         Product::create($data);
 

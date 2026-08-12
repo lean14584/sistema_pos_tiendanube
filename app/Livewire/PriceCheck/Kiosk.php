@@ -45,6 +45,7 @@ class Kiosk extends Component
                 'price' => (float) $producto->price,
                 'sku' => $producto->sku,
                 'stock' => (int) $producto->stock,
+                'image' => $producto->imageUrl(),
             ];
         } else {
             $this->notFound = true;

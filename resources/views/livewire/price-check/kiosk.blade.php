@@ -31,6 +31,9 @@
         <div class="min-h-[16rem] flex items-center justify-center">
             @if ($product)
                 <div class="w-full bg-white rounded-3xl shadow-2xl p-10 text-center">
+                    @if (! empty($product['image']))
+                        <img src="{{ $product['image'] }}" alt="{{ $product['name'] }}" class="w-40 h-40 sm:w-48 sm:h-48 mx-auto mb-6 rounded-2xl object-cover shadow-lg">
+                    @endif
                     <p class="text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">{{ $product['name'] }}</p>
                     @if ($product['sku'])
                         <p class="text-sm text-gray-400 mb-6">Código: {{ $product['sku'] }}</p>

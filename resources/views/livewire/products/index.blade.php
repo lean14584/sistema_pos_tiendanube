@@ -79,7 +79,14 @@
                         @endphp
                         <tr wire:key="product-{{ $product->id }}" class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors {{ $alerts->isNotEmpty() ? 'bg-red-50/70 dark:bg-red-500/10' : '' }}">
                             <td class="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        @if ($product->imageUrl())
+                                            <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" class="w-full h-full object-cover" loading="lazy">
+                                        @else
+                                            <x-heroicon-o-cube class="w-4 h-4 text-gray-300 dark:text-gray-600" />
+                                        @endif
+                                    </div>
                                     @if ($alerts->isNotEmpty())
                                         <span title="{{ $alerts->implode(' · ') }}">
                                             <x-heroicon-o-exclamation-triangle class="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />

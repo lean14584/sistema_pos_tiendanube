@@ -46,6 +46,13 @@
                         wire:key="prod-{{ $product->id }}"
                         class="text-left rounded-xl border border-gray-200 dark:border-gray-800 bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 p-3 hover:border-indigo-400 dark:hover:border-indigo-600 hover:shadow-md active:scale-[0.98] transition-all"
                     >
+                        <div class="w-full aspect-square mb-2 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                            @if ($product->imageUrl())
+                                <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" class="w-full h-full object-cover" loading="lazy">
+                            @else
+                                <x-heroicon-o-cube class="w-8 h-8 text-gray-300 dark:text-gray-600" />
+                            @endif
+                        </div>
                         <p class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-tight line-clamp-2 min-h-[2.5rem]">{{ $product->name }}</p>
                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ $product->sku ?: '—' }}</p>
                         <p class="text-base font-semibold text-indigo-600 dark:text-indigo-400 mt-1">${{ number_format($product->price, 2) }}</p>
@@ -113,6 +120,7 @@
                     <div class="flex items-center gap-2">
                         <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">Lista</span>
                         <select wire:model.live="price_list_id" class="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Precio base</option>
                             @foreach ($priceLists as $list)
                                 <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
                             @endforeach

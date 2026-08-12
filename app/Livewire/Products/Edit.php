@@ -5,13 +5,17 @@ namespace App\Livewire\Products;
 use App\Enums\AlicuotaIva;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 #[Layout('layouts.app')]
 class Edit extends Component
 {
+    use WithFileUploads;
+
     public Product $product;
 
     public string $name = '';
@@ -31,6 +35,9 @@ class Edit extends Component
     public string $description = '';
 
     public string $category_id = '';
+
+    /** Foto recién seleccionada, pendiente de guardar (null = no tocar la actual). */
+    public $image = null;
 
     public function mount(Product $product): void
     {
@@ -58,15 +65,35 @@ class Edit extends Component
             'min_stock' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string'],
             'category_id' => ['nullable', 'exists:categories,id'],
+            'image' => ['nullable', 'image', 'max:4096'],
         ]);
 
         $data['cost_price'] = $data['cost_price'] !== '' ? $data['cost_price'] : null;
         $data['min_stock'] = $data['min_stock'] !== '' ? $data['min_stock'] : null;
         $data['category_id'] = $data['category_id'] !== '' ? $data['category_id'] : null;
 
+        if ($this->image) {
+            if ($this->product->image_path) {
+                Storage::disk('public')->delete($this->product->image_path);
+            }
+            $data['image_path'] = $this->image->store('products', 'public');
+        }
+        unset($data['image']);
+
         $this->product->update($data);
 
         $this->redirect(route('products.index'), navigate: true);
+    }
+
+    /** Quita la foto actual del producto. */
+    public function removeImage(): void
+    {
+        if ($this->product->image_path) {
+            Storage::disk('public')->delete($this->product->image_path);
+            $this->product->update(['image_path' => null]);
+        }
+
+        $this->image = null;
     }
 
     public function render()

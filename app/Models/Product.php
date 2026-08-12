@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ObservedBy(ProductObserver::class)]
-#[Fillable(['category_id', 'name', 'sku', 'price', 'iva_rate', 'cost_price', 'stock', 'min_stock', 'description', 'tiendanube_product_id', 'tiendanube_variant_id'])]
+#[Fillable(['category_id', 'name', 'sku', 'price', 'iva_rate', 'cost_price', 'stock', 'min_stock', 'description', 'image_path', 'tiendanube_product_id', 'tiendanube_variant_id'])]
 class Product extends Model
 {
     use Auditable;
@@ -45,6 +45,12 @@ class Product extends Model
     public static function lowStockCountCached(): int
     {
         return once(fn () => self::lowStock()->count());
+    }
+
+    /** URL pública de la foto del producto, o null si no tiene. */
+    public function imageUrl(): ?string
+    {
+        return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->image_path) : null;
     }
 
     /**
