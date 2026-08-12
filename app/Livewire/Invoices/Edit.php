@@ -53,7 +53,7 @@ class Edit extends Component
 
         $this->invoice = $invoice;
         $this->client_id = (string) $invoice->client_id;
-        $this->price_list_id = $invoice->client?->price_list_id ?? optional(\App\Models\PriceList::default())->id;
+        $this->price_list_id = $invoice->client?->price_list_id; // null = precio base
         $this->tipo_comprobante_interno = $invoice->tipo_comprobante_interno->value;
         $this->issue_date = $invoice->issue_date->toDateString();
         $this->due_date = $invoice->due_date->toDateString();
@@ -78,13 +78,13 @@ class Edit extends Component
 
     public function currentPriceList(): ?\App\Models\PriceList
     {
-        return $this->price_list_id ? \App\Models\PriceList::find($this->price_list_id) : \App\Models\PriceList::default();
+        return $this->price_list_id ? \App\Models\PriceList::find($this->price_list_id) : null;
     }
 
     public function updatedClientId($value): void
     {
         $client = Client::find($value);
-        $this->price_list_id = $client?->price_list_id ?? optional(\App\Models\PriceList::default())->id;
+        $this->price_list_id = $client?->price_list_id;
         $this->repriceItems();
     }
 

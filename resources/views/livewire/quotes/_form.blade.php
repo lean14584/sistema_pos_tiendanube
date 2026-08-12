@@ -17,6 +17,7 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lista de precios</label>
             <select wire:model.live="price_list_id" class="{{ $inputClass }}">
+                <option value="">Precio base</option>
                 @foreach ($priceLists as $list)
                     <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
                 @endforeach

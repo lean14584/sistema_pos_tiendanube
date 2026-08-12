@@ -84,7 +84,7 @@
             wire:model="price_list_id"
             class="w-full max-w-xs rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
         >
-            <option value="">— Predeterminada —</option>
+            <option value="">— Precio base (sin lista) —</option>
             @foreach ($priceLists as $list)
                 <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
             @endforeach

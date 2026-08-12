@@ -38,18 +38,18 @@ class Create extends Component
     {
         $this->issue_date = now()->toDateString();
         $this->valid_until = now()->addDays(15)->toDateString();
-        $this->price_list_id = optional(PriceList::default())->id;
+        $this->price_list_id = null; // precio base por defecto
     }
 
     public function currentPriceList(): ?PriceList
     {
-        return $this->price_list_id ? PriceList::find($this->price_list_id) : PriceList::default();
+        return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
     }
 
     public function updatedClientId($value): void
     {
         $client = Client::find($value);
-        $this->price_list_id = $client?->price_list_id ?? optional(PriceList::default())->id;
+        $this->price_list_id = $client?->price_list_id;
         $this->repriceItems();
     }
 

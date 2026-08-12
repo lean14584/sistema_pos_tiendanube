@@ -54,23 +54,23 @@ class Create extends Component
         $this->due_date = now()->addDays(15)->toDateString();
         $cf = Client::consumidorFinal();
         $this->client_id = (string) $cf->id;
-        $this->price_list_id = $cf->price_list_id ?? optional(\App\Models\PriceList::default())->id;
+        $this->price_list_id = $cf->price_list_id; // null = precio base
         // Arranca en un tipo que la empresa tenga habilitado (evita quedar
         // en Factura B cuando B está apagada, por ejemplo).
         $this->tipo_comprobante_interno = CompanySettings::current()->tipoComprobantePorDefecto()->value;
     }
 
-    /** Lista de precios vigente (la elegida, o la predeterminada). */
+    /** Lista de precios vigente. null = precio base (sin ajuste). */
     public function currentPriceList(): ?\App\Models\PriceList
     {
-        return $this->price_list_id ? \App\Models\PriceList::find($this->price_list_id) : \App\Models\PriceList::default();
+        return $this->price_list_id ? \App\Models\PriceList::find($this->price_list_id) : null;
     }
 
-    /** Al cambiar de cliente, tomo su lista y recalculo los ítems con producto. */
+    /** Al cambiar de cliente, tomo su lista asignada (o precio base) y recalculo. */
     public function updatedClientId($value): void
     {
         $client = Client::find($value);
-        $this->price_list_id = $client?->price_list_id ?? optional(\App\Models\PriceList::default())->id;
+        $this->price_list_id = $client?->price_list_id;
         $this->repriceItems();
     }
 

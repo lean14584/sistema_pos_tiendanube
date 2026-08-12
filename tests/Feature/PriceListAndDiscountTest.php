@@ -77,6 +77,21 @@ class PriceListAndDiscountTest extends TestCase
         $this->assertEquals(800.0, $cart[0]['unit_price']); // 1000 - 20%
     }
 
+    public function test_pos_usa_precio_base_para_consumidor_final_aunque_haya_lista_con_ajuste(): void
+    {
+        // Una lista con ajuste, incluso marcada como predeterminada, no debe
+        // aplicarse sola a una venta a Consumidor Final (sin lista asignada).
+        PriceList::create(['name' => 'Mayorista', 'adjustment_percent' => 10, 'is_default' => true, 'active' => true]);
+        $product = Product::create(['name' => 'Agua', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
+
+        $pos = Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->call('addProduct', $product->id);
+
+        $this->assertNull($pos->get('price_list_id')); // precio base
+        $this->assertEquals(1000.0, $pos->get('cart')[0]['unit_price']); // sin +10%
+    }
+
     public function test_pos_descuento_por_linea_baja_el_total_cobrado(): void
     {
         $admin = $this->admin();

@@ -40,7 +40,7 @@ class Edit extends Component
     {
         $this->quote = $quote;
         $this->client_id = (string) $quote->client_id;
-        $this->price_list_id = $quote->client?->price_list_id ?? optional(PriceList::default())->id;
+        $this->price_list_id = $quote->client?->price_list_id; // null = precio base
         $this->issue_date = $quote->issue_date->toDateString();
         $this->valid_until = $quote->valid_until->toDateString();
         $this->tax_rate = (string) $quote->tax_rate;
@@ -58,13 +58,13 @@ class Edit extends Component
 
     public function currentPriceList(): ?PriceList
     {
-        return $this->price_list_id ? PriceList::find($this->price_list_id) : PriceList::default();
+        return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
     }
 
     public function updatedClientId($value): void
     {
         $client = Client::find($value);
-        $this->price_list_id = $client?->price_list_id ?? optional(PriceList::default())->id;
+        $this->price_list_id = $client?->price_list_id;
         $this->repriceItems();
     }
 

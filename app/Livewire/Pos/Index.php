@@ -46,20 +46,20 @@ class Index extends Component
     {
         $cf = Client::consumidorFinal();
         $this->client_id = $cf->id;
-        $this->price_list_id = $cf->price_list_id ?? optional(PriceList::default())->id;
+        $this->price_list_id = $cf->price_list_id; // null = precio base
     }
 
-    /** Lista de precios vigente (la elegida, o la predeterminada como fallback). */
+    /** Lista de precios vigente. null = precio base (sin ajuste). */
     public function currentPriceList(): ?PriceList
     {
-        return $this->price_list_id ? PriceList::find($this->price_list_id) : PriceList::default();
+        return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
     }
 
-    /** Al cambiar de cliente, tomo su lista y recalculo el carrito. */
+    /** Al cambiar de cliente, tomo su lista asignada (o precio base) y recalculo. */
     public function updatedClientId($value): void
     {
         $client = Client::find($value);
-        $this->price_list_id = $client?->price_list_id ?? optional(PriceList::default())->id;
+        $this->price_list_id = $client?->price_list_id;
         $this->repriceCart();
     }
 
