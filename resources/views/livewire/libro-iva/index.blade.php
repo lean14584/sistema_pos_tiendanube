@@ -6,7 +6,7 @@
     <div class="mb-8 flex items-start justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Libro IVA Digital</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Comprobantes de ventas y compras del período, según el diseño de registro de AFIP (RG 4597)</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Comprobantes de ventas y compras del período, según el diseño de registro de ARCA (ex AFIP, RG 4597)</p>
         </div>
         <a
             href="{{ route('libro-iva.export', ['desde' => $fromDate, 'hasta' => $toDate]) }}"

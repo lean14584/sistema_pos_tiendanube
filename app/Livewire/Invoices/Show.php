@@ -139,7 +139,7 @@ class Show extends Component
         } catch (AfipValidationException $e) {
             $this->afipError = $e->getMessage();
         } catch (AfipConnectionException $e) {
-            $this->afipError = 'No se pudo contactar a AFIP, reintentá en unos minutos.';
+            $this->afipError = 'No se pudo contactar a ARCA, reintentá en unos minutos.';
         }
     }
 

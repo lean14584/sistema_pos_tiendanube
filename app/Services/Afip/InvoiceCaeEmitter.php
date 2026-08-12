@@ -42,7 +42,7 @@ class InvoiceCaeEmitter
         $tipoComprobante = $invoice->tipo_comprobante_interno->aTipoComprobante();
 
         if ($tipoComprobante === null) {
-            throw new AfipValidationException('Este tipo de documento no se emite a AFIP.');
+            throw new AfipValidationException('Este tipo de documento no se emite a ARCA.');
         }
 
         ComprobanteResolver::assertEmisorPuedeForzar($company->condicion_iva, $tipoComprobante);

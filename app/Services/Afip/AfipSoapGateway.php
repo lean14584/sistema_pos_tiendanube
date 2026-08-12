@@ -58,7 +58,7 @@ class AfipSoapGateway implements AfipGatewayInterface
             return (int) $response->FECompUltimoAutorizadoResult->CbteNro;
         } catch (SoapFault|Throwable $e) {
             throw new AfipConnectionException(
-                'No se pudo consultar el último comprobante autorizado en AFIP: '.$e->getMessage(), previous: $e
+                'No se pudo consultar el último comprobante autorizado en ARCA: '.$e->getMessage(), previous: $e
             );
         }
     }
@@ -129,7 +129,7 @@ class AfipSoapGateway implements AfipGatewayInterface
             $response = $this->wsfeClient()->FECAESolicitar($params);
         } catch (SoapFault|Throwable $e) {
             throw new AfipConnectionException(
-                'No se pudo contactar a AFIP para solicitar el CAE: '.$e->getMessage(), previous: $e
+                'No se pudo contactar a ARCA para solicitar el CAE: '.$e->getMessage(), previous: $e
             );
         }
 
@@ -139,7 +139,7 @@ class AfipSoapGateway implements AfipGatewayInterface
             $errores = $this->normalizarErrores($resultado->Errors);
 
             throw new AfipRejectedException(
-                'AFIP rechazó el comprobante: '.implode(' | ', array_column($errores, 'msg')),
+                'ARCA rechazó el comprobante: '.implode(' | ', array_column($errores, 'msg')),
                 $errores
             );
         }
@@ -150,7 +150,7 @@ class AfipSoapGateway implements AfipGatewayInterface
             $errores = $this->normalizarErrores($detalleRespuesta->Observaciones->Obs ?? []);
 
             throw new AfipRejectedException(
-                'AFIP no aprobó el comprobante.'.($errores !== [] ? ' '.implode(' | ', array_column($errores, 'msg')) : ''),
+                'ARCA no aprobó el comprobante.'.($errores !== [] ? ' '.implode(' | ', array_column($errores, 'msg')) : ''),
                 $errores
             );
         }
@@ -198,7 +198,7 @@ class AfipSoapGateway implements AfipGatewayInterface
             $response = $client->loginCms(['in0' => $cms]);
             $ticket = simplexml_load_string($response->loginCmsReturn);
         } catch (SoapFault|Throwable $e) {
-            throw new AfipConnectionException('No se pudo autenticar contra WSAA de AFIP: '.$e->getMessage(), previous: $e);
+            throw new AfipConnectionException('No se pudo autenticar contra el WSAA de ARCA: '.$e->getMessage(), previous: $e);
         }
 
         $this->token = (string) $ticket->credentials->token;
@@ -239,7 +239,7 @@ class AfipSoapGateway implements AfipGatewayInterface
 
         if (! file_exists($certPath) || ! file_exists($keyPath)) {
             throw new AfipConnectionException(
-                "Certificado o clave privada de AFIP no encontrados. Se esperaban en: {$certPath} y {$keyPath}."
+                "Certificado o clave privada de ARCA no encontrados. Se esperaban en: {$certPath} y {$keyPath}."
             );
         }
 

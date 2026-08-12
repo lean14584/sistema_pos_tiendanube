@@ -1,7 +1,7 @@
 <div class="p-8 max-w-5xl mx-auto">
     <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Datos de la empresa</h1>
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
-        Estos datos se usan para determinar el tipo de comprobante (Factura A/B/C) y se envían a AFIP al emitir cada factura.
+        Estos datos se usan para determinar el tipo de comprobante (Factura A/B/C) y se envían a ARCA al emitir cada factura.
     </p>
 
     @if (session('status'))
@@ -101,9 +101,9 @@
         </div>
 
         <div class="pt-6 mt-2 border-t border-gray-200 dark:border-gray-800">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Facturación electrónica (AFIP)</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Facturación electrónica (ARCA)</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-                Habilitá los tipos de comprobante que emitís y cargá el certificado y la clave privada que te da AFIP.
+                Habilitá los tipos de comprobante que emitís y cargá el certificado y la clave privada que te da ARCA.
             </p>
 
             {{-- Toggles A / B --}}

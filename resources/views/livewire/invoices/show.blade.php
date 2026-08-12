@@ -64,11 +64,11 @@
                 <button
                     wire:click="emitirAfip"
                     wire:loading.attr="disabled"
-                    wire:confirm="¿Emitir la factura {{ $invoice->number }} a AFIP? Esta acción no se puede deshacer."
+                    wire:confirm="¿Emitir la factura {{ $invoice->number }} a ARCA? Esta acción no se puede deshacer."
                     class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-60 transition-all"
                 >
                     <x-heroicon-o-document-check class="w-4 h-4" />
-                    Emitir a AFIP
+                    Emitir a ARCA
                 </button>
             @endif
             @if ($invoice->isFiscal && $invoice->related_invoice_id === null)
@@ -114,7 +114,7 @@
 
     @if ($invoice->isFiscal)
         <div class="mb-6 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 px-4 py-3">
-            <p class="text-xs uppercase text-indigo-500 dark:text-indigo-400 mb-1">Comprobante fiscal AFIP</p>
+            <p class="text-xs uppercase text-indigo-500 dark:text-indigo-400 mb-1">Comprobante fiscal ARCA</p>
             <p class="text-sm text-indigo-900 dark:text-indigo-300">
                 {{ $invoice->tipo_comprobante->label() }} · Pto. Vta. {{ str_pad($invoice->punto_venta, 4, '0', STR_PAD_LEFT) }}
                 N° {{ str_pad($invoice->numero_comprobante_afip, 8, '0', STR_PAD_LEFT) }}

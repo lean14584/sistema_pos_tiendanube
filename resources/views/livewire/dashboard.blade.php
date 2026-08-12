@@ -18,7 +18,7 @@
             <x-heroicon-o-exclamation-triangle class="w-6 h-6 shrink-0 text-amber-600 dark:text-amber-400" />
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                    {{ $pendientesEmisionCount }} {{ $pendientesEmisionCount === 1 ? 'factura sin emitir a AFIP' : 'facturas sin emitir a AFIP' }}
+                    {{ $pendientesEmisionCount }} {{ $pendientesEmisionCount === 1 ? 'factura sin emitir a ARCA' : 'facturas sin emitir a ARCA' }}
                 </p>
                 <p class="text-xs text-amber-700/80 dark:text-amber-400/80">
                     Emitilas para que obtengan el CAE y entren al Libro IVA. Tocá para verlas.
