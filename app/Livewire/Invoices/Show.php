@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Exceptions\Afip\AfipConnectionException;
 use App\Exceptions\Afip\AfipRejectedException;
 use App\Exceptions\Afip\AfipValidationException;
+use App\Mail\InvoiceMail;
 use App\Models\Invoice;
 use App\Services\Afip\InvoiceCaeEmitter;
 use App\Services\MercadoPago\MercadoPagoQrService;
@@ -14,6 +15,7 @@ use App\Support\CashLinker;
 use App\Support\MercadoPagoPaymentApplier;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -141,6 +143,42 @@ class Show extends Component
         } catch (AfipConnectionException $e) {
             $this->afipError = 'No se pudo contactar a ARCA, reintentá en unos minutos.';
         }
+    }
+
+    public function enviarPorEmail(): void
+    {
+        $cliente = $this->invoice->client;
+
+        if (! $cliente || ! $cliente->email) {
+            session()->flash('error', 'El cliente no tiene un email cargado.');
+
+            return;
+        }
+
+        try {
+            Mail::to($cliente->email)->send(new InvoiceMail($this->invoice));
+            session()->flash('status', 'Factura enviada por email a '.$cliente->email.'.');
+        } catch (\Throwable $e) {
+            session()->flash('error', 'No se pudo enviar el email: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Link de WhatsApp con un mensaje ya escrito. Null si el cliente no tiene
+     * teléfono. WhatsApp no permite adjuntar el PDF por link, así que va el
+     * resumen; el PDF se manda por email o se descarga.
+     */
+    public function whatsappUrl(): ?string
+    {
+        $telefono = preg_replace('/\D/', '', (string) ($this->invoice->client->phone ?? ''));
+
+        if ($telefono === '') {
+            return null;
+        }
+
+        $mensaje = "Hola {$this->invoice->client->name}, te paso tu factura {$this->invoice->number} por un total de $".number_format((float) $this->invoice->total, 2).'. ¡Gracias!';
+
+        return 'https://wa.me/'.$telefono.'?text='.rawurlencode($mensaje);
     }
 
     public function printTicket(): void

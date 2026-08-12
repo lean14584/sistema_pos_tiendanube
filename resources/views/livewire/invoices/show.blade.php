@@ -48,6 +48,28 @@
                 <span wire:loading.remove wire:target="printTicket">Imprimir Ticket</span>
                 <span wire:loading wire:target="printTicket">Imprimiendo...</span>
             </button>
+            <button
+                wire:click="enviarPorEmail"
+                wire:loading.attr="disabled"
+                wire:target="enviarPorEmail"
+                @disabled(! $invoice->client?->email)
+                title="{{ $invoice->client?->email ? 'Enviar la factura por email al cliente' : 'El cliente no tiene email cargado' }}"
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+                <x-heroicon-o-envelope class="w-4 h-4" />
+                <span wire:loading.remove wire:target="enviarPorEmail">Enviar email</span>
+                <span wire:loading wire:target="enviarPorEmail">Enviando...</span>
+            </button>
+            @if ($this->whatsappUrl())
+                <a
+                    href="{{ $this->whatsappUrl() }}"
+                    target="_blank"
+                    class="inline-flex items-center gap-2 rounded-lg border border-emerald-300 dark:border-emerald-600/40 px-4 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-[0.98] transition-all"
+                >
+                    <x-heroicon-o-chat-bubble-left-right class="w-4 h-4" />
+                    WhatsApp
+                </a>
+            @endif
             @if ($mpConfigured && $invoice->status !== App\Enums\InvoiceStatus::Paid)
                 <button
                     wire:click="startQrCharge"
