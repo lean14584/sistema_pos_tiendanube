@@ -61,6 +61,8 @@ Route::get('/precios', \App\Livewire\PriceCheck\Kiosk::class)->name('precios');
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
 
+    Route::middleware('module:pos')->get('pos', \App\Livewire\Pos\Index::class)->name('pos.index');
+
     Route::middleware('module:quotes')->prefix('quotes')->name('quotes.')->group(function () {
         Route::get('/', QuoteIndex::class)->name('index');
         Route::get('/new', QuoteCreate::class)->name('create');

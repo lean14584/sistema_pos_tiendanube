@@ -19,6 +19,7 @@
 
     $navItems = [
         ['module' => 'dashboard', 'pattern' => 'dashboard', 'href' => route('dashboard'), 'label' => 'Dashboard', 'icon' => 'home'],
+        ['module' => 'pos', 'pattern' => 'pos.*', 'href' => route('pos.index'), 'label' => 'Venta rápida', 'icon' => 'bolt'],
         ['module' => 'quotes', 'pattern' => 'quotes.*', 'href' => route('quotes.index'), 'label' => 'Presupuestos', 'icon' => 'clipboard-document-list'],
         ['module' => 'invoices', 'pattern' => 'invoices.*', 'href' => route('invoices.index'), 'label' => 'Facturas', 'icon' => 'document-text', 'badge' => $pendientesEmision],
         ['module' => 'clients', 'pattern' => 'clients.*', 'href' => route('clients.index'), 'label' => 'Clientes', 'icon' => 'users'],
