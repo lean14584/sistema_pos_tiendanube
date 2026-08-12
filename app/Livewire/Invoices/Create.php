@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Invoices;
 
+use App\Enums\AlicuotaIva;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
@@ -79,6 +80,7 @@ class Create extends Component
             'description' => $product->name,
             'quantity' => '1',
             'unit_price' => (string) $product->price,
+            'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
         ];
 
         $this->productQuery = '';
@@ -91,6 +93,7 @@ class Create extends Component
             'description' => '',
             'quantity' => '1',
             'unit_price' => '0',
+            'iva_rate' => '21',
         ];
     }
 
@@ -107,12 +110,33 @@ class Create extends Component
 
     public function taxAmount(): float
     {
-        return $this->subtotal() * ((float) $this->tax_rate / 100);
+        return collect($this->items)->sum(
+            fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) ($item['iva_rate'] ?? 0) / 100)
+        );
     }
 
     public function total(): float
     {
         return $this->subtotal() + $this->taxAmount();
+    }
+
+    /**
+     * Desglose del IVA por alícuota para mostrar en el formulario.
+     *
+     * @return array<int, array{tasa: float, iva: float}>
+     */
+    public function ivaBreakdown(): array
+    {
+        return collect($this->items)
+            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
+            ->groupBy(fn ($item) => (string) (float) $item['iva_rate'])
+            ->map(fn ($grupo, $tasa) => [
+                'tasa' => (float) $tasa,
+                'iva' => $grupo->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) $item['iva_rate'] / 100)),
+            ])
+            ->sortBy('tasa')
+            ->values()
+            ->all();
     }
 
     public function paidTotal(): float
@@ -146,9 +170,9 @@ class Create extends Component
             'tipo_comprobante_interno' => ['required', Rule::enum(TipoComprobanteInterno::class)],
             'issue_date' => ['required', 'date'],
             'due_date' => ['required', 'date'],
-            'tax_rate' => ['required', 'numeric', 'min:0'],
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
+            'items.*.iva_rate' => ['nullable', Rule::in(AlicuotaIva::valores())],
         ]);
 
         $validItems = collect($this->items)->filter(fn ($item) => trim($item['description']) !== '');
@@ -174,7 +198,8 @@ class Create extends Component
                 'tipo_comprobante_interno' => $tipo,
                 'issue_date' => $this->issue_date,
                 'due_date' => $this->due_date,
-                'tax_rate' => $this->tax_rate,
+                // El IVA ahora vive por ítem; se deja en 0 a nivel comprobante.
+                'tax_rate' => 0,
                 'notes' => $this->notes ?: null,
                 'status' => $this->status,
             ]);
@@ -185,6 +210,7 @@ class Create extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'iva_rate' => $item['iva_rate'] ?? '21',
                 ]);
             }
 

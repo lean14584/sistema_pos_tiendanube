@@ -127,7 +127,7 @@ class CashRegisterTest extends TestCase
         $admin = $this->admin();
         CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
-        $product = Product::create(['name' => 'Servicio', 'price' => 800]);
+        $product = Product::create(['name' => 'Servicio', 'price' => 800, 'iva_rate' => 0]);
 
         Livewire::actingAs($admin)
             ->test('invoices.create')

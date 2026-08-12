@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Products;
 
+use App\Enums\AlicuotaIva;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -15,6 +17,8 @@ class Create extends Component
     public string $sku = '';
 
     public string $price = '';
+
+    public string $iva_rate = '21';
 
     public string $cost_price = '';
 
@@ -32,6 +36,7 @@ class Create extends Component
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
+            'iva_rate' => ['required', Rule::in(AlicuotaIva::valores())],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
             'min_stock' => ['nullable', 'integer', 'min:0'],

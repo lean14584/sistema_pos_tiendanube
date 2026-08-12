@@ -103,8 +103,9 @@
                     <thead class="bg-gray-50 dark:bg-gray-800/50">
                         <tr class="text-left text-gray-500 dark:text-gray-400">
                             <th class="px-3 py-1.5 font-medium">Descripción</th>
-                            <th class="px-3 py-1.5 font-medium w-24">Cant.</th>
-                            <th class="px-3 py-1.5 font-medium w-32">Precio unit.</th>
+                            <th class="px-3 py-1.5 font-medium w-20">Cant.</th>
+                            <th class="px-3 py-1.5 font-medium w-28">Precio unit.</th>
+                            <th class="px-3 py-1.5 font-medium w-28">IVA</th>
                             <th class="px-3 py-1.5 font-medium w-28 text-right">Total</th>
                             <th class="px-2 py-1.5 w-10"></th>
                         </tr>
@@ -120,6 +121,13 @@
                                 </td>
                                 <td class="px-3 py-1">
                                     <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                </td>
+                                <td class="px-3 py-1">
+                                    <select wire:model.live="items.{{ $index }}.iva_rate" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        @foreach (App\Enums\AlicuotaIva::cases() as $alicuota)
+                                            <option value="{{ $alicuota->value }}">{{ $alicuota->label() }}</option>
+                                        @endforeach
+                                    </select>
                                 </td>
                                 <td class="px-3 py-1 text-right text-gray-700 dark:text-gray-300">
                                     ${{ number_format((float) $item['quantity'] * (float) $item['unit_price'], 2) }}
@@ -147,17 +155,15 @@
     <div class="flex justify-end">
         <div class="w-full max-w-xs space-y-1.5 text-sm">
             <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Subtotal</span>
+                <span>Subtotal (neto)</span>
                 <span>${{ number_format($this->subtotal(), 2) }}</span>
             </div>
-            <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
-                <span>Impuesto (%)</span>
-                <input type="number" min="0" step="0.01" wire:model.live="tax_rate" class="w-20 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            </div>
-            <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Monto impuesto</span>
-                <span>${{ number_format($this->taxAmount(), 2) }}</span>
-            </div>
+            @foreach ($this->ivaBreakdown() as $linea)
+                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>
+                    <span>${{ number_format($linea['iva'], 2) }}</span>
+                </div>
+            @endforeach
             <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-1.5 border-t border-gray-200 dark:border-gray-800">
                 <span>Total</span>
                 <span>${{ number_format($this->total(), 2) }}</span>

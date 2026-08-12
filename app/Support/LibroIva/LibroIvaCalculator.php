@@ -60,12 +60,12 @@ final class LibroIvaCalculator
     public static function resumenPorAlicuota(Collection $rows): Collection
     {
         return $rows
-            ->filter(fn (LibroIvaRow $row) => $row->tasaIva > 0.0)
-            ->groupBy(fn (LibroIvaRow $row) => number_format($row->tasaIva, 2, '.', ''))
+            ->flatMap(fn (LibroIvaRow $row) => $row->alicuotas)
+            ->groupBy(fn (LibroIvaAlicuota $a) => number_format($a->tasa, 2, '.', ''))
             ->map(fn (Collection $group, string $tasa) => [
                 'tasa' => (float) $tasa,
-                'netoGravado' => $group->sum('importeNetoGravado'),
-                'iva' => $group->sum('ivaLiquidado'),
+                'netoGravado' => $group->sum(fn (LibroIvaAlicuota $a) => $a->netoGravado),
+                'iva' => $group->sum(fn (LibroIvaAlicuota $a) => $a->ivaLiquidado),
             ])
             ->sortBy('tasa')
             ->values();
@@ -73,8 +73,9 @@ final class LibroIvaCalculator
 
     private static function fromInvoice(Invoice $invoice): LibroIvaRow
     {
-        $tasa = (float) $invoice->tax_rate;
-        $exento = $tasa <= 0.0;
+        $alicuotas = $invoice->ivaPorAlicuota()
+            ->map(fn (array $a) => new LibroIvaAlicuota($a['tasa'], (float) $a['base'], (float) $a['iva']))
+            ->all();
 
         return new LibroIvaRow(
             fecha: $invoice->issue_date,
@@ -85,18 +86,23 @@ final class LibroIvaCalculator
             numeroDocumento: $invoice->client->tax_id ?: '0',
             denominacion: $invoice->client->name,
             importeTotal: (float) $invoice->total,
-            importeExento: $exento ? (float) $invoice->subtotal : 0.0,
-            importeNetoGravado: $exento ? 0.0 : (float) $invoice->subtotal,
-            ivaLiquidado: (float) $invoice->tax_amount,
-            tasaIva: $tasa,
-            codigoOperacion: $exento ? 'E' : '',
+            importeExento: (float) $invoice->neto_exento,
+            alicuotas: $alicuotas,
+            // "E" (exento) solo si el comprobante no tiene ninguna alícuota gravada.
+            codigoOperacion: $alicuotas === [] ? 'E' : '',
         );
     }
 
     private static function fromPurchase(Purchase $purchase): LibroIvaRow
     {
+        // Las compras se cargan con una sola alícuota (el comprobante del
+        // proveedor), a diferencia de las ventas que la desglosan por ítem.
         $tasa = (float) $purchase->tax_rate;
         $exento = $tasa <= 0.0;
+
+        $alicuotas = $exento
+            ? []
+            : [new LibroIvaAlicuota($tasa, (float) $purchase->subtotal, (float) $purchase->tax_amount)];
 
         return new LibroIvaRow(
             fecha: $purchase->issue_date,
@@ -108,9 +114,7 @@ final class LibroIvaCalculator
             denominacion: $purchase->provider->name,
             importeTotal: (float) $purchase->total,
             importeExento: $exento ? (float) $purchase->subtotal : 0.0,
-            importeNetoGravado: $exento ? 0.0 : (float) $purchase->subtotal,
-            ivaLiquidado: (float) $purchase->tax_amount,
-            tasaIva: $tasa,
+            alicuotas: $alicuotas,
             codigoOperacion: $exento ? 'E' : '',
         );
     }

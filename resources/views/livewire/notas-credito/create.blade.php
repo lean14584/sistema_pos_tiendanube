@@ -72,13 +72,15 @@
         <div class="flex justify-end">
             <div class="w-full max-w-xs space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Subtotal</span>
+                    <span>Subtotal (neto)</span>
                     <span>${{ number_format($this->subtotal(), 2) }}</span>
                 </div>
-                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Impuesto ({{ $invoice->tax_rate }}%)</span>
-                    <span>${{ number_format($this->taxAmount(), 2) }}</span>
-                </div>
+                @foreach ($this->ivaBreakdown() as $linea)
+                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>
+                        <span>${{ number_format($linea['iva'], 2) }}</span>
+                    </div>
+                @endforeach
                 <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                     <span>Total a acreditar</span>
                     <span>${{ number_format($this->total(), 2) }}</span>

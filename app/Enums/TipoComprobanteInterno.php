@@ -52,6 +52,16 @@ enum TipoComprobanteInterno: string
         return in_array($this, [self::FacturaA, self::FacturaB, self::NotaCreditoA, self::NotaCreditoB], true);
     }
 
+    /**
+     * Los tipos que se emiten a AFIP (los que necesitan CAE).
+     *
+     * @return array<int, self>
+     */
+    public static function fiscales(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $c) => $c->esFiscal()));
+    }
+
     public function aTipoComprobante(): ?TipoComprobante
     {
         return match ($this) {

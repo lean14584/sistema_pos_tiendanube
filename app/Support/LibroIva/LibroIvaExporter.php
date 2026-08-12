@@ -44,7 +44,7 @@ final class LibroIvaExporter
                 self::importe(0, 15).
                 'PES'.
                 self::tipoCambio().
-                '1'.
+                self::cantidadAlicuotas($row).
                 self::codigoOperacion($row->codigoOperacion).
                 self::importe(0, 15).
                 self::fecha($row->fecha);
@@ -54,15 +54,16 @@ final class LibroIvaExporter
     public static function ventasAlicuotas(Collection $rows): string
     {
         return $rows
-            ->filter(fn (LibroIvaRow $row) => $row->tasaIva > 0.0)
-            ->map(fn (LibroIvaRow $row) =>
-                self::numZero((string) $row->tipoComprobante->value, 3).
-                self::numZero((string) $row->puntoVenta, 5).
-                self::numZero((string) $row->numeroComprobante, 20).
-                self::importe($row->importeNetoGravado, 15).
-                AlicuotaResolver::codigo($row->tasaIva).
-                self::importe($row->ivaLiquidado, 15)
-            )
+            ->flatMap(fn (LibroIvaRow $row) => array_map(
+                fn (LibroIvaAlicuota $a) =>
+                    self::numZero((string) $row->tipoComprobante->value, 3).
+                    self::numZero((string) $row->puntoVenta, 5).
+                    self::numZero((string) $row->numeroComprobante, 20).
+                    self::importe($a->netoGravado, 15).
+                    AlicuotaResolver::codigo($a->tasa).
+                    self::importe($a->ivaLiquidado, 15),
+                $row->alicuotas
+            ))
             ->implode(self::EOL).self::EOL;
     }
 
@@ -88,7 +89,7 @@ final class LibroIvaExporter
                 self::importe(0, 15).
                 'PES'.
                 self::tipoCambio().
-                '1'.
+                self::cantidadAlicuotas($row).
                 self::codigoOperacion($row->codigoOperacion).
                 self::importe($row->ivaLiquidado, 15). // crédito fiscal computable
                 self::importe(0, 15).
@@ -101,17 +102,18 @@ final class LibroIvaExporter
     public static function comprasAlicuotas(Collection $rows): string
     {
         return $rows
-            ->filter(fn (LibroIvaRow $row) => $row->tasaIva > 0.0)
-            ->map(fn (LibroIvaRow $row) =>
-                self::numZero((string) $row->tipoComprobante->value, 3).
-                self::numZero((string) $row->puntoVenta, 5).
-                self::numZero((string) $row->numeroComprobante, 20).
-                self::numZero((string) $row->codigoDocumento, 2).
-                self::numZero($row->numeroDocumento, 20).
-                self::importe($row->importeNetoGravado, 15).
-                AlicuotaResolver::codigo($row->tasaIva).
-                self::importe($row->ivaLiquidado, 15)
-            )
+            ->flatMap(fn (LibroIvaRow $row) => array_map(
+                fn (LibroIvaAlicuota $a) =>
+                    self::numZero((string) $row->tipoComprobante->value, 3).
+                    self::numZero((string) $row->puntoVenta, 5).
+                    self::numZero((string) $row->numeroComprobante, 20).
+                    self::numZero((string) $row->codigoDocumento, 2).
+                    self::numZero($row->numeroDocumento, 20).
+                    self::importe($a->netoGravado, 15).
+                    AlicuotaResolver::codigo($a->tasa).
+                    self::importe($a->ivaLiquidado, 15),
+                $row->alicuotas
+            ))
             ->implode(self::EOL).self::EOL;
     }
 
@@ -132,6 +134,15 @@ final class LibroIvaExporter
     private static function codigoOperacion(string $codigo): string
     {
         return $codigo === '' ? ' ' : $codigo;
+    }
+
+    /**
+     * Cantidad de alícuotas de IVA del comprobante (1 dígito). Es 0 cuando el
+     * comprobante es totalmente exento (sin ninguna alícuota gravada).
+     */
+    private static function cantidadAlicuotas(LibroIvaRow $row): string
+    {
+        return self::numZero((string) count($row->alicuotas), 1);
     }
 
     private static function alfa(string $value, int $len): string

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\NotasCredito;
 
+use App\Enums\AlicuotaIva;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
@@ -37,6 +38,7 @@ class Create extends Component
             'description' => $item->description,
             'quantity' => (string) $item->quantity,
             'unit_price' => (string) $item->unit_price,
+            'iva_rate' => AlicuotaIva::normalizar($item->iva_rate_efectiva),
         ])->all();
     }
 
@@ -53,12 +55,31 @@ class Create extends Component
 
     public function taxAmount(): float
     {
-        return $this->subtotal() * ((float) $this->invoice->tax_rate / 100);
+        return collect($this->items)->sum(
+            fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) ($item['iva_rate'] ?? 0) / 100)
+        );
     }
 
     public function total(): float
     {
         return $this->subtotal() + $this->taxAmount();
+    }
+
+    /**
+     * @return array<int, array{tasa: float, iva: float}>
+     */
+    public function ivaBreakdown(): array
+    {
+        return collect($this->items)
+            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
+            ->groupBy(fn ($item) => (string) (float) $item['iva_rate'])
+            ->map(fn ($grupo, $tasa) => [
+                'tasa' => (float) $tasa,
+                'iva' => $grupo->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) $item['iva_rate'] / 100)),
+            ])
+            ->sortBy('tasa')
+            ->values()
+            ->all();
     }
 
     public function paidTotal(): float
@@ -108,7 +129,7 @@ class Create extends Component
                 'afecta_stock' => $this->afecta_stock,
                 'issue_date' => now()->toDateString(),
                 'due_date' => now()->toDateString(),
-                'tax_rate' => $this->invoice->tax_rate,
+                'tax_rate' => 0,
                 'status' => 'draft',
             ]);
 
@@ -118,6 +139,7 @@ class Create extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'iva_rate' => $item['iva_rate'] ?? '21',
                 ]);
             }
 

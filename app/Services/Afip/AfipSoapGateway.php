@@ -79,7 +79,7 @@ class AfipSoapGateway implements AfipGatewayInterface
             'ImpIVA' => $request->impIva,
             'ImpTrib' => 0,
             'ImpTotConc' => 0,
-            'ImpOpEx' => 0,
+            'ImpOpEx' => $request->impOpEx,
             'MonId' => 'PES',
             'MonCotiz' => 1,
             // Requisito RG 5616 — nunca hardcodeado, viene resuelto por
@@ -87,14 +87,15 @@ class AfipSoapGateway implements AfipGatewayInterface
             'CondicionIVAReceptorId' => $request->condicionIvaReceptorId,
         ];
 
-        // Factura C (emisor Monotributista/Exento) no discrimina IVA.
-        if ($request->tipoComprobante->family() !== 'C' && $request->impIva > 0) {
+        // Factura C (emisor Monotributista/Exento) no discrimina IVA. El resto
+        // manda una entrada por cada alícuota gravada del comprobante.
+        if ($request->tipoComprobante->family() !== 'C' && $request->alicuotas !== []) {
             $detalle['Iva'] = [
-                'AlicIva' => [[
-                    'Id' => $this->alicuotaIdPara($request->impNeto, $request->impIva),
-                    'BaseImp' => $request->impNeto,
-                    'Importe' => $request->impIva,
-                ]],
+                'AlicIva' => array_map(fn (array $a) => [
+                    'Id' => $this->alicuotaIdPorTasa($a['tasa']),
+                    'BaseImp' => $a['baseImp'],
+                    'Importe' => $a['importe'],
+                ], $request->alicuotas),
             ];
         }
 
@@ -286,16 +287,10 @@ class AfipSoapGateway implements AfipGatewayInterface
         ];
     }
 
-    private function alicuotaIdPara(float $neto, float $iva): int
+    private function alicuotaIdPorTasa(float $tasa): int
     {
-        if ($neto <= 0) {
-            return self::ALICUOTAS_IVA['21.0'];
-        }
-
-        $tasa = round(($iva / $neto) * 100, 1);
-
         foreach (self::ALICUOTAS_IVA as $porcentaje => $id) {
-            if (abs($porcentaje - $tasa) < 0.5) {
+            if (abs((float) $porcentaje - $tasa) < 0.05) {
                 return $id;
             }
         }

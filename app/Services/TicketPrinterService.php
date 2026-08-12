@@ -144,7 +144,16 @@ class TicketPrinterService
     {
         $this->addRule();
         $this->addColumns('Subtotal', '$'.$this->money($invoice->subtotal));
-        $this->addColumns("IVA ({$invoice->tax_rate}%)", '$'.$this->money($invoice->tax_amount));
+
+        if ($invoice->neto_exento > 0) {
+            $this->addColumns('Exento', '$'.$this->money($invoice->neto_exento));
+        }
+
+        foreach ($invoice->ivaPorAlicuota() as $linea) {
+            $tasa = rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.');
+            $this->addColumns("IVA {$tasa}%", '$'.$this->money($linea['iva']));
+        }
+
         $this->addColumns('TOTAL', '$'.$this->money($invoice->total), bold: true);
     }
 

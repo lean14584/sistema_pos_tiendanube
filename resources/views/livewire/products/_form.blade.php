@@ -36,6 +36,18 @@
 
     <div class="grid grid-cols-2 gap-4">
         <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alícuota de IVA *</label>
+            <select
+                wire:model="iva_rate"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+                @foreach (App\Enums\AlicuotaIva::cases() as $alicuota)
+                    <option value="{{ $alicuota->value }}">{{ $alicuota->label() }}</option>
+                @endforeach
+            </select>
+            @error('iva_rate') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+        </div>
+        <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio de compra</label>
             <input
                 type="number" min="0" step="0.01"

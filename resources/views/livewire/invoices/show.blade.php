@@ -182,13 +182,21 @@
         <div class="flex justify-end">
             <div class="w-full max-w-xs space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Subtotal</span>
+                    <span>Subtotal (neto)</span>
                     <span>${{ number_format($invoice->subtotal, 2) }}</span>
                 </div>
-                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Impuesto ({{ $invoice->tax_rate }}%)</span>
-                    <span>${{ number_format($invoice->tax_amount, 2) }}</span>
-                </div>
+                @if ($invoice->neto_exento > 0)
+                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Exento</span>
+                        <span>${{ number_format($invoice->neto_exento, 2) }}</span>
+                    </div>
+                @endif
+                @foreach ($invoice->ivaPorAlicuota() as $linea)
+                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>
+                        <span>${{ number_format($linea['iva'], 2) }}</span>
+                    </div>
+                @endforeach
                 <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                     <span>Total</span>
                     <span>${{ number_format($invoice->total, 2) }}</span>

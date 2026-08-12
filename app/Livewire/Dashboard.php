@@ -40,6 +40,12 @@ class Dashboard extends Component
 
         $recentInvoices = $invoices->sortByDesc('created_at')->take(5);
 
+        // Facturas fiscales finalizadas pero todavía sin CAE: faltan emitir a
+        // AFIP para que entren al Libro IVA.
+        $pendientesEmision = $nonDraft->filter(
+            fn (Invoice $i) => $i->tipo_comprobante_interno->esFiscal() && $i->cae === null
+        );
+
         $lowStockProducts = Product::lowStock()->with('category')->orderBy('stock')->take(5)->get();
 
         $topProducts = collect();
@@ -69,6 +75,7 @@ class Dashboard extends Component
             'recentInvoices' => $recentInvoices,
             'lowStockCount' => Product::lowStockCountCached(),
             'lowStockProducts' => $lowStockProducts,
+            'pendientesEmisionCount' => $pendientesEmision->count(),
             'canManageInvoices' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'invoices'),
             'canManageProducts' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'products'),
             'topProducts' => $topProducts,

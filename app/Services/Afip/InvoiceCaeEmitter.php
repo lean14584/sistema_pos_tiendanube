@@ -89,16 +89,27 @@ class InvoiceCaeEmitter
 
             $cbteNro = $this->gateway->getLastVoucherNumber($company->punto_venta, $tipoComprobante) + 1;
 
+            // Desglose del IVA por alícuota (comprobante con alícuotas mezcladas).
+            $alicuotas = $invoice->ivaPorAlicuota()
+                ->map(fn (array $a) => [
+                    'tasa' => $a['tasa'],
+                    'baseImp' => round($a['base'], 2),
+                    'importe' => round($a['iva'], 2),
+                ])
+                ->all();
+
             $request = new CaeRequest(
                 puntoVenta: $company->punto_venta,
                 tipoComprobante: $tipoComprobante,
                 cbteNro: $cbteNro,
                 docTipo: $invoice->client->tipo_documento->afipCode(),
                 docNro: $this->docNroPara($invoice->client->tipo_documento, $invoice->client->tax_id),
-                impNeto: (float) $invoice->subtotal,
-                impIva: (float) $invoice->tax_amount,
-                impTotal: (float) $invoice->total,
+                impNeto: round((float) $invoice->neto_gravado, 2),
+                impIva: round((float) $invoice->tax_amount, 2),
+                impTotal: round((float) $invoice->total, 2),
                 condicionIvaReceptorId: $condicionIvaReceptorId,
+                impOpEx: round((float) $invoice->neto_exento, 2),
+                alicuotas: $alicuotas,
                 comprobanteAsociado: $comprobanteAsociado,
             );
 

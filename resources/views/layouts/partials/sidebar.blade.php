@@ -1,11 +1,13 @@
 @php
     use App\Enums\Role;
+    use App\Models\Invoice;
     use App\Models\Message;
     use App\Models\Product;
     use App\Models\Task;
     use App\Support\Permissions;
 
     $lowStockCount = Product::lowStockCountCached();
+    $pendientesEmision = Invoice::pendientesDeEmisionCountCached();
     $unreadMessagesCount = auth()->check() ? Message::unreadFor(auth()->id())->count() : 0;
     $openTasksCount = 0;
     if (auth()->check()) {
@@ -18,7 +20,7 @@
     $navItems = [
         ['module' => 'dashboard', 'pattern' => 'dashboard', 'href' => route('dashboard'), 'label' => 'Dashboard', 'icon' => 'home'],
         ['module' => 'quotes', 'pattern' => 'quotes.*', 'href' => route('quotes.index'), 'label' => 'Presupuestos', 'icon' => 'clipboard-document-list'],
-        ['module' => 'invoices', 'pattern' => 'invoices.*', 'href' => route('invoices.index'), 'label' => 'Facturas', 'icon' => 'document-text'],
+        ['module' => 'invoices', 'pattern' => 'invoices.*', 'href' => route('invoices.index'), 'label' => 'Facturas', 'icon' => 'document-text', 'badge' => $pendientesEmision],
         ['module' => 'clients', 'pattern' => 'clients.*', 'href' => route('clients.index'), 'label' => 'Clientes', 'icon' => 'users'],
         ['module' => 'products', 'pattern' => 'products.*', 'href' => route('products.index'), 'label' => 'Productos', 'icon' => 'cube', 'badge' => $lowStockCount],
         ['module' => 'categories', 'pattern' => 'categories.*', 'href' => route('categories.index'), 'label' => 'Categorías', 'icon' => 'tag'],

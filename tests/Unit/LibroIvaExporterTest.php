@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Enums\TipoComprobante;
+use App\Support\LibroIva\LibroIvaAlicuota;
 use App\Support\LibroIva\LibroIvaExporter;
 use App\Support\LibroIva\LibroIvaRow;
 use Illuminate\Support\Carbon;
@@ -44,9 +45,7 @@ class LibroIvaExporterTest extends TestCase
             denominacion: 'Cliente Test',
             importeTotal: 1210.00,
             importeExento: 0.0,
-            importeNetoGravado: 1000.00,
-            ivaLiquidado: 210.00,
-            tasaIva: 21.0,
+            alicuotas: [new LibroIvaAlicuota(21.0, 1000.00, 210.00)],
             codigoOperacion: '',
         );
     }
@@ -63,9 +62,7 @@ class LibroIvaExporterTest extends TestCase
             denominacion: 'CONSUMIDOR FINAL',
             importeTotal: 500.00,
             importeExento: 500.00,
-            importeNetoGravado: 0.0,
-            ivaLiquidado: 0.0,
-            tasaIva: 0.0,
+            alicuotas: [],
             codigoOperacion: 'E',
         );
     }
@@ -143,9 +140,7 @@ class LibroIvaExporterTest extends TestCase
             denominacion: 'Proveedor Test',
             importeTotal: 1000.0,
             importeExento: 0.0,
-            importeNetoGravado: 826.45,
-            ivaLiquidado: 173.55,
-            tasaIva: 21.0,
+            alicuotas: [new LibroIvaAlicuota(21.0, 826.45, 173.55)],
             codigoOperacion: '',
         );
 
@@ -185,9 +180,7 @@ class LibroIvaExporterTest extends TestCase
             denominacion: 'Proveedor Test',
             importeTotal: 1000.0,
             importeExento: 0.0,
-            importeNetoGravado: 826.45,
-            ivaLiquidado: 173.55,
-            tasaIva: 21.0,
+            alicuotas: [new LibroIvaAlicuota(21.0, 826.45, 173.55)],
             codigoOperacion: '',
         );
 

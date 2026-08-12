@@ -9,10 +9,12 @@ use App\Enums\InvoiceStatus;
 use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 #[Fillable([
     'number', 'client_id', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
@@ -49,6 +51,52 @@ class Invoice extends Model
             'emitted_at' => 'datetime',
             'afecta_stock' => 'boolean',
         ];
+    }
+
+    /**
+     * IVA total de la factura: suma del IVA de cada ítem según su propia
+     * alícuota (sobrescribe el cálculo por tax_rate único de HasBillingTotals
+     * para soportar comprobantes con alícuotas mezcladas).
+     */
+    protected function taxAmount(): Attribute
+    {
+        return Attribute::get(fn () => $this->items->sum(fn (InvoiceItem $item) => $item->iva_amount));
+    }
+
+    /** Neto de los ítems gravados (alícuota > 0). */
+    protected function netoGravado(): Attribute
+    {
+        return Attribute::get(
+            fn () => $this->items->filter(fn (InvoiceItem $i) => $i->iva_rate_efectiva > 0)->sum(fn (InvoiceItem $i) => $i->line_total)
+        );
+    }
+
+    /** Neto de los ítems exentos / no gravados (alícuota 0). */
+    protected function netoExento(): Attribute
+    {
+        return Attribute::get(
+            fn () => $this->items->filter(fn (InvoiceItem $i) => $i->iva_rate_efectiva <= 0)->sum(fn (InvoiceItem $i) => $i->line_total)
+        );
+    }
+
+    /**
+     * Desglose del IVA por alícuota (solo gravadas), ordenado por tasa.
+     * Cada elemento: ['tasa' => float, 'base' => float, 'iva' => float].
+     *
+     * @return Collection<int, array{tasa: float, base: float, iva: float}>
+     */
+    public function ivaPorAlicuota(): Collection
+    {
+        return $this->items
+            ->filter(fn (InvoiceItem $i) => $i->iva_rate_efectiva > 0)
+            ->groupBy(fn (InvoiceItem $i) => number_format($i->iva_rate_efectiva, 2, '.', ''))
+            ->map(fn (Collection $grupo, string $tasa) => [
+                'tasa' => (float) $tasa,
+                'base' => $grupo->sum(fn (InvoiceItem $i) => $i->line_total),
+                'iva' => $grupo->sum(fn (InvoiceItem $i) => $i->iva_amount),
+            ])
+            ->sortBy('tasa')
+            ->values();
     }
 
     public function client(): BelongsTo
@@ -102,5 +150,29 @@ class Invoice extends Model
     protected function isFiscal(): Attribute
     {
         return Attribute::get(fn () => $this->cae !== null);
+    }
+
+    /**
+     * Comprobantes fiscales (Factura A/B, Nota de Crédito A/B) que todavía no
+     * se emitieron a AFIP: sin CAE y fuera de borrador. Son los que faltan
+     * emitir para que entren al Libro IVA.
+     */
+    public function scopePendientesDeEmision(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('cae')
+            ->where('status', '!=', InvoiceStatus::Draft->value)
+            ->whereIn(
+                'tipo_comprobante_interno',
+                array_map(fn (TipoComprobanteInterno $t) => $t->value, TipoComprobanteInterno::fiscales()),
+            );
+    }
+
+    /**
+     * Conteo memoizado por request (lo piden el sidebar y el dashboard).
+     */
+    public static function pendientesDeEmisionCountCached(): int
+    {
+        return once(fn () => self::pendientesDeEmision()->count());
     }
 }
