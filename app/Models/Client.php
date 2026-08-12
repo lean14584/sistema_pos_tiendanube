@@ -8,10 +8,11 @@ use App\Observers\ClientObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ObservedBy(ClientObserver::class)]
-#[Fillable(['name', 'email', 'phone', 'address', 'tax_id', 'condicion_iva', 'tipo_documento', 'tiendanube_customer_id'])]
+#[Fillable(['name', 'email', 'phone', 'address', 'tax_id', 'condicion_iva', 'tipo_documento', 'price_list_id', 'tiendanube_customer_id'])]
 class Client extends Model
 {
     protected function casts(): array
@@ -20,6 +21,11 @@ class Client extends Model
             'condicion_iva' => CondicionIva::class,
             'tipo_documento' => TipoDocumento::class,
         ];
+    }
+
+    public function priceList(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class);
     }
 
     public function invoices(): HasMany

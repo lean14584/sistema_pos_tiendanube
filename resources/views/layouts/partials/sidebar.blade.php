@@ -25,6 +25,7 @@
         ['module' => 'clients', 'pattern' => 'clients.*', 'href' => route('clients.index'), 'label' => 'Clientes', 'icon' => 'users'],
         ['module' => 'products', 'pattern' => 'products.*', 'href' => route('products.index'), 'label' => 'Productos', 'icon' => 'cube', 'badge' => $lowStockCount],
         ['module' => 'categories', 'pattern' => 'categories.*', 'href' => route('categories.index'), 'label' => 'Categorías', 'icon' => 'tag'],
+        ['module' => 'price-lists', 'pattern' => 'price-lists.*', 'href' => route('price-lists.index'), 'label' => 'Listas de precios', 'icon' => 'currency-dollar'],
         ['module' => 'providers', 'pattern' => 'providers.*', 'href' => route('providers.index'), 'label' => 'Proveedores', 'icon' => 'truck'],
         ['module' => 'purchases', 'pattern' => 'purchases.*', 'href' => route('purchases.index'), 'label' => 'Compras', 'icon' => 'shopping-cart'],
         ['module' => 'cash-register', 'pattern' => 'cash-register.*', 'href' => route('cash-register.index'), 'label' => 'Caja', 'icon' => 'banknotes'],

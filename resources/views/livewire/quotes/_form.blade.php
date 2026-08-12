@@ -6,13 +6,21 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente *</label>
-            <select wire:model="client_id" required class="{{ $inputClass }}">
+            <select wire:model.live="client_id" required class="{{ $inputClass }}">
                 <option value="">Seleccionar...</option>
                 @foreach ($clients as $client)
                     <option value="{{ $client->id }}">{{ $client->name }}</option>
                 @endforeach
             </select>
             @error('client_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lista de precios</label>
+            <select wire:model.live="price_list_id" class="{{ $inputClass }}">
+                @foreach ($priceLists as $list)
+                    <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
+                @endforeach
+            </select>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de emisión</label>
@@ -68,6 +76,7 @@
                             <th class="px-4 py-2 font-medium">Descripción</th>
                             <th class="px-4 py-2 font-medium w-24">Cant.</th>
                             <th class="px-4 py-2 font-medium w-32">Precio unit.</th>
+                            <th class="px-4 py-2 font-medium w-20">Desc %</th>
                             <th class="px-4 py-2 font-medium w-28 text-right">Total</th>
                             <th class="px-2 py-2 w-10"></th>
                         </tr>
@@ -84,8 +93,11 @@
                                 <td class="px-4 py-2">
                                     <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
+                                <td class="px-4 py-2">
+                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                </td>
                                 <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">
-                                    ${{ number_format((float) $item['quantity'] * (float) $item['unit_price'], 2) }}
+                                    ${{ number_format((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100), 2) }}
                                 </td>
                                 <td class="px-2 py-2 text-center">
                                     <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">

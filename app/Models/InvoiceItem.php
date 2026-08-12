@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['invoice_id', 'product_id', 'description', 'quantity', 'unit_price', 'iva_rate'])]
+#[Fillable(['invoice_id', 'product_id', 'description', 'quantity', 'unit_price', 'discount_percent', 'iva_rate'])]
 class InvoiceItem extends Model
 {
     use HasLineTotal;
@@ -18,6 +18,7 @@ class InvoiceItem extends Model
         return [
             'quantity' => 'decimal:2',
             'unit_price' => 'decimal:2',
+            'discount_percent' => 'decimal:2',
             'iva_rate' => 'decimal:2',
         ];
     }

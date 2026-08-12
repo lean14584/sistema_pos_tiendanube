@@ -5,14 +5,20 @@ namespace App\Concerns;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
- * Compartido por InvoiceItem, PurchaseItem y QuoteItem: los tres son
- * cantidad x precio unitario, nada más. Antes estaba copiado y pegado
- * idéntico en los tres modelos.
+ * Compartido por InvoiceItem, PurchaseItem y QuoteItem: cantidad x precio
+ * unitario, menos el descuento de la línea si el modelo lo maneja
+ * (`discount_percent`). PurchaseItem no tiene ese campo, así que ahí el
+ * descuento es 0 y el cálculo queda como antes.
  */
 trait HasLineTotal
 {
     protected function lineTotal(): Attribute
     {
-        return Attribute::get(fn () => $this->quantity * $this->unit_price);
+        return Attribute::get(function () {
+            $bruto = $this->quantity * $this->unit_price;
+            $descuento = (float) ($this->discount_percent ?? 0);
+
+            return $bruto * (1 - $descuento / 100);
+        });
     }
 }

@@ -26,6 +26,8 @@ class Create extends Component
 
     public string $tipo_documento = 'sin_identificar';
 
+    public ?int $price_list_id = null;
+
     public function save(): void
     {
         $data = $this->validate([
@@ -36,6 +38,7 @@ class Create extends Component
             'tax_id' => ['nullable', 'string', 'max:255'],
             'condicion_iva' => ['required', Rule::enum(CondicionIva::class)],
             'tipo_documento' => ['required', Rule::enum(TipoDocumento::class)],
+            'price_list_id' => ['nullable', 'exists:price_lists,id'],
         ]);
 
         Client::create($data);
@@ -48,6 +51,7 @@ class Create extends Component
         return view('livewire.clients.create', [
             'condicionIvaOptions' => CondicionIva::cases(),
             'tipoDocumentoOptions' => TipoDocumento::cases(),
+            'priceLists' => \App\Models\PriceList::active()->orderBy('name')->get(),
         ]);
     }
 }

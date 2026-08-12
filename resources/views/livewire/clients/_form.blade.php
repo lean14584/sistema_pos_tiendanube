@@ -78,6 +78,20 @@
         </div>
     </div>
 
+    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lista de precios</label>
+        <select
+            wire:model="price_list_id"
+            class="w-full max-w-xs rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
+        >
+            <option value="">— Predeterminada —</option>
+            @foreach ($priceLists as $list)
+                <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
+            @endforeach
+        </select>
+        @error('price_list_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+    </div>
+
     <div class="flex gap-3 pt-2">
         <button
             type="submit"

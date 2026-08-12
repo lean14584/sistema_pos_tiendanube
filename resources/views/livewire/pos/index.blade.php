@@ -72,7 +72,13 @@
                     <div wire:key="cart-{{ $index }}" class="flex items-center gap-2 px-4 py-2.5">
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $item['description'] }}</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500">${{ number_format($item['unit_price'], 2) }} · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</p>
+                            <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+                                <span>${{ number_format($item['unit_price'], 2) }} · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</span>
+                                <span class="text-gray-300 dark:text-gray-600">·</span>
+                                <span>Desc</span>
+                                <input type="number" min="0" max="100" step="0.01" wire:model.live="cart.{{ $index }}.discount" class="w-12 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                <span>%</span>
+                            </div>
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             <button wire:click="dec({{ $index }})" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center">−</button>
@@ -80,7 +86,7 @@
                             <button wire:click="inc({{ $index }})" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center">+</button>
                         </div>
                         <span class="w-20 text-right text-sm font-medium text-gray-900 dark:text-gray-100 shrink-0">
-                            ${{ number_format($item['unit_price'] * $item['quantity'] * (1 + (float)$item['iva_rate']/100), 2) }}
+                            ${{ number_format($item['unit_price'] * $item['quantity'] * (1 - (float)($item['discount'] ?? 0)/100) * (1 + (float)$item['iva_rate']/100), 2) }}
                         </span>
                     </div>
                 @empty
@@ -94,22 +100,75 @@
             @error('cart') <p class="px-4 pt-2 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
 
             <div class="border-t border-gray-100 dark:border-gray-800 p-4 space-y-3">
+                {{-- Cliente y lista de precios --}}
+                <div class="grid grid-cols-1 gap-2">
+                    <div>
+                        <select wire:model.live="client_id" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            @foreach ($clients as $client)
+                                <option value="{{ $client->id }}">{{ $client->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('client_id') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">Lista</span>
+                        <select wire:model.live="price_list_id" class="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            @foreach ($priceLists as $list)
+                                <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-500 dark:text-gray-400">Total</span>
                     <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ number_format($this->total(), 2) }}</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
-                    <select wire:model="paymentMethod" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        @foreach ($paymentMethods as $method)
-                            <option value="{{ $method->value }}">{{ $method->label() }}</option>
-                        @endforeach
-                    </select>
-                    <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-1">
-                        <input type="checkbox" wire:model="printOnSale" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
-                        Imprimir ticket
-                    </label>
+                {{-- Medios de pago (uno o varios) --}}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Medios de pago</span>
+                        <button type="button" wire:click="addPayment" class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium">
+                            <x-heroicon-o-plus class="w-4 h-4" /> Agregar
+                        </button>
+                    </div>
+
+                    @forelse ($payments as $index => $payment)
+                        <div wire:key="pay-{{ $index }}" class="flex items-center gap-2">
+                            <select wire:model="payments.{{ $index }}.method" class="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                @foreach ($paymentMethods as $method)
+                                    <option value="{{ $method->value }}">{{ $method->label() }}</option>
+                                @endforeach
+                            </select>
+                            <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-28 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" wire:click="removePayment({{ $index }})" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 shrink-0">
+                                <x-heroicon-o-x-mark class="w-5 h-5" />
+                            </button>
+                        </div>
+                    @empty
+                        <p class="text-xs text-gray-400 dark:text-gray-500">Sin pago cargado: la venta queda como saldo en la cuenta corriente del cliente.</p>
+                    @endforelse
+                    @error('payments') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+
+                    @if (count($payments) > 0)
+                        <div class="flex items-center justify-between text-sm pt-1">
+                            <span class="text-gray-500 dark:text-gray-400">Pagado</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-100">${{ number_format($this->paymentsTotal(), 2) }}</span>
+                        </div>
+                    @endif
+                    @if ($this->saldoPendiente() > 0)
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-amber-600 dark:text-amber-400">Saldo a cuenta corriente</span>
+                            <span class="font-semibold text-amber-600 dark:text-amber-400">${{ number_format($this->saldoPendiente(), 2) }}</span>
+                        </div>
+                    @endif
                 </div>
+
+                <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-1">
+                    <input type="checkbox" wire:model="printOnSale" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                    Imprimir ticket
+                </label>
 
                 <button
                     wire:click="cobrar"

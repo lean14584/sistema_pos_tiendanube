@@ -98,6 +98,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/{category}/edit', CategoryEdit::class)->name('edit');
     });
 
+    Route::middleware('module:price-lists')->prefix('price-lists')->name('price-lists.')->group(function () {
+        Route::get('/', \App\Livewire\PriceLists\Index::class)->name('index');
+    });
+
     Route::middleware('module:providers')->prefix('providers')->name('providers.')->group(function () {
         Route::get('/', ProviderIndex::class)->name('index');
         Route::get('/new', ProviderCreate::class)->name('create');

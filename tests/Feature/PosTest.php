@@ -52,12 +52,50 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->call('addProduct', $product->id)
             ->call('addProduct', $product->id) // cantidad 2
-            ->set('paymentMethod', 'efectivo')
+            ->call('addPayment') // prellena efectivo con el total (1000)
             ->set('printOnSale', false)
             ->call('cobrar');
 
         $this->assertDatabaseHas('invoices', ['status' => 'paid']);
         $this->assertEquals(3, $product->fresh()->stock); // 5 - 2
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 1000, 'source' => 'venta']);
+    }
+
+    public function test_pago_parcial_deja_saldo_en_cuenta_del_cliente(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $product = \App\Models\Product::create(['name' => 'Yerba', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
+        $cliente = \App\Models\Client::create(['name' => 'Juan Perez', 'email' => 'juan@test.com', 'condicion_iva' => 'consumidor_final', 'tipo_documento' => 'sin_identificar']);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('client_id', $cliente->id)
+            ->call('addProduct', $product->id) // total 1000
+            ->call('addPayment') // efectivo 1000
+            ->set('payments.0.amount', '600') // paga solo 600
+            ->set('printOnSale', false)
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        // Factura queda pendiente y solo entra a caja lo efectivamente pagado.
+        $this->assertDatabaseHas('invoices', ['client_id' => $cliente->id, 'status' => 'pending']);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 600]);
+        $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 600, 'source' => 'venta']);
+    }
+
+    public function test_saldo_pendiente_a_consumidor_final_es_rechazado(): void
+    {
+        $admin = $this->admin();
+        $product = \App\Models\Product::create(['name' => 'Pan', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index') // client_id queda en Consumidor Final por defecto
+            ->call('addProduct', $product->id)
+            ->call('cobrar') // sin pagos => quedaría saldo a Consumidor Final
+            ->assertHasErrors('client_id');
+
+        $this->assertDatabaseCount('invoices', 0);
     }
 }

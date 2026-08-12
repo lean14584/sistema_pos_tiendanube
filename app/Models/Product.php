@@ -47,6 +47,17 @@ class Product extends Model
         return once(fn () => self::lowStock()->count());
     }
 
+    /**
+     * Precio de este producto según una lista (ajuste porcentual sobre el
+     * precio base). Sin lista, devuelve el precio base.
+     */
+    public function priceForList(?PriceList $list): float
+    {
+        $ajuste = $list?->adjustment_percent ?? 0;
+
+        return round((float) $this->price * (1 + (float) $ajuste / 100), 2);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

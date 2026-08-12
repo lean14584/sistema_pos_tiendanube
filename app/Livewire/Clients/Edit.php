@@ -28,6 +28,8 @@ class Edit extends Component
 
     public string $tipo_documento = 'sin_identificar';
 
+    public ?int $price_list_id = null;
+
     public function mount(Client $client): void
     {
         $this->client = $client;
@@ -38,6 +40,7 @@ class Edit extends Component
         $this->tax_id = (string) $client->tax_id;
         $this->condicion_iva = $client->condicion_iva->value;
         $this->tipo_documento = $client->tipo_documento->value;
+        $this->price_list_id = $client->price_list_id;
     }
 
     public function save(): void
@@ -50,6 +53,7 @@ class Edit extends Component
             'tax_id' => ['nullable', 'string', 'max:255'],
             'condicion_iva' => ['required', Rule::enum(CondicionIva::class)],
             'tipo_documento' => ['required', Rule::enum(TipoDocumento::class)],
+            'price_list_id' => ['nullable', 'exists:price_lists,id'],
         ]);
 
         $this->client->update($data);
@@ -62,6 +66,7 @@ class Edit extends Component
         return view('livewire.clients.edit', [
             'condicionIvaOptions' => CondicionIva::cases(),
             'tipoDocumentoOptions' => TipoDocumento::cases(),
+            'priceLists' => \App\Models\PriceList::active()->orderBy('name')->get(),
         ]);
     }
 }

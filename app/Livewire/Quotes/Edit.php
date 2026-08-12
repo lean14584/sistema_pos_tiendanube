@@ -4,6 +4,7 @@ namespace App\Livewire\Quotes;
 
 use App\Enums\QuoteStatus;
 use App\Models\Client;
+use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\Quote;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,8 @@ class Edit extends Component
 
     public string $client_id = '';
 
+    public ?int $price_list_id = null;
+
     public string $issue_date;
 
     public string $valid_until;
@@ -28,7 +31,7 @@ class Edit extends Component
 
     public string $status = 'draft';
 
-    /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string}> */
+    /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string, discount: string}> */
     public array $items = [];
 
     public string $productQuery = '';
@@ -37,6 +40,7 @@ class Edit extends Component
     {
         $this->quote = $quote;
         $this->client_id = (string) $quote->client_id;
+        $this->price_list_id = $quote->client?->price_list_id ?? optional(PriceList::default())->id;
         $this->issue_date = $quote->issue_date->toDateString();
         $this->valid_until = $quote->valid_until->toDateString();
         $this->tax_rate = (string) $quote->tax_rate;
@@ -48,7 +52,41 @@ class Edit extends Component
             'description' => $item->description,
             'quantity' => (string) $item->quantity,
             'unit_price' => (string) $item->unit_price,
+            'discount' => (string) $item->discount_percent,
         ])->all();
+    }
+
+    public function currentPriceList(): ?PriceList
+    {
+        return $this->price_list_id ? PriceList::find($this->price_list_id) : PriceList::default();
+    }
+
+    public function updatedClientId($value): void
+    {
+        $client = Client::find($value);
+        $this->price_list_id = $client?->price_list_id ?? optional(PriceList::default())->id;
+        $this->repriceItems();
+    }
+
+    public function updatedPriceListId(): void
+    {
+        $this->repriceItems();
+    }
+
+    private function repriceItems(): void
+    {
+        $list = $this->currentPriceList();
+
+        foreach ($this->items as $i => $item) {
+            if (! empty($item['product_id']) && ($product = Product::find($item['product_id']))) {
+                $this->items[$i]['unit_price'] = (string) $product->priceForList($list);
+            }
+        }
+    }
+
+    private function lineNeto(array $item): float
+    {
+        return (float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100);
     }
 
     #[Computed]
@@ -74,7 +112,8 @@ class Edit extends Component
             'product_id' => $product->id,
             'description' => $product->name,
             'quantity' => '1',
-            'unit_price' => (string) $product->price,
+            'unit_price' => (string) $product->priceForList($this->currentPriceList()),
+            'discount' => '0',
         ];
 
         $this->productQuery = '';
@@ -87,6 +126,7 @@ class Edit extends Component
             'description' => '',
             'quantity' => '1',
             'unit_price' => '0',
+            'discount' => '0',
         ];
     }
 
@@ -98,7 +138,7 @@ class Edit extends Component
 
     public function subtotal(): float
     {
-        return collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+        return collect($this->items)->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function taxAmount(): float
@@ -151,6 +191,7 @@ class Edit extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'discount_percent' => $item['discount'] ?? 0,
                 ]);
             }
         });
@@ -163,6 +204,7 @@ class Edit extends Component
         return view('livewire.quotes.edit', [
             'clients' => Client::orderBy('name')->get(),
             'statuses' => QuoteStatus::editable(),
+            'priceLists' => PriceList::active()->orderBy('name')->get(),
         ]);
     }
 }

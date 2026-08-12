@@ -24,6 +24,8 @@ class Create extends Component
 {
     public string $client_id = '';
 
+    public ?int $price_list_id = null;
+
     public string $tipo_comprobante_interno = 'factura_b';
 
     public string $issue_date;
@@ -38,7 +40,7 @@ class Create extends Component
 
     public bool $printOnSave = true;
 
-    /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string}> */
+    /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string, discount: string}> */
     public array $items = [];
 
     /** @var array<int, array{method: string, amount: string}> */
@@ -50,10 +52,49 @@ class Create extends Component
     {
         $this->issue_date = now()->toDateString();
         $this->due_date = now()->addDays(15)->toDateString();
-        $this->client_id = (string) Client::consumidorFinal()->id;
+        $cf = Client::consumidorFinal();
+        $this->client_id = (string) $cf->id;
+        $this->price_list_id = $cf->price_list_id ?? optional(\App\Models\PriceList::default())->id;
         // Arranca en un tipo que la empresa tenga habilitado (evita quedar
         // en Factura B cuando B está apagada, por ejemplo).
         $this->tipo_comprobante_interno = CompanySettings::current()->tipoComprobantePorDefecto()->value;
+    }
+
+    /** Lista de precios vigente (la elegida, o la predeterminada). */
+    public function currentPriceList(): ?\App\Models\PriceList
+    {
+        return $this->price_list_id ? \App\Models\PriceList::find($this->price_list_id) : \App\Models\PriceList::default();
+    }
+
+    /** Al cambiar de cliente, tomo su lista y recalculo los ítems con producto. */
+    public function updatedClientId($value): void
+    {
+        $client = Client::find($value);
+        $this->price_list_id = $client?->price_list_id ?? optional(\App\Models\PriceList::default())->id;
+        $this->repriceItems();
+    }
+
+    public function updatedPriceListId(): void
+    {
+        $this->repriceItems();
+    }
+
+    /** Reaplica el precio de la lista a los ítems que provienen de un producto. */
+    private function repriceItems(): void
+    {
+        $list = $this->currentPriceList();
+
+        foreach ($this->items as $i => $item) {
+            if (! empty($item['product_id']) && ($product = Product::find($item['product_id']))) {
+                $this->items[$i]['unit_price'] = (string) $product->priceForList($list);
+            }
+        }
+    }
+
+    /** Neto de una línea: cantidad x precio, menos el descuento de la línea. */
+    private function lineNeto(array $item): float
+    {
+        return (float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100);
     }
 
     #[Computed]
@@ -79,7 +120,8 @@ class Create extends Component
             'product_id' => $product->id,
             'description' => $product->name,
             'quantity' => '1',
-            'unit_price' => (string) $product->price,
+            'unit_price' => (string) $product->priceForList($this->currentPriceList()),
+            'discount' => '0',
             'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
         ];
 
@@ -93,6 +135,7 @@ class Create extends Component
             'description' => '',
             'quantity' => '1',
             'unit_price' => '0',
+            'discount' => '0',
             'iva_rate' => '21',
         ];
     }
@@ -105,27 +148,27 @@ class Create extends Component
 
     public function subtotal(): float
     {
-        return collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+        return collect($this->items)->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function netoGravado(): float
     {
         return collect($this->items)
             ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
-            ->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+            ->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function netoExento(): float
     {
         return collect($this->items)
             ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) <= 0)
-            ->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+            ->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function taxAmount(): float
     {
         return collect($this->items)->sum(
-            fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) ($item['iva_rate'] ?? 0) / 100)
+            fn ($item) => $this->lineNeto($item) * ((float) ($item['iva_rate'] ?? 0) / 100)
         );
     }
 
@@ -146,7 +189,7 @@ class Create extends Component
             ->groupBy(fn ($item) => (string) (float) $item['iva_rate'])
             ->map(fn ($grupo, $tasa) => [
                 'tasa' => (float) $tasa,
-                'iva' => $grupo->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) $item['iva_rate'] / 100)),
+                'iva' => $grupo->sum(fn ($item) => $this->lineNeto($item) * ((float) $item['iva_rate'] / 100)),
             ])
             ->sortBy('tasa')
             ->values()
@@ -224,6 +267,7 @@ class Create extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'discount_percent' => $item['discount'] ?? 0,
                     'iva_rate' => $item['iva_rate'] ?? '21',
                 ]);
             }
@@ -276,6 +320,7 @@ class Create extends Component
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
+            'priceLists' => \App\Models\PriceList::active()->orderBy('name')->get(),
             'esNotaCredito' => false,
         ]);
     }

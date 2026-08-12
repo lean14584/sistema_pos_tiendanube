@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['quote_id', 'product_id', 'description', 'quantity', 'unit_price'])]
+#[Fillable(['quote_id', 'product_id', 'description', 'quantity', 'unit_price', 'discount_percent'])]
 class QuoteItem extends Model
 {
     use HasLineTotal;
@@ -17,6 +17,7 @@ class QuoteItem extends Model
         return [
             'quantity' => 'decimal:2',
             'unit_price' => 'decimal:2',
+            'discount_percent' => 'decimal:2',
         ];
     }
 

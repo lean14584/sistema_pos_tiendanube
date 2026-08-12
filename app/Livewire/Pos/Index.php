@@ -7,6 +7,8 @@ use App\Enums\PaymentMethod;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
+use App\Models\PriceList;
+use App\Models\Product;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
 use App\Support\StockAdjuster;
@@ -22,20 +24,61 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    /** @var array<int, array{product_id:int, description:string, sku:?string, unit_price:float, iva_rate:string, quantity:int}> */
+    /** @var array<int, array{product_id:int, description:string, sku:?string, unit_price:float, discount:float, iva_rate:string, quantity:int}> */
     public array $cart = [];
 
     public string $search = '';
 
     public string $barcode = '';
 
-    public string $paymentMethod = 'efectivo';
+    /** Cliente al que se factura. Por defecto, Consumidor Final. */
+    public ?int $client_id = null;
+
+    /** Lista de precios aplicada. Por defecto, la del cliente o la predeterminada. */
+    public ?int $price_list_id = null;
+
+    /** @var array<int, array{method: string, amount: string}> */
+    public array $payments = [];
 
     public bool $printOnSale = true;
 
     public function mount(): void
     {
-        $this->paymentMethod = PaymentMethod::cases()[0]->value;
+        $cf = Client::consumidorFinal();
+        $this->client_id = $cf->id;
+        $this->price_list_id = $cf->price_list_id ?? optional(PriceList::default())->id;
+    }
+
+    /** Lista de precios vigente (la elegida, o la predeterminada como fallback). */
+    public function currentPriceList(): ?PriceList
+    {
+        return $this->price_list_id ? PriceList::find($this->price_list_id) : PriceList::default();
+    }
+
+    /** Al cambiar de cliente, tomo su lista y recalculo el carrito. */
+    public function updatedClientId($value): void
+    {
+        $client = Client::find($value);
+        $this->price_list_id = $client?->price_list_id ?? optional(PriceList::default())->id;
+        $this->repriceCart();
+    }
+
+    public function updatedPriceListId(): void
+    {
+        $this->repriceCart();
+    }
+
+    /** Reaplica el precio de la lista vigente a cada ítem del carrito. */
+    private function repriceCart(): void
+    {
+        $list = $this->currentPriceList();
+
+        foreach ($this->cart as $i => $item) {
+            $product = Product::find($item['product_id']);
+            if ($product) {
+                $this->cart[$i]['unit_price'] = $product->priceForList($list);
+            }
+        }
     }
 
     #[Computed]
@@ -71,7 +114,8 @@ class Index extends Component
             'product_id' => $product->id,
             'description' => $product->name,
             'sku' => $product->sku,
-            'unit_price' => (float) $product->price,
+            'unit_price' => $product->priceForList($this->currentPriceList()),
+            'discount' => 0,
             'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
             'quantity' => 1,
         ];
@@ -139,13 +183,47 @@ class Index extends Component
     public function total(): float
     {
         return collect($this->cart)->sum(
-            fn ($i) => $i['unit_price'] * $i['quantity'] * (1 + (float) $i['iva_rate'] / 100)
+            fn ($i) => $i['unit_price'] * $i['quantity']
+                * (1 - (float) ($i['discount'] ?? 0) / 100)
+                * (1 + (float) $i['iva_rate'] / 100)
         );
     }
 
     public function itemsCount(): int
     {
         return collect($this->cart)->sum('quantity');
+    }
+
+    /** Suma de lo que se está pagando en el momento (todos los medios cargados). */
+    public function paymentsTotal(): float
+    {
+        return collect($this->payments)->sum(fn ($p) => (float) $p['amount']);
+    }
+
+    /** Lo que quedaría como saldo del cliente (total − pagado). Nunca negativo. */
+    public function saldoPendiente(): float
+    {
+        return max(0, round($this->total() - $this->paymentsTotal(), 2));
+    }
+
+    /**
+     * Agrega un medio de pago prellenado con el saldo que falta cubrir, para
+     * que en el caso típico (pago completo en efectivo) sea un solo toque.
+     */
+    public function addPayment(): void
+    {
+        $faltante = round($this->total() - $this->paymentsTotal(), 2);
+
+        $this->payments[] = [
+            'method' => 'efectivo',
+            'amount' => $faltante > 0 ? (string) $faltante : '0',
+        ];
+    }
+
+    public function removePayment(int $index): void
+    {
+        unset($this->payments[$index]);
+        $this->payments = array_values($this->payments);
     }
 
     public function cobrar(): void
@@ -156,17 +234,37 @@ class Index extends Component
             return;
         }
 
-        $tipo = CompanySettings::current()->tipoComprobantePorDefecto();
+        $total = round($this->total(), 2);
+        $pagado = round($this->paymentsTotal(), 2);
 
-        $invoice = DB::transaction(function () use ($tipo) {
+        if ($pagado > $total + 0.001) {
+            $this->addError('payments', 'Lo pagado ($'.number_format($pagado, 2).') supera el total. Ajustá los montos.');
+
+            return;
+        }
+
+        $consumidorFinal = Client::consumidorFinal();
+        $clientId = $this->client_id ?: $consumidorFinal->id;
+
+        // Si queda saldo, tiene que ir a la cuenta de un cliente real (no a Consumidor Final).
+        if ($pagado + 0.001 < $total && $clientId === $consumidorFinal->id) {
+            $this->addError('client_id', 'Queda un saldo pendiente: elegí un cliente real para cargarlo a su cuenta corriente.');
+
+            return;
+        }
+
+        $tipo = CompanySettings::current()->tipoComprobantePorDefecto();
+        $status = $pagado + 0.001 >= $total ? 'paid' : 'pending';
+
+        $invoice = DB::transaction(function () use ($tipo, $clientId, $status) {
             $invoice = Invoice::create([
                 'number' => $this->nextNumber($tipo->value),
-                'client_id' => Client::consumidorFinal()->id,
+                'client_id' => $clientId,
                 'tipo_comprobante_interno' => $tipo,
                 'issue_date' => now()->toDateString(),
                 'due_date' => now()->toDateString(),
                 'tax_rate' => 0,
-                'status' => 'paid',
+                'status' => $status,
             ]);
 
             foreach ($this->cart as $item) {
@@ -175,17 +273,19 @@ class Index extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'discount_percent' => $item['discount'] ?? 0,
                     'iva_rate' => $item['iva_rate'],
                 ]);
             }
 
             StockAdjuster::apply($this->cart, $tipo->stockSign());
 
-            $payment = $invoice->payments()->create([
-                'method' => $this->paymentMethod,
-                'amount' => round($this->total(), 2),
-            ]);
-            CashLinker::linkInvoicePayment($invoice, $payment);
+            foreach ($this->payments as $payment) {
+                if ((float) $payment['amount'] > 0) {
+                    $created = $invoice->payments()->create($payment);
+                    CashLinker::linkInvoicePayment($invoice, $created);
+                }
+            }
 
             return $invoice;
         });
@@ -198,9 +298,18 @@ class Index extends Component
             }
         }
 
+        $saldo = round((float) $invoice->total - $pagado, 2);
+
         $this->cart = [];
         $this->search = '';
-        session()->flash('status', "Venta {$invoice->number} cobrada por $".number_format((float) $invoice->total, 2).'.');
+        $this->payments = [];
+        $this->client_id = $consumidorFinal->id;
+
+        $msg = "Venta {$invoice->number} registrada por $".number_format((float) $invoice->total, 2).'.';
+        if ($saldo > 0) {
+            $msg .= ' Saldo en cuenta corriente: $'.number_format($saldo, 2).'.';
+        }
+        session()->flash('status', $msg);
     }
 
     private function nextNumber(string $tipo): string
@@ -220,6 +329,8 @@ class Index extends Component
     {
         return view('livewire.pos.index', [
             'paymentMethods' => PaymentMethod::cases(),
+            'clients' => Client::orderBy('name')->get(),
+            'priceLists' => PriceList::active()->orderBy('name')->get(),
         ]);
     }
 }

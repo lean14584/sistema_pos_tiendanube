@@ -25,6 +25,8 @@ class Edit extends Component
 
     public string $client_id = '';
 
+    public ?int $price_list_id = null;
+
     public string $tipo_comprobante_interno = 'factura_b';
 
     public string $issue_date;
@@ -37,7 +39,7 @@ class Edit extends Component
 
     public string $status = 'draft';
 
-    /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string}> */
+    /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string, discount: string}> */
     public array $items = [];
 
     /** @var array<int, array{method: string, amount: string}> */
@@ -51,6 +53,7 @@ class Edit extends Component
 
         $this->invoice = $invoice;
         $this->client_id = (string) $invoice->client_id;
+        $this->price_list_id = $invoice->client?->price_list_id ?? optional(\App\Models\PriceList::default())->id;
         $this->tipo_comprobante_interno = $invoice->tipo_comprobante_interno->value;
         $this->issue_date = $invoice->issue_date->toDateString();
         $this->due_date = $invoice->due_date->toDateString();
@@ -63,6 +66,7 @@ class Edit extends Component
             'description' => $item->description,
             'quantity' => (string) $item->quantity,
             'unit_price' => (string) $item->unit_price,
+            'discount' => (string) $item->discount_percent,
             'iva_rate' => AlicuotaIva::normalizar($item->iva_rate_efectiva),
         ])->all();
 
@@ -70,6 +74,39 @@ class Edit extends Component
             'method' => $payment->method->value,
             'amount' => (string) $payment->amount,
         ])->all();
+    }
+
+    public function currentPriceList(): ?\App\Models\PriceList
+    {
+        return $this->price_list_id ? \App\Models\PriceList::find($this->price_list_id) : \App\Models\PriceList::default();
+    }
+
+    public function updatedClientId($value): void
+    {
+        $client = Client::find($value);
+        $this->price_list_id = $client?->price_list_id ?? optional(\App\Models\PriceList::default())->id;
+        $this->repriceItems();
+    }
+
+    public function updatedPriceListId(): void
+    {
+        $this->repriceItems();
+    }
+
+    private function repriceItems(): void
+    {
+        $list = $this->currentPriceList();
+
+        foreach ($this->items as $i => $item) {
+            if (! empty($item['product_id']) && ($product = Product::find($item['product_id']))) {
+                $this->items[$i]['unit_price'] = (string) $product->priceForList($list);
+            }
+        }
+    }
+
+    private function lineNeto(array $item): float
+    {
+        return (float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100);
     }
 
     #[Computed]
@@ -95,7 +132,8 @@ class Edit extends Component
             'product_id' => $product->id,
             'description' => $product->name,
             'quantity' => '1',
-            'unit_price' => (string) $product->price,
+            'unit_price' => (string) $product->priceForList($this->currentPriceList()),
+            'discount' => '0',
             'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
         ];
 
@@ -109,6 +147,7 @@ class Edit extends Component
             'description' => '',
             'quantity' => '1',
             'unit_price' => '0',
+            'discount' => '0',
             'iva_rate' => '21',
         ];
     }
@@ -121,27 +160,27 @@ class Edit extends Component
 
     public function subtotal(): float
     {
-        return collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+        return collect($this->items)->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function netoGravado(): float
     {
         return collect($this->items)
             ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
-            ->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+            ->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function netoExento(): float
     {
         return collect($this->items)
             ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) <= 0)
-            ->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+            ->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function taxAmount(): float
     {
         return collect($this->items)->sum(
-            fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) ($item['iva_rate'] ?? 0) / 100)
+            fn ($item) => $this->lineNeto($item) * ((float) ($item['iva_rate'] ?? 0) / 100)
         );
     }
 
@@ -160,7 +199,7 @@ class Edit extends Component
             ->groupBy(fn ($item) => (string) (float) $item['iva_rate'])
             ->map(fn ($grupo, $tasa) => [
                 'tasa' => (float) $tasa,
-                'iva' => $grupo->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) $item['iva_rate'] / 100)),
+                'iva' => $grupo->sum(fn ($item) => $this->lineNeto($item) * ((float) $item['iva_rate'] / 100)),
             ])
             ->sortBy('tasa')
             ->values()
@@ -256,6 +295,7 @@ class Edit extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'discount_percent' => $item['discount'] ?? 0,
                     'iva_rate' => $item['iva_rate'] ?? '21',
                 ]);
             }
@@ -296,6 +336,7 @@ class Edit extends Component
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'tipoComprobanteInternoOptions' => $opciones,
+            'priceLists' => \App\Models\PriceList::active()->orderBy('name')->get(),
             'esNotaCredito' => $this->invoice->related_invoice_id !== null,
         ]);
     }

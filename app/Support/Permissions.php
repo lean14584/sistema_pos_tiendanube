@@ -9,7 +9,7 @@ class Permissions
     /** @var array<string, string[]> */
     public const ROLE_PERMISSIONS = [
         'admin' => [
-            'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'products', 'categories',
+            'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'products', 'categories', 'price-lists',
             'providers', 'purchases', 'cash-register', 'reports', 'users', 'messages', 'tasks',
             'company-settings', 'audit', 'libro-iva', 'price-check', 'backups', 'health',
         ],
