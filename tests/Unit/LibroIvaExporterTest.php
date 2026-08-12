@@ -67,6 +67,18 @@ class LibroIvaExporterTest extends TestCase
         );
     }
 
+    public function test_un_periodo_sin_comprobantes_genera_archivos_vacios(): void
+    {
+        // Sin registros el archivo debe quedar vacío (0 bytes), no un CRLF
+        // suelto que ARCA leería como un registro en blanco inválido.
+        $vacio = new Collection();
+
+        $this->assertSame('', LibroIvaExporter::ventasCbte($vacio));
+        $this->assertSame('', LibroIvaExporter::ventasAlicuotas($vacio));
+        $this->assertSame('', LibroIvaExporter::comprasCbte($vacio));
+        $this->assertSame('', LibroIvaExporter::comprasAlicuotas($vacio));
+    }
+
     public function test_ventas_cbte_respeta_el_diseno_de_registro(): void
     {
         // [8,3,5,20,20,2,20,30,15,15,15,15,15,15,15,15,3,10,1,1,15,8] = 266

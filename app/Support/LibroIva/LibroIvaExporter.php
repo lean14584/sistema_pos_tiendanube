@@ -48,7 +48,7 @@ final class LibroIvaExporter
                 self::codigoOperacion($row->codigoOperacion).
                 self::importe(0, 15).
                 self::fecha($row->fecha);
-        })->implode(self::EOL).self::EOL;
+        })->pipe(fn (Collection $lineas) => self::unir($lineas));
     }
 
     public static function ventasAlicuotas(Collection $rows): string
@@ -64,7 +64,7 @@ final class LibroIvaExporter
                     self::importe($a->ivaLiquidado, 15),
                 $row->alicuotas
             ))
-            ->implode(self::EOL).self::EOL;
+            ->pipe(fn (Collection $lineas) => self::unir($lineas));
     }
 
     public static function comprasCbte(Collection $rows): string
@@ -96,7 +96,7 @@ final class LibroIvaExporter
                 self::numZero('', 11). // CUIT emisor/corredor: no aplica
                 self::alfa('', 30).
                 self::importe(0, 15);
-        })->implode(self::EOL).self::EOL;
+        })->pipe(fn (Collection $lineas) => self::unir($lineas));
     }
 
     public static function comprasAlicuotas(Collection $rows): string
@@ -114,7 +114,19 @@ final class LibroIvaExporter
                     self::importe($a->ivaLiquidado, 15),
                 $row->alicuotas
             ))
-            ->implode(self::EOL).self::EOL;
+            ->pipe(fn (Collection $lineas) => self::unir($lineas));
+    }
+
+    /**
+     * Une las líneas con CRLF y agrega el fin de registro final. Si no hay
+     * ninguna línea, devuelve un archivo vacío (0 bytes) — NO un CRLF suelto,
+     * que ARCA interpretaría como un registro en blanco de ancho inválido.
+     *
+     * @param  Collection<int, string>  $lineas
+     */
+    private static function unir(Collection $lineas): string
+    {
+        return $lineas->isEmpty() ? '' : $lineas->implode(self::EOL).self::EOL;
     }
 
     private static function fecha(\Illuminate\Support\Carbon $fecha): string
