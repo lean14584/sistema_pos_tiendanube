@@ -63,12 +63,14 @@ class Account extends Component
 
     public function render()
     {
-        $invoices = $this->client->invoices()->whereNot('status', 'draft')->with('items')->get();
+        $invoices = $this->client->invoices()->whereNot('status', 'draft')->with('items', 'payments')->get();
 
+        // El débito de cada factura es lo que realmente queda debiendo: total
+        // menos lo que se pagó en el momento de la venta (invoice_payments).
         $debits = $invoices->map(fn ($invoice) => [
             'date' => $invoice->issue_date->toDateString(),
             'label' => $invoice->number,
-            'amount' => (float) $invoice->total,
+            'amount' => (float) $invoice->total - (float) $invoice->payments->sum('amount'),
             'href' => route('invoices.show', $invoice),
         ]);
 

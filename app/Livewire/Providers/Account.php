@@ -63,12 +63,14 @@ class Account extends Component
 
     public function render()
     {
-        $purchases = $this->provider->purchases()->whereNot('status', 'draft')->with('items')->get();
+        $purchases = $this->provider->purchases()->whereNot('status', 'draft')->with('items', 'payments')->get();
 
+        // El débito de cada compra es lo que realmente queda debiendo: total
+        // menos lo que se pagó en el momento (purchase_payments).
         $debits = $purchases->map(fn ($purchase) => [
             'date' => $purchase->issue_date->toDateString(),
             'label' => $purchase->number,
-            'amount' => (float) $purchase->total,
+            'amount' => (float) $purchase->total - (float) $purchase->payments->sum('amount'),
             'href' => route('purchases.show', $purchase),
         ]);
 
