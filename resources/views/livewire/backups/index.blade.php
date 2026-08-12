@@ -44,4 +44,48 @@
             </p>
         </div>
     </div>
+
+    {{-- Respaldo automático --}}
+    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 mt-6">
+        <div class="flex items-center gap-2 mb-3">
+            <x-heroicon-o-clock class="w-5 h-5 text-indigo-500" />
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Respaldo automático</h2>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+            Todos los días a las <strong>{{ $autoHora }}</strong> se genera un respaldo solo y se guarda en
+            <code class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ $autoPath }}</code>,
+            conservando los últimos <strong>{{ $autoKeep }}</strong>.
+            @if ($copyTo)
+                También se copia a <code class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ $copyTo }}</code>.
+            @endif
+        </p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Requiere que el programador de tareas esté activo (ver la nota al pie). También podés generarlo a mano cuando quieras con el botón de arriba.
+        </p>
+
+        @if (count($respaldos) > 0)
+            <div class="mt-4 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-800/50 text-left text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th class="px-4 py-2 font-medium">Archivo</th>
+                            <th class="px-4 py-2 font-medium">Fecha</th>
+                            <th class="px-4 py-2 font-medium text-right">Tamaño</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($respaldos as $r)
+                            <tr class="border-t border-gray-100 dark:border-gray-800">
+                                <td class="px-4 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs">{{ $r['nombre'] }}</td>
+                                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ $r['fecha'] }}</td>
+                                <td class="px-4 py-2 text-right text-gray-600 dark:text-gray-400">{{ $r['tamano'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="text-sm text-gray-400 dark:text-gray-500 mt-3">Todavía no hay respaldos automáticos guardados.</p>
+        @endif
+    </div>
 </div>

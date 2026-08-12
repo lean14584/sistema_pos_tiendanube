@@ -22,7 +22,35 @@ class Index extends Component
                 ['label' => 'Productos', 'value' => DB::table('products')->count(), 'icon' => 'cube'],
                 ['label' => 'Compras', 'value' => DB::table('purchases')->count(), 'icon' => 'shopping-cart'],
             ],
+            'autoPath' => config('backups.path'),
+            'autoHora' => config('backups.daily_at', '23:30'),
+            'autoKeep' => (int) config('backups.keep'),
+            'copyTo' => config('backups.copy_to'),
+            'respaldos' => $this->respaldosGuardados(),
         ]);
+    }
+
+    /**
+     * @return array<int, array{nombre: string, tamano: string, fecha: string}>
+     */
+    private function respaldosGuardados(): array
+    {
+        $dir = config('backups.path');
+
+        if (! is_dir($dir)) {
+            return [];
+        }
+
+        return collect(glob(rtrim($dir, '/\\').DIRECTORY_SEPARATOR.'respaldo-*.zip') ?: [])
+            ->sortByDesc(fn (string $f) => filemtime($f))
+            ->take(10)
+            ->map(fn (string $f) => [
+                'nombre' => basename($f),
+                'tamano' => $this->formatoTamano((int) filesize($f)),
+                'fecha' => date('d/m/Y H:i', filemtime($f)),
+            ])
+            ->values()
+            ->all();
     }
 
     private function formatoTamano(int $bytes): string
