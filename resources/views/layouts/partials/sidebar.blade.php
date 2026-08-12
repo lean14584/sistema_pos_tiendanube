@@ -37,6 +37,7 @@
         ['module' => 'audit', 'pattern' => 'audit.*', 'href' => route('audit.index'), 'label' => 'Auditoría', 'icon' => 'clipboard-document-check'],
         ['module' => 'libro-iva', 'pattern' => 'libro-iva.*', 'href' => route('libro-iva.index'), 'label' => 'Libro IVA', 'icon' => 'receipt-percent'],
         ['module' => 'backups', 'pattern' => 'backups.*', 'href' => route('backups.index'), 'label' => 'Respaldo', 'icon' => 'circle-stack'],
+        ['module' => 'health', 'pattern' => 'health.*', 'href' => route('health.index'), 'label' => 'Estado del sistema', 'icon' => 'heart'],
     ];
 
     $user = auth()->user();

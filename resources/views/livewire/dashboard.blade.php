@@ -28,6 +28,20 @@
         </a>
     @endif
 
+    @if ($canSeeHealth && $systemWarnings > 0)
+        <a href="{{ route('health.index') }}" wire:navigate
+            class="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10 px-4 py-3 mb-6 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors">
+            <x-heroicon-o-heart class="w-6 h-6 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    {{ $systemWarnings }} {{ $systemWarnings === 1 ? 'aviso en el estado del sistema' : 'avisos en el estado del sistema' }}
+                </p>
+                <p class="text-xs text-amber-700/80 dark:text-amber-400/80">Respaldo, certificado ARCA, stock… Tocá para revisarlos.</p>
+            </div>
+            <x-heroicon-o-chevron-right class="w-5 h-5 shrink-0 text-amber-500" />
+        </a>
+    @endif
+
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <x-stat-card label="Total facturado (pagado)" value="${{ number_format($stats['totalRevenue'], 2) }}" icon="currency-dollar" color="emerald" />
         <x-stat-card label="Pendiente de cobro" value="${{ number_format($stats['pendingAmount'], 2) }}" icon="clock" color="amber" />

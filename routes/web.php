@@ -149,6 +149,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/descargar', \App\Http\Controllers\BackupDownloadController::class)->name('download');
     });
 
+    Route::middleware('module:health')->get('estado', \App\Livewire\Health\Index::class)->name('health.index');
+
     Route::middleware('module:libro-iva')->prefix('libro-iva')->name('libro-iva.')->group(function () {
         Route::get('/', LibroIvaIndex::class)->name('index');
         Route::get('/export', LibroIvaExportController::class)->name('export');

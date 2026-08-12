@@ -76,6 +76,10 @@ class Dashboard extends Component
             'lowStockCount' => Product::lowStockCountCached(),
             'lowStockProducts' => $lowStockProducts,
             'pendientesEmisionCount' => $pendientesEmision->count(),
+            'canSeeHealth' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health'),
+            'systemWarnings' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health')
+                ? app(\App\Support\SystemHealth::class)->avisos()
+                : 0,
             'canManageInvoices' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'invoices'),
             'canManageProducts' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'products'),
             'topProducts' => $topProducts,
