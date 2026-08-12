@@ -144,6 +144,11 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('module:audit')->get('auditoria', AuditIndex::class)->name('audit.index');
 
+    Route::middleware('module:backups')->prefix('respaldo')->name('backups.')->group(function () {
+        Route::get('/', \App\Livewire\Backups\Index::class)->name('index');
+        Route::get('/descargar', \App\Http\Controllers\BackupDownloadController::class)->name('download');
+    });
+
     Route::middleware('module:libro-iva')->prefix('libro-iva')->name('libro-iva.')->group(function () {
         Route::get('/', LibroIvaIndex::class)->name('index');
         Route::get('/export', LibroIvaExportController::class)->name('export');

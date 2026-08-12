@@ -36,6 +36,7 @@
         ['module' => 'company-settings', 'pattern' => 'tiendanube.*', 'href' => route('tiendanube.index'), 'label' => 'Tiendanube', 'icon' => 'shopping-bag'],
         ['module' => 'audit', 'pattern' => 'audit.*', 'href' => route('audit.index'), 'label' => 'Auditoría', 'icon' => 'clipboard-document-check'],
         ['module' => 'libro-iva', 'pattern' => 'libro-iva.*', 'href' => route('libro-iva.index'), 'label' => 'Libro IVA', 'icon' => 'receipt-percent'],
+        ['module' => 'backups', 'pattern' => 'backups.*', 'href' => route('backups.index'), 'label' => 'Respaldo', 'icon' => 'circle-stack'],
     ];
 
     $user = auth()->user();
