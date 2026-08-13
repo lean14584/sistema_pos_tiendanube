@@ -3,63 +3,55 @@
 @endphp
 
 <form wire:submit="save" class="space-y-5 rounded-2xl border border-indigo-100 dark:border-gray-800 bg-gradient-to-b from-white to-indigo-50/50 dark:from-gray-900 dark:to-gray-950 shadow-md shadow-indigo-100/50 dark:shadow-black/30 p-6">
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-        @if ($esNotaCredito)
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ App\Enums\TipoComprobanteInterno::from($tipo_comprobante_interno)->label() }}
-                    <span class="text-gray-400 dark:text-gray-500">— una Nota de Crédito no puede convertirse en otro tipo de comprobante.</span>
-                </p>
-            </div>
-        @else
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
-                <div class="flex w-full rounded-lg border border-gray-300 dark:border-gray-700 p-0.5 bg-gray-50 dark:bg-gray-900/50">
-                    @foreach ($tipoComprobanteInternoOptions as $option)
-                        <button
-                            type="button"
-                            wire:click="$set('tipo_comprobante_interno', '{{ $option->value }}')"
-                            class="flex-1 px-3 py-1.5 rounded-md text-sm font-medium text-center transition-colors {{ $tipo_comprobante_interno === $option->value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/60 dark:hover:bg-gray-800' }}"
-                        >
-                            {{ $option->label() }}
-                        </button>
-                    @endforeach
-                </div>
-                @error('tipo_comprobante_interno') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-            </div>
-        @endif
-
+    {{-- Tipo de comprobante --}}
+    @if ($esNotaCredito)
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
-            <select wire:model="status" class="{{ $inputClass }}">
-                @foreach ($statuses as $s)
-                    <option value="{{ $s->value }}">{{ $s->label() }}</option>
-                @endforeach
-            </select>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ App\Enums\TipoComprobanteInterno::from($tipo_comprobante_interno)->label() }}
+                <span class="text-gray-400 dark:text-gray-500">— una Nota de Crédito no puede convertirse en otro tipo de comprobante.</span>
+            </p>
         </div>
-    </div>
+    @else
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
+            <div class="inline-flex flex-wrap gap-0.5 rounded-xl border border-gray-200 dark:border-gray-700 p-1 bg-gray-100/70 dark:bg-gray-900/50">
+                @foreach ($tipoComprobanteInternoOptions as $option)
+                    <button
+                        type="button"
+                        wire:click="$set('tipo_comprobante_interno', '{{ $option->value }}')"
+                        class="px-3.5 py-1.5 rounded-lg text-sm font-medium text-center transition-all {{ $tipo_comprobante_interno === $option->value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800' }}"
+                    >
+                        {{ $option->label() }}
+                    </button>
+                @endforeach
+            </div>
+            @error('tipo_comprobante_interno') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+        </div>
+    @endif
 
+    {{-- Datos en dos filas --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente *</label>
-            <select wire:model.live="client_id" required class="{{ $inputClass }}">
+            <x-select label="Cliente *" wire:model.live="client_id" required>
                 <option value="">Seleccionar...</option>
                 @foreach ($clients as $client)
                     <option value="{{ $client->id }}">{{ $client->name }}</option>
                 @endforeach
-            </select>
+            </x-select>
             @error('client_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
         </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lista de precios</label>
-            <select wire:model.live="price_list_id" class="{{ $inputClass }}">
-                <option value="">Precio base</option>
-                @foreach ($priceLists as $list)
-                    <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
-                @endforeach
-            </select>
-        </div>
+        <x-select label="Lista de precios" wire:model.live="price_list_id">
+            <option value="">Precio base</option>
+            @foreach ($priceLists as $list)
+                <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
+            @endforeach
+        </x-select>
+        <x-select label="Estado" wire:model="status">
+            @foreach ($statuses as $s)
+                <option value="{{ $s->value }}">{{ $s->label() }}</option>
+            @endforeach
+        </x-select>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de emisión</label>
             <input type="date" wire:model="issue_date" class="{{ $inputClass }}">

@@ -3,26 +3,22 @@
 @endphp
 
 <form wire:submit="save" class="space-y-5 rounded-2xl border border-indigo-100 dark:border-gray-800 bg-gradient-to-b from-white to-indigo-50/50 dark:from-gray-900 dark:to-gray-950 shadow-md shadow-indigo-100/50 dark:shadow-black/30 p-6">
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente *</label>
-            <select wire:model.live="client_id" required class="{{ $inputClass }}">
+            <x-select label="Cliente *" wire:model.live="client_id" required>
                 <option value="">Seleccionar...</option>
                 @foreach ($clients as $client)
                     <option value="{{ $client->id }}">{{ $client->name }}</option>
                 @endforeach
-            </select>
+            </x-select>
             @error('client_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
         </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lista de precios</label>
-            <select wire:model.live="price_list_id" class="{{ $inputClass }}">
-                <option value="">Precio base</option>
-                @foreach ($priceLists as $list)
-                    <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
-                @endforeach
-            </select>
-        </div>
+        <x-select label="Lista de precios" wire:model.live="price_list_id">
+            <option value="">Precio base</option>
+            @foreach ($priceLists as $list)
+                <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
+            @endforeach
+        </x-select>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de emisión</label>
             <input type="date" wire:model="issue_date" class="{{ $inputClass }}">
@@ -143,15 +139,12 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
-            <select wire:model="status" class="{{ $inputClass }}">
-                @foreach ($statuses as $s)
-                    <option value="{{ $s->value }}">{{ $s->label() }}</option>
-                @endforeach
-            </select>
-        </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <x-select label="Estado" wire:model="status">
+            @foreach ($statuses as $s)
+                <option value="{{ $s->value }}">{{ $s->label() }}</option>
+            @endforeach
+        </x-select>
     </div>
 
     <div>
