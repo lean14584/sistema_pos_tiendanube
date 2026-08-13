@@ -129,6 +129,52 @@
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Al guardar la compra, el stock de cada producto se incrementa automáticamente.</p>
     </div>
 
+    {{-- Impuestos y percepciones (se cargan como vienen en la factura del proveedor) --}}
+    <div>
+        <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Impuestos y percepciones</label>
+            <button type="button" wire:click="addTax" class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">
+                <x-heroicon-o-plus class="w-4 h-4" /> Agregar impuesto
+            </button>
+        </div>
+
+        <datalist id="conceptos-impuestos">
+            <option value="Percepción IVA"></option>
+            <option value="Percepción IIBB"></option>
+            <option value="Percepción Ganancias"></option>
+            <option value="Impuestos internos"></option>
+            <option value="IVA 10,5% adicional"></option>
+        </datalist>
+
+        @if (count($taxes) === 0)
+            <p class="text-sm text-gray-400 dark:text-gray-500">Sin percepciones. Agregá las que figuren en la factura del proveedor (IIBB, percepción IVA, etc.).</p>
+        @else
+            <div class="space-y-2">
+                @foreach ($taxes as $index => $tax)
+                    <div class="flex items-center gap-2">
+                        <input
+                            type="text"
+                            list="conceptos-impuestos"
+                            wire:model="taxes.{{ $index }}.concepto"
+                            placeholder="Concepto (ej. Percepción IIBB)"
+                            class="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                        <input
+                            type="number" min="0" step="0.01"
+                            wire:model.live="taxes.{{ $index }}.amount"
+                            placeholder="Monto"
+                            class="w-32 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                        <button type="button" wire:click="removeTax({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
+                            <x-heroicon-o-trash class="w-4 h-4" />
+                        </button>
+                    </div>
+                    @error("taxes.{$index}.concepto") <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                @endforeach
+            </div>
+        @endif
+    </div>
+
     <div class="flex justify-end">
         <div class="w-full max-w-xs space-y-2 text-sm">
             <div class="flex justify-between text-gray-600 dark:text-gray-400">
@@ -143,6 +189,12 @@
                 <span>Monto impuesto</span>
                 <span>${{ number_format($this->taxAmount(), 2) }}</span>
             </div>
+            @if ($this->percepcionesTotal() > 0)
+                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Percepciones / otros impuestos</span>
+                    <span>${{ number_format($this->percepcionesTotal(), 2) }}</span>
+                </div>
+            @endif
             <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                 <span>Total</span>
                 <span>${{ number_format($this->total(), 2) }}</span>

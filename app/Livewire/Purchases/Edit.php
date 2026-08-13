@@ -45,6 +45,9 @@ class Edit extends Component
     /** @var array<int, array{method: string, amount: string}> */
     public array $payments = [];
 
+    /** @var array<int, array{concepto: string, amount: string}> */
+    public array $taxes = [];
+
     public string $productQuery = '';
 
     public function mount(Purchase $purchase): void
@@ -70,6 +73,11 @@ class Edit extends Component
         $this->payments = $purchase->payments->map(fn ($payment) => [
             'method' => $payment->method->value,
             'amount' => (string) $payment->amount,
+        ])->all();
+
+        $this->taxes = $purchase->taxes->map(fn ($tax) => [
+            'concepto' => $tax->concepto,
+            'amount' => (string) $tax->amount,
         ])->all();
     }
 
@@ -118,9 +126,25 @@ class Edit extends Component
         return $this->subtotal() * ((float) $this->tax_rate / 100);
     }
 
+    public function percepcionesTotal(): float
+    {
+        return collect($this->taxes)->sum(fn ($t) => (float) ($t['amount'] ?? 0));
+    }
+
+    public function addTax(): void
+    {
+        $this->taxes[] = ['concepto' => '', 'amount' => ''];
+    }
+
+    public function removeTax(int $index): void
+    {
+        unset($this->taxes[$index]);
+        $this->taxes = array_values($this->taxes);
+    }
+
     public function total(): float
     {
-        return $this->subtotal() + $this->taxAmount();
+        return $this->subtotal() + $this->taxAmount() + $this->percepcionesTotal();
     }
 
     public function paidTotal(): float
@@ -159,6 +183,8 @@ class Edit extends Component
             'tax_rate' => ['required', 'numeric', 'min:0'],
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
+            'taxes.*.concepto' => ['required_with:taxes.*.amount', 'nullable', 'string', 'max:100'],
+            'taxes.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         if (empty($this->items)) {
@@ -190,6 +216,16 @@ class Edit extends Component
             $this->purchase->items()->delete();
             foreach ($this->items as $item) {
                 $this->purchase->items()->create($item);
+            }
+
+            $this->purchase->taxes()->delete();
+            foreach ($this->taxes as $tax) {
+                if (trim((string) $tax['concepto']) !== '' && (float) $tax['amount'] > 0) {
+                    $this->purchase->taxes()->create([
+                        'concepto' => trim($tax['concepto']),
+                        'amount' => $tax['amount'],
+                    ]);
+                }
             }
 
             StockAdjuster::apply($this->items, 1);

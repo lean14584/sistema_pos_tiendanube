@@ -87,6 +87,12 @@
                     <span>Impuesto ({{ $purchase->tax_rate }}%)</span>
                     <span>${{ number_format($purchase->tax_amount, 2) }}</span>
                 </div>
+                @foreach ($purchase->taxes as $tax)
+                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>{{ $tax->concepto }}</span>
+                        <span>${{ number_format($tax->amount, 2) }}</span>
+                    </div>
+                @endforeach
                 <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                     <span>Total</span>
                     <span>${{ number_format($purchase->total, 2) }}</span>

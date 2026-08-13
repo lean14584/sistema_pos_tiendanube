@@ -27,7 +27,7 @@ class Index extends Component
 
     public function render()
     {
-        $purchases = Purchase::with('provider', 'items')
+        $purchases = Purchase::with('provider', 'items', 'taxes')
             ->when($this->filter !== 'all', fn ($q) => $q->withEffectiveStatus($this->filter))
             ->when($this->query !== '', function ($q) {
                 $term = '%'.$this->query.'%';
