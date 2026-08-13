@@ -3,35 +3,26 @@
 @endphp
 
 <form wire:submit="save" class="space-y-5 rounded-2xl border border-indigo-100 dark:border-gray-800 bg-gradient-to-b from-white to-indigo-50/50 dark:from-gray-900 dark:to-gray-950 shadow-md shadow-indigo-100/50 dark:shadow-black/30 p-6">
-    {{-- Tipo de comprobante --}}
-    @if ($esNotaCredito)
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ App\Enums\TipoComprobanteInterno::from($tipo_comprobante_interno)->label() }}
-                <span class="text-gray-400 dark:text-gray-500">— una Nota de Crédito no puede convertirse en otro tipo de comprobante.</span>
-            </p>
-        </div>
-    @else
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
-            <div class="inline-flex flex-wrap gap-0.5 rounded-xl border border-gray-200 dark:border-gray-700 p-1 bg-gray-100/70 dark:bg-gray-900/50">
-                @foreach ($tipoComprobanteInternoOptions as $option)
-                    <button
-                        type="button"
-                        wire:click="$set('tipo_comprobante_interno', '{{ $option->value }}')"
-                        class="px-3.5 py-1.5 rounded-lg text-sm font-medium text-center transition-all {{ $tipo_comprobante_interno === $option->value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800' }}"
-                    >
-                        {{ $option->label() }}
-                    </button>
-                @endforeach
-            </div>
-            @error('tipo_comprobante_interno') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-        </div>
-    @endif
-
-    {{-- Datos en dos filas --}}
+    {{-- Datos en dos filas (3 columnas) --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {{-- Tipo de comprobante --}}
+        @if ($esNotaCredito)
+            <div>
+                <x-select label="Tipo de comprobante" disabled title="Una Nota de Crédito no puede convertirse en otro tipo de comprobante.">
+                    <option>{{ App\Enums\TipoComprobanteInterno::from($tipo_comprobante_interno)->label() }}</option>
+                </x-select>
+            </div>
+        @else
+            <div>
+                <x-select label="Tipo de comprobante" wire:model.live="tipo_comprobante_interno">
+                    @foreach ($tipoComprobanteInternoOptions as $option)
+                        <option value="{{ $option->value }}">{{ $option->label() }}</option>
+                    @endforeach
+                </x-select>
+                @error('tipo_comprobante_interno') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+        @endif
+
         <div>
             <x-select label="Cliente *" wire:model.live="client_id" required>
                 <option value="">Seleccionar...</option>
