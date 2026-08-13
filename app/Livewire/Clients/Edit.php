@@ -30,6 +30,8 @@ class Edit extends Component
 
     public ?int $price_list_id = null;
 
+    public string $credit_limit = '';
+
     public function mount(Client $client): void
     {
         $this->client = $client;
@@ -41,6 +43,7 @@ class Edit extends Component
         $this->condicion_iva = $client->condicion_iva->value;
         $this->tipo_documento = $client->tipo_documento->value;
         $this->price_list_id = $client->price_list_id;
+        $this->credit_limit = $client->credit_limit !== null ? (string) $client->credit_limit : '';
     }
 
     public function save(): void
@@ -54,7 +57,10 @@ class Edit extends Component
             'condicion_iva' => ['required', Rule::enum(CondicionIva::class)],
             'tipo_documento' => ['required', Rule::enum(TipoDocumento::class)],
             'price_list_id' => ['nullable', 'exists:price_lists,id'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        $data['credit_limit'] = $this->credit_limit === '' ? null : $this->credit_limit;
 
         $this->client->update($data);
 

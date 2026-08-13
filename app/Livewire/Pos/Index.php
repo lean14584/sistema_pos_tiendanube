@@ -417,6 +417,16 @@ class Index extends Component
             return;
         }
 
+        // Límite de crédito: no dejar que la venta a cuenta corriente lo supere.
+        if ($pagado + 0.001 < $total && $clientId !== $consumidorFinal->id) {
+            $clienteCC = Client::find($clientId);
+            if ($clienteCC && ($excesoMsg = $clienteCC->excesoDeCredito($total - $pagado))) {
+                $this->addError('client_id', $excesoMsg);
+
+                return;
+            }
+        }
+
         $tipo = TipoComprobanteInterno::tryFrom($this->tipo_comprobante_interno);
         if (! $tipo || ! in_array($tipo, CompanySettings::current()->tiposComprobanteSeleccionables(), true)) {
             $tipo = CompanySettings::current()->tipoComprobantePorDefecto();

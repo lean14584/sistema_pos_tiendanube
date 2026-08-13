@@ -249,6 +249,17 @@ class Create extends Component
             return;
         }
 
+        // Límite de crédito: solo comprobantes que generan deuda (no NC ni devolución).
+        if (! $tipo->esNotaCredito() && $tipo !== TipoComprobanteInterno::Devolucion) {
+            $pendiente = round($this->total() - $this->paidTotal(), 2);
+            $cliente = Client::find($this->client_id);
+            if ($pendiente > 0.009 && $cliente && ($excesoMsg = $cliente->excesoDeCredito($pendiente))) {
+                $this->addError('client_id', $excesoMsg);
+
+                return;
+            }
+        }
+
         $invoice = DB::transaction(function () use ($validItems, $tipo) {
             $invoice = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value),

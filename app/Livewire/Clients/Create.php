@@ -28,6 +28,8 @@ class Create extends Component
 
     public ?int $price_list_id = null;
 
+    public string $credit_limit = '';
+
     public function save(): void
     {
         $data = $this->validate([
@@ -39,7 +41,10 @@ class Create extends Component
             'condicion_iva' => ['required', Rule::enum(CondicionIva::class)],
             'tipo_documento' => ['required', Rule::enum(TipoDocumento::class)],
             'price_list_id' => ['nullable', 'exists:price_lists,id'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        $data['credit_limit'] = $this->credit_limit === '' ? null : $this->credit_limit;
 
         Client::create($data);
 
