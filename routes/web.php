@@ -126,6 +126,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('module:reports')->prefix('reports')->name('reports.')->group(function () {
         Route::get('/', ReportsIndex::class)->name('index');
+        Route::get('/export/pdf', [\App\Http\Controllers\ReportsExportController::class, 'pdf'])->name('export.pdf');
+        Route::get('/export/csv', [\App\Http\Controllers\ReportsExportController::class, 'csv'])->name('export.csv');
     });
 
     Route::middleware('module:users')->prefix('users')->name('users.')->group(function () {
