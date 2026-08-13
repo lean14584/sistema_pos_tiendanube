@@ -78,7 +78,13 @@
                 @forelse ($cart as $index => $item)
                     <div wire:key="cart-{{ $index }}" class="flex items-center gap-2 px-4 py-2.5">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $item['description'] }}</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {{ $item['description'] }}
+                                @php $promo = $this->promoLabel($item); @endphp
+                                @if ($promo)
+                                    <span class="ml-1 inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 text-[10px] font-semibold align-middle">{{ $promo }}</span>
+                                @endif
+                            </p>
                             <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
                                 <span>${{ number_format($item['unit_price'], 2) }} · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</span>
                                 <span class="text-gray-300 dark:text-gray-600">·</span>
@@ -93,7 +99,7 @@
                             <button wire:click="inc({{ $index }})" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center">+</button>
                         </div>
                         <span class="w-20 text-right text-sm font-medium text-gray-900 dark:text-gray-100 shrink-0">
-                            ${{ number_format($item['unit_price'] * $item['quantity'] * (1 - (float)($item['discount'] ?? 0)/100) * (1 + (float)$item['iva_rate']/100), 2) }}
+                            ${{ number_format($this->lineTotal($item), 2) }}
                         </span>
                     </div>
                 @empty

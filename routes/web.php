@@ -108,6 +108,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/', \App\Livewire\PriceLists\Index::class)->name('index');
     });
 
+    Route::middleware('module:promotions')->prefix('promociones')->name('promotions.')->group(function () {
+        Route::get('/', \App\Livewire\Promotions\Index::class)->name('index');
+    });
+
     Route::middleware('module:providers')->prefix('providers')->name('providers.')->group(function () {
         Route::get('/', ProviderIndex::class)->name('index');
         Route::get('/new', ProviderCreate::class)->name('create');

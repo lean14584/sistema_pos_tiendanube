@@ -9,9 +9,11 @@ use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
+use App\Models\Promotion;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
 use App\Support\InvoiceNumberGenerator;
+use App\Support\PromotionEngine;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -181,13 +183,74 @@ class Index extends Component
         $this->cart = [];
     }
 
+    /**
+     * Promociones vigentes de los productos que están en el carrito,
+     * indexadas por product_id (a lo sumo una por producto).
+     *
+     * @return \Illuminate\Support\Collection<int, Promotion>
+     */
+    #[Computed]
+    public function promoMap()
+    {
+        $ids = collect($this->cart)->pluck('product_id')->unique()->all();
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        return Promotion::activeNow()->whereIn('product_id', $ids)->get()->keyBy('product_id');
+    }
+
+    /** Descuento en pesos que la promo (si hay) le da a esta línea. */
+    public function promoDiscountAmount(array $line): float
+    {
+        $promo = $this->promoMap->get($line['product_id']);
+
+        if (! $promo) {
+            return 0.0;
+        }
+
+        return PromotionEngine::discount($promo, (int) $line['quantity'], (float) $line['unit_price']);
+    }
+
+    /** Etiqueta corta de la promo aplicada a la línea (o null). */
+    public function promoLabel(array $line): ?string
+    {
+        $promo = $this->promoMap->get($line['product_id']);
+
+        return $promo && $this->promoDiscountAmount($line) > 0 ? $promo->shortLabel() : null;
+    }
+
+    /**
+     * Descuento efectivo (%) de la línea: combina el descuento manual con el
+     * de la promoción. Es lo que se guarda como discount_percent en la factura.
+     */
+    public function lineDiscountPct(array $line): float
+    {
+        $gross = (float) $line['unit_price'] * (int) $line['quantity'];
+
+        if ($gross <= 0) {
+            return (float) ($line['discount'] ?? 0);
+        }
+
+        $manual = $gross * (float) ($line['discount'] ?? 0) / 100;
+        $descuento = min($gross, $manual + $this->promoDiscountAmount($line));
+
+        return round($descuento / $gross * 100, 4);
+    }
+
+    /** Total de una línea (con descuentos y IVA). */
+    public function lineTotal(array $line): float
+    {
+        $gross = (float) $line['unit_price'] * (int) $line['quantity'];
+        $neto = $gross * (1 - $this->lineDiscountPct($line) / 100);
+
+        return $neto * (1 + (float) $line['iva_rate'] / 100);
+    }
+
     public function total(): float
     {
-        return collect($this->cart)->sum(
-            fn ($i) => $i['unit_price'] * $i['quantity']
-                * (1 - (float) ($i['discount'] ?? 0) / 100)
-                * (1 + (float) $i['iva_rate'] / 100)
-        );
+        return collect($this->cart)->sum(fn ($i) => $this->lineTotal($i));
     }
 
     public function itemsCount(): int
@@ -274,7 +337,8 @@ class Index extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'discount_percent' => $item['discount'] ?? 0,
+                    // Descuento manual + promoción, expresado como % de la línea.
+                    'discount_percent' => $this->lineDiscountPct($item),
                     'iva_rate' => $item['iva_rate'],
                 ]);
             }
