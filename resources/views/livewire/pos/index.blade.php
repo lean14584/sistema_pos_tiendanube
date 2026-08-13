@@ -116,28 +116,39 @@
                 </div>
 
                 {{-- Resumen con descuentos y promos --}}
-                <div class="rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-500/10 dark:to-violet-500/10 border border-indigo-100 dark:border-indigo-500/20 p-3 space-y-1.5">
+                <div class="rounded-2xl overflow-hidden border border-indigo-100 dark:border-indigo-500/20 shadow-sm">
                     @if ($this->descuentosTotal() > 0.004)
-                        <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                            <span>Subtotal</span>
-                            <span>${{ number_format($this->subtotalBruto(), 2) }}</span>
-                        </div>
-                        @foreach ($this->promosAplicadas() as $promo)
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
-                                    <x-heroicon-o-gift class="w-3.5 h-3.5" /> {{ $promo['label'] }}
-                                </span>
-                                <span class="text-emerald-700 dark:text-emerald-400 font-medium">−${{ number_format($promo['amount'], 2) }}</span>
+                        <div class="bg-indigo-50/70 dark:bg-indigo-500/5 px-4 py-3 space-y-1.5">
+                            <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                                <span>Subtotal</span>
+                                <span>${{ number_format($this->subtotalBruto(), 2) }}</span>
                             </div>
-                        @endforeach
-                        <div class="flex items-center justify-between text-sm font-medium text-emerald-700 dark:text-emerald-400 pb-1 border-b border-indigo-100 dark:border-indigo-500/20">
-                            <span>Descuento total</span>
-                            <span>−${{ number_format($this->descuentosTotal(), 2) }}</span>
+                            @foreach ($this->promosAplicadas() as $promo)
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                                        <x-heroicon-o-gift class="w-3.5 h-3.5" /> {{ $promo['label'] }}
+                                    </span>
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-medium">−${{ number_format($promo['amount'], 2) }}</span>
+                                </div>
+                            @endforeach
+                            <div class="flex items-center justify-between text-sm font-semibold text-emerald-600 dark:text-emerald-400 pt-1 border-t border-indigo-100 dark:border-indigo-500/20">
+                                <span>Descuento total</span>
+                                <span>−${{ number_format($this->descuentosTotal(), 2) }}</span>
+                            </div>
                         </div>
                     @endif
-                    <div class="flex items-end justify-between pt-0.5">
-                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Total</span>
-                        <span class="text-3xl font-extrabold bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">${{ number_format($this->total(), 2) }}</span>
+                    <div class="relative bg-gradient-to-br from-indigo-600 to-violet-700 px-4 py-4 text-white overflow-hidden">
+                        <div class="absolute -right-6 -top-8 w-28 h-28 rounded-full bg-white/10"></div>
+                        <div class="absolute -right-2 bottom-2 opacity-20">
+                            <x-heroicon-o-banknotes class="w-14 h-14" />
+                        </div>
+                        <div class="relative">
+                            <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/80">
+                                <span>Total a cobrar</span>
+                                <span class="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] normal-case">{{ $this->itemsCount() }} art.</span>
+                            </div>
+                            <div class="text-4xl font-extrabold tracking-tight mt-0.5">${{ number_format($this->total(), 2) }}</div>
+                        </div>
                     </div>
                 </div>
 
