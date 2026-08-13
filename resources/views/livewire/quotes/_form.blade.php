@@ -1,8 +1,8 @@
 @php
-    $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors';
+    $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-800 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition';
 @endphp
 
-<form wire:submit="save" class="space-y-6 max-w-3xl">
+<form wire:submit="save" class="space-y-5 rounded-2xl border border-indigo-100 dark:border-gray-800 bg-gradient-to-b from-white to-indigo-50/50 dark:from-gray-900 dark:to-gray-950 shadow-md shadow-indigo-100/50 dark:shadow-black/30 p-6">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente *</label>
@@ -121,22 +121,24 @@
     </div>
 
     <div class="flex justify-end">
-        <div class="w-full max-w-xs space-y-2 text-sm">
-            <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Subtotal</span>
-                <span>${{ number_format($this->subtotal(), 2) }}</span>
+        <div class="w-full max-w-xs rounded-2xl overflow-hidden border border-indigo-100 dark:border-indigo-500/20 shadow-sm">
+            <div class="bg-white/70 dark:bg-gray-900/40 px-4 py-3 space-y-2 text-sm">
+                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Subtotal</span>
+                    <span>${{ number_format($this->subtotal(), 2) }}</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
+                    <span>Impuesto (%)</span>
+                    <input type="number" min="0" step="0.01" wire:model.live="tax_rate" class="w-20 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 px-2 py-1 text-sm text-right text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Monto impuesto</span>
+                    <span>${{ number_format($this->taxAmount(), 2) }}</span>
+                </div>
             </div>
-            <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
-                <span>Impuesto (%)</span>
-                <input type="number" min="0" step="0.01" wire:model.live="tax_rate" class="w-20 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            </div>
-            <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Monto impuesto</span>
-                <span>${{ number_format($this->taxAmount(), 2) }}</span>
-            </div>
-            <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
-                <span>Total</span>
-                <span>${{ number_format($this->total(), 2) }}</span>
+            <div class="bg-gradient-to-br from-indigo-600 to-violet-700 px-4 py-3 flex items-end justify-between text-white">
+                <span class="text-xs font-medium uppercase tracking-wide text-white/80">Total</span>
+                <span class="text-2xl font-extrabold tracking-tight">${{ number_format($this->total(), 2) }}</span>
             </div>
         </div>
     </div>

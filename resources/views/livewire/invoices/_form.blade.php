@@ -1,8 +1,8 @@
 @php
-    $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors';
+    $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-800 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition';
 @endphp
 
-<form wire:submit="save" class="space-y-4 max-w-3xl">
+<form wire:submit="save" class="space-y-5 rounded-2xl border border-indigo-100 dark:border-gray-800 bg-gradient-to-b from-white to-indigo-50/50 dark:from-gray-900 dark:to-gray-950 shadow-md shadow-indigo-100/50 dark:shadow-black/30 p-6">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
         @if ($esNotaCredito)
             <div>
@@ -165,26 +165,28 @@
     </div>
 
     <div class="flex justify-end">
-        <div class="w-full max-w-xs space-y-1.5 text-sm">
-            <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Neto gravado</span>
-                <span>${{ number_format($this->netoGravado(), 2) }}</span>
+        <div class="w-full max-w-xs rounded-2xl overflow-hidden border border-indigo-100 dark:border-indigo-500/20 shadow-sm">
+            <div class="bg-white/70 dark:bg-gray-900/40 px-4 py-3 space-y-1.5 text-sm">
+                <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Neto gravado</span>
+                    <span>${{ number_format($this->netoGravado(), 2) }}</span>
+                </div>
+                @if ($this->netoExento() > 0)
+                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Exento / no gravado</span>
+                        <span>${{ number_format($this->netoExento(), 2) }}</span>
+                    </div>
+                @endif
+                @foreach ($this->ivaBreakdown() as $linea)
+                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>
+                        <span>${{ number_format($linea['iva'], 2) }}</span>
+                    </div>
+                @endforeach
             </div>
-            @if ($this->netoExento() > 0)
-                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Exento / no gravado</span>
-                    <span>${{ number_format($this->netoExento(), 2) }}</span>
-                </div>
-            @endif
-            @foreach ($this->ivaBreakdown() as $linea)
-                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>
-                    <span>${{ number_format($linea['iva'], 2) }}</span>
-                </div>
-            @endforeach
-            <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-1.5 border-t border-gray-200 dark:border-gray-800">
-                <span>Total</span>
-                <span>${{ number_format($this->total(), 2) }}</span>
+            <div class="bg-gradient-to-br from-indigo-600 to-violet-700 px-4 py-3 flex items-end justify-between text-white">
+                <span class="text-xs font-medium uppercase tracking-wide text-white/80">Total</span>
+                <span class="text-2xl font-extrabold tracking-tight">${{ number_format($this->total(), 2) }}</span>
             </div>
         </div>
     </div>
