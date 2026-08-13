@@ -119,6 +119,20 @@
             </a>
         @endforeach
 
+        {{-- Cerrar sesión, arriba y a mano (igual que un ítem del menú) --}}
+        @if ($user)
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button
+                    type="submit"
+                    class="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 hover:bg-red-600 hover:text-white transition-all"
+                >
+                    <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
+                    <span class="flex-1 text-left">Cerrar sesión</span>
+                </button>
+            </form>
+        @endif
+
         {{-- Grupos plegables --}}
         @foreach ($groupedItems as $groupName => $items)
             @php
@@ -165,22 +179,14 @@
 
     @if ($user)
         <div class="px-4 py-3 border-t border-white/10">
-            <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-8 h-8 shrink-0 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs font-semibold">
-                        {{ strtoupper(mb_substr($user->name, 0, 2)) }}
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-sm font-medium text-white truncate">{{ $user->name }}</p>
-                        <p class="text-xs text-slate-400">{{ $user->role->label() }}</p>
-                    </div>
+            <div class="flex items-center gap-2.5 min-w-0 mb-3">
+                <div class="w-8 h-8 shrink-0 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs font-semibold">
+                    {{ strtoupper(mb_substr($user->name, 0, 2)) }}
                 </div>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" title="Cerrar sesión" class="p-1.5 rounded-md text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 transition-all">
-                        <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
-                    </button>
-                </form>
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-white truncate">{{ $user->name }}</p>
+                    <p class="text-xs text-slate-400">{{ $user->role->label() }}</p>
+                </div>
             </div>
             <div
                 x-data="{
