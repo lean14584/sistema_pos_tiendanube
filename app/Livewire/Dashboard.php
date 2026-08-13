@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\Product;
 use App\Support\Permissions;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -24,7 +25,50 @@ class Dashboard extends Component
 
     public function render()
     {
-        $invoices = Invoice::with('client', 'items.product')->get();
+        // El Dashboard es una pantalla de resumen: sus agregados recorren
+        // TODA la historia de facturas, así que se cachean por año (TTL corto)
+        // para no recalcular toda la base en cada visita. Las consultas
+        // baratas y que conviene ver al instante (facturas recientes, stock
+        // bajo) quedan fuera del caché, siempre frescas.
+        $agg = Cache::remember(
+            "dashboard:agg:{$this->year}",
+            now()->addSeconds(120),
+            fn () => $this->aggregates()
+        );
+
+        $recentInvoices = Invoice::with('client', 'items')->latest()->take(5)->get();
+        $lowStockProducts = Product::lowStock()->with('category')->orderBy('stock')->take(5)->get();
+
+        return view('livewire.dashboard', [
+            'stats' => $agg['stats'],
+            'recentInvoices' => $recentInvoices,
+            'lowStockCount' => Product::lowStockCountCached(),
+            'lowStockProducts' => $lowStockProducts,
+            'pendientesEmisionCount' => $agg['pendientesEmisionCount'],
+            'canSeeHealth' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health'),
+            'systemWarnings' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health')
+                ? app(\App\Support\SystemHealth::class)->avisos()
+                : 0,
+            'canManageInvoices' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'invoices'),
+            'canManageProducts' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'products'),
+            'topProducts' => collect($agg['topProducts']),
+            'maxTopProduct' => collect($agg['topProducts'])->max('total') ?? 0,
+            'monthlySales' => $agg['monthlySales'],
+            'maxMonthlySales' => max($agg['monthlySales']) ?: 0,
+            'availableYears' => collect($agg['availableYears']),
+        ]);
+    }
+
+    /**
+     * Agregados pesados del dashboard (recorren toda la historia). Devuelve
+     * arrays serializables para poder cachearlos. Se calcula igual que antes,
+     * así que los números no cambian; solo se recalcula al vencer el TTL.
+     *
+     * @return array<string, mixed>
+     */
+    private function aggregates(): array
+    {
+        $invoices = Invoice::with('items.product')->get();
 
         $paid = $invoices->where('status', InvoiceStatus::Paid);
         $pending = $invoices->filter(fn (Invoice $i) => $i->status === InvoiceStatus::Pending && ! $i->is_overdue);
@@ -38,15 +82,11 @@ class Dashboard extends Component
             'totalInvoices' => $invoices->count(),
         ];
 
-        $recentInvoices = $invoices->sortByDesc('created_at')->take(5);
-
         // Facturas fiscales finalizadas pero todavía sin CAE: faltan emitir a
         // AFIP para que entren al Libro IVA.
         $pendientesEmision = $nonDraft->filter(
             fn (Invoice $i) => $i->tipo_comprobante_interno->esFiscal() && $i->cae === null
         );
-
-        $lowStockProducts = Product::lowStock()->with('category')->orderBy('stock')->take(5)->get();
 
         $topProducts = collect();
         foreach ($nonDraft as $invoice) {
@@ -70,23 +110,12 @@ class Dashboard extends Component
             }
         }
 
-        return view('livewire.dashboard', [
+        return [
             'stats' => $stats,
-            'recentInvoices' => $recentInvoices,
-            'lowStockCount' => Product::lowStockCountCached(),
-            'lowStockProducts' => $lowStockProducts,
             'pendientesEmisionCount' => $pendientesEmision->count(),
-            'canSeeHealth' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health'),
-            'systemWarnings' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health')
-                ? app(\App\Support\SystemHealth::class)->avisos()
-                : 0,
-            'canManageInvoices' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'invoices'),
-            'canManageProducts' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'products'),
-            'topProducts' => $topProducts,
-            'maxTopProduct' => $topProducts->max('total') ?? 0,
+            'topProducts' => $topProducts->all(),
             'monthlySales' => $monthlySales,
-            'maxMonthlySales' => max($monthlySales) ?: 0,
-            'availableYears' => $availableYears,
-        ]);
+            'availableYears' => $availableYears->all(),
+        ];
     }
 }
