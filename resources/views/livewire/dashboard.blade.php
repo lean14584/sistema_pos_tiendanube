@@ -2,7 +2,7 @@
     <x-page-header title="Dashboard" subtitle="Resumen de tu actividad de facturación" icon="home">
         @if ($canManageInvoices)
             <x-slot:actions>
-                <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+                <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
                     <x-heroicon-o-plus class="w-4 h-4" /> Nueva factura
                 </a>
             </x-slot:actions>

@@ -1,7 +1,7 @@
 <div class="p-8 max-w-5xl mx-auto">
     <x-page-header title="Proveedores" subtitle="Gestioná los datos de tus proveedores" icon="truck">
         <x-slot:actions>
-            <a href="{{ route('providers.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+            <a href="{{ route('providers.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
                 <x-heroicon-o-plus class="w-4 h-4" /> Nuevo proveedor
             </a>
         </x-slot:actions>

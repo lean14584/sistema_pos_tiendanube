@@ -2,7 +2,7 @@
     <x-page-header title="Tareas" :subtitle="$isAdmin ? 'Seguimiento de las tareas asignadas a todo el equipo' : 'Tus tareas asignadas'" icon="check-circle">
         @if ($isAdmin)
             <x-slot:actions>
-                <a href="{{ route('tasks.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+                <a href="{{ route('tasks.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
                     <x-heroicon-o-plus class="w-4 h-4" /> Nueva tarea
                 </a>
             </x-slot:actions>

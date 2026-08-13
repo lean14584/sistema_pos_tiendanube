@@ -5,7 +5,7 @@
 <div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Libro IVA Digital" subtitle="Comprobantes de ventas y compras del período, según el diseño de registro de ARCA (ex AFIP, RG 4597)" icon="receipt-percent">
         <x-slot:actions>
-            <a href="{{ route('libro-iva.export', ['desde' => $fromDate, 'hasta' => $toDate]) }}" class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+            <a href="{{ route('libro-iva.export', ['desde' => $fromDate, 'hasta' => $toDate]) }}" class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
                 <x-heroicon-o-arrow-down-tray class="w-4 h-4" /> Exportar (.zip)
             </a>
         </x-slot:actions>
