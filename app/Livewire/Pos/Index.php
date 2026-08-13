@@ -10,6 +10,7 @@ use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\Promotion;
+use App\Models\PromotionGroup;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
 use App\Support\InvoiceNumberGenerator;
@@ -201,16 +202,63 @@ class Index extends Component
         return Promotion::activeNow()->whereIn('product_id', $ids)->get()->keyBy('product_id');
     }
 
-    /** Descuento en pesos que la promo (si hay) le da a esta línea. */
+    /**
+     * Descuento por familia (promo NxM entre varios productos) asignado a
+     * cada producto del carrito. Un producto con promo propia NO entra a la
+     * familia. Devuelve product_id => ['amount' => float, 'label' => string].
+     *
+     * @return \Illuminate\Support\Collection<int, array{amount: float, label: string}>
+     */
+    #[Computed]
+    public function groupAllocations()
+    {
+        $cartByProduct = collect($this->cart)->keyBy('product_id');
+
+        if ($cartByProduct->isEmpty()) {
+            return collect();
+        }
+
+        $conPromoPropia = $this->promoMap->keys()->all();
+        $groups = PromotionGroup::activeNow()->with('products:id')->get();
+
+        $alloc = [];
+        foreach ($groups as $group) {
+            $lines = [];
+            foreach ($group->products as $product) {
+                $pid = $product->id;
+                // Producto con promo propia o ya asignado por otra familia: se saltea.
+                if (in_array($pid, $conPromoPropia, true) || isset($alloc[$pid])) {
+                    continue;
+                }
+                if ($line = $cartByProduct->get($pid)) {
+                    $lines[] = ['product_id' => $pid, 'quantity' => (int) $line['quantity'], 'unit_price' => (float) $line['unit_price']];
+                }
+            }
+
+            if ($lines === []) {
+                continue;
+            }
+
+            foreach (PromotionEngine::groupDiscount($group->buy_qty, $group->pay_qty, $lines) as $pid => $amount) {
+                $alloc[$pid] = ['amount' => $amount, 'label' => $group->shortLabel()];
+            }
+        }
+
+        return collect($alloc);
+    }
+
+    /** Descuento en pesos que la promo (propia o de familia) le da a esta línea. */
     public function promoDiscountAmount(array $line): float
     {
         $promo = $this->promoMap->get($line['product_id']);
 
-        if (! $promo) {
-            return 0.0;
+        if ($promo) {
+            return PromotionEngine::discount($promo, (int) $line['quantity'], (float) $line['unit_price']);
         }
 
-        return PromotionEngine::discount($promo, (int) $line['quantity'], (float) $line['unit_price']);
+        $grupo = $this->groupAllocations->get($line['product_id']);
+
+        return $grupo ? (float) $grupo['amount'] : 0.0;
     }
 
     /** Etiqueta corta de la promo aplicada a la línea (o null). */
@@ -218,7 +266,13 @@ class Index extends Component
     {
         $promo = $this->promoMap->get($line['product_id']);
 
-        return $promo && $this->promoDiscountAmount($line) > 0 ? $promo->shortLabel() : null;
+        if ($promo) {
+            return $this->promoDiscountAmount($line) > 0 ? $promo->shortLabel() : null;
+        }
+
+        $grupo = $this->groupAllocations->get($line['product_id']);
+
+        return $grupo && $grupo['amount'] > 0 ? $grupo['label'] : null;
     }
 
     /**

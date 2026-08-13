@@ -2,8 +2,15 @@
     <a href="{{ route('products.index') }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
         <x-heroicon-o-arrow-left class="w-4 h-4" /> Productos
     </a>
-    <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Promociones</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">El POS aplica estas promos solo, según el producto y la cantidad.</p>
+    <div class="flex items-start justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Promociones</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">El POS aplica estas promos solo, según el producto y la cantidad.</p>
+        </div>
+        <a href="{{ route('promotions.groups.index') }}" wire:navigate class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+            <x-heroicon-o-user-group class="w-4 h-4" /> Promos por familia
+        </a>
+    </div>
 
     @if (session('status'))
         <div class="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-4 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">{{ session('status') }}</div>

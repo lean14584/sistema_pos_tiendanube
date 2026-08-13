@@ -110,6 +110,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('module:promotions')->prefix('promociones')->name('promotions.')->group(function () {
         Route::get('/', \App\Livewire\Promotions\Index::class)->name('index');
+        Route::get('/familias', \App\Livewire\PromotionGroups\Index::class)->name('groups.index');
     });
 
     Route::middleware('module:providers')->prefix('providers')->name('providers.')->group(function () {

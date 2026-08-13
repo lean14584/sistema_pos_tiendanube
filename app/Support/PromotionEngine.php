@@ -30,6 +30,45 @@ class PromotionEngine
         };
     }
 
+    /**
+     * Promo por familia (NxM entre varios productos): cuenta todas las
+     * unidades del grupo presentes en el carrito y regala las MÁS BARATAS.
+     * Devuelve el descuento en pesos asignado a cada producto.
+     *
+     * @param  array<int, array{product_id:int, quantity:int, unit_price:float}>  $lines
+     * @return array<int, float>  product_id => descuento en pesos
+     */
+    public static function groupDiscount(int $buy, int $pay, array $lines): array
+    {
+        if ($buy <= 0 || $pay < 0 || $pay >= $buy) {
+            return [];
+        }
+
+        $totalQty = array_sum(array_map(fn ($l) => (int) $l['quantity'], $lines));
+        $freeUnits = intdiv($totalQty, $buy) * ($buy - $pay);
+
+        if ($freeUnits <= 0) {
+            return [];
+        }
+
+        // Expando a una unidad por precio y me quedo con las más baratas.
+        $units = [];
+        foreach ($lines as $line) {
+            for ($i = 0; $i < (int) $line['quantity']; $i++) {
+                $units[] = ['product_id' => $line['product_id'], 'price' => (float) $line['unit_price']];
+            }
+        }
+
+        usort($units, fn ($a, $b) => $a['price'] <=> $b['price']);
+
+        $allocation = [];
+        foreach (array_slice($units, 0, $freeUnits) as $unit) {
+            $allocation[$unit['product_id']] = ($allocation[$unit['product_id']] ?? 0) + $unit['price'];
+        }
+
+        return $allocation;
+    }
+
     private static function nxm(Promotion $promo, int $quantity, float $unitPrice): float
     {
         $buy = (int) $promo->buy_qty;
