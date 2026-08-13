@@ -5,7 +5,7 @@
 ])
 
 {{-- Barra de encabezado con degradé azul/violeta, igual que el header del POS. --}}
-<div {{ $attributes->merge(['class' => 'mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-5 py-4 shadow-md shadow-indigo-600/20']) }}>
+<div {{ $attributes->merge(['class' => 'mb-6 rounded-2xl bg-gradient-to-r from-indigo-700 via-indigo-700 to-violet-800 text-white px-5 py-4 shadow-lg shadow-indigo-900/25']) }}>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
             @if ($icon)
