@@ -154,6 +154,15 @@ class TicketPrinterService
             $this->addColumns("IVA {$tasa}%", '$'.$this->money($linea['iva']));
         }
 
+        // Descuento total (manual + promos): base sin descuento menos lo que
+        // realmente se cobró por cada ítem.
+        $descuento = $invoice->items->sum(
+            fn ($i) => (float) $i->quantity * (float) $i->unit_price * ((float) $i->discount_percent / 100)
+        );
+        if ($descuento > 0.004) {
+            $this->addColumns('Descuento', '-$'.$this->money($descuento), bold: true);
+        }
+
         $this->addColumns('TOTAL', '$'.$this->money($invoice->total), bold: true);
     }
 

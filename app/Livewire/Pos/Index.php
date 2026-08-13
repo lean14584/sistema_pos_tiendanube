@@ -307,6 +307,47 @@ class Index extends Component
         return collect($this->cart)->sum(fn ($i) => $this->lineTotal($i));
     }
 
+    /** Subtotal sin ningún descuento (con IVA), para mostrar el ahorro. */
+    public function subtotalBruto(): float
+    {
+        return collect($this->cart)->sum(
+            fn ($i) => (float) $i['unit_price'] * (int) $i['quantity'] * (1 + (float) $i['iva_rate'] / 100)
+        );
+    }
+
+    /** Total de descuentos aplicados (manual + promos), con IVA. */
+    public function descuentosTotal(): float
+    {
+        return round($this->subtotalBruto() - $this->total(), 2);
+    }
+
+    /**
+     * Promos aplicadas en el carrito, agrupadas por etiqueta, para el
+     * resumen del final de la pantalla y del ticket.
+     *
+     * @return array<int, array{label: string, amount: float}>
+     */
+    public function promosAplicadas(): array
+    {
+        $acumulado = [];
+
+        foreach ($this->cart as $line) {
+            $label = $this->promoLabel($line);
+
+            if (! $label) {
+                continue;
+            }
+
+            $monto = $this->promoDiscountAmount($line) * (1 + (float) $line['iva_rate'] / 100);
+            $acumulado[$label] = ($acumulado[$label] ?? 0) + $monto;
+        }
+
+        return collect($acumulado)
+            ->map(fn ($amount, $label) => ['label' => $label, 'amount' => round($amount, 2)])
+            ->values()
+            ->all();
+    }
+
     public function itemsCount(): int
     {
         return collect($this->cart)->sum('quantity');

@@ -86,6 +86,18 @@ class PromotionTest extends TestCase
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 100]);
     }
 
+    public function test_pos_muestra_badge_y_resumen_de_descuento(): void
+    {
+        $product = Product::create(['name' => 'Alfajor', 'price' => 100, 'iva_rate' => 0, 'stock' => 100]);
+        $this->promo($product, ['type' => 'nxm', 'buy_qty' => 2, 'pay_qty' => 1]);
+
+        Livewire::actingAs($this->admin())->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->set('cart.0.quantity', 2)
+            ->assertSee('2x1')             // badge de la promo en la línea
+            ->assertSee('Descuento total'); // resumen al final del carrito
+    }
+
     public function test_pos_no_aplica_promo_inactiva(): void
     {
         $admin = $this->admin();

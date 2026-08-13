@@ -1,6 +1,11 @@
 <div class="p-4 sm:p-6 max-w-7xl mx-auto">
     <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Venta rápida</h1>
+        <h1 class="text-xl font-bold inline-flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+                <x-heroicon-o-bolt class="w-5 h-5" />
+            </span>
+            <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">Venta rápida</span>
+        </h1>
         @if (session('status'))
             <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 text-sm font-medium">
                 <x-heroicon-o-check-circle class="w-4 h-4" /> {{ session('status') }}
@@ -44,18 +49,21 @@
                     <button
                         wire:click="addProduct({{ $product->id }})"
                         wire:key="prod-{{ $product->id }}"
-                        class="text-left rounded-xl border border-gray-200 dark:border-gray-800 bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 p-3 hover:border-indigo-400 dark:hover:border-indigo-600 hover:shadow-md active:scale-[0.98] transition-all"
+                        class="group relative text-left rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 overflow-hidden hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all"
                     >
-                        <div class="w-full aspect-square mb-2 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                        <span class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 opacity-70 group-hover:opacity-100 transition-opacity"></span>
+                        <div class="w-full aspect-square mb-2 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-gray-800 dark:to-gray-800/60 flex items-center justify-center">
                             @if ($product->imageUrl())
                                 <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" class="w-full h-full object-cover" loading="lazy">
                             @else
-                                <x-heroicon-o-cube class="w-8 h-8 text-gray-300 dark:text-gray-600" />
+                                <x-heroicon-o-cube class="w-8 h-8 text-indigo-300 dark:text-gray-600" />
                             @endif
                         </div>
                         <p class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-tight line-clamp-2 min-h-[2.5rem]">{{ $product->name }}</p>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ $product->sku ?: '—' }}</p>
-                        <p class="text-base font-semibold text-indigo-600 dark:text-indigo-400 mt-1">${{ number_format($product->price, 2) }}</p>
+                        <div class="flex items-center justify-between mt-1.5">
+                            <span class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $product->sku ?: '—' }}</span>
+                            <span class="shrink-0 inline-flex items-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">${{ number_format($product->price, 2) }}</span>
+                        </div>
                     </button>
                 @empty
                     <p class="col-span-full text-sm text-gray-400 dark:text-gray-500 py-8 text-center">
@@ -67,10 +75,12 @@
 
         {{-- Carrito --}}
         <div class="lg:sticky lg:top-4 self-start bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 flex flex-col max-h-[calc(100vh-7rem)]">
-            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Carrito ({{ $this->itemsCount() }})</h2>
+            <div class="flex items-center justify-between px-4 py-3 rounded-t-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
+                <h2 class="text-sm font-semibold inline-flex items-center gap-2">
+                    <x-heroicon-o-shopping-cart class="w-4 h-4" /> Carrito ({{ $this->itemsCount() }})
+                </h2>
                 @if (count($cart) > 0)
-                    <button wire:click="vaciar" class="text-xs text-gray-400 hover:text-red-600 dark:hover:text-red-400">Vaciar</button>
+                    <button wire:click="vaciar" class="text-xs text-white/80 hover:text-white">Vaciar</button>
                 @endif
             </div>
 
@@ -134,9 +144,30 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-500 dark:text-gray-400">Total</span>
-                    <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ number_format($this->total(), 2) }}</span>
+                {{-- Resumen con descuentos y promos --}}
+                <div class="rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-500/10 dark:to-violet-500/10 border border-indigo-100 dark:border-indigo-500/20 p-3 space-y-1.5">
+                    @if ($this->descuentosTotal() > 0.004)
+                        <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                            <span>Subtotal</span>
+                            <span>${{ number_format($this->subtotalBruto(), 2) }}</span>
+                        </div>
+                        @foreach ($this->promosAplicadas() as $promo)
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
+                                    <x-heroicon-o-gift class="w-3.5 h-3.5" /> {{ $promo['label'] }}
+                                </span>
+                                <span class="text-emerald-700 dark:text-emerald-400 font-medium">−${{ number_format($promo['amount'], 2) }}</span>
+                            </div>
+                        @endforeach
+                        <div class="flex items-center justify-between text-sm font-medium text-emerald-700 dark:text-emerald-400 pb-1 border-b border-indigo-100 dark:border-indigo-500/20">
+                            <span>Descuento total</span>
+                            <span>−${{ number_format($this->descuentosTotal(), 2) }}</span>
+                        </div>
+                    @endif
+                    <div class="flex items-end justify-between pt-0.5">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Total</span>
+                        <span class="text-3xl font-extrabold bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">${{ number_format($this->total(), 2) }}</span>
+                    </div>
                 </div>
 
                 {{-- Medios de pago (uno o varios) --}}
