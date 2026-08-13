@@ -132,6 +132,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', CashRegisterIndex::class)->name('index');
     });
 
+    Route::middleware('module:vencimientos')->get('vencimientos', \App\Livewire\Vencimientos\Index::class)->name('vencimientos.index');
+
     Route::middleware('module:reports')->prefix('reports')->name('reports.')->group(function () {
         Route::get('/', ReportsIndex::class)->name('index');
         Route::get('/export/pdf', [\App\Http\Controllers\ReportsExportController::class, 'pdf'])->name('export.pdf');

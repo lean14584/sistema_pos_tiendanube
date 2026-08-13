@@ -38,6 +38,7 @@
         ['module' => 'purchases', 'group' => 'Compras', 'pattern' => 'purchases.*', 'href' => route('purchases.index'), 'label' => 'Compras', 'icon' => 'shopping-cart'],
 
         ['module' => 'cash-register', 'group' => 'Finanzas', 'pattern' => 'cash-register.*', 'href' => route('cash-register.index'), 'label' => 'Caja', 'icon' => 'banknotes'],
+        ['module' => 'vencimientos', 'group' => 'Finanzas', 'pattern' => 'vencimientos.*', 'href' => route('vencimientos.index'), 'label' => 'Vencimientos', 'icon' => 'calendar-days'],
         ['module' => 'reports', 'group' => 'Finanzas', 'pattern' => 'reports.*', 'href' => route('reports.index'), 'label' => 'Informes', 'icon' => 'chart-bar'],
         ['module' => 'libro-iva', 'group' => 'Finanzas', 'pattern' => 'libro-iva.*', 'href' => route('libro-iva.index'), 'label' => 'Libro IVA', 'icon' => 'receipt-percent'],
 
