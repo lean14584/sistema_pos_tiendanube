@@ -91,6 +91,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:products')->prefix('products')->name('products.')->group(function () {
         Route::get('/', ProductIndex::class)->name('index');
         Route::get('/new', ProductCreate::class)->name('create');
+        Route::get('/etiquetas', \App\Livewire\Products\Labels::class)->name('labels');
         Route::get('/{product}/edit', ProductEdit::class)->name('edit');
     });
 
