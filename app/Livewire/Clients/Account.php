@@ -5,7 +5,9 @@ namespace App\Livewire\Clients;
 use App\Enums\PaymentMethod;
 use App\Models\Client;
 use App\Models\ClientPayment;
+use App\Models\CompanySettings;
 use App\Support\CashLinker;
+use App\Support\Whatsapp;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -74,10 +76,24 @@ class Account extends Component
             'href' => route('invoices.show', $invoice),
         ]);
 
+        $payments = $this->client->payments()->orderBy('date')->get();
+
+        // Saldo (nos debe) para el recordatorio de WhatsApp.
+        $saldo = round($debits->sum('amount') - (float) $payments->sum('amount'), 2);
+        $whatsapp = $saldo > 0.009
+            ? Whatsapp::link($this->client->phone, sprintf(
+                'Hola %s, te recordamos que tenes un saldo pendiente de $%s con %s. Muchas gracias.',
+                $this->client->name,
+                number_format($saldo, 2, ',', '.'),
+                CompanySettings::current()->display_name,
+            ))
+            : null;
+
         return view('livewire.clients.account', [
             'debits' => $debits,
-            'payments' => $this->client->payments()->orderBy('date')->get(),
+            'payments' => $payments,
             'paymentMethods' => PaymentMethod::cases(),
+            'whatsappReminder' => $whatsapp,
         ]);
     }
 }

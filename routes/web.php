@@ -86,6 +86,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{client}/account', ClientAccount::class)->name('account');
     });
 
+    Route::middleware('module:cobranzas')->get('cobranzas', \App\Livewire\Cobranzas\Index::class)->name('cobranzas.index');
+
     Route::middleware('module:products')->prefix('products')->name('products.')->group(function () {
         Route::get('/', ProductIndex::class)->name('index');
         Route::get('/new', ProductCreate::class)->name('create');

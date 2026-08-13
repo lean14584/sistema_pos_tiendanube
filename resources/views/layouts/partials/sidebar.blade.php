@@ -23,6 +23,7 @@
         ['module' => 'quotes', 'pattern' => 'quotes.*', 'href' => route('quotes.index'), 'label' => 'Presupuestos', 'icon' => 'clipboard-document-list'],
         ['module' => 'invoices', 'pattern' => 'invoices.*', 'href' => route('invoices.index'), 'label' => 'Facturas', 'icon' => 'document-text', 'badge' => $pendientesEmision],
         ['module' => 'clients', 'pattern' => 'clients.*', 'href' => route('clients.index'), 'label' => 'Clientes', 'icon' => 'users'],
+        ['module' => 'cobranzas', 'pattern' => 'cobranzas.*', 'href' => route('cobranzas.index'), 'label' => 'Cobranzas', 'icon' => 'banknotes'],
         ['module' => 'products', 'pattern' => 'products.*', 'href' => route('products.index'), 'label' => 'Productos', 'icon' => 'cube', 'badge' => $lowStockCount],
         ['module' => 'categories', 'pattern' => 'categories.*', 'href' => route('categories.index'), 'label' => 'Categorías', 'icon' => 'tag'],
         ['module' => 'price-lists', 'pattern' => 'price-lists.*', 'href' => route('price-lists.index'), 'label' => 'Listas de precios', 'icon' => 'currency-dollar'],

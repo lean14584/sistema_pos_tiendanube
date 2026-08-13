@@ -1,0 +1,125 @@
+<?php
+
+namespace App\Livewire\Cobranzas;
+
+use App\Enums\PaymentMethod;
+use App\Models\Client;
+use App\Models\ClientPayment;
+use App\Models\CompanySettings;
+use App\Support\CashLinker;
+use App\Support\Whatsapp;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
+
+#[Layout('layouts.app')]
+class Index extends Component
+{
+    public string $search = '';
+
+    // Alta rápida de cobro por cliente (inline).
+    public ?int $payingClientId = null;
+
+    public string $payDate = '';
+
+    public string $payAmount = '';
+
+    public string $payMethod = 'efectivo';
+
+    public function mount(): void
+    {
+        $this->payDate = now()->toDateString();
+    }
+
+    /**
+     * Saldo (nos debe) de cada cliente: suma de facturas no borrador menos lo
+     * cobrado en el momento de la venta, menos los cobros a cuenta corriente.
+     * Devuelve solo los que quedan debiendo, ordenados de mayor a menor.
+     *
+     * @return \Illuminate\Support\Collection<int, array{client: Client, saldo: float}>
+     */
+    private function deudores()
+    {
+        $clients = Client::query()
+            ->when(trim($this->search) !== '', fn ($q) => $q->where('name', 'like', '%'.trim($this->search).'%'))
+            ->with(['invoices' => fn ($q) => $q->whereNot('status', 'draft')->with('payments'), 'payments'])
+            ->orderBy('name')
+            ->get();
+
+        return $clients
+            ->map(function (Client $client) {
+                $debito = $client->invoices->sum(
+                    fn ($invoice) => (float) $invoice->total - (float) $invoice->payments->sum('amount')
+                );
+                $cobrado = (float) $client->payments->sum('amount');
+
+                return ['client' => $client, 'saldo' => round($debito - $cobrado, 2)];
+            })
+            ->filter(fn ($row) => $row['saldo'] > 0.009)
+            ->sortByDesc('saldo')
+            ->values();
+    }
+
+    public function startPayment(int $clientId, float $saldo): void
+    {
+        $this->payingClientId = $clientId;
+        $this->payDate = now()->toDateString();
+        $this->payAmount = number_format($saldo, 2, '.', '');
+        $this->payMethod = 'efectivo';
+        $this->resetErrorBag();
+    }
+
+    public function cancelPayment(): void
+    {
+        $this->payingClientId = null;
+        $this->payAmount = '';
+    }
+
+    public function savePayment(): void
+    {
+        $this->validate([
+            'payingClientId' => ['required', 'exists:clients,id'],
+            'payDate' => ['required', 'date'],
+            'payAmount' => ['required', 'numeric', 'min:0.01'],
+            'payMethod' => ['required'],
+        ]);
+
+        $payment = ClientPayment::create([
+            'client_id' => $this->payingClientId,
+            'date' => $this->payDate,
+            'amount' => $this->payAmount,
+            'method' => $this->payMethod,
+            'notes' => 'Cobranza',
+        ]);
+
+        CashLinker::linkClientPayment($payment);
+
+        $this->cancelPayment();
+        session()->flash('cobranza_ok', 'Cobro registrado.');
+    }
+
+    private function mensajeRecordatorio(Client $client, float $saldo): string
+    {
+        $empresa = CompanySettings::current()->display_name;
+
+        return "Hola {$client->name}, te recordamos que tenes un saldo pendiente de $"
+            .number_format($saldo, 2, ',', '.')
+            ." con {$empresa}. Muchas gracias.";
+    }
+
+    public function render()
+    {
+        $deudores = $this->deudores()->map(function ($row) {
+            /** @var Client $client */
+            $client = $row['client'];
+            $row['whatsapp'] = Whatsapp::link($client->phone, $this->mensajeRecordatorio($client, $row['saldo']));
+
+            return $row;
+        });
+
+        return view('livewire.cobranzas.index', [
+            'deudores' => $deudores,
+            'totalACobrar' => $deudores->sum('saldo'),
+            'paymentMethods' => PaymentMethod::cases(),
+        ]);
+    }
+}
