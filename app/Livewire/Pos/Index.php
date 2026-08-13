@@ -11,6 +11,7 @@ use App\Models\PriceList;
 use App\Models\Product;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
+use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -258,7 +259,7 @@ class Index extends Component
 
         $invoice = DB::transaction(function () use ($tipo, $clientId, $status) {
             $invoice = Invoice::create([
-                'number' => $this->nextNumber($tipo->value),
+                'number' => InvoiceNumberGenerator::next($tipo->value),
                 'client_id' => $clientId,
                 'tipo_comprobante_interno' => $tipo,
                 'issue_date' => now()->toDateString(),
@@ -310,19 +311,6 @@ class Index extends Component
             $msg .= ' Saldo en cuenta corriente: $'.number_format($saldo, 2).'.';
         }
         session()->flash('status', $msg);
-    }
-
-    private function nextNumber(string $tipo): string
-    {
-        $prefix = match ($tipo) {
-            'remito_x' => 'REM',
-            'devolucion' => 'DEV',
-            default => 'FAC',
-        };
-
-        $count = Invoice::where('number', 'like', "{$prefix}-%")->count() + 1;
-
-        return "{$prefix}-".str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }
 
     public function render()

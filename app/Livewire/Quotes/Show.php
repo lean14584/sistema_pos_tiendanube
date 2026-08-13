@@ -3,8 +3,10 @@
 namespace App\Livewire\Quotes;
 
 use App\Enums\QuoteStatus;
+use App\Enums\TipoComprobanteInterno;
 use App\Models\Invoice;
 use App\Models\Quote;
+use App\Support\InvoiceNumberGenerator;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -39,7 +41,7 @@ class Show extends Component
 
         $invoice = DB::transaction(function () use ($updatePrices) {
             $invoice = Invoice::create([
-                'number' => $this->nextInvoiceNumber(),
+                'number' => InvoiceNumberGenerator::next(TipoComprobanteInterno::FacturaB->value),
                 'client_id' => $this->quote->client_id,
                 'issue_date' => now()->toDateString(),
                 'due_date' => now()->addDays(15)->toDateString(),
@@ -77,13 +79,6 @@ class Show extends Component
         });
 
         $this->redirect(route('invoices.show', $invoice), navigate: true);
-    }
-
-    private function nextInvoiceNumber(): string
-    {
-        $count = Invoice::count() + 1;
-
-        return 'FAC-'.str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }
 
     public function render()

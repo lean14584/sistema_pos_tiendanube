@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Support\InvoiceNumberGenerator;
 use App\Support\TiendanubeSyncGuard;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -575,7 +576,7 @@ class TiendanubeSync
             $fecha = isset($tn['created_at']) ? Carbon::parse($tn['created_at']) : now();
 
             $invoice = Invoice::create([
-                'number' => $this->siguienteNumero(),
+                'number' => InvoiceNumberGenerator::next(TipoComprobanteInterno::RemitoX->value),
                 'client_id' => $cliente->id,
                 'tipo_comprobante_interno' => TipoComprobanteInterno::RemitoX,
                 'issue_date' => $fecha->toDateString(),
@@ -617,12 +618,6 @@ class TiendanubeSync
         );
     }
 
-    private function siguienteNumero(): string
-    {
-        $count = Invoice::where('number', 'like', 'TN-%')->count() + 1;
-
-        return 'TN-'.str_pad((string) $count, 4, '0', STR_PAD_LEFT);
-    }
 
     /**
      * Los textos de Tiendanube vienen como objeto por idioma

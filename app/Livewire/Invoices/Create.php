@@ -12,6 +12,7 @@ use App\Models\Invoice;
 use App\Models\Product;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
+use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -250,7 +251,7 @@ class Create extends Component
 
         $invoice = DB::transaction(function () use ($validItems, $tipo) {
             $invoice = Invoice::create([
-                'number' => $this->nextNumber(),
+                'number' => InvoiceNumberGenerator::next($tipo->value),
                 'client_id' => $this->client_id,
                 'tipo_comprobante_interno' => $tipo,
                 'issue_date' => $this->issue_date,
@@ -298,19 +299,6 @@ class Create extends Component
         }
 
         $this->redirect(route('invoices.show', $invoice), navigate: true);
-    }
-
-    private function nextNumber(): string
-    {
-        $prefix = match ($this->tipo_comprobante_interno) {
-            'remito_x' => 'REM',
-            'devolucion' => 'DEV',
-            default => 'FAC',
-        };
-
-        $count = Invoice::where('number', 'like', "{$prefix}-%")->count() + 1;
-
-        return "{$prefix}-".str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }
 
     public function render()

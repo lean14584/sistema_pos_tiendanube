@@ -8,6 +8,7 @@ use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
 use App\Models\Invoice;
 use App\Support\CashLinker;
+use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -136,7 +137,7 @@ class Create extends Component
 
         $notaCredito = DB::transaction(function () use ($validItems, $tipoNC) {
             $nota = Invoice::create([
-                'number' => $this->nextNumber(),
+                'number' => InvoiceNumberGenerator::next($tipoNC->value),
                 'client_id' => $this->invoice->client_id,
                 'related_invoice_id' => $this->invoice->id,
                 'tipo_comprobante_interno' => $tipoNC,
@@ -170,13 +171,6 @@ class Create extends Component
         });
 
         $this->redirect(route('invoices.show', $notaCredito), navigate: true);
-    }
-
-    private function nextNumber(): string
-    {
-        $count = Invoice::where('number', 'like', 'NC-%')->count() + 1;
-
-        return 'NC-'.str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }
 
     public function render()

@@ -87,7 +87,8 @@ class NotaCreditoTest extends TestCase
 
         $nota = Invoice::where('related_invoice_id', $factura->id)->first();
         $this->assertNotNull($nota);
-        $this->assertStringStartsWith('NC-', $nota->number);
+        // Número con formato por punto de venta y tipo: PPPP-NNNNNNNN.
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{8}$/', $nota->number);
         $this->assertSame(TipoComprobanteInterno::NotaCreditoB, $nota->tipo_comprobante_interno);
         $this->assertEqualsWithDelta(1000.0, (float) $nota->total, 0.01);
     }
