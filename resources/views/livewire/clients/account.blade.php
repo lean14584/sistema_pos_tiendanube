@@ -26,5 +26,8 @@
         :amount="$amount"
         :date="$date"
         :notes="$notes"
+        receipt-route="clients.recibo"
+        :whatsapp-phone="$client->phone"
+        :client-name="$client->name"
     />
 </div>

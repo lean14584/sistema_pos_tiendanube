@@ -9,6 +9,9 @@
     'amount' => '',
     'date' => '',
     'notes' => '',
+    'receiptRoute' => null,
+    'whatsappPhone' => null,
+    'clientName' => '',
 ])
 
 @php
@@ -121,12 +124,42 @@
                             <td class="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{{ $row['debit'] ? '$'.number_format($row['debit'], 2) : '—' }}</td>
                             <td class="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{{ $row['credit'] ? '$'.number_format($row['credit'], 2) : '—' }}</td>
                             <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($row['balance'], 2) }}</td>
-                            <td class="px-5 py-3 text-right">
+                            <td class="px-5 py-3 text-right whitespace-nowrap">
                                 @if ($row['paymentId'])
+                                    @if ($receiptRoute)
+                                        <a
+                                            href="{{ route($receiptRoute, $row['paymentId']) }}"
+                                            target="_blank"
+                                            title="Descargar recibo"
+                                            class="inline-flex p-1.5 rounded-md text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400 hover:scale-110 transition-all align-middle"
+                                        >
+                                            <x-heroicon-o-document-arrow-down class="w-4 h-4" />
+                                        </a>
+                                    @endif
+                                    @if ($whatsappPhone)
+                                        @php
+                                            $reciboMsg = 'Hola '.$clientName.', te paso el recibo por tu pago de $'
+                                                .number_format($row['credit'], 2, ',', '.').' del '
+                                                .\Illuminate\Support\Carbon::parse($row['date'])->format('d/m/Y')
+                                                .'. Saldo restante: $'.number_format(max(0, $row['balance']), 2, ',', '.')
+                                                .'. Gracias!';
+                                            $reciboWa = \App\Support\Whatsapp::link($whatsappPhone, $reciboMsg);
+                                        @endphp
+                                        @if ($reciboWa)
+                                            <a
+                                                href="{{ $reciboWa }}"
+                                                target="_blank"
+                                                title="Enviar recibo por WhatsApp"
+                                                class="inline-flex p-1.5 rounded-md text-gray-500 hover:bg-green-50 hover:text-green-600 dark:text-gray-400 dark:hover:bg-green-500/10 dark:hover:text-green-400 hover:scale-110 transition-all align-middle"
+                                            >
+                                                <x-heroicon-o-chat-bubble-left-right class="w-4 h-4" />
+                                            </a>
+                                        @endif
+                                    @endif
                                     <button
                                         wire:click="deletePayment({{ $row['paymentId'] }})"
                                         wire:confirm="¿Eliminar este movimiento?"
-                                        class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
+                                        class="inline-flex p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all align-middle"
                                     >
                                         <x-heroicon-o-trash class="w-4 h-4" />
                                     </button>

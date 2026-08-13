@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/new', ClientCreate::class)->name('create');
         Route::get('/{client}/edit', ClientEdit::class)->name('edit');
         Route::get('/{client}/account', ClientAccount::class)->name('account');
+        Route::get('/recibo/{payment}', \App\Http\Controllers\ReciboPdfController::class)->name('recibo');
     });
 
     Route::middleware('module:cobranzas')->get('cobranzas', \App\Livewire\Cobranzas\Index::class)->name('cobranzas.index');
