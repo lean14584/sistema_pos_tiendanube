@@ -44,33 +44,11 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
-                @forelse ($this->productos as $product)
-                    <button
-                        wire:click="addProduct({{ $product->id }})"
-                        wire:key="prod-{{ $product->id }}"
-                        class="group relative text-left rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 overflow-hidden hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all"
-                    >
-                        <span class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 opacity-70 group-hover:opacity-100 transition-opacity"></span>
-                        <div class="w-full aspect-square mb-2 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-gray-800 dark:to-gray-800/60 flex items-center justify-center">
-                            @if ($product->imageUrl())
-                                <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" class="w-full h-full object-cover" loading="lazy">
-                            @else
-                                <x-heroicon-o-cube class="w-8 h-8 text-indigo-300 dark:text-gray-600" />
-                            @endif
-                        </div>
-                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-tight line-clamp-2 min-h-[2.5rem]">{{ $product->name }}</p>
-                        <div class="flex items-center justify-between mt-1.5">
-                            <span class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ $product->sku ?: '—' }}</span>
-                            <span class="shrink-0 inline-flex items-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">${{ number_format($product->price, 2) }}</span>
-                        </div>
-                    </button>
-                @empty
-                    <p class="col-span-full text-sm text-gray-400 dark:text-gray-500 py-8 text-center">
-                        {{ trim($search) !== '' ? 'Sin resultados.' : 'No hay productos cargados.' }}
-                    </p>
-                @endforelse
-            </div>
+            <x-product-list
+                :products="$this->productos"
+                add-method="addProduct"
+                :empty-text="trim($search) !== '' ? 'Sin resultados.' : 'No hay productos cargados.'"
+            />
         </div>
 
         {{-- Carrito --}}
