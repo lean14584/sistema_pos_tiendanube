@@ -96,6 +96,16 @@
         <div class="lg:sticky lg:top-4 self-start space-y-3">
             @php $posSelect = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 focus:bg-white dark:focus:bg-gray-800 transition'; @endphp
             <div class="rounded-2xl border border-indigo-100 dark:border-gray-800 bg-gradient-to-b from-white to-indigo-50/60 dark:from-gray-900 dark:to-gray-950 shadow-md shadow-indigo-100/50 dark:shadow-black/30 p-4 space-y-3">
+                {{-- Tipo de comprobante --}}
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tipo de comprobante</label>
+                    <select wire:model="tipo_comprobante_interno" class="{{ $posSelect }}">
+                        @foreach ($tipoComprobanteInternoOptions as $option)
+                            <option value="{{ $option->value }}">{{ $option->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
                 {{-- Cliente y lista --}}
                 <div>
                     <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cliente</label>

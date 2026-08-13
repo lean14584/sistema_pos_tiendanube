@@ -4,6 +4,7 @@ namespace App\Livewire\Pos;
 
 use App\Enums\AlicuotaIva;
 use App\Enums\PaymentMethod;
+use App\Enums\TipoComprobanteInterno;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
@@ -46,11 +47,15 @@ class Index extends Component
 
     public bool $printOnSale = true;
 
+    /** Tipo de comprobante a generar (Factura A/B, Remito X, etc.). */
+    public string $tipo_comprobante_interno = '';
+
     public function mount(): void
     {
         $cf = Client::consumidorFinal();
         $this->client_id = $cf->id;
         $this->price_list_id = $cf->price_list_id; // null = precio base
+        $this->tipo_comprobante_interno = CompanySettings::current()->tipoComprobantePorDefecto()->value;
     }
 
     /** Lista de precios vigente. null = precio base (sin ajuste). */
@@ -412,7 +417,10 @@ class Index extends Component
             return;
         }
 
-        $tipo = CompanySettings::current()->tipoComprobantePorDefecto();
+        $tipo = TipoComprobanteInterno::tryFrom($this->tipo_comprobante_interno);
+        if (! $tipo || ! in_array($tipo, CompanySettings::current()->tiposComprobanteSeleccionables(), true)) {
+            $tipo = CompanySettings::current()->tipoComprobantePorDefecto();
+        }
         $status = $pagado + 0.001 >= $total ? 'paid' : 'pending';
 
         $invoice = DB::transaction(function () use ($tipo, $clientId, $status) {
@@ -478,6 +486,7 @@ class Index extends Component
             'paymentMethods' => PaymentMethod::cases(),
             'clients' => Client::orderBy('name')->get(),
             'priceLists' => PriceList::active()->orderBy('name')->get(),
+            'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
         ]);
     }
 }
