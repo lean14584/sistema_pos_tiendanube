@@ -6,32 +6,27 @@
 
     @php $isConverted = $quote->status->value === 'converted'; @endphp
 
-    <div class="flex items-start justify-between mb-8">
-        <div>
-            <div class="flex items-center gap-3">
-                <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $quote->number }}</h1>
-                <x-status-badge :status="$quote->status" />
-            </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Emitido el {{ $quote->issue_date->format('d/m/Y') }} · Válido hasta {{ $quote->valid_until->format('d/m/Y') }}
-            </p>
+    <x-page-header title="{{ $quote->number }}" subtitle="Emitido el {{ $quote->issue_date->format('d/m/Y') }} · Válido hasta {{ $quote->valid_until->format('d/m/Y') }}" icon="clipboard-document-list">
+        <x-slot:actions>
+            <x-status-badge :status="$quote->status" />
+        </x-slot:actions>
+    </x-page-header>
+
+    @if (! $isConverted)
+        <div class="flex gap-2 mb-6">
+            <a href="{{ route('quotes.edit', $quote) }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all">
+                <x-heroicon-o-pencil class="w-4 h-4" />
+                Editar
+            </a>
+            <button
+                wire:click="delete"
+                wire:confirm="¿Eliminar el presupuesto {{ $quote->number }}?"
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+            >
+                <x-heroicon-o-trash class="w-4 h-4" />
+            </button>
         </div>
-        @if (! $isConverted)
-            <div class="flex gap-2">
-                <a href="{{ route('quotes.edit', $quote) }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all">
-                    <x-heroicon-o-pencil class="w-4 h-4" />
-                    Editar
-                </a>
-                <button
-                    wire:click="delete"
-                    wire:confirm="¿Eliminar el presupuesto {{ $quote->number }}?"
-                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                >
-                    <x-heroicon-o-trash class="w-4 h-4" />
-                </button>
-            </div>
-        @endif
-    </div>
+    @endif
 
     @if ($isConverted)
         <div class="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-lg p-4 text-sm text-indigo-800 dark:text-indigo-400 mb-6">

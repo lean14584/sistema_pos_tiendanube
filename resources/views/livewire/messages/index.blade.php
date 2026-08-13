@@ -1,8 +1,5 @@
 <div class="p-8 max-w-5xl mx-auto" wire:poll.5s>
-    <div class="mb-8">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Mensajes</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Chat interno entre usuarios</p>
-    </div>
+    <x-page-header title="Mensajes" subtitle="Chat interno entre usuarios" icon="chat-bubble-left-right" />
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 flex h-[32rem] overflow-hidden">
         <div class="w-60 shrink-0 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">

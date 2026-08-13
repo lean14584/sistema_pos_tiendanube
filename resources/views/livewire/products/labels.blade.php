@@ -21,8 +21,7 @@
             <x-heroicon-o-arrow-left class="w-4 h-4" />
             Productos
         </a>
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Etiquetas de precios</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Elegí los productos, cuántas etiquetas de cada uno y mandá a imprimir.</p>
+        <x-page-header title="Etiquetas de precios" subtitle="Elegí los productos, cuántas etiquetas de cada uno y mandá a imprimir." icon="printer" />
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {{-- Buscador / agregar --}}

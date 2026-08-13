@@ -1,20 +1,16 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Sugerencias de compra</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Productos con stock bajo, priorizados por mayor venta en los últimos {{ $lookbackDays }} días
-            </p>
-        </div>
+    <x-page-header title="Sugerencias de compra" subtitle="Productos con stock bajo, priorizados por mayor venta en los últimos {{ $lookbackDays }} días" icon="clipboard-document-check">
+        <x-slot:actions>
         <a
             href="{{ route('purchases.create') }}"
             wire:navigate
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
+            class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all"
         >
             <x-heroicon-o-plus class="w-4 h-4" />
             Nueva compra
         </a>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">
         @if ($suggestions->isEmpty())

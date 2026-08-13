@@ -1,8 +1,5 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Datos de la empresa</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
-        Estos datos se usan para determinar el tipo de comprobante (Factura A/B/C) y se envían a ARCA al emitir cada factura.
-    </p>
+    <x-page-header title="Datos de la empresa" subtitle="Estos datos se usan para determinar el tipo de comprobante (Factura A/B/C) y se envían a ARCA al emitir cada factura." icon="building-office" />
 
     @if (session('status'))
         <div class="mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-3 text-sm">

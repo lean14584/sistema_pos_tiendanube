@@ -4,10 +4,7 @@
         Volver al remito
     </a>
 
-    <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Facturar remito {{ $remito->number }}</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
-        Se genera una factura para {{ $remito->client->name }} copiando los ítems del remito. El stock no se vuelve a descontar (ya lo hizo el remito).
-    </p>
+    <x-page-header title="Facturar remito {{ $remito->number }}" subtitle="Se genera una factura para {{ $remito->client->name }} copiando los ítems del remito. El stock no se vuelve a descontar (ya lo hizo el remito)." icon="document-text" />
 
     <form wire:submit="save" class="space-y-6">
         <div class="max-w-xs">

@@ -1,19 +1,17 @@
 <div class="p-8 max-w-3xl mx-auto">
-    <div class="flex items-center gap-3 mb-2">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Tiendanube</h1>
-        @if ($configurado)
-            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 text-xs font-medium">
-                <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Conectado
-            </span>
-        @else
-            <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 px-2.5 py-0.5 text-xs font-medium">
-                Sin configurar
-            </span>
-        @endif
-    </div>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
-        Conectá tu tienda online para importar productos y pedidos, y sincronizar el stock.
-    </p>
+    <x-page-header title="Tiendanube" subtitle="Conectá tu tienda online para importar productos y pedidos, y sincronizar el stock." icon="shopping-bag">
+        <x-slot:actions>
+            @if ($configurado)
+                <span class="inline-flex items-center gap-1 rounded-full bg-white/20 text-white px-2.5 py-1 text-xs font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Conectado
+                </span>
+            @else
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-400/90 text-amber-950 px-2.5 py-1 text-xs font-semibold">
+                    Sin configurar
+                </span>
+            @endif
+        </x-slot:actions>
+    </x-page-header>
 
     @if (session('status'))
         <div class="mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-3 text-sm">

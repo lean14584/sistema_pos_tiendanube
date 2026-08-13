@@ -1,18 +1,13 @@
 <div class="p-8 max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Tareas</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {{ $isAdmin ? 'Seguimiento de las tareas asignadas a todo el equipo' : 'Tus tareas asignadas' }}
-            </p>
-        </div>
+    <x-page-header title="Tareas" :subtitle="$isAdmin ? 'Seguimiento de las tareas asignadas a todo el equipo' : 'Tus tareas asignadas'" icon="check-circle">
         @if ($isAdmin)
-            <a href="{{ route('tasks.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
-                <x-heroicon-o-plus class="w-4 h-4" />
-                Nueva tarea
-            </a>
+            <x-slot:actions>
+                <a href="{{ route('tasks.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-plus class="w-4 h-4" /> Nueva tarea
+                </a>
+            </x-slot:actions>
         @endif
-    </div>
+    </x-page-header>
 
     <div class="flex gap-1.5 flex-wrap mb-5">
         <button wire:click="$set('filter', 'all')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800' }}">

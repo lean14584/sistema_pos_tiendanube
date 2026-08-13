@@ -3,19 +3,13 @@
 @endphp
 
 <div class="p-8 max-w-6xl mx-auto">
-    <div class="mb-8 flex items-start justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Libro IVA Digital</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Comprobantes de ventas y compras del período, según el diseño de registro de ARCA (ex AFIP, RG 4597)</p>
-        </div>
-        <a
-            href="{{ route('libro-iva.export', ['desde' => $fromDate, 'hasta' => $toDate]) }}"
-            class="shrink-0 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
-        >
-            <x-heroicon-o-arrow-down-tray class="w-4 h-4" />
-            Exportar (.zip)
-        </a>
-    </div>
+    <x-page-header title="Libro IVA Digital" subtitle="Comprobantes de ventas y compras del período, según el diseño de registro de ARCA (ex AFIP, RG 4597)" icon="receipt-percent">
+        <x-slot:actions>
+            <a href="{{ route('libro-iva.export', ['desde' => $fromDate, 'hasta' => $toDate]) }}" class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+                <x-heroicon-o-arrow-down-tray class="w-4 h-4" /> Exportar (.zip)
+            </a>
+        </x-slot:actions>
+    </x-page-header>
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
         <div>

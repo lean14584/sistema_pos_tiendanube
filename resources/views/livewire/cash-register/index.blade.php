@@ -1,8 +1,5 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <div class="mb-8">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Caja</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Apertura, movimientos y cierre de caja</p>
-    </div>
+    <x-page-header title="Caja" subtitle="Apertura, movimientos y cierre de caja" icon="banknotes" />
 
     @if (! $openSession)
         <form wire:submit="openSession" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 max-w-md">

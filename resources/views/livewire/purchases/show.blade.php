@@ -4,29 +4,24 @@
         Compras
     </a>
 
-    <div class="flex items-start justify-between mb-8">
-        <div>
-            <div class="flex items-center gap-3">
-                <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $purchase->number }}</h1>
-                <x-status-badge :status="$purchase->effective_status" />
-            </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Comprada el {{ $purchase->issue_date->format('d/m/Y') }} · Vence el {{ $purchase->due_date->format('d/m/Y') }}
-            </p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{{ route('purchases.edit', $purchase) }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all">
-                <x-heroicon-o-pencil class="w-4 h-4" />
-                Editar
-            </a>
-            <button
-                wire:click="delete"
-                wire:confirm="¿Eliminar la compra {{ $purchase->number }}? Esto revertirá el stock sumado por esta compra."
-                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-            >
-                <x-heroicon-o-trash class="w-4 h-4" />
-            </button>
-        </div>
+    <x-page-header title="{{ $purchase->number }}" subtitle="Comprada el {{ $purchase->issue_date->format('d/m/Y') }} · Vence el {{ $purchase->due_date->format('d/m/Y') }}" icon="shopping-cart">
+        <x-slot:actions>
+            <x-status-badge :status="$purchase->effective_status" />
+        </x-slot:actions>
+    </x-page-header>
+
+    <div class="flex gap-2 mb-6">
+        <a href="{{ route('purchases.edit', $purchase) }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all">
+            <x-heroicon-o-pencil class="w-4 h-4" />
+            Editar
+        </a>
+        <button
+            wire:click="delete"
+            wire:confirm="¿Eliminar la compra {{ $purchase->number }}? Esto revertirá el stock sumado por esta compra."
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+        >
+            <x-heroicon-o-trash class="w-4 h-4" />
+        </button>
     </div>
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 mb-6">

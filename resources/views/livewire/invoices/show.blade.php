@@ -16,20 +16,16 @@
         </div>
     @endif
 
-    <div class="flex items-start justify-between mb-8">
-        <div>
-            <div class="flex items-center gap-3">
-                <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $invoice->number }}</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                    {{ $invoice->tipo_comprobante_interno->label() }}
-                </span>
-                <x-status-badge :status="$invoice->effective_status" />
-            </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Emitida el {{ $invoice->issue_date->format('d/m/Y') }} · Vence el {{ $invoice->due_date->format('d/m/Y') }}
-            </p>
-        </div>
-        <div class="flex gap-2 flex-wrap justify-end">
+    <x-page-header title="{{ $invoice->number }}" subtitle="Emitida el {{ $invoice->issue_date->format('d/m/Y') }} · Vence el {{ $invoice->due_date->format('d/m/Y') }}" icon="document-text">
+        <x-slot:actions>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
+                {{ $invoice->tipo_comprobante_interno->label() }}
+            </span>
+            <x-status-badge :status="$invoice->effective_status" />
+        </x-slot:actions>
+    </x-page-header>
+
+    <div class="flex gap-2 flex-wrap mb-8">
             @if ($invoice->esRemito())
                 <a
                     href="{{ route('invoices.remito-pdf', $invoice) }}"
@@ -146,7 +142,7 @@
                 </button>
             @endunless
         </div>
-    </div>
+    {{-- fin barra de acciones --}}
 
     @if ($afipError)
         <div class="mb-6 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 px-4 py-3 text-sm">

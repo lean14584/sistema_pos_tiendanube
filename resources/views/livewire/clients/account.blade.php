@@ -3,17 +3,15 @@
         <x-heroicon-o-arrow-left class="w-4 h-4" />
         Clientes
     </a>
-    <div class="flex items-start justify-between gap-4 mb-8">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Cuenta corriente · {{ $client->name }}</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Facturas y cobros del cliente</p>
-        </div>
+    <x-page-header title="Cuenta corriente · {{ $client->name }}" subtitle="Facturas y cobros del cliente" icon="users">
         @if ($whatsappReminder)
-            <a href="{{ $whatsappReminder }}" target="_blank" rel="noopener" class="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-green-600 hover:bg-green-700 px-3 py-2 text-sm font-medium text-white shadow-sm">
-                <x-heroicon-o-chat-bubble-left-right class="w-4 h-4" /> Recordar por WhatsApp
-            </a>
+            <x-slot:actions>
+                <a href="{{ $whatsappReminder }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-green-500 hover:bg-green-400 px-3 py-2 text-sm font-semibold text-white shadow-sm">
+                    <x-heroicon-o-chat-bubble-left-right class="w-4 h-4" /> Recordar por WhatsApp
+                </a>
+            </x-slot:actions>
         @endif
-    </div>
+    </x-page-header>
 
     <x-current-account
         debit-label="Factura"

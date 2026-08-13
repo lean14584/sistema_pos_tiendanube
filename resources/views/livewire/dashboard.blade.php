@@ -1,16 +1,13 @@
 <div class="p-8 max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Dashboard</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Resumen de tu actividad de facturación</p>
-        </div>
+    <x-page-header title="Dashboard" subtitle="Resumen de tu actividad de facturación" icon="home">
         @if ($canManageInvoices)
-            <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
-                <x-heroicon-o-plus class="w-4 h-4" />
-                Nueva factura
-            </a>
+            <x-slot:actions>
+                <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-plus class="w-4 h-4" /> Nueva factura
+                </a>
+            </x-slot:actions>
         @endif
-    </div>
+    </x-page-header>
 
     @if ($canManageInvoices && $pendientesEmisionCount > 0)
         <a href="{{ route('invoices.index') }}" wire:navigate

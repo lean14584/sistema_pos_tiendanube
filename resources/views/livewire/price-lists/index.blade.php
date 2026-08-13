@@ -1,8 +1,5 @@
 <div class="p-8 max-w-4xl mx-auto">
-    <div class="flex items-center justify-between mb-1">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Listas de precios</h1>
-    </div>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Cada lista ajusta el precio base por un porcentaje (ej.: Mayorista −15%, Tarjeta +10%). Se asigna por cliente y se puede elegir al vender.</p>
+    <x-page-header title="Listas de precios" subtitle="Cada lista ajusta el precio base por un porcentaje (ej.: Mayorista −15%, Tarjeta +10%). Se asigna por cliente y se puede elegir al vender." icon="currency-dollar" />
 
     @if (session('status'))
         <div class="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-3 text-sm">{{ session('status') }}</div>

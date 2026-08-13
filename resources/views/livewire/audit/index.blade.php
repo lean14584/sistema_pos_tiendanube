@@ -22,10 +22,7 @@
 @endphp
 
 <div class="p-8 max-w-6xl mx-auto">
-    <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Auditoría</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
-        Altas, bajas y modificaciones en facturas, productos, usuarios y datos de la empresa.
-    </p>
+    <x-page-header title="Auditoría" subtitle="Altas, bajas y modificaciones en facturas, productos, usuarios y datos de la empresa." icon="clipboard-document-check" />
 
     <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6">
         <select wire:model.live="modelo" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">

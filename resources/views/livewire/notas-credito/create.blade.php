@@ -8,7 +8,7 @@
         {{ $invoice->number }}
     </a>
 
-    <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Nueva Nota de Crédito</h1>
+    <x-page-header title="Nueva Nota de Crédito" icon="receipt-refund" />
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
         Corresponde a la factura <strong>{{ $invoice->number }}</strong> ({{ $invoice->client->name }}). Se emitirá como
         {{ $invoice->tipo_comprobante === \App\Enums\TipoComprobante::FacturaA ? 'Nota de Crédito A' : 'Nota de Crédito B' }}.

@@ -3,8 +3,7 @@
         <x-heroicon-o-arrow-left class="w-4 h-4" />
         Proveedores
     </a>
-    <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Cuenta corriente · {{ $provider->name }}</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Compras y pagos al proveedor</p>
+    <x-page-header title="Cuenta corriente · {{ $provider->name }}" subtitle="Compras y pagos al proveedor" icon="truck" />
 
     <x-current-account
         debit-label="Compra"

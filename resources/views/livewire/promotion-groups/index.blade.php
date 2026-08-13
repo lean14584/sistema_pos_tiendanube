@@ -2,8 +2,7 @@
     <a href="{{ route('promotions.index') }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
         <x-heroicon-o-arrow-left class="w-4 h-4" /> Promociones por producto
     </a>
-    <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Promos por familia</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Agrupá productos (ej. Coca, Fanta, Sprite) y aplicá un NxM: el POS regala la unidad más barata del grupo.</p>
+    <x-page-header title="Promos por familia" subtitle="Agrupá productos (ej. Coca, Fanta, Sprite) y aplicá un NxM: el POS regala la unidad más barata del grupo." icon="gift" />
 
     @if (session('status'))
         <div class="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-4 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">{{ session('status') }}</div>
