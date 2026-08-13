@@ -124,20 +124,6 @@ class Edit extends Component
             ->get();
     }
 
-    /** Lista de productos para el panel lateral (buscable), estilo POS. */
-    #[Computed]
-    public function productos()
-    {
-        return Product::query()
-            ->when(trim($this->productQuery) !== '', function ($q) {
-                $term = trim($this->productQuery);
-                $q->where('name', 'like', "%{$term}%")->orWhere('sku', 'like', "%{$term}%");
-            })
-            ->orderBy('name')
-            ->limit(60)
-            ->get();
-    }
-
     public function addProductItem(int $productId): void
     {
         $product = Product::findOrFail($productId);
@@ -150,6 +136,8 @@ class Edit extends Component
             'discount' => '0',
             'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
         ];
+
+        $this->productQuery = '';
     }
 
     public function addFreeformItem(): void

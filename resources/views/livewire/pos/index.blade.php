@@ -18,108 +18,101 @@
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {{-- Productos --}}
+        {{-- Lector + productos agregados --}}
         <div class="lg:col-span-2 space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div class="relative">
-                    <x-heroicon-o-qr-code class="w-5 h-5 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                        type="text"
-                        autofocus
-                        wire:model="barcode"
-                        wire:keydown.enter.prevent="addByBarcode"
-                        placeholder="Escaneá o escribí el código y Enter"
-                        class="w-full rounded-lg border border-indigo-300 dark:border-indigo-700 dark:bg-gray-900 dark:text-gray-100 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    >
-                    @error('barcode') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            <div class="relative">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+                    <x-heroicon-o-qr-code class="w-5 h-5" />
                 </div>
-                <div class="relative">
-                    <x-heroicon-o-magnifying-glass class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                        type="text"
-                        wire:model.live.debounce.200ms="search"
-                        placeholder="Buscar por nombre o SKU..."
-                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    >
-                </div>
+                <input
+                    type="text"
+                    autofocus
+                    wire:model="barcode"
+                    wire:keydown.enter.prevent="addByBarcode"
+                    placeholder="Escaneá el código de barras (o escribilo y Enter)"
+                    class="w-full rounded-xl border-2 border-indigo-300 dark:border-indigo-700 dark:bg-gray-900 dark:text-gray-100 pl-14 pr-4 py-4 text-base focus:outline-none focus:ring-4 focus:ring-indigo-500/30 focus:border-indigo-500 shadow-sm"
+                >
+                @error('barcode') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <x-product-list
-                :products="$this->productos"
-                add-method="addProduct"
-                :empty-text="trim($search) !== '' ? 'Sin resultados.' : 'No hay productos cargados.'"
-            />
+            <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
+                <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
+                    <h2 class="text-sm font-semibold inline-flex items-center gap-2">
+                        <x-heroicon-o-shopping-cart class="w-4 h-4" /> Productos ({{ $this->itemsCount() }})
+                    </h2>
+                    @if (count($cart) > 0)
+                        <button wire:click="vaciar" class="text-xs text-white/80 hover:text-white">Vaciar</button>
+                    @endif
+                </div>
+
+                <div class="divide-y divide-gray-100 dark:divide-gray-800 min-h-[16rem] lg:min-h-[calc(100vh-16rem)]">
+                    @forelse ($cart as $index => $item)
+                        <div wire:key="cart-{{ $index }}" class="flex items-center gap-3 px-4 py-3 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-colors">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                    {{ $item['description'] }}
+                                    @php $promo = $this->promoLabel($item); @endphp
+                                    @if ($promo)
+                                        <span class="ml-1 inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-2 py-0.5 text-[10px] font-bold align-middle shadow-sm">
+                                            <x-heroicon-o-gift class="w-3 h-3" /> {{ $promo }}
+                                        </span>
+                                    @endif
+                                </p>
+                                <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                    <span>${{ number_format($item['unit_price'], 2) }} c/u · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</span>
+                                    <span class="text-gray-300 dark:text-gray-600">·</span>
+                                    <span>Desc</span>
+                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="cart.{{ $index }}.discount" class="w-11 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
+                                <button wire:click="dec({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">−</button>
+                                <span class="w-8 text-center text-sm font-bold text-gray-900 dark:text-gray-100">{{ $item['quantity'] }}</span>
+                                <button wire:click="inc({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">+</button>
+                            </div>
+                            <span class="w-24 text-right text-base font-bold text-gray-900 dark:text-gray-100 shrink-0">
+                                ${{ number_format($this->lineTotal($item), 2) }}
+                            </span>
+                            <button wire:click="removeItem({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                <x-heroicon-o-x-mark class="w-5 h-5" />
+                            </button>
+                        </div>
+                    @empty
+                        <div class="flex flex-col items-center justify-center h-64 text-center text-gray-400 dark:text-gray-500 px-4">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-gray-800 dark:to-gray-800/50 flex items-center justify-center mb-3">
+                                <x-heroicon-o-qr-code class="w-8 h-8 text-indigo-400 dark:text-gray-600" />
+                            </div>
+                            <p class="text-sm font-medium">Escaneá un producto para empezar</p>
+                            <p class="text-xs mt-0.5">Pasá el código por el lector o escribilo y apretá Enter.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+            @error('cart') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
         </div>
 
-        {{-- Carrito --}}
-        <div class="lg:sticky lg:top-4 self-start bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 flex flex-col max-h-[calc(100vh-7rem)]">
-            <div class="flex items-center justify-between px-4 py-3 rounded-t-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
-                <h2 class="text-sm font-semibold inline-flex items-center gap-2">
-                    <x-heroicon-o-shopping-cart class="w-4 h-4" /> Carrito ({{ $this->itemsCount() }})
-                </h2>
-                @if (count($cart) > 0)
-                    <button wire:click="vaciar" class="text-xs text-white/80 hover:text-white">Vaciar</button>
-                @endif
-            </div>
-
-            <div class="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
-                @forelse ($cart as $index => $item)
-                    <div wire:key="cart-{{ $index }}" class="flex items-center gap-2 px-4 py-2.5">
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                {{ $item['description'] }}
-                                @php $promo = $this->promoLabel($item); @endphp
-                                @if ($promo)
-                                    <span class="ml-1 inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 text-[10px] font-semibold align-middle">{{ $promo }}</span>
-                                @endif
-                            </p>
-                            <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                                <span>${{ number_format($item['unit_price'], 2) }} · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</span>
-                                <span class="text-gray-300 dark:text-gray-600">·</span>
-                                <span>Desc</span>
-                                <input type="number" min="0" max="100" step="0.01" wire:model.live="cart.{{ $index }}.discount" class="w-12 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                <span>%</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <button wire:click="dec({{ $index }})" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center">−</button>
-                            <span class="w-6 text-center text-sm font-medium text-gray-900 dark:text-gray-100">{{ $item['quantity'] }}</span>
-                            <button wire:click="inc({{ $index }})" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center">+</button>
-                        </div>
-                        <span class="w-20 text-right text-sm font-medium text-gray-900 dark:text-gray-100 shrink-0">
-                            ${{ number_format($this->lineTotal($item), 2) }}
-                        </span>
-                    </div>
-                @empty
-                    <div class="px-4 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
-                        <x-heroicon-o-shopping-cart class="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-700" />
-                        Escaneá o tocá un producto para empezar.
-                    </div>
-                @endforelse
-            </div>
-
-            @error('cart') <p class="px-4 pt-2 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-
-            <div class="border-t border-gray-100 dark:border-gray-800 p-4 space-y-3">
-                {{-- Cliente y lista de precios --}}
-                <div class="grid grid-cols-1 gap-2">
-                    <div>
-                        <select wire:model.live="client_id" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            @foreach ($clients as $client)
-                                <option value="{{ $client->id }}">{{ $client->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('client_id') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">Lista</span>
-                        <select wire:model.live="price_list_id" class="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Precio base</option>
-                            @foreach ($priceLists as $list)
-                                <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
-                            @endforeach
-                        </select>
-                    </div>
+        {{-- Checkout --}}
+        <div class="lg:sticky lg:top-4 self-start space-y-3">
+            <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-4 space-y-3">
+                {{-- Cliente y lista --}}
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cliente</label>
+                    <select wire:model.live="client_id" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        @foreach ($clients as $client)
+                            <option value="{{ $client->id }}">{{ $client->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('client_id') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Lista de precios</label>
+                    <select wire:model.live="price_list_id" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Precio base</option>
+                        @foreach ($priceLists as $list)
+                            <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
+                        @endforeach
+                    </select>
                 </div>
 
                 {{-- Resumen con descuentos y promos --}}
@@ -148,7 +141,7 @@
                     </div>
                 </div>
 
-                {{-- Medios de pago (uno o varios) --}}
+                {{-- Medios de pago --}}
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Medios de pago</span>
@@ -198,10 +191,10 @@
                     wire:loading.attr="disabled"
                     wire:target="cobrar"
                     @disabled(count($cart) === 0)
-                    class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-3 text-base font-semibold text-white shadow-md shadow-emerald-600/30 hover:from-emerald-700 hover:to-emerald-600 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-600/30 hover:from-emerald-700 hover:to-emerald-600 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     <x-heroicon-o-banknotes class="w-5 h-5" />
-                    <span wire:loading.remove wire:target="cobrar">Cobrar</span>
+                    <span wire:loading.remove wire:target="cobrar">Cobrar ${{ number_format($this->total(), 2) }}</span>
                     <span wire:loading wire:target="cobrar">Cobrando...</span>
                 </button>
             </div>

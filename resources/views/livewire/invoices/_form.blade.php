@@ -2,8 +2,7 @@
     $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors';
 @endphp
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-<form wire:submit="save" class="lg:col-span-2 space-y-4">
+<form wire:submit="save" class="space-y-4 max-w-3xl">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
         @if ($esNotaCredito)
             <div>
@@ -74,6 +73,35 @@
     <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Ítems *</label>
 
+        <div class="relative">
+            <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+                type="text"
+                wire:model.live.debounce.200ms="productQuery"
+                placeholder="Buscar producto por nombre o SKU..."
+                class="{{ $inputClass }} pl-9"
+            >
+            @if (trim($productQuery) !== '')
+                <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
+                    @forelse ($this->productResults as $product)
+                        <button
+                            type="button"
+                            wire:click="addProductItem({{ $product->id }})"
+                            class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-indigo-50/70 dark:hover:bg-indigo-500/10 transition-colors"
+                        >
+                            <span class="min-w-0">
+                                <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
+                                <span class="block text-xs text-gray-500 dark:text-gray-400">{{ $product->sku ? "SKU: {$product->sku} · " : '' }}${{ number_format($product->price, 2) }}</span>
+                            </span>
+                            <x-heroicon-o-plus-circle class="w-5 h-5 text-indigo-500 shrink-0" />
+                        </button>
+                    @empty
+                        <p class="p-3 text-sm text-gray-400 dark:text-gray-500">Sin resultados para "{{ $productQuery }}".</p>
+                    @endforelse
+                </div>
+            @endif
+        </div>
+
         @error('items') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
 
         @if (count($items) > 0)
@@ -128,7 +156,7 @@
                 </div>
             </div>
         @else
-            <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Agregá productos desde el panel de la derecha (o el ítem sin producto).</p>
+            <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Buscá un producto arriba para agregarlo a la factura.</p>
         @endif
 
         <button type="button" wire:click="addFreeformItem" class="mt-1.5 text-xs text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors">
@@ -223,24 +251,3 @@
         </a>
     </div>
 </form>
-
-    {{-- Panel de productos (igual que Venta rápida): lista en desktop, cards en mobile --}}
-    <aside class="lg:sticky lg:top-4 self-start space-y-2">
-        <div class="relative">
-            <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-                type="text"
-                wire:model.live.debounce.200ms="productQuery"
-                placeholder="Buscar producto..."
-                class="{{ $inputClass }} pl-9"
-            >
-        </div>
-        <div class="lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto pr-0.5">
-            <x-product-list
-                :products="$this->productos"
-                add-method="addProductItem"
-                :empty-text="trim($productQuery) !== '' ? 'Sin resultados.' : 'No hay productos.'"
-            />
-        </div>
-    </aside>
-</div>
