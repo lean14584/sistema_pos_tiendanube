@@ -29,15 +29,44 @@
                 Emitida el {{ $invoice->issue_date->format('d/m/Y') }} · Vence el {{ $invoice->due_date->format('d/m/Y') }}
             </p>
         </div>
-        <div class="flex gap-2">
-            <a
-                href="{{ route('invoices.pdf', $invoice) }}"
-                target="_blank"
-                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all"
-            >
-                <x-heroicon-o-arrow-down-tray class="w-4 h-4" />
-                PDF
-            </a>
+        <div class="flex gap-2 flex-wrap justify-end">
+            @if ($invoice->esRemito())
+                <a
+                    href="{{ route('invoices.remito-pdf', $invoice) }}"
+                    target="_blank"
+                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all"
+                >
+                    <x-heroicon-o-arrow-down-tray class="w-4 h-4" />
+                    Remito PDF
+                </a>
+                <a
+                    href="{{ route('invoices.remito-pdf', ['invoice' => $invoice, 'precios' => 0]) }}"
+                    target="_blank"
+                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all"
+                >
+                    <x-heroicon-o-arrow-down-tray class="w-4 h-4" />
+                    Sin precios
+                </a>
+                @if ($invoice->facturaGenerada() === null)
+                    <a
+                        href="{{ route('invoices.facturar-remito', $invoice) }}"
+                        wire:navigate
+                        class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 active:scale-[0.98] transition-all"
+                    >
+                        <x-heroicon-o-document-text class="w-4 h-4" />
+                        Facturar remito
+                    </a>
+                @endif
+            @else
+                <a
+                    href="{{ route('invoices.pdf', $invoice) }}"
+                    target="_blank"
+                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all"
+                >
+                    <x-heroicon-o-arrow-down-tray class="w-4 h-4" />
+                    PDF
+                </a>
+            @endif
             <button
                 wire:click="printTicket"
                 wire:loading.attr="disabled"
@@ -130,6 +159,24 @@
             Corresponde a la factura
             <a href="{{ route('invoices.show', $invoice->relatedInvoice) }}" wire:navigate class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
                 {{ $invoice->relatedInvoice->number }}
+            </a>
+        </div>
+    @endif
+
+    @if ($invoice->remito_id !== null)
+        <div class="mb-6 rounded-lg bg-gray-50 dark:bg-gray-800/50 px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+            Generada a partir del remito
+            <a href="{{ route('invoices.show', $invoice->remito) }}" wire:navigate class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
+                {{ $invoice->remito->number }}
+            </a>
+        </div>
+    @endif
+
+    @if ($invoice->esRemito() && $invoice->facturaGenerada())
+        <div class="mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+            Este remito ya fue facturado con
+            <a href="{{ route('invoices.show', $invoice->facturaGenerada()) }}" wire:navigate class="font-medium hover:underline">
+                {{ $invoice->facturaGenerada()->number }}
             </a>
         </div>
     @endif

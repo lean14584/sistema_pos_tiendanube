@@ -76,6 +76,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}', InvoiceShow::class)->name('show');
         Route::get('/{invoice}/edit', InvoiceEdit::class)->name('edit');
         Route::get('/{invoice}/pdf', InvoicePdfController::class)->name('pdf');
+        Route::get('/{invoice}/remito-pdf', \App\Http\Controllers\RemitoPdfController::class)->name('remito-pdf');
+        Route::get('/{invoice}/facturar', \App\Livewire\Invoices\FacturarRemito::class)->name('facturar-remito');
         Route::get('/{invoice}/nota-credito', NotaCreditoCreate::class)->name('nota-credito.create');
     });
 

@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 
 #[Fillable([
     'number', 'client_id', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
-    'tipo_comprobante_interno', 'related_invoice_id', 'afecta_stock', 'mp_external_reference',
+    'tipo_comprobante_interno', 'related_invoice_id', 'remito_id', 'afecta_stock', 'mp_external_reference',
     'tiendanube_order_id',
 ])]
 class Invoice extends Model
@@ -129,6 +129,35 @@ class Invoice extends Model
     public function creditNotes(): HasMany
     {
         return $this->hasMany(Invoice::class, 'related_invoice_id');
+    }
+
+    /**
+     * El remito (nota de entrega) del que salió esta factura, si se generó
+     * facturando un remito.
+     */
+    public function remito(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'remito_id');
+    }
+
+    /**
+     * Facturas generadas a partir de este remito (normalmente una).
+     */
+    public function facturasDelRemito(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'remito_id');
+    }
+
+    /** True si este comprobante es un Remito X. */
+    public function esRemito(): bool
+    {
+        return $this->tipo_comprobante_interno === TipoComprobanteInterno::RemitoX;
+    }
+
+    /** La factura ya generada a partir de este remito, o null. */
+    public function facturaGenerada(): ?Invoice
+    {
+        return $this->facturasDelRemito()->first();
     }
 
     /**
