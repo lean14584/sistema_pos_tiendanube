@@ -1,28 +1,14 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Productos</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestioná tu catálogo de productos</p>
-        </div>
-        <div class="flex items-center gap-2">
-            <a
-                href="{{ route('products.labels') }}"
-                wire:navigate
-                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 active:scale-[0.98] transition-all"
-            >
-                <x-heroicon-o-printer class="w-4 h-4" />
-                Etiquetas
+    <x-page-header title="Productos" subtitle="Gestioná tu catálogo de productos" icon="cube">
+        <x-slot:actions>
+            <a href="{{ route('products.labels') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
+                <x-heroicon-o-printer class="w-4 h-4" /> Etiquetas
             </a>
-            <a
-                href="{{ route('products.create') }}"
-                wire:navigate
-                class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
-            >
-                <x-heroicon-o-plus class="w-4 h-4" />
-                Nuevo producto
+            <a href="{{ route('products.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+                <x-heroicon-o-plus class="w-4 h-4" /> Nuevo producto
             </a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     @if (session('error'))
         <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-4 text-sm text-red-800 dark:text-red-400 mb-6">

@@ -1,14 +1,12 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <div class="flex items-start justify-between gap-4 mb-6">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Cobranzas</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Clientes con saldo pendiente. Registrá el cobro o mandá un recordatorio por WhatsApp.</p>
-        </div>
-        <div class="text-right shrink-0">
-            <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">Total a cobrar</p>
-            <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${{ number_format($totalACobrar, 2) }}</p>
-        </div>
-    </div>
+    <x-page-header title="Cobranzas" subtitle="Clientes con saldo pendiente. Registrá el cobro o mandá un recordatorio por WhatsApp." icon="banknotes">
+        <x-slot:actions>
+            <div class="text-right">
+                <p class="text-[11px] uppercase tracking-wide text-white/70">Total a cobrar</p>
+                <p class="text-2xl font-bold text-white">${{ number_format($totalACobrar, 2) }}</p>
+            </div>
+        </x-slot:actions>
+    </x-page-header>
 
     @if (session('cobranza_ok'))
         <div class="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-4 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">

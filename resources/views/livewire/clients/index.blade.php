@@ -1,18 +1,11 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Clientes</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestioná los datos de tus clientes</p>
-        </div>
-        <a
-            href="{{ route('clients.create') }}"
-            wire:navigate
-            class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
-        >
-            <x-heroicon-o-plus class="w-4 h-4" />
-            Nuevo cliente
-        </a>
-    </div>
+    <x-page-header title="Clientes" subtitle="Gestioná los datos de tus clientes" icon="users">
+        <x-slot:actions>
+            <a href="{{ route('clients.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+                <x-heroicon-o-plus class="w-4 h-4" /> Nuevo cliente
+            </a>
+        </x-slot:actions>
+    </x-page-header>
 
     @if (session('error'))
         <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-4 text-sm text-red-800 dark:text-red-400 mb-6">

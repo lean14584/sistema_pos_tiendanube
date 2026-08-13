@@ -3,22 +3,16 @@
 @endphp
 
 <div class="p-8 max-w-5xl mx-auto">
-    <div class="flex items-start justify-between gap-4 mb-8">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Informes de ventas</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Facturas no borrador, agrupadas por distintos criterios</p>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-            <a href="{{ route('reports.export.pdf', ['fromDate' => $fromDate, 'toDate' => $toDate]) }}"
-               class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 transition-all">
+    <x-page-header title="Informes de ventas" subtitle="Facturas no borrador, agrupadas por distintos criterios" icon="chart-bar">
+        <x-slot:actions>
+            <a href="{{ route('reports.export.pdf', ['fromDate' => $fromDate, 'toDate' => $toDate]) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">
                 <x-heroicon-o-document-arrow-down class="w-4 h-4" /> PDF
             </a>
-            <a href="{{ route('reports.export.csv', ['fromDate' => $fromDate, 'toDate' => $toDate]) }}"
-               class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 transition-all">
+            <a href="{{ route('reports.export.csv', ['fromDate' => $fromDate, 'toDate' => $toDate]) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">
                 <x-heroicon-o-table-cells class="w-4 h-4" /> Excel
             </a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-page-header>
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
         <div>

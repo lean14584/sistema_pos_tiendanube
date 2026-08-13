@@ -1,14 +1,11 @@
 <div class="p-8 max-w-6xl mx-auto">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
-        <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Facturas</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Todas tus facturas emitidas</p>
-        </div>
-        <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
-            <x-heroicon-o-plus class="w-4 h-4" />
-            Nueva factura
-        </a>
-    </div>
+    <x-page-header title="Facturas" subtitle="Todas tus facturas emitidas" icon="document-text">
+        <x-slot:actions>
+            <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-white/90 active:scale-[0.98] transition-all">
+                <x-heroicon-o-plus class="w-4 h-4" /> Nueva factura
+            </a>
+        </x-slot:actions>
+    </x-page-header>
 
     <div class="flex flex-col sm:flex-row gap-3 mb-5">
         <div class="relative flex-1 max-w-sm">
