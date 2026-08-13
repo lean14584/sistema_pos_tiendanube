@@ -55,6 +55,19 @@
             <x-stat-card label="Margen" value="{{ number_format($profitability['marginPct'], 1) }}%" icon="chart-bar" accent="text-indigo-600 bg-gradient-to-br from-indigo-50 to-indigo-100/60 dark:text-indigo-400 dark:from-indigo-500/15 dark:to-indigo-500/5" />
         </div>
 
+        <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5 mb-6">
+            <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por día</h2>
+            <div class="flex items-end gap-1.5 h-40 overflow-x-auto pb-1">
+                @foreach ($byDay as $row)
+                    <div class="flex flex-col items-center justify-end shrink-0 group" style="min-width: 2rem;">
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">${{ number_format($row['total'], 0) }}</span>
+                        <div class="w-6 rounded-t bg-indigo-500 dark:bg-indigo-400 hover:bg-indigo-600 dark:hover:bg-indigo-300 transition-colors" style="height: {{ $maxDay > 0 ? max(4, round(($row['total'] / $maxDay) * 120)) : 4 }}px" title="{{ $row['label'] }}: ${{ number_format($row['total'], 2) }} ({{ $row['count'] }} fact.)"></div>
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">{{ $row['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por artículo</h2>
@@ -105,6 +118,25 @@
                         </div>
                     @empty
                         <p class="text-sm text-gray-400 dark:text-gray-500">Sin pagos registrados en el período.</p>
+                    @endforelse
+                </div>
+            </section>
+
+            <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+                <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Top clientes</h2>
+                <div class="space-y-3">
+                    @forelse ($byClient as $row)
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'factura' : 'facturas' }} · ${{ number_format($row['total'], 2) }}</span>
+                            </div>
+                            <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+                                <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxClient) }}%"></div>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-sm text-gray-400 dark:text-gray-500">Sin ventas en el período.</p>
                     @endforelse
                 </div>
             </section>

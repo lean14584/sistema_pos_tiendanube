@@ -52,4 +52,32 @@ class ReportsTest extends TestCase
             ->assertSee('200.00') // only the in-range paid invoice's total, not draft or out-of-range
             ->assertDontSee('600.00'); // sum if draft/out-of-range were wrongly included
     }
+
+    public function test_reports_incluye_top_clientes_y_ventas_por_dia(): void
+    {
+        $c1 = Client::create(['name' => 'Distribuidora Norte', 'email' => 'n@test.com']);
+        $c2 = Client::create(['name' => 'Kiosco Sur', 'email' => 's@test.com']);
+
+        $inv1 = Invoice::create([
+            'number' => 'FAC-1001', 'client_id' => $c1->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+        $inv1->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 5000]);
+
+        $inv2 = Invoice::create([
+            'number' => 'FAC-1002', 'client_id' => $c2->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+        $inv2->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 800]);
+
+        $component = Livewire::actingAs($this->admin())->test('reports.index');
+
+        $component->assertSee('Top clientes')
+            ->assertSee('Distribuidora Norte')
+            ->assertSee('Kiosco Sur')
+            ->assertSee('Ventas por día');
+
+        // El de mayor facturación aparece primero en el ranking.
+        $component->assertSeeInOrder(['Distribuidora Norte', 'Kiosco Sur']);
+    }
 }
