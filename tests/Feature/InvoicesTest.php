@@ -41,6 +41,21 @@ class InvoicesTest extends TestCase
         $this->assertSame(1, Client::where('name', 'Consumidor Final')->count());
     }
 
+    public function test_buscar_cliente_y_seleccionarlo_reemplaza_al_select_de_toda_la_vida(): void
+    {
+        $client = Client::create(['name' => 'Distribuidora Norte', 'email' => 'dn@test.com', 'phone' => '3511234567']);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('invoices.create')
+            ->set('clientQuery', 'Distribuidora');
+
+        $this->assertCount(1, $component->get('clientResults'));
+
+        $component->call('selectClient', $client->id)
+            ->assertSet('client_id', (string) $client->id)
+            ->assertSet('clientQuery', '');
+    }
+
     public function test_un_descuento_manual_mayor_a_100_no_se_puede_guardar(): void
     {
         // Bug real: sin este límite, un descuento de más de 100% dejaba el

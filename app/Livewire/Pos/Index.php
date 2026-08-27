@@ -36,6 +36,8 @@ class Index extends Component
 
     public string $barcode = '';
 
+    public string $clientQuery = '';
+
     /** Cliente al que se factura. Por defecto, Consumidor Final. */
     public ?int $client_id = null;
 
@@ -75,6 +77,28 @@ class Index extends Component
     public function updatedPriceListId(): void
     {
         $this->repriceCart();
+    }
+
+    #[Computed]
+    public function clientResults()
+    {
+        $term = trim($this->clientQuery);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Client::where('name', 'like', "%{$term}%")
+            ->orWhere('phone', 'like', "%{$term}%")
+            ->limit(8)
+            ->get();
+    }
+
+    public function selectClient(int $clientId): void
+    {
+        $this->clientQuery = '';
+        $this->client_id = $clientId;
+        $this->updatedClientId($clientId);
     }
 
     /** Reaplica el precio de la lista vigente a cada ítem del carrito. */

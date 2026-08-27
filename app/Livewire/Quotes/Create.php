@@ -34,6 +34,8 @@ class Create extends Component
 
     public string $productQuery = '';
 
+    public string $clientQuery = '';
+
     public function mount(): void
     {
         $this->issue_date = now()->toDateString();
@@ -56,6 +58,28 @@ class Create extends Component
     public function updatedPriceListId(): void
     {
         $this->repriceItems();
+    }
+
+    #[Computed]
+    public function clientResults()
+    {
+        $term = trim($this->clientQuery);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Client::where('name', 'like', "%{$term}%")
+            ->orWhere('phone', 'like', "%{$term}%")
+            ->limit(8)
+            ->get();
+    }
+
+    public function selectClient(int $clientId): void
+    {
+        $this->clientQuery = '';
+        $this->client_id = (string) $clientId;
+        $this->updatedClientId($clientId);
     }
 
     private function repriceItems(): void

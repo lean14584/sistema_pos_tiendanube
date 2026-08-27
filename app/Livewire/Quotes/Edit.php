@@ -36,6 +36,8 @@ class Edit extends Component
 
     public string $productQuery = '';
 
+    public string $clientQuery = '';
+
     public function mount(Quote $quote): void
     {
         $this->quote = $quote;
@@ -71,6 +73,28 @@ class Edit extends Component
     public function updatedPriceListId(): void
     {
         $this->repriceItems();
+    }
+
+    #[Computed]
+    public function clientResults()
+    {
+        $term = trim($this->clientQuery);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Client::where('name', 'like', "%{$term}%")
+            ->orWhere('phone', 'like', "%{$term}%")
+            ->limit(8)
+            ->get();
+    }
+
+    public function selectClient(int $clientId): void
+    {
+        $this->clientQuery = '';
+        $this->client_id = (string) $clientId;
+        $this->updatedClientId($clientId);
     }
 
     private function repriceItems(): void
