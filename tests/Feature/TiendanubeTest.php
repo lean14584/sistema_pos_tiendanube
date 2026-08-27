@@ -36,10 +36,10 @@ class TiendanubeTest extends TestCase
         ]);
     }
 
-    /** Firma el payload como lo haría Tiendanube, para pasar la validación de webhook. */
-    private function postWebhook(array $payload)
+    /** POST al webhook con una firma HMAC válida para el secret de conectar(). */
+    private function postWebhook(array $payload, string $secret = 'secreto'): \Illuminate\Testing\TestResponse
     {
-        $firma = base64_encode(hash_hmac('sha256', json_encode($payload), 'secreto', true));
+        $firma = base64_encode(hash_hmac('sha256', json_encode($payload), $secret, true));
 
         return $this->postJson('/tiendanube/webhook', $payload, ['x-linkedstore-hmac-sha256' => $firma]);
     }
@@ -486,17 +486,26 @@ class TiendanubeTest extends TestCase
 
     public function test_webhook_sin_secret_configurado_se_rechaza(): void
     {
-        // Sin tiendanube_webhook_secret cargado no hay forma de validar la
-        // firma — antes se aceptaba igual (inseguro por defecto), ahora se
-        // rechaza hasta que se configure el secret.
-        CompanySettings::current()->update([
-            'tiendanube_store_id' => '123',
-            'tiendanube_token' => 'tok_abc',
-        ]);
-
+        // Sin tiendanube_webhook_secret cargado: no hay forma de validar la
+        // firma, así que el endpoint público debe rechazar todo (fail-closed).
         $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'order/paid', 'id' => 555])
             ->assertStatus(401);
 
         $this->assertDatabaseMissing('invoices', ['tiendanube_order_id' => 555]);
+    }
+
+    public function test_activar_webhooks_exige_secret_configurado(): void
+    {
+        CompanySettings::current()->update([
+            'tiendanube_store_id' => '123',
+            'tiendanube_token' => 'tok_abc',
+        ]); // sin tiendanube_webhook_secret
+
+        Livewire::actingAs($this->admin())
+            ->test('tiendanube.index')
+            ->call('enableWebhooks')
+            ->assertSet('error', fn ($error) => str_contains($error, 'secreto'));
+
+        Http::assertNothingSent();
     }
 }

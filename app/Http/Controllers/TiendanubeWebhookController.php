@@ -12,8 +12,10 @@ use Illuminate\Http\Response;
  * Recibe las notificaciones de Tiendanube (sincronización automática).
  *
  * Tiendanube firma cada webhook con el client_secret de la app (HMAC-SHA256
- * sobre el cuerpo crudo, en el header x-linkedstore-hmac-sha256). Si está
- * cargado el secret en la configuración, se valida la firma.
+ * sobre el cuerpo crudo, en el header x-linkedstore-hmac-sha256). Es una ruta
+ * pública, así que sin secret configurado se rechaza todo (ver
+ * Tiendanube\Index::enableWebhooks, que exige cargarlo antes de activar la
+ * sincronización).
  */
 class TiendanubeWebhookController extends Controller
 {
@@ -55,10 +57,9 @@ class TiendanubeWebhookController extends Controller
     {
         $secret = CompanySettings::current()->tiendanube_webhook_secret;
 
-        // Sin secret configurado no se puede validar la firma → se rechaza.
-        // Sin esto, cualquiera que conociera la URL podía forzar reimportar
-        // pedidos o resincronizar stock a voluntad. Cargá el client_secret
-        // de Tiendanube en la configuración para que los webhooks funcionen.
+        // Sin secret configurado no hay forma de validar la firma: se
+        // rechaza (fail-closed). El endpoint es público, así que aceptar sin
+        // firma dejaría a cualquiera disparar una resincronización.
         if (empty($secret)) {
             return false;
         }

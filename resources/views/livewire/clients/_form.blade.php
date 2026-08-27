@@ -79,12 +79,15 @@
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <x-select label="Lista de precios" wire:model="price_list_id">
-            <option value="">— Precio base (sin lista) —</option>
-            @foreach ($priceLists as $list)
-                <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
-            @endforeach
-        </x-select>
+        <div>
+            <x-select label="Lista de precios" wire:model="price_list_id">
+                <option value="">— Precio base (sin lista) —</option>
+                @foreach ($priceLists as $list)
+                    <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
+                @endforeach
+            </x-select>
+            @error('price_list_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+        </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Límite de crédito (cuenta corriente)</label>
             <input type="number" min="0" step="0.01" wire:model="credit_limit" placeholder="Sin límite" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-800 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition">

@@ -12,12 +12,19 @@ class ReciboPdfController extends Controller
     public function __invoke(ClientPayment $payment)
     {
         $client = $payment->client;
+        $cutoff = $payment->created_at;
 
-        // Saldo actual del cliente: facturas (no borrador) menos lo pagado al
-        // momento de cada venta, menos todos los cobros a cuenta corriente.
-        $invoices = $client->invoices()->whereNot('status', 'draft')->with('items', 'payments')->get();
+        // Saldo del cliente al momento de este pago (no el saldo actual): así
+        // un recibo ya emitido no cambia por movimientos posteriores. Facturas
+        // (no borrador) emitidas hasta ese momento, menos lo pagado en cada
+        // una hasta ese momento, menos los cobros a cuenta corriente hasta ese momento.
+        $invoices = $client->invoices()
+            ->whereNot('status', 'draft')
+            ->where('created_at', '<=', $cutoff)
+            ->with(['items', 'payments' => fn ($q) => $q->where('created_at', '<=', $cutoff)])
+            ->get();
         $debito = $invoices->sum(fn ($i) => (float) $i->total - (float) $i->payments->sum('amount'));
-        $cobrado = (float) $client->payments()->sum('amount');
+        $cobrado = (float) $client->payments()->where('created_at', '<=', $cutoff)->sum('amount');
         $saldo = round($debito - $cobrado, 2);
 
         $company = CompanySettings::current();
