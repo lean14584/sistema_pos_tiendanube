@@ -107,6 +107,7 @@ class SalesReport
         $prevTotal = Invoice::whereNot('status', 'draft')
             ->whereDate('issue_date', '>=', $prevFrom)
             ->whereDate('issue_date', '<=', $prevTo)
+            ->with('items')
             ->get()
             ->sum(fn (Invoice $i) => $i->total);
         $variationPct = $prevTotal > 0 ? (($summary['total'] - $prevTotal) / $prevTotal) * 100 : null;
