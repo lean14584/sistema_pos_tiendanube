@@ -71,6 +71,8 @@ class Edit extends Component
         $data['cost_price'] = $data['cost_price'] !== '' ? $data['cost_price'] : null;
         $data['min_stock'] = $data['min_stock'] !== '' ? $data['min_stock'] : null;
         $data['category_id'] = $data['category_id'] !== '' ? $data['category_id'] : null;
+        $data['sku'] = $data['sku'] !== '' ? $data['sku'] : null;
+        $data['description'] = $data['description'] !== '' ? $data['description'] : null;
 
         if ($this->image) {
             if ($this->product->image_path) {

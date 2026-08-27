@@ -23,6 +23,7 @@ use App\Services\Afip\AfipGatewayInterface;
 use App\Services\Afip\InvoiceCaeEmitter;
 use App\Support\StockAdjuster;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\Fakes\FakeAfipGateway;
 use Tests\TestCase;
 
@@ -155,6 +156,29 @@ class AuditLogTest extends TestCase
         $quote->delete();
 
         $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', Quote::class)->orderBy('id')->pluck('event')->all());
+    }
+
+    public function test_editar_un_producto_sin_tocar_descripcion_o_sku_no_ensucia_la_auditoria(): void
+    {
+        // Bug real reportado por el usuario: el form de edición mandaba '' para
+        // description/sku aunque el producto tuviera null, y como '' !== null
+        // Eloquent lo marcaba "sucio" -> quedaba un cambio falso en auditoría
+        // ("description: — → ") aunque nada haya cambiado en los hechos.
+        $this->actingAs(User::factory()->create(['role' => Role::Admin, 'active' => true]));
+
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+        AuditLog::where('auditable_type', Product::class)->delete();
+
+        Livewire::test('products.edit', ['product' => $product])
+            ->set('price', '1200')
+            ->call('save');
+
+        $log = AuditLog::where('auditable_type', Product::class)->where('event', 'updated')->first();
+
+        $this->assertNotNull($log);
+        $this->assertArrayHasKey('price', $log->changes);
+        $this->assertArrayNotHasKey('description', $log->changes);
+        $this->assertArrayNotHasKey('sku', $log->changes);
     }
 
     public function test_emitir_a_afip_genera_un_log_de_actualizacion_con_el_cae(): void
