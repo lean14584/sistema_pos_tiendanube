@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Enums\TipoDocumento;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'email', 'phone', 'address', 'tax_id', 'tipo_documento'])]
 class Provider extends Model
 {
+    use Auditable;
+
     protected function casts(): array
     {
         return [

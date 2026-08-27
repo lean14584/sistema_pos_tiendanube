@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Enums\CondicionIva;
 use App\Enums\TipoDocumento;
 use App\Observers\ClientObserver;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'email', 'phone', 'address', 'tax_id', 'condicion_iva', 'tipo_documento', 'price_list_id', 'credit_limit', 'tiendanube_customer_id'])]
 class Client extends Model
 {
+    use Auditable;
+
     protected function casts(): array
     {
         return [

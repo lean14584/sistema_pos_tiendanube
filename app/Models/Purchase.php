@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Concerns\HasBillingTotals;
 use App\Concerns\HasOverdueStatus;
 use App\Enums\InvoiceStatus;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Purchase extends Model
 {
-    use HasBillingTotals, HasOverdueStatus;
+    use Auditable, HasBillingTotals, HasOverdueStatus;
 
     protected function casts(): array
     {

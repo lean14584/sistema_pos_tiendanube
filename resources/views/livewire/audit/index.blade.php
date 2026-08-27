@@ -13,7 +13,15 @@
 
         return match ($log->auditable_type) {
             \App\Models\Invoice::class => route('invoices.show', $log->auditable_id),
+            \App\Models\Quote::class => route('quotes.show', $log->auditable_id),
             \App\Models\Product::class => route('products.edit', $log->auditable_id),
+            \App\Models\Category::class => route('categories.edit', $log->auditable_id),
+            \App\Models\PriceList::class => route('price-lists.index'),
+            \App\Models\Promotion::class => route('promotions.index'),
+            \App\Models\PromotionGroup::class => route('promotions.groups.index'),
+            \App\Models\Client::class => route('clients.edit', $log->auditable_id),
+            \App\Models\Provider::class => route('providers.edit', $log->auditable_id),
+            \App\Models\Purchase::class => route('purchases.show', $log->auditable_id),
             \App\Models\User::class => route('users.edit', $log->auditable_id),
             \App\Models\CompanySettings::class => route('company-settings.edit'),
             default => null,
@@ -22,7 +30,7 @@
 @endphp
 
 <div class="p-8 max-w-6xl mx-auto">
-    <x-page-header title="Auditoría" subtitle="Altas, bajas y modificaciones en facturas, productos, usuarios y datos de la empresa." icon="clipboard-document-check" />
+    <x-page-header title="Auditoría" subtitle="Altas, bajas y modificaciones en facturas, presupuestos, productos, clientes, proveedores, compras, promociones y usuarios." icon="clipboard-document-check" />
 
     <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6">
         <select wire:model.live="modelo" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Concerns\HasBillingTotals;
 use App\Enums\QuoteStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['number', 'client_id', 'issue_date', 'valid_until', 'tax_rate', 'notes', 'status', 'converted_invoice_id'])]
 class Quote extends Model
 {
-    use HasBillingTotals;
+    use Auditable, HasBillingTotals;
 
     protected function casts(): array
     {

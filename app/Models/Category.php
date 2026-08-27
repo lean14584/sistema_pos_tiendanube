@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Observers\CategoryObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'description', 'tiendanube_category_id'])]
 class Category extends Model
 {
+    use Auditable;
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);

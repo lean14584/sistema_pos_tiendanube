@@ -14,7 +14,15 @@ class AuditLog extends Model
 
     private const ETIQUETAS = [
         Invoice::class => 'Factura',
+        Quote::class => 'Presupuesto',
         Product::class => 'Producto',
+        Category::class => 'Categoría',
+        PriceList::class => 'Lista de precios',
+        Promotion::class => 'Promoción',
+        PromotionGroup::class => 'Promoción por familia',
+        Client::class => 'Cliente',
+        Provider::class => 'Proveedor',
+        Purchase::class => 'Compra',
         User::class => 'Usuario',
         CompanySettings::class => 'Datos de la empresa',
     ];

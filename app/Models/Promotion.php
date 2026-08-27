@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Enums\PromotionType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['product_id', 'type', 'buy_qty', 'pay_qty', 'percent', 'min_qty', 'active', 'starts_at', 'ends_at'])]
 class Promotion extends Model
 {
+    use Auditable;
+
     protected function casts(): array
     {
         return [

@@ -7,10 +7,17 @@ use App\Enums\Role;
 use App\Enums\TipoComprobanteInterno;
 use App\Enums\TipoDocumento;
 use App\Models\AuditLog;
+use App\Models\Category;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
+use App\Models\PriceList;
 use App\Models\Product;
+use App\Models\Promotion;
+use App\Models\PromotionGroup;
+use App\Models\Provider;
+use App\Models\Purchase;
+use App\Models\Quote;
 use App\Models\User;
 use App\Services\Afip\AfipGatewayInterface;
 use App\Services\Afip\InvoiceCaeEmitter;
@@ -75,6 +82,79 @@ class AuditLogTest extends TestCase
         $updated = $logs->firstWhere('event', 'updated');
         $this->assertSame('vendedor', $updated->changes['role']['old']);
         $this->assertSame('admin', $updated->changes['role']['new']);
+    }
+
+    public function test_todos_los_modelos_de_negocio_relevantes_aparecen_en_el_filtro_de_auditoria(): void
+    {
+        $tipos = AuditLog::tiposAuditados();
+
+        foreach ([Invoice::class, Quote::class, Product::class, Category::class, PriceList::class,
+            Promotion::class, PromotionGroup::class, Client::class, Provider::class, Purchase::class,
+            User::class, CompanySettings::class] as $modelo) {
+            $this->assertArrayHasKey($modelo, $tipos, "$modelo debería tener una etiqueta en AuditLog::ETIQUETAS");
+        }
+    }
+
+    public function test_alta_y_baja_de_cliente_proveedor_y_compra_queda_registrada(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => Role::Admin, 'active' => true]));
+
+        $client = Client::create(['name' => 'Distribuidora Sur', 'email' => 'distri@test.com']);
+        $client->delete();
+
+        $provider = Provider::create(['name' => 'Proveedor A']);
+        $purchase = Purchase::create([
+            'number' => 'COM-0001', 'provider_id' => $provider->id,
+            'issue_date' => now(), 'due_date' => now()->addDays(15),
+            'tax_rate' => 21, 'status' => 'draft',
+        ]);
+        $purchase->delete();
+        $provider->delete();
+
+        $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', Client::class)->orderBy('id')->pluck('event')->all());
+        $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', Provider::class)->orderBy('id')->pluck('event')->all());
+        $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', Purchase::class)->orderBy('id')->pluck('event')->all());
+    }
+
+    public function test_alta_y_baja_de_categoria_lista_de_precios_y_promociones_queda_registrada(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => Role::Admin, 'active' => true]));
+
+        $category = Category::create(['name' => 'Bebidas']);
+        $category->delete();
+
+        $priceList = PriceList::create(['name' => 'Mayorista', 'adjustment_percent' => -15, 'is_default' => false, 'active' => true]);
+        $priceList->delete();
+
+        $product = Product::create(['name' => 'Coca Cola', 'price' => 1000, 'stock' => 10]);
+        AuditLog::where('auditable_type', Product::class)->delete();
+
+        $promotion = Promotion::create(['product_id' => $product->id, 'type' => 'nxm', 'buy_qty' => 2, 'pay_qty' => 1, 'active' => true]);
+        $promotion->delete();
+
+        $group = PromotionGroup::create(['name' => 'Gaseosas', 'buy_qty' => 3, 'pay_qty' => 2, 'active' => true]);
+        $group->delete();
+
+        $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', Category::class)->orderBy('id')->pluck('event')->all());
+        $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', PriceList::class)->orderBy('id')->pluck('event')->all());
+        $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', Promotion::class)->orderBy('id')->pluck('event')->all());
+        $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', PromotionGroup::class)->orderBy('id')->pluck('event')->all());
+    }
+
+    public function test_alta_y_baja_de_presupuesto_queda_registrada(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => Role::Admin, 'active' => true]));
+
+        $client = Client::create(['name' => 'Cliente Presupuesto', 'email' => 'presu@test.com']);
+        AuditLog::where('auditable_type', Client::class)->delete();
+
+        $quote = Quote::create([
+            'number' => 'PRE-0001', 'client_id' => $client->id,
+            'issue_date' => now(), 'valid_until' => now()->addDays(15), 'status' => 'draft',
+        ]);
+        $quote->delete();
+
+        $this->assertSame(['created', 'deleted'], AuditLog::where('auditable_type', Quote::class)->orderBy('id')->pluck('event')->all());
     }
 
     public function test_emitir_a_afip_genera_un_log_de_actualizacion_con_el_cae(): void
