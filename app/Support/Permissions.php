@@ -10,10 +10,10 @@ class Permissions
     public const ROLE_PERMISSIONS = [
         'admin' => [
             'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'products', 'categories', 'price-lists', 'promotions',
-            'providers', 'purchases', 'cash-register', 'vencimientos', 'reports', 'users', 'messages', 'tasks',
+            'stock-adjustments', 'providers', 'purchases', 'cash-register', 'vencimientos', 'reports', 'users', 'messages', 'tasks',
             'company-settings', 'audit', 'libro-iva', 'price-check', 'backups', 'health',
         ],
-        'vendedor' => ['dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'categories', 'price-lists', 'promotions', 'reports', 'messages', 'tasks', 'price-check'],
+        'vendedor' => ['dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'categories', 'price-lists', 'promotions', 'stock-adjustments', 'reports', 'messages', 'tasks', 'price-check'],
         'cajero' => ['dashboard', 'pos', 'invoices', 'clients', 'cobranzas', 'cash-register', 'products', 'messages', 'tasks', 'price-check'],
     ];
 

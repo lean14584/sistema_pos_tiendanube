@@ -84,6 +84,11 @@ class Product extends Model
         return $this->hasMany(QuoteItem::class);
     }
 
+    public function stockAdjustments(): HasMany
+    {
+        return $this->hasMany(StockAdjustment::class);
+    }
+
     protected function marginAlert(): Attribute
     {
         return Attribute::get(fn () => $this->cost_price !== null && $this->price < $this->cost_price);

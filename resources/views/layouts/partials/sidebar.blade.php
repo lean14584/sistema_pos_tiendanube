@@ -32,6 +32,7 @@
         ['module' => 'categories', 'group' => 'Productos', 'pattern' => 'categories.*', 'href' => route('categories.index'), 'label' => 'Categorías', 'icon' => 'tag'],
         ['module' => 'price-lists', 'group' => 'Productos', 'pattern' => 'price-lists.*', 'href' => route('price-lists.index'), 'label' => 'Listas de precios', 'icon' => 'currency-dollar'],
         ['module' => 'promotions', 'group' => 'Productos', 'pattern' => 'promotions.*', 'href' => route('promotions.index'), 'label' => 'Promociones', 'icon' => 'gift'],
+        ['module' => 'stock-adjustments', 'group' => 'Productos', 'pattern' => 'stock-adjustments.*', 'href' => route('stock-adjustments.index'), 'label' => 'Ajustes de Stock', 'icon' => 'wrench'],
         ['module' => 'price-check', 'group' => 'Productos', 'pattern' => 'precios', 'href' => route('precios'), 'label' => 'Consultar precios', 'icon' => 'magnifying-glass', 'target' => '_blank'],
 
         ['module' => 'providers', 'group' => 'Compras', 'pattern' => 'providers.*', 'href' => route('providers.index'), 'label' => 'Proveedores', 'icon' => 'truck'],

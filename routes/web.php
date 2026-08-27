@@ -96,7 +96,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/new', ProductCreate::class)->name('create');
         Route::get('/etiquetas', \App\Livewire\Products\Labels::class)->name('labels');
         Route::get('/{product}/edit', ProductEdit::class)->name('edit');
+        Route::get('/{product}/historial', \App\Livewire\Products\Historial::class)->name('historial');
     });
+
+    Route::middleware('module:stock-adjustments')->get('ajustes-stock', \App\Livewire\StockAdjustments\Index::class)->name('stock-adjustments.index');
 
     Route::middleware('module:categories')->prefix('categories')->name('categories.')->group(function () {
         Route::get('/', CategoryIndex::class)->name('index');
