@@ -84,9 +84,11 @@ class Create extends Component
     private function repriceItems(): void
     {
         $list = $this->currentPriceList();
+        $productIds = collect($this->items)->pluck('product_id')->filter()->unique()->all();
+        $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
         foreach ($this->items as $i => $item) {
-            if (! empty($item['product_id']) && ($product = Product::find($item['product_id']))) {
+            if (! empty($item['product_id']) && ($product = $products->get($item['product_id']))) {
                 $this->items[$i]['unit_price'] = (string) $product->priceForList($list);
             }
         }
@@ -231,6 +233,7 @@ class Create extends Component
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
             'items.*.iva_rate' => ['nullable', Rule::in(AlicuotaIva::valores())],
+            'items.*.discount' => ['nullable', 'numeric', 'between:0,100'],
         ]);
 
         $validItems = collect($this->items)->filter(fn ($item) => trim($item['description']) !== '');
@@ -315,7 +318,7 @@ class Create extends Component
     public function render()
     {
         return view('livewire.invoices.create', [
-            'clients' => Client::orderBy('name')->get(),
+            'clients' => Client::forSelectCached(),
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),

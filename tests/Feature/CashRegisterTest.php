@@ -167,6 +167,23 @@ class CashRegisterTest extends TestCase
         $this->assertModelExists($movementVieja);
     }
 
+    public function test_solo_muestra_las_30_cajas_cerradas_mas_recientes(): void
+    {
+        $admin = $this->admin();
+
+        for ($i = 0; $i < 35; $i++) {
+            CashSession::create([
+                'user_id' => $admin->id, 'status' => 'closed',
+                'opened_at' => now()->subDays(35 - $i), 'closed_at' => now()->subDays(35 - $i),
+                'opening_amount' => 0, 'closing_amount' => 0,
+            ]);
+        }
+
+        $component = Livewire::actingAs($admin)->test('cash-register.index');
+
+        $this->assertCount(30, $component->viewData('closedSessions'));
+    }
+
     public function test_invoice_with_payment_creates_cash_ingreso(): void
     {
         $admin = $this->admin();

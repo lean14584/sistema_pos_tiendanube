@@ -6,7 +6,9 @@ use App\Enums\Role;
 use App\Models\Client;
 use App\Models\ClientPayment;
 use App\Models\Invoice;
+use App\Models\Product;
 use App\Models\Provider;
+use App\Models\ProviderPayment;
 use App\Models\Purchase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,6 +65,26 @@ class CurrentAccountTest extends TestCase
         $this->assertDatabaseMissing('client_payments', ['id' => $payment->id]);
     }
 
+    public function test_provider_saldo_cuenta_corriente_resta_pagos_de_compra_y_a_cuenta(): void
+    {
+        // Antes no existía este método (a diferencia de Client): la fórmula
+        // se reimplementaba a mano en Providers/Account.php.
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'P', 'price' => 1]);
+
+        $purchase = Purchase::create([
+            'number' => 'COM-0001', 'provider_id' => $provider->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'pending',
+        ]);
+        $purchase->items()->create(['product_id' => $product->id, 'description' => 'x', 'quantity' => 1, 'unit_price' => 1000]);
+        $purchase->payments()->create(['method' => 'efectivo', 'amount' => 200, 'date' => now()]);
+
+        ProviderPayment::create(['provider_id' => $provider->id, 'date' => now(), 'amount' => 300, 'method' => 'efectivo']);
+
+        // Debe: 1000 - 200 (pagado al momento) - 300 (pago a cuenta) = 500.
+        $this->assertEqualsWithDelta(500.0, $provider->fresh()->saldoCuentaCorriente(), 0.01);
+    }
+
     public function test_provider_account_computes_balance_from_purchases_and_payments(): void
     {
         $provider = Provider::create(['name' => 'Proveedor 1']);
@@ -70,7 +92,7 @@ class CurrentAccountTest extends TestCase
             'number' => 'COM-0001', 'provider_id' => $provider->id, 'tax_rate' => 0,
             'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'pending',
         ]);
-        $purchase->items()->create(['product_id' => \App\Models\Product::create(['name' => 'P', 'price' => 1])->id, 'description' => 'x', 'quantity' => 1, 'unit_price' => 1000]);
+        $purchase->items()->create(['product_id' => Product::create(['name' => 'P', 'price' => 1])->id, 'description' => 'x', 'quantity' => 1, 'unit_price' => 1000]);
 
         Livewire::actingAs($this->admin())
             ->test('providers.account', ['provider' => $provider])

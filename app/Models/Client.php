@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 #[ObservedBy(ClientObserver::class)]
 #[Fillable(['name', 'email', 'phone', 'address', 'tax_id', 'condicion_iva', 'tipo_documento', 'price_list_id', 'credit_limit', 'tiendanube_customer_id'])]
@@ -81,6 +83,24 @@ class Client extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(ClientPayment::class);
+    }
+
+    /**
+     * Lista liviana (solo id + nombre) para los selects de cliente que se
+     * repiten en pantallas de alta frecuencia (POS, facturas, presupuestos).
+     * Sin esto, cada click en el POS (agregar producto, +/-, pago...) volvía
+     * a traer la tabla de clientes entera en cada request. Cacheada 60s:
+     * un cliente recién creado puede tardar hasta ese tiempo en aparecer.
+     *
+     * @return Collection<int, self>
+     */
+    public static function forSelectCached(): Collection
+    {
+        return Cache::remember(
+            'clients:select-list',
+            now()->addSeconds(60),
+            fn () => self::orderBy('name')->get(['id', 'name']),
+        );
     }
 
     public static function consumidorFinal(): self

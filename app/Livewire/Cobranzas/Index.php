@@ -8,6 +8,7 @@ use App\Models\ClientPayment;
 use App\Models\CompanySettings;
 use App\Support\CashLinker;
 use App\Support\Whatsapp;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -35,7 +36,7 @@ class Index extends Component
      * cobrado en el momento de la venta, menos los cobros a cuenta corriente.
      * Devuelve solo los que quedan debiendo, ordenados de mayor a menor.
      *
-     * @return \Illuminate\Support\Collection<int, array{client: Client, saldo: float}>
+     * @return Collection<int, array{client: Client, saldo: float}>
      */
     private function deudores()
     {
@@ -45,15 +46,10 @@ class Index extends Component
             ->orderBy('name')
             ->get();
 
+        // Las relaciones ya vienen precargadas por el with() de arriba, así
+        // que saldoCuentaCorriente() (loadMissing) no dispara queries extra.
         return $clients
-            ->map(function (Client $client) {
-                $debito = $client->invoices->sum(
-                    fn ($invoice) => (float) $invoice->total - (float) $invoice->payments->sum('amount')
-                );
-                $cobrado = (float) $client->payments->sum('amount');
-
-                return ['client' => $client, 'saldo' => round($debito - $cobrado, 2)];
-            })
+            ->map(fn (Client $client) => ['client' => $client, 'saldo' => $client->saldoCuentaCorriente()])
             ->filter(fn ($row) => $row['saldo'] > 0.009)
             ->sortByDesc('saldo')
             ->values();
