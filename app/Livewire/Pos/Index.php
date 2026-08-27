@@ -81,10 +81,11 @@ class Index extends Component
     private function repriceCart(): void
     {
         $list = $this->currentPriceList();
+        $productIds = collect($this->cart)->pluck('product_id')->unique()->all();
+        $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
         foreach ($this->cart as $i => $item) {
-            $product = Product::find($item['product_id']);
-            if ($product) {
+            if ($product = $products->get($item['product_id'])) {
                 $this->cart[$i]['unit_price'] = $product->priceForList($list);
             }
         }
@@ -494,7 +495,7 @@ class Index extends Component
     {
         return view('livewire.pos.index', [
             'paymentMethods' => PaymentMethod::cases(),
-            'clients' => Client::orderBy('name')->get(),
+            'clients' => Client::forSelectCached(),
             'priceLists' => PriceList::active()->orderBy('name')->get(),
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
         ]);

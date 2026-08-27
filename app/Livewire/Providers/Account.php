@@ -64,6 +64,12 @@ class Account extends Component
     public function render()
     {
         $purchases = $this->provider->purchases()->whereNot('status', 'draft')->with('items', 'payments')->get();
+        $payments = $this->provider->payments()->orderBy('date')->get();
+
+        // Se dejan cargadas para que saldoCuentaCorriente() reutilice estos
+        // mismos datos (loadMissing) en vez de volver a consultarlos.
+        $this->provider->setRelation('purchases', $purchases);
+        $this->provider->setRelation('payments', $payments);
 
         // El débito de cada compra es lo que realmente queda debiendo: total
         // menos lo que se pagó en el momento (purchase_payments).
@@ -76,7 +82,7 @@ class Account extends Component
 
         return view('livewire.providers.account', [
             'debits' => $debits,
-            'payments' => $this->provider->payments()->orderBy('date')->get(),
+            'payments' => $payments,
             'paymentMethods' => PaymentMethod::cases(),
         ]);
     }

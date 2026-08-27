@@ -29,4 +29,19 @@ class Provider extends Model
     {
         return $this->hasMany(ProviderPayment::class);
     }
+
+    /**
+     * Saldo actual de cuenta corriente (lo que le debemos): compras no
+     * borrador menos lo pagado al momento, menos los pagos a cuenta.
+     * Espejo de Client::saldoCuentaCorriente().
+     */
+    public function saldoCuentaCorriente(): float
+    {
+        $this->loadMissing(['purchases' => fn ($q) => $q->whereNot('status', 'draft')->with('items', 'payments'), 'payments']);
+
+        $debito = $this->purchases->sum(fn ($p) => (float) $p->total - (float) $p->payments->sum('amount'));
+        $pagado = (float) $this->payments->sum('amount');
+
+        return round($debito - $pagado, 2);
+    }
 }

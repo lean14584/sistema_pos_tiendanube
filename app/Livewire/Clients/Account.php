@@ -66,6 +66,12 @@ class Account extends Component
     public function render()
     {
         $invoices = $this->client->invoices()->whereNot('status', 'draft')->with('items', 'payments')->get();
+        $payments = $this->client->payments()->orderBy('date')->get();
+
+        // Se dejan cargadas para que saldoCuentaCorriente() reutilice estos
+        // mismos datos (loadMissing) en vez de volver a consultarlos.
+        $this->client->setRelation('invoices', $invoices);
+        $this->client->setRelation('payments', $payments);
 
         // El débito de cada factura es lo que realmente queda debiendo: total
         // menos lo que se pagó en el momento de la venta (invoice_payments).
@@ -76,10 +82,8 @@ class Account extends Component
             'href' => route('invoices.show', $invoice),
         ]);
 
-        $payments = $this->client->payments()->orderBy('date')->get();
-
         // Saldo (nos debe) para el recordatorio de WhatsApp.
-        $saldo = round($debits->sum('amount') - (float) $payments->sum('amount'), 2);
+        $saldo = $this->client->saldoCuentaCorriente();
         $whatsapp = $saldo > 0.009
             ? Whatsapp::link($this->client->phone, sprintf(
                 'Hola %s, te recordamos que tenes un saldo pendiente de $%s con %s. Muchas gracias.',

@@ -141,9 +141,13 @@ class Index extends Component
             ];
         }
 
+        // Sin límite esto crecía para siempre y se recargaba entera en cada
+        // acción de Caja (abrir, agregar movimiento, cerrar). Las cajas más
+        // viejas se consultan en el histórico, no hace falta tenerlas acá.
         $closedSessions = CashSession::with('user', 'movements')
             ->where('status', 'closed')
             ->orderByDesc('closed_at')
+            ->limit(30)
             ->get();
 
         return view('livewire.cash-register.index', [
