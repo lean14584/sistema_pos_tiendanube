@@ -71,9 +71,38 @@ class Index extends Component
         $this->active = true;
     }
 
+    /**
+     * True si ya existe otra promoción activa para el mismo producto cuya
+     * vigencia se superpone con la que se está guardando. Evita que el POS
+     * tenga que desempatar arbitrariamente entre dos promos vigentes a la vez.
+     */
+    private function seSuperponeConOtraPromo(): bool
+    {
+        if (! $this->active) {
+            return false;
+        }
+
+        $starts = $this->starts_at ?: null;
+        $ends = $this->ends_at ?: null;
+
+        return Promotion::query()
+            ->where('product_id', $this->product_id)
+            ->where('active', true)
+            ->when($this->editingId, fn ($q) => $q->whereKeyNot($this->editingId))
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', $ends ?? '9999-12-31'))
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', $starts ?? '0001-01-01'))
+            ->exists();
+    }
+
     public function save(): void
     {
         $this->validate();
+
+        if ($this->seSuperponeConOtraPromo()) {
+            $this->addError('product_id', 'Ya hay otra promoción activa y vigente para este producto en ese período.');
+
+            return;
+        }
 
         // Solo se guardan los parámetros del tipo elegido; el resto queda nulo.
         $data = [

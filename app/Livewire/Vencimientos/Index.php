@@ -83,7 +83,7 @@ class Index extends Component
         // ---- POR PAGAR (proveedores) ----
         $porPagar = collect();
         $providers = Provider::query()
-            ->with(['purchases' => fn ($q) => $q->with('items', 'taxes', 'payments'), 'payments'])
+            ->with(['purchases' => fn ($q) => $q->whereNot('status', 'draft')->with('items', 'taxes', 'payments'), 'payments'])
             ->get();
 
         foreach ($providers as $provider) {

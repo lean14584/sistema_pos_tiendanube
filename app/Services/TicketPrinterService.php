@@ -143,6 +143,19 @@ class TicketPrinterService
     private function armarTotales(Invoice $invoice): void
     {
         $this->addRule();
+
+        // Neto gravado/exento ya vienen netos del descuento (ver HasLineTotal).
+        // Para que el Descuento se pueda mostrar sin que el ticket parezca no
+        // cerrar, primero se muestra el Subtotal bruto (sin descuento) y
+        // recién ahí se resta: Subtotal − Descuento = Neto gravado + Exento.
+        $bruto = $invoice->items->sum(fn ($i) => (float) $i->quantity * (float) $i->unit_price);
+        $descuento = $bruto - ((float) $invoice->neto_gravado + (float) $invoice->neto_exento);
+
+        if ($descuento > 0.004) {
+            $this->addColumns('Subtotal', '$'.$this->money($bruto));
+            $this->addColumns('Descuento', '-$'.$this->money($descuento));
+        }
+
         $this->addColumns('Neto gravado', '$'.$this->money($invoice->neto_gravado));
 
         if ($invoice->neto_exento > 0) {
@@ -152,15 +165,6 @@ class TicketPrinterService
         foreach ($invoice->ivaPorAlicuota() as $linea) {
             $tasa = rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.');
             $this->addColumns("IVA {$tasa}%", '$'.$this->money($linea['iva']));
-        }
-
-        // Descuento total (manual + promos): base sin descuento menos lo que
-        // realmente se cobró por cada ítem.
-        $descuento = $invoice->items->sum(
-            fn ($i) => (float) $i->quantity * (float) $i->unit_price * ((float) $i->discount_percent / 100)
-        );
-        if ($descuento > 0.004) {
-            $this->addColumns('Descuento', '-$'.$this->money($descuento), bold: true);
         }
 
         $this->addColumns('TOTAL', '$'.$this->money($invoice->total), bold: true);

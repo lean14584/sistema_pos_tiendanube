@@ -151,6 +151,13 @@ class Index extends Component
 
     public function enableWebhooks(): void
     {
+        if (empty($this->company->tiendanube_webhook_secret)) {
+            $this->reset('resultado', 'error');
+            $this->error = 'Cargá y guardá un secreto de webhook antes de activar la sincronización automática: sin él, el endpoint público no puede validar que las notificaciones vengan de Tiendanube.';
+
+            return;
+        }
+
         $this->correr(function (TiendanubeSync $sync) {
             $client = app(TiendanubeClient::class);
 

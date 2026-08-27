@@ -3,6 +3,7 @@
 namespace App\Livewire\Invoices;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\TipoComprobanteInterno;
 use App\Exceptions\Afip\AfipConnectionException;
 use App\Exceptions\Afip\AfipRejectedException;
 use App\Exceptions\Afip\AfipValidationException;
@@ -125,6 +126,24 @@ class Show extends Component
             $this->addError('status', 'No se puede volver a borrador una factura que ya tiene CAE.');
 
             return;
+        }
+
+        // Al salir de borrador la factura empieza a contar como deuda real
+        // (ver Client::saldoCuentaCorriente), así que ahí es donde hay que
+        // chequear el límite de crédito, igual que al crearla.
+        $tipo = $this->invoice->tipo_comprobante_interno;
+        if ($this->invoice->status === InvoiceStatus::Draft
+            && $status !== InvoiceStatus::Draft->value
+            && ! $tipo->esNotaCredito()
+            && $tipo !== TipoComprobanteInterno::Devolucion) {
+            $pendiente = round((float) $this->invoice->total - (float) $this->invoice->payments->sum('amount'), 2);
+            $cliente = $this->invoice->client;
+
+            if ($pendiente > 0.009 && $cliente && ($excesoMsg = $cliente->excesoDeCredito($pendiente))) {
+                $this->addError('status', $excesoMsg);
+
+                return;
+            }
         }
 
         $this->invoice->update(['status' => $status]);
