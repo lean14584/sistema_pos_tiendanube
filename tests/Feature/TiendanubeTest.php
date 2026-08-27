@@ -32,7 +32,16 @@ class TiendanubeTest extends TestCase
         CompanySettings::current()->update([
             'tiendanube_store_id' => '123',
             'tiendanube_token' => 'tok_abc',
+            'tiendanube_webhook_secret' => 'secreto',
         ]);
+    }
+
+    /** Firma el payload como lo haría Tiendanube, para pasar la validación de webhook. */
+    private function postWebhook(array $payload)
+    {
+        $firma = base64_encode(hash_hmac('sha256', json_encode($payload), 'secreto', true));
+
+        return $this->postJson('/tiendanube/webhook', $payload, ['x-linkedstore-hmac-sha256' => $firma]);
     }
 
     private function fakeApi(array $overrides = []): void
@@ -353,7 +362,7 @@ class TiendanubeTest extends TestCase
             ], 200),
         ]);
 
-        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'order/paid', 'id' => 555])
+        $this->postWebhook(['store_id' => 123, 'event' => 'order/paid', 'id' => 555])
             ->assertOk();
 
         $this->assertDatabaseHas('invoices', ['tiendanube_order_id' => 555]);
@@ -369,7 +378,7 @@ class TiendanubeTest extends TestCase
             '*/products/11' => Http::response(['id' => 11, 'variants' => [['id' => 91, 'stock' => 20]]], 200),
         ]);
 
-        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'product/updated', 'id' => 11])
+        $this->postWebhook(['store_id' => 123, 'event' => 'product/updated', 'id' => 11])
             ->assertOk();
 
         $this->assertEquals(20, $local->fresh()->stock);
@@ -385,7 +394,7 @@ class TiendanubeTest extends TestCase
             '*/customers/5' => Http::response(['id' => 5, 'name' => 'Nuevo Nombre', 'email' => 'x@test.com'], 200),
         ]);
 
-        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'customer/updated', 'id' => 5])
+        $this->postWebhook(['store_id' => 123, 'event' => 'customer/updated', 'id' => 5])
             ->assertOk();
 
         $this->assertDatabaseHas('clients', ['tiendanube_customer_id' => 5, 'name' => 'Nuevo Nombre']);
@@ -401,7 +410,7 @@ class TiendanubeTest extends TestCase
             '*/categories/501' => Http::response(['id' => 501, 'name' => ['es' => 'Nueva Cat']], 200),
         ]);
 
-        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'category/updated', 'id' => 501])
+        $this->postWebhook(['store_id' => 123, 'event' => 'category/updated', 'id' => 501])
             ->assertOk();
 
         $this->assertDatabaseHas('categories', ['tiendanube_category_id' => 501, 'name' => 'Nueva Cat']);
@@ -473,5 +482,21 @@ class TiendanubeTest extends TestCase
 
         $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'order/paid', 'id' => 555], ['x-linkedstore-hmac-sha256' => 'firma-mala'])
             ->assertStatus(401);
+    }
+
+    public function test_webhook_sin_secret_configurado_se_rechaza(): void
+    {
+        // Sin tiendanube_webhook_secret cargado no hay forma de validar la
+        // firma — antes se aceptaba igual (inseguro por defecto), ahora se
+        // rechaza hasta que se configure el secret.
+        CompanySettings::current()->update([
+            'tiendanube_store_id' => '123',
+            'tiendanube_token' => 'tok_abc',
+        ]);
+
+        $this->postJson('/tiendanube/webhook', ['store_id' => 123, 'event' => 'order/paid', 'id' => 555])
+            ->assertStatus(401);
+
+        $this->assertDatabaseMissing('invoices', ['tiendanube_order_id' => 555]);
     }
 }

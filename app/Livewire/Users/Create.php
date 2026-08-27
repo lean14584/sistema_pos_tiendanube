@@ -4,6 +4,7 @@ namespace App\Livewire\Users;
 
 use App\Enums\Role;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -25,8 +26,8 @@ class Create extends Component
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'password' => ['required', 'string', 'min:4'],
-            'role' => ['required'],
+            'password' => ['required', 'string', 'min:8'],
+            'role' => ['required', Rule::enum(Role::class)],
             'active' => ['boolean'],
         ]);
 

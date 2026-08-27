@@ -122,6 +122,51 @@ class CashRegisterTest extends TestCase
         $this->assertEquals(0, \App\Models\CashMovement::count());
     }
 
+    public function test_manual_movement_can_be_deleted_from_the_open_session(): void
+    {
+        $admin = $this->admin();
+        $session = CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $movement = $session->movements()->create(['type' => 'egreso', 'concept' => 'Error de carga', 'amount' => 100, 'source' => 'manual', 'date' => now()]);
+
+        Livewire::actingAs($admin)
+            ->test('cash-register.index')
+            ->call('deleteMovement', $movement->id);
+
+        $this->assertModelMissing($movement);
+    }
+
+    public function test_no_se_puede_borrar_un_movimiento_de_una_caja_ya_cerrada(): void
+    {
+        // Bug de seguridad real: el método no scopeaba por sesión abierta,
+        // así que cualquiera con acceso a Caja podía borrar el movimiento
+        // manual de una caja de OTRO día ya cerrada, tapando un faltante.
+        $admin = $this->admin();
+        $closedSession = CashSession::create(['user_id' => $admin->id, 'status' => 'closed', 'opened_at' => now()->subDay(), 'closed_at' => now()->subDay(), 'opening_amount' => 0, 'closing_amount' => 0]);
+        $movement = $closedSession->movements()->create(['type' => 'egreso', 'concept' => 'Faltante', 'amount' => 5000, 'source' => 'manual', 'date' => now()->subDay()]);
+
+        // Sin ninguna caja abierta ahora mismo.
+        Livewire::actingAs($admin)
+            ->test('cash-register.index')
+            ->call('deleteMovement', $movement->id);
+
+        $this->assertModelExists($movement);
+    }
+
+    public function test_no_se_puede_borrar_un_movimiento_de_otra_sesion_aunque_haya_una_abierta(): void
+    {
+        $admin = $this->admin();
+        $vieja = CashSession::create(['user_id' => $admin->id, 'status' => 'closed', 'opened_at' => now()->subDay(), 'closed_at' => now()->subDay(), 'opening_amount' => 0, 'closing_amount' => 0]);
+        $movementVieja = $vieja->movements()->create(['type' => 'egreso', 'concept' => 'Faltante viejo', 'amount' => 5000, 'source' => 'manual', 'date' => now()->subDay()]);
+
+        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        Livewire::actingAs($admin)
+            ->test('cash-register.index')
+            ->call('deleteMovement', $movementVieja->id);
+
+        $this->assertModelExists($movementVieja);
+    }
+
     public function test_invoice_with_payment_creates_cash_ingreso(): void
     {
         $admin = $this->admin();

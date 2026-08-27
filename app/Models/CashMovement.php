@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Enums\CashMovementSource;
 use App\Enums\CashMovementType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['session_id', 'type', 'concept', 'amount', 'source', 'source_id', 'date'])]
 class CashMovement extends Model
 {
+    use Auditable;
+
     protected function casts(): array
     {
         return [

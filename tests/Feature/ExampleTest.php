@@ -58,6 +58,31 @@ class ExampleTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_demasiados_intentos_fallidos_bloquean_el_login_temporalmente(): void
+    {
+        // Antes no había ningún límite: se podía probar contraseñas sin freno.
+        User::factory()->create([
+            'username' => 'testadmin', 'password' => 'secret123',
+            'role' => Role::Admin, 'active' => true,
+        ]);
+
+        for ($i = 0; $i < 5; $i++) {
+            Livewire::test('auth.login')
+                ->set('username', 'testadmin')
+                ->set('password', 'wrong')
+                ->call('submit');
+        }
+
+        // El 6to intento, incluso con la contraseña CORRECTA, queda bloqueado.
+        $component = Livewire::test('auth.login')
+            ->set('username', 'testadmin')
+            ->set('password', 'secret123')
+            ->call('submit');
+
+        $this->assertStringContainsString('Demasiados intentos', $component->get('error'));
+        $this->assertGuest();
+    }
+
     public function test_authenticated_admin_sees_dashboard_with_full_sidebar(): void
     {
         $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);

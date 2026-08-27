@@ -55,10 +55,12 @@ class TiendanubeWebhookController extends Controller
     {
         $secret = CompanySettings::current()->tiendanube_webhook_secret;
 
-        // Sin secret configurado no se puede validar: se acepta (útil para
-        // pruebas). Cargá el client_secret para exigir firma.
+        // Sin secret configurado no se puede validar la firma → se rechaza.
+        // Sin esto, cualquiera que conociera la URL podía forzar reimportar
+        // pedidos o resincronizar stock a voluntad. Cargá el client_secret
+        // de Tiendanube en la configuración para que los webhooks funcionen.
         if (empty($secret)) {
-            return true;
+            return false;
         }
 
         $firma = $request->header('x-linkedstore-hmac-sha256', '');

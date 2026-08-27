@@ -23,6 +23,7 @@ class AuditLog extends Model
         Client::class => 'Cliente',
         Provider::class => 'Proveedor',
         Purchase::class => 'Compra',
+        CashMovement::class => 'Movimiento de caja',
         User::class => 'Usuario',
         CompanySettings::class => 'Datos de la empresa',
     ];
