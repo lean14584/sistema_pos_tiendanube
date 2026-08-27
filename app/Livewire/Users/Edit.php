@@ -37,8 +37,8 @@ class Edit extends Component
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($this->user->id)],
-            'password' => ['nullable', 'string', 'min:4'],
-            'role' => ['required'],
+            'password' => ['nullable', 'string', 'min:8'],
+            'role' => ['required', Rule::enum(Role::class)],
             'active' => ['boolean'],
         ]);
 

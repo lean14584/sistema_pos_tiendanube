@@ -24,7 +24,7 @@ class UsersTest extends TestCase
             ->test('users.create')
             ->set('name', 'Juana Pérez')
             ->set('username', 'jperez')
-            ->set('password', 'secret1')
+            ->set('password', 'secret12')
             ->set('role', 'vendedor')
             ->call('save')
             ->assertRedirect(route('users.index'));
@@ -40,7 +40,7 @@ class UsersTest extends TestCase
             ->test('users.create')
             ->set('name', 'Otro')
             ->set('username', 'jperez')
-            ->set('password', 'secret1')
+            ->set('password', 'secret12')
             ->call('save')
             ->assertHasErrors(['username' => 'unique']);
     }

@@ -79,9 +79,21 @@ class Index extends Component
         $this->movAmount = '';
     }
 
+    /**
+     * Solo se puede borrar un movimiento manual de la caja que está abierta
+     * ahora mismo — nunca de una caja ya cerrada (de otro día, de otro
+     * usuario). Sin este scope, cualquiera con acceso a Caja podía borrar
+     * cualquier movimiento por id, tapando un faltante sin dejar rastro.
+     */
     public function deleteMovement(int $movementId): void
     {
-        CashMovement::whereKey($movementId)->where('source', 'manual')->delete();
+        $session = $this->openSessionModel();
+
+        if (! $session) {
+            return;
+        }
+
+        $session->movements()->whereKey($movementId)->where('source', 'manual')->first()?->delete();
     }
 
     public function closeSession(): void
