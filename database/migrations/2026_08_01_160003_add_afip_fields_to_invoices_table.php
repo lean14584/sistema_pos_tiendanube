@@ -27,7 +27,10 @@ return new class extends Migration
             $table->json('afip_response')->nullable()->after('afip_observaciones');
             $table->timestamp('emitted_at')->nullable()->after('afip_response');
 
-            $table->unique(['punto_venta', 'tipo_comprobante', 'numero_comprobante_afip']);
+            // Nombre explícito y corto: el autogenerado por Laravel supera los
+            // 64 caracteres que soporta MySQL como nombre de índice (en SQLite
+            // no hay ese límite, por eso no se notaba).
+            $table->unique(['punto_venta', 'tipo_comprobante', 'numero_comprobante_afip'], 'invoices_pv_tipo_numero_unique');
         });
     }
 
@@ -37,7 +40,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->dropUnique(['punto_venta', 'tipo_comprobante', 'numero_comprobante_afip']);
+            $table->dropUnique('invoices_pv_tipo_numero_unique');
             $table->dropColumn([
                 'cae', 'cae_vencimiento', 'tipo_comprobante', 'punto_venta',
                 'numero_comprobante_afip', 'condicion_iva_receptor_id',
