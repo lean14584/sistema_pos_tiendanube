@@ -1,6 +1,12 @@
 <div class="p-8 max-w-5xl mx-auto">
     <x-page-header title="Productos" subtitle="Gestioná tu catálogo de productos" icon="cube">
         <x-slot:actions>
+            <a href="{{ route('products.export') }}" class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
+                <x-heroicon-o-arrow-down-tray class="w-4 h-4" /> Exportar
+            </a>
+            <a href="{{ route('products.import') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
+                <x-heroicon-o-arrow-up-tray class="w-4 h-4" /> Importar
+            </a>
             <a href="{{ route('products.labels') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
                 <x-heroicon-o-printer class="w-4 h-4" /> Etiquetas
             </a>

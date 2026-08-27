@@ -95,6 +95,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', ProductIndex::class)->name('index');
         Route::get('/new', ProductCreate::class)->name('create');
         Route::get('/etiquetas', \App\Livewire\Products\Labels::class)->name('labels');
+        Route::get('/importar', \App\Livewire\Products\Import::class)->name('import');
+        Route::get('/exportar', \App\Http\Controllers\ProductExportController::class)->name('export');
         Route::get('/{product}/edit', ProductEdit::class)->name('edit');
         Route::get('/{product}/historial', \App\Livewire\Products\Historial::class)->name('historial');
     });

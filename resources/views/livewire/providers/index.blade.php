@@ -108,6 +108,10 @@
                     </div>
                 @endforeach
             </div>
+
+            <div class="p-4 border-t border-gray-100 dark:border-gray-800">
+                {{ $providers->links() }}
+            </div>
         @endif
     </div>
 </div>
