@@ -3,6 +3,7 @@
 namespace App\Livewire\Users;
 
 use App\Enums\Role;
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -12,12 +13,12 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    use WithPagination;
+    use ShowsToasts, WithPagination;
 
     public function delete(User $user): void
     {
         if ($user->id === Auth::id()) {
-            session()->flash('error', 'No podés eliminar tu propio usuario mientras estás en sesión.');
+            $this->toastError('No podés eliminar tu propio usuario mientras estás en sesión.');
 
             return;
         }
@@ -25,12 +26,14 @@ class Index extends Component
         $activeAdmins = User::where('role', Role::Admin)->where('active', true)->count();
 
         if ($user->role === Role::Admin && $user->active && $activeAdmins <= 1) {
-            session()->flash('error', 'No se puede eliminar al último administrador activo.');
+            $this->toastError('No se puede eliminar al último administrador activo.');
 
             return;
         }
 
         $user->delete();
+
+        $this->toastSuccess('Usuario eliminado.');
     }
 
     public function render()

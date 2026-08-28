@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Categories;
 
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Category;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -9,15 +10,19 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ShowsToasts;
+
     public function delete(Category $category): void
     {
         if ($category->products()->exists()) {
-            session()->flash('error', "No se puede eliminar \"{$category->name}\" porque tiene productos asociados.");
+            $this->toastError("No se puede eliminar \"{$category->name}\" porque tiene productos asociados.");
 
             return;
         }
 
         $category->delete();
+
+        $this->toastSuccess('Categoría eliminada.');
     }
 
     public function render()

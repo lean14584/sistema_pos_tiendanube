@@ -40,6 +40,7 @@ class Show extends Component
             $this->purchase->delete();
         });
 
+        session()->flash('status', 'Compra eliminada.');
         $this->redirect(route('purchases.index'), navigate: true);
     }
 

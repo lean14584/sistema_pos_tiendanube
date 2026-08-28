@@ -8,20 +8,6 @@
 @if (session('status') || session('error'))
     <div
         x-data
-        x-init="
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: @js(session('status') ? 'success' : 'error'),
-                title: @js(session('status') ?? session('error')),
-                showConfirmButton: false,
-                timer: 3500,
-                timerProgressBar: true,
-                didOpen: (el) => {
-                    el.addEventListener('mouseenter', Swal.stopTimer);
-                    el.addEventListener('mouseleave', Swal.resumeTimer);
-                },
-            })
-        "
+        x-init="showToast(@js(session('status') ? 'success' : 'error'), @js(session('status') ?? session('error')))"
     ></div>
 @endif

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\PriceLists;
 
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\PriceList;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -10,6 +11,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ShowsToasts;
+
     public ?int $editingId = null;
 
     public string $name = '';
@@ -68,18 +71,20 @@ class Index extends Component
     public function delete(PriceList $priceList): void
     {
         if ($priceList->is_default) {
-            session()->flash('error', 'No se puede eliminar la lista predeterminada.');
+            $this->toastError('No se puede eliminar la lista predeterminada.');
 
             return;
         }
 
         if ($priceList->clients()->exists()) {
-            session()->flash('error', "No se puede eliminar \"{$priceList->name}\": hay clientes que la usan.");
+            $this->toastError("No se puede eliminar \"{$priceList->name}\": hay clientes que la usan.");
 
             return;
         }
 
         $priceList->delete();
+
+        $this->toastSuccess('Lista de precios eliminada.');
     }
 
     public function render()

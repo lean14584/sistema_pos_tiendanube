@@ -227,6 +227,7 @@ class Show extends Component
             $this->invoice->delete();
         });
 
+        session()->flash('status', 'Comprobante eliminado.');
         $this->redirect(route('invoices.index'), navigate: true);
     }
 

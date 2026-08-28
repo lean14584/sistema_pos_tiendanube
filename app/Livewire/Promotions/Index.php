@@ -3,6 +3,7 @@
 namespace App\Livewire\Promotions;
 
 use App\Enums\PromotionType;
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Product;
 use App\Models\Promotion;
 use Livewire\Attributes\Layout;
@@ -11,6 +12,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ShowsToasts;
+
     public ?int $editingId = null;
 
     public string $product_id = '';
@@ -141,6 +144,8 @@ class Index extends Component
     public function delete(Promotion $promotion): void
     {
         $promotion->delete();
+
+        $this->toastSuccess('Promoción eliminada.');
     }
 
     public function render()

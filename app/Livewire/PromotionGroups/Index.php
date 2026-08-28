@@ -2,6 +2,7 @@
 
 namespace App\Livewire\PromotionGroups;
 
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Product;
 use App\Models\PromotionGroup;
 use Livewire\Attributes\Computed;
@@ -11,6 +12,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ShowsToasts;
+
     public ?int $editingId = null;
 
     public string $name = '';
@@ -130,6 +133,8 @@ class Index extends Component
     public function delete(PromotionGroup $promotionGroup): void
     {
         $promotionGroup->delete();
+
+        $this->toastSuccess('Familia de promoción eliminada.');
     }
 
     public function render()

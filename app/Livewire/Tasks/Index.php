@@ -4,6 +4,7 @@ namespace App\Livewire\Tasks;
 
 use App\Enums\Role;
 use App\Enums\TaskStatus;
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -13,6 +14,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ShowsToasts;
+
     #[Url]
     public string $filter = 'all';
 
@@ -30,6 +33,8 @@ class Index extends Component
         abort_unless(Auth::user()->role === Role::Admin, 403);
 
         $task->delete();
+
+        $this->toastSuccess('Tarea eliminada.');
     }
 
     public function render()

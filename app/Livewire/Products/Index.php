@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Products;
 
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Product;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -10,6 +11,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ShowsToasts;
+
     #[Url]
     public string $query = '';
 
@@ -21,12 +24,14 @@ class Index extends Component
         $inUse = $product->invoiceItems()->exists() || $product->purchaseItems()->exists() || $product->quoteItems()->exists();
 
         if ($inUse) {
-            session()->flash('error', "No se puede eliminar \"{$product->name}\" porque está referenciado en facturas, compras o presupuestos.");
+            $this->toastError("No se puede eliminar \"{$product->name}\" porque está referenciado en facturas, compras o presupuestos.");
 
             return;
         }
 
         $product->delete();
+
+        $this->toastSuccess('Producto eliminado.');
     }
 
     public function render()

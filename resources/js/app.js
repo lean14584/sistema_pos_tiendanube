@@ -22,3 +22,26 @@ window.confirmThen = function (message, action) {
         }
     });
 };
+
+/**
+ * Mismo toast que flash-toasts.blade.php (session status/error), pero para
+ * acciones Livewire que NO navegan (ej. borrar de una lista): session()->
+ * flash() no sirve ahí porque el toast del layout solo se vuelve a pintar en
+ * una carga de página completa, y esas acciones se quedan en la misma. Se
+ * dispara desde PHP con $this->js("showToast(...)").
+ */
+window.showToast = function (type, message) {
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: type,
+        title: message,
+        showConfirmButton: false,
+        timer: 3500,
+        timerProgressBar: true,
+        didOpen: (el) => {
+            el.addEventListener('mouseenter', Swal.stopTimer);
+            el.addEventListener('mouseleave', Swal.resumeTimer);
+        },
+    });
+};

@@ -32,6 +32,7 @@ class Show extends Component
     {
         $this->quote->delete();
 
+        session()->flash('status', 'Presupuesto eliminado.');
         $this->redirect(route('quotes.index'), navigate: true);
     }
 
