@@ -36,6 +36,7 @@ class Create extends Component
 
         Provider::create($data);
 
+        session()->flash('status', 'Proveedor creado.');
         $this->redirect(route('providers.index'), navigate: true);
     }
 

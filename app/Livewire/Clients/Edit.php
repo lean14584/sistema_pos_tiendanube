@@ -64,6 +64,7 @@ class Edit extends Component
 
         $this->client->update($data);
 
+        session()->flash('status', 'Cliente actualizado.');
         $this->redirect(route('clients.index'), navigate: true);
     }
 

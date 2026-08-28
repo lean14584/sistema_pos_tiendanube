@@ -63,6 +63,7 @@ class Create extends Component
 
         Product::create($data);
 
+        session()->flash('status', 'Producto creado.');
         $this->redirect(route('products.index'), navigate: true);
     }
 

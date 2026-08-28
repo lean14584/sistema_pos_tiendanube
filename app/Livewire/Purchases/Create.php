@@ -205,6 +205,7 @@ class Create extends Component
             return $purchase;
         });
 
+        session()->flash('status', 'Compra registrada.');
         $this->redirect(route('purchases.show', $purchase), navigate: true);
     }
 

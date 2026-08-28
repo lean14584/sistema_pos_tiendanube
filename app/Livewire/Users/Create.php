@@ -33,6 +33,7 @@ class Create extends Component
 
         User::create($data);
 
+        session()->flash('status', 'Usuario creado.');
         $this->redirect(route('users.index'), navigate: true);
     }
 

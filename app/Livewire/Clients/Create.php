@@ -48,6 +48,7 @@ class Create extends Component
 
         Client::create($data);
 
+        session()->flash('status', 'Cliente creado.');
         $this->redirect(route('clients.index'), navigate: true);
     }
 

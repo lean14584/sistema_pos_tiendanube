@@ -91,6 +91,7 @@ class FacturarRemito extends Component
             return $factura;
         });
 
+        session()->flash('status', 'Factura generada a partir del remito.');
         $this->redirect(route('invoices.show', $factura), navigate: true);
     }
 

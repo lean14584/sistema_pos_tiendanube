@@ -241,6 +241,7 @@ class Edit extends Component
             }
         });
 
+        session()->flash('status', 'Compra actualizada.');
         $this->redirect(route('purchases.show', $this->purchase), navigate: true);
     }
 

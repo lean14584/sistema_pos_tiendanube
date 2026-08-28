@@ -92,14 +92,22 @@ class Client extends Model
      * a traer la tabla de clientes entera en cada request. Cacheada 60s:
      * un cliente recién creado puede tardar hasta ese tiempo en aparecer.
      *
-     * @return Collection<int, self>
+     * Devuelve stdClass, NO instancias de Client: con el driver de caché
+     * "database" (o file) los valores se guardan con serialize() nativo de
+     * PHP, y cachear modelos Eloquent completos es frágil — un deploy que
+     * toque la clase (o un desfasaje de autoload entre el momento en que se
+     * guardó y el momento en que se lee) puede dejar el valor cacheado
+     * corrupto (__PHP_Incomplete_Class). stdClass no tiene ese problema y
+     * alcanza para mostrar id+nombre.
+     *
+     * @return Collection<int, object{id: int, name: string}>
      */
     public static function forSelectCached(): Collection
     {
         return Cache::remember(
-            'clients:select-list',
+            'clients:select-list-v2',
             now()->addSeconds(60),
-            fn () => self::orderBy('name')->get(['id', 'name']),
+            fn () => self::orderBy('name')->get(['id', 'name'])->map(fn (self $c) => (object) ['id' => $c->id, 'name' => $c->name])->values(),
         );
     }
 

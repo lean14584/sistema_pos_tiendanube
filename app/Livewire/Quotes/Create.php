@@ -206,6 +206,7 @@ class Create extends Component
             return $quote;
         });
 
+        session()->flash('status', 'Presupuesto creado.');
         $this->redirect(route('quotes.show', $quote), navigate: true);
     }
 

@@ -22,6 +22,7 @@ class Create extends Component
 
         Category::create($data);
 
+        session()->flash('status', 'Categoría creada.');
         $this->redirect(route('categories.index'), navigate: true);
     }
 

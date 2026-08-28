@@ -48,6 +48,7 @@ class Edit extends Component
 
         $this->user->update($data);
 
+        session()->flash('status', 'Usuario actualizado.');
         $this->redirect(route('users.index'), navigate: true);
     }
 

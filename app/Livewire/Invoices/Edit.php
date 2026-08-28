@@ -345,6 +345,7 @@ class Edit extends Component
             }
         });
 
+        session()->flash('status', 'Comprobante actualizado.');
         $this->redirect(route('invoices.show', $this->invoice), navigate: true);
     }
 

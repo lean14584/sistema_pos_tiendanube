@@ -38,6 +38,7 @@ class Create extends Component
             'status' => TaskStatus::Pending->value,
         ]);
 
+        session()->flash('status', 'Tarea creada.');
         $this->redirect(route('tasks.index'), navigate: true);
     }
 

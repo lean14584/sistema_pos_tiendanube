@@ -170,6 +170,7 @@ class Create extends Component
             return $nota;
         });
 
+        session()->flash('status', 'Nota de crédito generada.');
         $this->redirect(route('invoices.show', $notaCredito), navigate: true);
     }
 

@@ -84,6 +84,7 @@ class Edit extends Component
 
         $this->product->update($data);
 
+        session()->flash('status', 'Producto actualizado.');
         $this->redirect(route('products.index'), navigate: true);
     }
 

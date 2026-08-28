@@ -31,6 +31,7 @@ class Edit extends Component
 
         $this->category->update($data);
 
+        session()->flash('status', 'Categoría actualizada.');
         $this->redirect(route('categories.index'), navigate: true);
     }
 

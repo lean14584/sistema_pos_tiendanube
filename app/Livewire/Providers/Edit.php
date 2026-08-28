@@ -49,6 +49,7 @@ class Edit extends Component
 
         $this->provider->update($data);
 
+        session()->flash('status', 'Proveedor actualizado.');
         $this->redirect(route('providers.index'), navigate: true);
     }
 

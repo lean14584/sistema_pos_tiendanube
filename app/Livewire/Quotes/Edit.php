@@ -223,6 +223,7 @@ class Edit extends Component
             }
         });
 
+        session()->flash('status', 'Presupuesto actualizado.');
         $this->redirect(route('quotes.show', $this->quote), navigate: true);
     }
 
