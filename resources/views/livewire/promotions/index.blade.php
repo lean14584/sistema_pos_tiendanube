@@ -126,7 +126,7 @@
                             <button wire:click="edit({{ $promo->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
-                            <button wire:click="delete({{ $promo->id }})" wire:confirm="¿Eliminar esta promoción?" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400">
+                            <button x-on:click="confirmThen('¿Eliminar esta promoción?', () => $wire.delete({{ $promo->id }}))" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400">
                                 <x-heroicon-o-trash class="w-4 h-4" />
                             </button>
                         </td>

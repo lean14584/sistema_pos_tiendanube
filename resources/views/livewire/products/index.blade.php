@@ -117,8 +117,7 @@
                                         <x-heroicon-o-pencil class="w-4 h-4" />
                                     </a>
                                     <button
-                                        wire:click="delete({{ $product->id }})"
-                                        wire:confirm="¿Eliminar el producto &quot;{{ $product->name }}&quot;?"
+                                        x-on:click="confirmThen('¿Eliminar el producto ' + @js($product->name) + '?', () => $wire.delete({{ $product->id }}))"
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
                                     >
                                         <x-heroicon-o-trash class="w-4 h-4" />
@@ -166,8 +165,7 @@
                                     <x-heroicon-o-pencil class="w-4 h-4" />
                                 </a>
                                 <button
-                                    wire:click="delete({{ $product->id }})"
-                                    wire:confirm="¿Eliminar el producto &quot;{{ $product->name }}&quot;?"
+                                    x-on:click="confirmThen('¿Eliminar el producto ' + @js($product->name) + '?', () => $wire.delete({{ $product->id }}))"
                                     class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                                 >
                                     <x-heroicon-o-trash class="w-4 h-4" />

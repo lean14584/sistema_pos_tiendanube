@@ -111,7 +111,7 @@
                 @endif
             </div>
 
-            <form wire:submit="closeSession" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
+            <form x-on:submit.prevent="confirmThen('¿Confirmás el cierre de caja?', () => $wire.closeSession())" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
                 <div class="flex items-center gap-2 mb-3">
                     <x-heroicon-o-lock-closed class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">Cerrar caja</h3>
@@ -129,7 +129,6 @@
                 </div>
                 <button
                     type="submit"
-                    wire:confirm="¿Confirmás el cierre de caja?"
                     class="mt-3 rounded-lg border border-red-300 dark:border-red-500/30 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 >
                     Cerrar caja

@@ -19,8 +19,7 @@
                 Editar
             </a>
             <button
-                wire:click="delete"
-                wire:confirm="¿Eliminar el presupuesto {{ $quote->number }}?"
+                x-on:click="confirmThen('¿Eliminar el presupuesto ' + @js($quote->number) + '?', () => $wire.delete())"
                 class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
             >
                 <x-heroicon-o-trash class="w-4 h-4" />
@@ -59,8 +58,7 @@
                     </button>
                 </div>
                 <button
-                    wire:click="convertToInvoice"
-                    wire:confirm="¿Pasar el presupuesto {{ $quote->number }} a una venta?"
+                    x-on:click="confirmThen('¿Pasar el presupuesto ' + @js($quote->number) + ' a una venta?', () => $wire.convertToInvoice())"
                     class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
                 >
                     Convertir a venta

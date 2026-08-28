@@ -157,8 +157,7 @@
                                         @endif
                                     @endif
                                     <button
-                                        wire:click="deletePayment({{ $row['paymentId'] }})"
-                                        wire:confirm="¿Eliminar este movimiento?"
+                                        x-on:click="confirmThen('¿Eliminar este movimiento?', () => $wire.deletePayment({{ $row['paymentId'] }}))"
                                         class="inline-flex p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all align-middle"
                                     >
                                         <x-heroicon-o-trash class="w-4 h-4" />

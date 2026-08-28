@@ -97,9 +97,8 @@
             @endif
             @if ($invoice->status === App\Enums\InvoiceStatus::Draft && ! $invoice->isFiscal && $invoice->tipo_comprobante_interno->esFiscal())
                 <button
-                    wire:click="emitirAfip"
+                    x-on:click="confirmThen('¿Emitir la factura ' + @js($invoice->number) + ' a ARCA? Esta acción no se puede deshacer.', () => $wire.emitirAfip())"
                     wire:loading.attr="disabled"
-                    wire:confirm="¿Emitir la factura {{ $invoice->number }} a ARCA? Esta acción no se puede deshacer."
                     class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-60 transition-all"
                 >
                     <x-heroicon-o-document-check class="w-4 h-4" />
@@ -122,8 +121,7 @@
                     Editar
                 </a>
                 <button
-                    wire:click="delete"
-                    wire:confirm="¿Eliminar la factura {{ $invoice->number }}?"
+                    x-on:click="confirmThen('¿Eliminar la factura ' + @js($invoice->number) + '?', () => $wire.delete())"
                     class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 >
                     <x-heroicon-o-trash class="w-4 h-4" />
