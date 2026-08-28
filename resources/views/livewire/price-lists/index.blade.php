@@ -1,13 +1,6 @@
 <div class="p-8 max-w-4xl mx-auto">
     <x-page-header title="Listas de precios" subtitle="Cada lista ajusta el precio base por un porcentaje (ej.: Mayorista −15%, Tarjeta +10%). Se asigna por cliente y se puede elegir al vender." icon="currency-dollar" />
 
-    @if (session('status'))
-        <div class="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-3 text-sm">{{ session('status') }}</div>
-    @endif
-    @if (session('error'))
-        <div class="mb-4 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 px-4 py-3 text-sm">{{ session('error') }}</div>
-    @endif
-
     {{-- Alta / edición --}}
     <form wire:submit="save" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4 mb-6">
         <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">{{ $editingId ? 'Editar lista' : 'Nueva lista' }}</h3>

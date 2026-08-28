@@ -4,18 +4,6 @@
         Facturas
     </a>
 
-    @if (session('status'))
-        <div class="mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-3 text-sm">
-            {{ session('status') }}
-        </div>
-    @endif
-
-    @if (session('error'))
-        <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-4 text-sm text-red-800 dark:text-red-400 mb-6">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <x-page-header title="{{ $invoice->number }}" subtitle="Emitida el {{ $invoice->issue_date->format('d/m/Y') }} · Vence el {{ $invoice->due_date->format('d/m/Y') }}" icon="document-text">
         <x-slot:actions>
             <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">

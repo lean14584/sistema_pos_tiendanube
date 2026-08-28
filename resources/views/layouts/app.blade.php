@@ -36,6 +36,7 @@
         </header>
 
         <main class="flex-1 overflow-y-auto">
+            @include('layouts.partials.flash-toasts')
             {{ $slot }}
         </main>
     </div>

@@ -16,12 +16,6 @@
         </x-slot:actions>
     </x-page-header>
 
-    @if (session('error'))
-        <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-4 text-sm text-red-800 dark:text-red-400 mb-6">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div class="flex items-center gap-3 mb-4">
         <div class="relative flex-1">
             <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />

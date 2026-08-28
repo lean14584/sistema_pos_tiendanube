@@ -14,13 +14,6 @@
         </x-slot:actions>
     </x-page-header>
 
-    @if (session('status'))
-        <div class="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-4 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">{{ session('status') }}</div>
-    @endif
-    @if (session('error'))
-        <div class="mb-4 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-2.5 text-sm text-red-800 dark:text-red-400">{{ session('error') }}</div>
-    @endif
-
     <x-current-account
         debit-label="Compra"
         payment-label="Pago"

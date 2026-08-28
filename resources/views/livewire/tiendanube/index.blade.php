@@ -13,12 +13,6 @@
         </x-slot:actions>
     </x-page-header>
 
-    @if (session('status'))
-        <div class="mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-3 text-sm">
-            {{ session('status') }}
-        </div>
-    @endif
-
     @if ($resultado)
         <div class="mb-6 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 px-4 py-3 text-sm">
             {{ $resultado }}

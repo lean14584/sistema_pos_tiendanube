@@ -1,12 +1,6 @@
 <div class="p-8 max-w-5xl mx-auto">
     <x-page-header title="Datos de la empresa" subtitle="Estos datos se usan para determinar el tipo de comprobante (Factura A/B/C) y se envían a ARCA al emitir cada factura." icon="building-office" />
 
-    @if (session('status'))
-        <div class="mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-3 text-sm">
-            {{ session('status') }}
-        </div>
-    @endif
-
     <form wire:submit="save" class="space-y-5 max-w-xl" enctype="multipart/form-data">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Logo</label>

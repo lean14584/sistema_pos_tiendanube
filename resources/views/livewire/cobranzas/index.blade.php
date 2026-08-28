@@ -8,12 +8,6 @@
         </x-slot:actions>
     </x-page-header>
 
-    @if (session('cobranza_ok'))
-        <div class="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-4 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">
-            {{ session('cobranza_ok') }}
-        </div>
-    @endif
-
     <div class="relative mb-4 max-w-xs">
         <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
         <input

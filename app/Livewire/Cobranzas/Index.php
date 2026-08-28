@@ -90,7 +90,7 @@ class Index extends Component
         CashLinker::linkClientPayment($payment);
 
         $this->cancelPayment();
-        session()->flash('cobranza_ok', 'Cobro registrado.');
+        session()->flash('status', 'Cobro registrado.');
     }
 
     private function mensajeRecordatorio(Client $client, float $saldo): string

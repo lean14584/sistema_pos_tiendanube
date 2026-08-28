@@ -7,12 +7,6 @@
         </x-slot:actions>
     </x-page-header>
 
-    @if (session('error'))
-        <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-4 text-sm text-red-800 dark:text-red-400 mb-6">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">
         @if ($categories->isEmpty())
             <div class="p-12 text-center text-gray-400 dark:text-gray-500">

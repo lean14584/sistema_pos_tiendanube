@@ -6,16 +6,7 @@
             </span>
             <span class="bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">Venta rápida</span>
         </h1>
-        @if (session('status'))
-            <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 text-sm font-medium">
-                <x-heroicon-o-check-circle class="w-4 h-4" /> {{ session('status') }}
-            </span>
-        @endif
     </div>
-
-    @if (session('error'))
-        <div class="mb-4 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 px-4 py-3 text-sm">{{ session('error') }}</div>
-    @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {{-- Lector + productos agregados --}}
