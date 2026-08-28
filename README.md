@@ -1,58 +1,82 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema de facturación / POS
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 13 + Livewire 4. Facturación (con emisión a ARCA/AFIP), punto de venta,
+cuenta corriente de clientes y proveedores, stock, compras, presupuestos,
+listas de precio, promociones, cobranzas, respaldo automático e integración
+con Tiendanube y Mercado Pago.
 
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Desarrollo local
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite   # si DB_CONNECTION sigue en sqlite
+php artisan migrate --seed       # el seed carga usuarios y datos de ejemplo
+npm run build                    # o `npm run dev` mientras se trabaja
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Usuarios de ejemplo que deja el seed: `admin/admin`, `vendedor/vendedor`,
+`cajero/cajero`.
 
-## Contributing
+```bash
+php artisan test
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Instalación nueva para un cliente real
 
-## Code of Conduct
+**No usar el seed de desarrollo** (`--seed` carga clientes, facturas y
+usuarios ficticios). Los pasos son:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+1. `composer install --no-dev --optimize-autoloader`
+2. `npm install && npm run build`
+3. Copiar `.env.production.example` a `.env`, completar los datos marcados
+   con `...` (base de datos, mail, dominio, CUIT).
+4. `php artisan key:generate`
+5. `php artisan migrate`
+6. `php artisan app:setup-admin` — crea el primer usuario administrador, sin
+   ningún dato de ejemplo.
+7. Iniciar sesión → **Configuración de la Empresa**: razón social, CUIT,
+   condición de IVA, logo, punto de venta.
+8. Si va a emitir a ARCA: subir certificado/clave en `storage/afip/` (nunca
+   se commitean) y setear `AFIP_CUIT` / `AFIP_ENV=produccion`.
+9. Configurar el respaldo automático (ver abajo) y probarlo una vez a mano.
+10. Dar de alta categorías, productos y clientes reales desde la interfaz
+    (o importarlos por Excel desde Productos → Importar).
 
-## Security Vulnerabilities
+## Respaldo
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+`php artisan backup:run` genera un `.zip` con la base de datos completa
+(MySQL o SQLite, se detecta solo) + los archivos subidos (logos,
+certificados). Se puede:
 
-## License
+- Descargar a mano desde la pantalla de Respaldo (rol admin).
+- Programar diario: `Schedule::command('backup:run')` ya está registrado en
+  `routes/console.php` — solo hace falta que algo dispare
+  `php artisan schedule:run` cada minuto (cron en Linux, Tarea Programada de
+  Windows en un hosting Windows/Laragon).
+- Copiar automáticamente a otra carpeta (pendrive, carpeta sincronizada con
+  la nube) seteando `BACKUP_COPY_TO` en `.env` — **el respaldo tiene que
+  vivir en otro dispositivo, no solo en el mismo disco del servidor.**
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Antes de vender esto a un cliente nuevo
+
+- [ ] `.env` con `APP_ENV=production`, `APP_DEBUG=false`.
+- [ ] `php artisan app:setup-admin` corrido (no el seed de desarrollo).
+- [ ] Configuración de la Empresa completa (razón social, CUIT, punto de venta).
+- [ ] Si emite a ARCA: certificado/clave subidos y probados con
+      `AFIP_ENV=produccion` (probar primero en `homologacion` si es la
+      primera vez que ese CUIT factura desde este sistema).
+- [ ] Respaldo automático configurado y probado a mano una vez, con
+      `BACKUP_COPY_TO` apuntando fuera del servidor.
+- [ ] Dominio propio con HTTPS.
+- [ ] Impresora de tickets probada si el cliente va a imprimir en el mostrador.
+
+## Stack
+
+- Laravel 13, Livewire 4, Alpine.js, Tailwind 4, Vite.
+- SQLite (desarrollo) o MySQL (recomendado para producción con más de un
+  usuario simultáneo).
+- SweetAlert2 para confirmaciones y carteles.

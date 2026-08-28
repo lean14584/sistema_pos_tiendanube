@@ -15,4 +15,8 @@ return [
     // Hora del respaldo automático diario (formato 24hs, HH:MM).
     'daily_at' => env('BACKUP_DAILY_AT', '23:30'),
 
+    // Ruta al binario de mysqldump, si no está en el PATH del sistema
+    // (solo se usa cuando DB_CONNECTION=mysql).
+    'mysqldump_path' => env('BACKUP_MYSQLDUMP_PATH', 'mysqldump'),
+
 ];

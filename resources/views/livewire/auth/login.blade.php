@@ -41,6 +41,10 @@
             </button>
         </form>
 
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-4 text-center">Usuario inicial: admin / admin</p>
+        @if (app()->environment('local'))
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-4 text-center">Usuario inicial: admin / admin</p>
+        @else
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-4 text-center">¿Olvidaste tu contraseña? Pedile a un administrador que te la reinicie desde Usuarios.</p>
+        @endif
     </div>
 </div>
