@@ -92,23 +92,29 @@ class Client extends Model
      * a traer la tabla de clientes entera en cada request. Cacheada 60s:
      * un cliente recién creado puede tardar hasta ese tiempo en aparecer.
      *
-     * Devuelve stdClass, NO instancias de Client: con el driver de caché
-     * "database" (o file) los valores se guardan con serialize() nativo de
-     * PHP, y cachear modelos Eloquent completos es frágil — un deploy que
-     * toque la clase (o un desfasaje de autoload entre el momento en que se
-     * guardó y el momento en que se lee) puede dejar el valor cacheado
-     * corrupto (__PHP_Incomplete_Class). stdClass no tiene ese problema y
-     * alcanza para mostrar id+nombre.
+     * Se cachea un array PLANO (no una Collection ni modelos Eloquent).
+     * El store de caché "database" en MySQL solo hace base64 si el
+     * serialize() resultante tiene bytes NUL (ver DatabaseStore::serialize());
+     * Collection tiene una propiedad protegida ($items), y serialize() de PHP
+     * marca las propiedades protegidas con bytes NUL ("\0*\0items"). Con
+     * pedidos concurrentes escribiendo la misma clave, esos NUL corrompen el
+     * valor guardado (unserialize() devuelve false o un __PHP_Incomplete_Class)
+     * — reproducido de forma consistente disparando varios procesos en
+     * paralelo. Un array de stdClass con propiedades públicas serializa sin
+     * ningún byte NUL, así que no le pega el bug. Lo que se GUARDA en caché
+     * es ese array; acá se envuelve en collect() recién al devolverlo, para
+     * que los callers puedan seguir usando firstWhere() etc. sin que esa
+     * envoltura llegue a serializarse.
      *
      * @return Collection<int, object{id: int, name: string}>
      */
     public static function forSelectCached(): Collection
     {
-        return Cache::remember(
-            'clients:select-list-v2',
+        return collect(Cache::remember(
+            'clients:select-list-v3',
             now()->addSeconds(60),
-            fn () => self::orderBy('name')->get(['id', 'name'])->map(fn (self $c) => (object) ['id' => $c->id, 'name' => $c->name])->values(),
-        );
+            fn () => self::orderBy('name')->get(['id', 'name'])->map(fn (self $c) => (object) ['id' => $c->id, 'name' => $c->name])->values()->all(),
+        ));
     }
 
     public static function consumidorFinal(): self
