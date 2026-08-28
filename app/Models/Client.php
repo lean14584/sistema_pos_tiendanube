@@ -92,29 +92,30 @@ class Client extends Model
      * a traer la tabla de clientes entera en cada request. Cacheada 60s:
      * un cliente recién creado puede tardar hasta ese tiempo en aparecer.
      *
-     * Se cachea un array PLANO (no una Collection ni modelos Eloquent).
-     * El store de caché "database" en MySQL solo hace base64 si el
-     * serialize() resultante tiene bytes NUL (ver DatabaseStore::serialize());
-     * Collection tiene una propiedad protegida ($items), y serialize() de PHP
-     * marca las propiedades protegidas con bytes NUL ("\0*\0items"). Con
-     * pedidos concurrentes escribiendo la misma clave, esos NUL corrompen el
-     * valor guardado (unserialize() devuelve false o un __PHP_Incomplete_Class)
-     * — reproducido de forma consistente disparando varios procesos en
-     * paralelo. Un array de stdClass con propiedades públicas serializa sin
-     * ningún byte NUL, así que no le pega el bug. Lo que se GUARDA en caché
-     * es ese array; acá se envuelve en collect() recién al devolverlo, para
-     * que los callers puedan seguir usando firstWhere() etc. sin que esa
-     * envoltura llegue a serializarse.
+     * Se guarda como STRING JSON, no como objetos/array vía serialize()
+     * nativo de PHP. Dos vueltas anteriores (cachear `Client`, después
+     * `stdClass`, después un array plano de `stdClass`) seguían dando
+     * __PHP_Incomplete_Class / "tried to access a property on an incomplete
+     * object" de forma intermitente: el store de caché "database" pasa por
+     * `serialize()`/`unserialize()` nativos de PHP en el viaje de ida y
+     * vuelta por MySQL, y algo en ese camino (concurrencia, o los acentos
+     * del nombre del cliente) termina corrompiendo el grafo de objetos.
+     * JSON no tiene ese modo de falla: `json_decode()` no reconstruye clases
+     * a partir de un conteo de propiedades como `unserialize()`, así que no
+     * puede quedar "incompleto". Cachear un string JSON reduce el valor
+     * cacheado a algo trivial de serializar (`s:N:"[...]"`, un string plano).
      *
      * @return Collection<int, object{id: int, name: string}>
      */
     public static function forSelectCached(): Collection
     {
-        return collect(Cache::remember(
-            'clients:select-list-v3',
+        $json = Cache::remember(
+            'clients:select-list-v4',
             now()->addSeconds(60),
-            fn () => self::orderBy('name')->get(['id', 'name'])->map(fn (self $c) => (object) ['id' => $c->id, 'name' => $c->name])->values()->all(),
-        ));
+            fn () => self::orderBy('name')->get(['id', 'name'])->toJson(),
+        );
+
+        return collect(json_decode($json));
     }
 
     public static function consumidorFinal(): self
