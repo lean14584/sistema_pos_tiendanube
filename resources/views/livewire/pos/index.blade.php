@@ -108,37 +108,11 @@
 
                 {{-- Cliente y lista --}}
                 <div>
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Cliente</label>
-                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1">{{ $clients->firstWhere('id', $client_id)?->name ?? '—' }}</p>
-                    <div class="relative">
-                        <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                            type="text"
-                            wire:model.live.debounce.200ms="clientQuery"
-                            placeholder="Buscar para cambiar de cliente..."
-                            class="{{ $posSelect }} pl-9"
-                        >
-                        @if (trim($clientQuery) !== '')
-                            <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
-                                @forelse ($this->clientResults as $client)
-                                    <button
-                                        type="button"
-                                        wire:click="selectClient({{ $client->id }})"
-                                        class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-indigo-50/70 dark:hover:bg-indigo-500/10 transition-colors"
-                                    >
-                                        <span class="min-w-0">
-                                            <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $client->name }}</span>
-                                            @if ($client->phone)
-                                                <span class="block text-xs text-gray-500 dark:text-gray-400">{{ $client->phone }}</span>
-                                            @endif
-                                        </span>
-                                    </button>
-                                @empty
-                                    <p class="p-3 text-sm text-gray-400 dark:text-gray-500">Sin resultados para "{{ $clientQuery }}".</p>
-                                @endforelse
-                            </div>
-                        @endif
-                    </div>
+                    <x-client-picker
+                        :client-name="$clients->firstWhere('id', $client_id)?->name ?? '—'"
+                        :client-query="$clientQuery"
+                        :client-results="$this->clientResults"
+                    />
                     @error('client_id') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
