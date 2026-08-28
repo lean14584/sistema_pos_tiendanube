@@ -11,11 +11,8 @@ class Index extends Component
 {
     public function render()
     {
-        $dbPath = config('database.connections.sqlite.database');
-        $bytes = is_string($dbPath) && file_exists($dbPath) ? filesize($dbPath) : 0;
-
         return view('livewire.backups.index', [
-            'dbSize' => $this->formatoTamano($bytes),
+            'dbSize' => $this->formatoTamano($this->dbBytes()),
             'conteos' => [
                 ['label' => 'Facturas', 'value' => DB::table('invoices')->count(), 'icon' => 'document-text'],
                 ['label' => 'Clientes', 'value' => DB::table('clients')->count(), 'icon' => 'users'],
@@ -28,6 +25,22 @@ class Index extends Component
             'copyTo' => config('backups.copy_to'),
             'respaldos' => $this->respaldosGuardados(),
         ]);
+    }
+
+    private function dbBytes(): int
+    {
+        if (config('database.default') === 'mysql') {
+            $tamano = DB::selectOne(
+                'SELECT SUM(data_length + index_length) AS bytes FROM information_schema.tables WHERE table_schema = ?',
+                [config('database.connections.mysql.database')],
+            );
+
+            return (int) ($tamano->bytes ?? 0);
+        }
+
+        $dbPath = config('database.connections.sqlite.database');
+
+        return is_string($dbPath) && file_exists($dbPath) ? filesize($dbPath) : 0;
     }
 
     /**

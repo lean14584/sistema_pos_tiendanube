@@ -21,10 +21,19 @@ class BackupService
      */
     public function generarEnTemp(): string
     {
+        return match (config('database.default')) {
+            'sqlite' => $this->generarDesdeSqlite(),
+            'mysql' => $this->generarDesdeMysql(),
+            default => throw new RuntimeException('El respaldo automático no soporta el driver de base de datos configurado ("'.config('database.default').'").'),
+        };
+    }
+
+    private function generarDesdeSqlite(): string
+    {
         $dbPath = config('database.connections.sqlite.database');
 
-        if (config('database.default') !== 'sqlite' || ! is_string($dbPath) || ($dbPath !== ':memory:' && ! file_exists($dbPath))) {
-            throw new RuntimeException('El respaldo automático está disponible solo para bases SQLite existentes.');
+        if (! is_string($dbPath) || ($dbPath !== ':memory:' && ! file_exists($dbPath))) {
+            throw new RuntimeException('No se encontró el archivo de base de datos SQLite.');
         }
 
         // Snapshot consistente aunque haya escrituras en curso.
@@ -32,10 +41,56 @@ class BackupService
         @unlink($snapshot);
         DB::connection('sqlite')->statement("VACUUM INTO '".str_replace("'", "''", $snapshot)."'");
 
+        $zipPath = $this->zipDbYUploads($snapshot, 'database.sqlite');
+
+        @unlink($snapshot);
+
+        return $zipPath;
+    }
+
+    /**
+     * Igual que en posOfflineDos: mysqldump con --single-transaction (no
+     * bloquea las tablas InnoDB mientras se genera, así el POS puede seguir
+     * vendiendo durante el respaldo).
+     */
+    private function generarDesdeMysql(): string
+    {
+        $conn = config('database.connections.mysql');
+        $dumpPath = tempnam(sys_get_temp_dir(), 'db-').'.sql';
+
+        $mysqldump = config('backups.mysqldump_path', 'mysqldump');
+
+        $cmd = sprintf(
+            '%s --host=%s --port=%s --user=%s %s --single-transaction --routines --result-file=%s %s',
+            escapeshellarg($mysqldump),
+            escapeshellarg((string) $conn['host']),
+            escapeshellarg((string) $conn['port']),
+            escapeshellarg((string) $conn['username']),
+            ! empty($conn['password']) ? '--password='.escapeshellarg((string) $conn['password']) : '',
+            escapeshellarg($dumpPath),
+            escapeshellarg((string) $conn['database']),
+        );
+
+        exec($cmd.' 2>&1', $salida, $codigo);
+
+        if ($codigo !== 0 || ! file_exists($dumpPath) || filesize($dumpPath) === 0) {
+            @unlink($dumpPath);
+            throw new RuntimeException('mysqldump falló: '.implode(' ', $salida) ?: 'sin salida (¿está mysqldump en el PATH? configurá BACKUP_MYSQLDUMP_PATH si no).');
+        }
+
+        $zipPath = $this->zipDbYUploads($dumpPath, 'database.sql');
+
+        @unlink($dumpPath);
+
+        return $zipPath;
+    }
+
+    private function zipDbYUploads(string $dbFilePath, string $nombreEnZip): string
+    {
         $zipPath = tempnam(sys_get_temp_dir(), 'backup-').'.zip';
         $zip = new ZipArchive();
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        $zip->addFile($snapshot, 'database.sqlite');
+        $zip->addFile($dbFilePath, $nombreEnZip);
 
         $uploads = storage_path('app/public');
         if (is_dir($uploads)) {
@@ -44,10 +99,8 @@ class BackupService
             }
         }
 
-        $zip->addFromString('LEEME.txt', $this->manifiesto());
+        $zip->addFromString('LEEME.txt', $this->manifiesto($nombreEnZip));
         $zip->close();
-
-        @unlink($snapshot);
 
         return $zipPath;
     }
@@ -77,7 +130,7 @@ class BackupService
         return $aBorrar->count();
     }
 
-    private function manifiesto(): string
+    private function manifiesto(string $nombreDbEnZip): string
     {
         $empresa = $this->nombreEmpresa();
         $fecha = now()->format('d/m/Y H:i');
@@ -95,7 +148,7 @@ class BackupService
             'Sistema: '.config('app.name'),
             '',
             'Contenido:',
-            '  - database.sqlite  (base de datos completa)',
+            "  - {$nombreDbEnZip}  (base de datos completa)",
             '  - uploads/         (archivos subidos: logo, certificados, etc.)',
             '',
             'Registros al momento del respaldo:',
@@ -106,8 +159,10 @@ class BackupService
         }
 
         $lineas[] = '';
-        $lineas[] = 'Para restaurar: reemplazar el archivo database.sqlite del sistema por';
-        $lineas[] = 'el de este respaldo, y copiar la carpeta uploads/ a storage/app/public.';
+        $lineas[] = $nombreDbEnZip === 'database.sql'
+            ? 'Para restaurar: mysql -u usuario -p nombre_de_la_base < database.sql'
+            : 'Para restaurar: reemplazar el archivo database.sqlite del sistema por el de este respaldo.';
+        $lineas[] = 'Copiar además la carpeta uploads/ a storage/app/public.';
         $lineas[] = '';
         $lineas[] = 'IMPORTANTE: guardá este archivo en otro dispositivo (pendrive, nube).';
 
