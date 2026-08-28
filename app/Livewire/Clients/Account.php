@@ -3,11 +3,13 @@
 namespace App\Livewire\Clients;
 
 use App\Enums\PaymentMethod;
+use App\Mail\ClientAccountStatementMail;
 use App\Models\Client;
 use App\Models\ClientPayment;
 use App\Models\CompanySettings;
 use App\Support\CashLinker;
 use App\Support\Whatsapp;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -51,6 +53,22 @@ class Account extends Component
 
         $this->amount = '';
         $this->notes = '';
+    }
+
+    public function enviarPorEmail(): void
+    {
+        if (! $this->client->email) {
+            session()->flash('error', 'El cliente no tiene un email cargado.');
+
+            return;
+        }
+
+        try {
+            Mail::to($this->client->email)->send(new ClientAccountStatementMail($this->client, $this->client->saldoCuentaCorriente()));
+            session()->flash('status', 'Resumen de cuenta enviado por email a '.$this->client->email.'.');
+        } catch (\Throwable $e) {
+            session()->flash('error', 'No se pudo enviar el email: '.$e->getMessage());
+        }
     }
 
     public function deletePayment(int $paymentId): void

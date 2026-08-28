@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/new', ClientCreate::class)->name('create');
         Route::get('/{client}/edit', ClientEdit::class)->name('edit');
         Route::get('/{client}/account', ClientAccount::class)->name('account');
+        Route::get('/{client}/estado-cuenta', \App\Http\Controllers\ClientAccountStatementController::class)->name('statement');
         Route::get('/recibo/{payment}', \App\Http\Controllers\ReciboPdfController::class)->name('recibo');
     });
 
@@ -123,6 +124,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/new', ProviderCreate::class)->name('create');
         Route::get('/{provider}/edit', ProviderEdit::class)->name('edit');
         Route::get('/{provider}/account', ProviderAccount::class)->name('account');
+        Route::get('/{provider}/estado-cuenta', \App\Http\Controllers\ProviderAccountStatementController::class)->name('statement');
     });
 
     Route::middleware('module:purchases')->prefix('purchases')->name('purchases.')->group(function () {

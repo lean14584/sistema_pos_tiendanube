@@ -4,14 +4,27 @@
         Clientes
     </a>
     <x-page-header title="Cuenta corriente · {{ $client->name }}" subtitle="Facturas y cobros del cliente" icon="users">
-        @if ($whatsappReminder)
-            <x-slot:actions>
+        <x-slot:actions>
+            <a href="{{ route('clients.statement', $client) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25">
+                <x-heroicon-o-document-arrow-down class="w-4 h-4" /> Descargar PDF
+            </a>
+            <button wire:click="enviarPorEmail" wire:loading.attr="disabled" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 disabled:opacity-50">
+                <x-heroicon-o-envelope class="w-4 h-4" /> Enviar por email
+            </button>
+            @if ($whatsappReminder)
                 <a href="{{ $whatsappReminder }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-lg bg-green-500 hover:bg-green-400 px-3 py-2 text-sm font-semibold text-white shadow-sm">
                     <x-heroicon-o-chat-bubble-left-right class="w-4 h-4" /> Recordar por WhatsApp
                 </a>
-            </x-slot:actions>
-        @endif
+            @endif
+        </x-slot:actions>
     </x-page-header>
+
+    @if (session('status'))
+        <div class="mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-4 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">{{ session('status') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="mb-4 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-2.5 text-sm text-red-800 dark:text-red-400">{{ session('error') }}</div>
+    @endif
 
     <x-current-account
         debit-label="Factura"

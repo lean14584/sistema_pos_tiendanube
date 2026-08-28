@@ -3,9 +3,11 @@
 namespace App\Livewire\Providers;
 
 use App\Enums\PaymentMethod;
+use App\Mail\ProviderAccountStatementMail;
 use App\Models\Provider;
 use App\Models\ProviderPayment;
 use App\Support\CashLinker;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -49,6 +51,22 @@ class Account extends Component
 
         $this->amount = '';
         $this->notes = '';
+    }
+
+    public function enviarPorEmail(): void
+    {
+        if (! $this->provider->email) {
+            session()->flash('error', 'El proveedor no tiene un email cargado.');
+
+            return;
+        }
+
+        try {
+            Mail::to($this->provider->email)->send(new ProviderAccountStatementMail($this->provider, $this->provider->saldoCuentaCorriente()));
+            session()->flash('status', 'Resumen de cuenta enviado por email a '.$this->provider->email.'.');
+        } catch (\Throwable $e) {
+            session()->flash('error', 'No se pudo enviar el email: '.$e->getMessage());
+        }
     }
 
     public function deletePayment(int $paymentId): void
