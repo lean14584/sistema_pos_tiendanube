@@ -11,18 +11,27 @@
         @error('name') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
     </div>
 
+    <label class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 cursor-pointer">
+        <span>
+            <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Se vende por peso (kg)</span>
+            <span class="block text-xs text-gray-400 dark:text-gray-500">El precio se toma como precio por kilo. No lleva control de stock (se repone a granel). Se escanea con el código de balanza configurado en Configuración de Empresa.</span>
+        </span>
+        <input type="checkbox" wire:model.live="sold_by_weight" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
+    </label>
+
     <div class="grid grid-cols-2 gap-4">
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU / Código</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $sold_by_weight ? 'Código PLU (balanza) *' : 'SKU / Código' }}</label>
             <input
                 type="text"
                 wire:model="sku"
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
-                placeholder="NB-14"
+                placeholder="{{ $sold_by_weight ? '00023' : 'NB-14' }}"
             >
+            @error('sku') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio de venta *</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $sold_by_weight ? 'Precio de venta (por kg) *' : 'Precio de venta *' }}</label>
             <input
                 type="number" min="0" step="0.01"
                 wire:model="price"
@@ -74,13 +83,17 @@
     <div class="grid grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock en {{ $sucursalActiva?->name ?? 'tu sucursal' }}</label>
-            <input
-                type="number" min="0" step="1"
-                wire:model="stock"
-                class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
-                placeholder="0"
-            >
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">El stock se maneja por sucursal — este valor es solo el de la sucursal activa.</p>
+            @if ($sold_by_weight)
+                <p class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/60 rounded-lg">Sin control de stock (se vende por peso)</p>
+            @else
+                <input
+                    type="number" min="0" step="1"
+                    wire:model="stock"
+                    class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
+                    placeholder="0"
+                >
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">El stock se maneja por sucursal — este valor es solo el de la sucursal activa.</p>
+            @endif
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock mínimo</label>

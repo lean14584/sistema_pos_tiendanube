@@ -24,6 +24,8 @@ class Edit extends Component
 
     public string $sku = '';
 
+    public bool $sold_by_weight = false;
+
     public string $price = '';
 
     public string $iva_rate = '21';
@@ -46,6 +48,10 @@ class Edit extends Component
         $this->product = $product;
         $this->name = $product->name;
         $this->sku = (string) $product->sku;
+        // (bool) explícito: un Product recién creado en memoria (sin refetch)
+        // puede traer null acá hasta que se lea de la base, por más que la
+        // columna tenga default false.
+        $this->sold_by_weight = (bool) $product->sold_by_weight;
         $this->price = (string) $product->price;
         $this->iva_rate = AlicuotaIva::normalizar($product->iva_rate);
         $this->cost_price = $product->cost_price !== null ? (string) $product->cost_price : '';
@@ -59,7 +65,8 @@ class Edit extends Component
     {
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['nullable', 'string', 'max:255'],
+            'sku' => ['nullable', 'string', 'max:255', Rule::requiredIf($this->sold_by_weight)],
+            'sold_by_weight' => ['boolean'],
             'price' => ['required', 'numeric', 'min:0'],
             'iva_rate' => ['required', Rule::in(AlicuotaIva::valores())],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
@@ -69,6 +76,12 @@ class Edit extends Component
             'category_id' => ['nullable', 'exists:categories,id'],
             'image' => ['nullable', 'image', 'max:4096'],
         ]);
+
+        if ($this->sold_by_weight && $data['sku'] !== null && ! ctype_digit($data['sku'])) {
+            $this->addError('sku', 'El código de un producto por peso tiene que ser numérico (es el PLU que reconoce la balanza).');
+
+            return;
+        }
 
         $data['cost_price'] = $data['cost_price'] !== '' ? $data['cost_price'] : null;
         $data['min_stock'] = $data['min_stock'] !== '' ? $data['min_stock'] : null;
@@ -86,9 +99,10 @@ class Edit extends Component
 
         // El campo "stock" del form es el de la sucursal activa: se guarda
         // como delta vía StockAdjuster (mantiene product_stocks y el
-        // agregado de products.stock en sync, con su registro auditado).
+        // agregado de products.stock en sync, con su registro auditado). Los
+        // productos por peso no llevan control de stock, así que se ignora.
         $sucursalId = CurrentSucursal::id();
-        $delta = (int) $data['stock'] - $this->product->stockEnSucursal($sucursalId);
+        $delta = $data['sold_by_weight'] ? 0 : (int) $data['stock'] - $this->product->stockEnSucursal($sucursalId);
         unset($data['stock']);
 
         $this->product->update($data);

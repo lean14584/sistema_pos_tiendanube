@@ -34,6 +34,14 @@ class Edit extends Component
 
     public bool $factura_b_habilitada = true;
 
+    public bool $barcode_scale_enabled = false;
+
+    public string $barcode_scale_prefix = '20';
+
+    public string $barcode_scale_code_digits = '5';
+
+    public string $barcode_scale_weight_digits = '5';
+
     /** Archivo recién seleccionado, pendiente de guardar (null = no tocar el logo actual). */
     public $logo = null;
 
@@ -53,6 +61,10 @@ class Edit extends Component
         $this->condicion_iva = $this->company->condicion_iva->value;
         $this->factura_a_habilitada = $this->company->factura_a_habilitada;
         $this->factura_b_habilitada = $this->company->factura_b_habilitada;
+        $this->barcode_scale_enabled = $this->company->barcode_scale_enabled;
+        $this->barcode_scale_prefix = (string) ($this->company->barcode_scale_prefix ?? '20');
+        $this->barcode_scale_code_digits = (string) $this->company->barcode_scale_code_digits;
+        $this->barcode_scale_weight_digits = (string) $this->company->barcode_scale_weight_digits;
     }
 
     /** ¿Ya hay un certificado AFIP cargado en el servidor? */
@@ -78,6 +90,10 @@ class Edit extends Component
             'condicion_iva' => ['required', Rule::enum(CondicionIva::class)],
             'factura_a_habilitada' => ['boolean'],
             'factura_b_habilitada' => ['boolean'],
+            'barcode_scale_enabled' => ['boolean'],
+            'barcode_scale_prefix' => ['required_if:barcode_scale_enabled,true', 'nullable', 'digits_between:1,4'],
+            'barcode_scale_code_digits' => ['required_if:barcode_scale_enabled,true', 'nullable', 'integer', 'min:1', 'max:9'],
+            'barcode_scale_weight_digits' => ['required_if:barcode_scale_enabled,true', 'nullable', 'integer', 'min:1', 'max:9'],
             'logo' => ['nullable', 'image', 'max:2048'],
             // El certificado y la clave son texto (PEM); se validan por
             // extensión más abajo porque su mime no es confiable.
@@ -91,6 +107,19 @@ class Edit extends Component
 
         if ($this->getErrorBag()->hasAny(['cert', 'key'])) {
             return;
+        }
+
+        // El código de balanza es EAN-13: prefijo + código + peso + 1 dígito
+        // verificador tienen que sumar exactamente 13, si no el checksum de
+        // ScaleBarcodeParser nunca va a coincidir y ningún escaneo va a matchear.
+        if ($this->barcode_scale_enabled) {
+            $total = strlen($data['barcode_scale_prefix']) + (int) $data['barcode_scale_code_digits'] + (int) $data['barcode_scale_weight_digits'] + 1;
+
+            if ($total !== 13) {
+                $this->addError('barcode_scale_weight_digits', "Prefijo + código + peso + dígito verificador tienen que sumar 13 en total (ahora suman {$total}).");
+
+                return;
+            }
         }
 
         if ($this->logo) {

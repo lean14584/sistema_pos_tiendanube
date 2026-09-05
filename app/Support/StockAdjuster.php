@@ -21,8 +21,18 @@ class StockAdjuster
      */
     public static function apply(iterable $items, int $sign, ?int $sucursalId = null): void
     {
-        $deltas = collect($items)
-            ->filter(fn ($item) => ! empty($item['product_id'] ?? null))
+        $items = collect($items)->filter(fn ($item) => ! empty($item['product_id'] ?? null));
+
+        // Los productos que se venden por peso no llevan control de stock
+        // (ver Product::sold_by_weight) — quedan afuera del movimiento, no
+        // porque el descuento fallara, sino porque a propósito no se cuentan.
+        $pesables = Product::whereIn('id', $items->pluck('product_id')->unique())
+            ->where('sold_by_weight', true)
+            ->pluck('id')
+            ->all();
+
+        $deltas = $items
+            ->reject(fn ($item) => in_array($item['product_id'], $pesables, true))
             ->groupBy('product_id')
             ->map(fn (Collection $group) => $group->sum('quantity') * $sign);
 

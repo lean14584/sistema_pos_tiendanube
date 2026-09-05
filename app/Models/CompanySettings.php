@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'punto_venta', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret'])]
+#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'punto_venta', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits'])]
 class CompanySettings extends Model
 {
     use Auditable;
@@ -20,6 +20,9 @@ class CompanySettings extends Model
             'condicion_iva' => CondicionIva::class,
             'factura_a_habilitada' => 'boolean',
             'factura_b_habilitada' => 'boolean',
+            'barcode_scale_enabled' => 'boolean',
+            'barcode_scale_code_digits' => 'integer',
+            'barcode_scale_weight_digits' => 'integer',
         ];
     }
 
