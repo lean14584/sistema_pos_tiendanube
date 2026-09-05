@@ -185,7 +185,7 @@
 
     @if ($invoice->related_invoice_id === null && $invoice->creditNotes->isNotEmpty())
         <div class="mb-6 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-400">
-            Acreditado: ${{ number_format($invoice->credited_total, 2) }} de ${{ number_format($invoice->total, 2) }}
+            Acreditado: ${{ money($invoice->credited_total) }} de ${{ money($invoice->total) }}
         </div>
     @endif
 
@@ -229,8 +229,8 @@
                     <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0">
                         <td class="py-2.5 text-gray-800 dark:text-gray-200">{{ $item->description }}</td>
                         <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">{{ rtrim(rtrim(number_format($item->quantity, 2), '0'), '.') }}</td>
-                        <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">${{ number_format($item->unit_price, 2) }}</td>
-                        <td class="py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($item->line_total, 2) }}</td>
+                        <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">${{ money($item->unit_price) }}</td>
+                        <td class="py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($item->line_total) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -241,23 +241,23 @@
             <div class="w-full max-w-xs space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Neto gravado</span>
-                    <span>${{ number_format($invoice->neto_gravado, 2) }}</span>
+                    <span>${{ money($invoice->neto_gravado) }}</span>
                 </div>
                 @if ($invoice->neto_exento > 0)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>Exento / no gravado</span>
-                        <span>${{ number_format($invoice->neto_exento, 2) }}</span>
+                        <span>${{ money($invoice->neto_exento) }}</span>
                     </div>
                 @endif
                 @foreach ($invoice->ivaPorAlicuota() as $linea)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>
-                        <span>${{ number_format($linea['iva'], 2) }}</span>
+                        <span>${{ money($linea['iva']) }}</span>
                     </div>
                 @endforeach
                 <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                     <span>Total</span>
-                    <span>${{ number_format($invoice->total, 2) }}</span>
+                    <span>${{ money($invoice->total) }}</span>
                 </div>
             </div>
         </div>
@@ -269,7 +269,7 @@
                     @foreach ($invoice->payments as $payment)
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600 dark:text-gray-400">{{ $payment->method->label() }}</span>
-                            <span class="text-gray-900 dark:text-gray-100 font-medium">${{ number_format($payment->amount, 2) }}</span>
+                            <span class="text-gray-900 dark:text-gray-100 font-medium">${{ money($payment->amount) }}</span>
                         </div>
                     @endforeach
                 </div>
@@ -300,7 +300,7 @@
                             <x-heroicon-o-x-mark class="w-5 h-5" />
                         </button>
                     </div>
-                    <p class="text-sm text-white/90 mt-1">Factura {{ $invoice->number }} · ${{ number_format($invoice->total, 2) }}</p>
+                    <p class="text-sm text-white/90 mt-1">Factura {{ $invoice->number }} · ${{ money($invoice->total) }}</p>
                 </div>
 
                 <div class="p-6 text-center">

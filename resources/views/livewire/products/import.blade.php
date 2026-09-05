@@ -86,6 +86,9 @@
                 {{ $resultado['creados'] }} {{ Str::plural('producto', $resultado['creados']) }} creado{{ $resultado['creados'] === 1 ? '' : 's' }},
                 {{ $resultado['actualizados'] }} actualizado{{ $resultado['actualizados'] === 1 ? '' : 's' }}.
             </p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                Si usás Tiendanube, estos productos todavía no se enviaron: usá "Enviar productos" en el panel de Tiendanube para sincronizarlos.
+            </p>
 
             @if (! empty($resultado['omitidos']))
                 <div class="mt-4 text-left bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-300">

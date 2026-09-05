@@ -37,9 +37,9 @@ class VencimientosTest extends TestCase
 
         Livewire::actingAs($this->admin())->test('vencimientos.index')
             ->assertSee('Kiosco Sur')
-            ->assertSee('8,000.00')
+            ->assertSee('8.000,00')
             ->assertSee('Proveedor A')
-            ->assertSee('20,000.00')
+            ->assertSee('20.000,00')
             ->assertSee('Vencido');
     }
 

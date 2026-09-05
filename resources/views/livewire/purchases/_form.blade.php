@@ -69,7 +69,7 @@
                             <span class="min-w-0">
                                 <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                 <span class="block text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $product->sku ? "SKU: {$product->sku} · " : '' }}${{ number_format($product->price, 2) }}
+                                    {{ $product->sku ? "SKU: {$product->sku} · " : '' }}${{ money($product->price) }}
                                 </span>
                             </span>
                         </button>
@@ -102,13 +102,13 @@
                                     <input type="text" wire:model="items.{{ $index }}.description" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
                                 <td class="px-4 py-2">
-                                    <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" min="0.01" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
                                 <td class="px-4 py-2">
                                     <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
                                 <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">
-                                    ${{ number_format((float) $item['quantity'] * (float) $item['unit_price'], 2) }}
+                                    ${{ money((float) $item['quantity'] * (float) $item['unit_price']) }}
                                 </td>
                                 <td class="px-2 py-2 text-center">
                                     <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
@@ -177,7 +177,7 @@
         <div class="w-full max-w-xs space-y-2 text-sm">
             <div class="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Subtotal</span>
-                <span>${{ number_format($this->subtotal(), 2) }}</span>
+                <span>${{ money($this->subtotal()) }}</span>
             </div>
             <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
                 <span>Impuesto (%)</span>
@@ -185,17 +185,17 @@
             </div>
             <div class="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Monto impuesto</span>
-                <span>${{ number_format($this->taxAmount(), 2) }}</span>
+                <span>${{ money($this->taxAmount()) }}</span>
             </div>
             @if ($this->percepcionesTotal() > 0)
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Percepciones / otros impuestos</span>
-                    <span>${{ number_format($this->percepcionesTotal(), 2) }}</span>
+                    <span>${{ money($this->percepcionesTotal()) }}</span>
                 </div>
             @endif
             <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                 <span>Total</span>
-                <span>${{ number_format($this->total(), 2) }}</span>
+                <span>${{ money($this->total()) }}</span>
             </div>
         </div>
     </div>
@@ -229,8 +229,8 @@
             </div>
         @endif
         <p class="text-xs mt-2 {{ $this->remaining() > 0.005 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}">
-            Pagado: ${{ number_format($this->paidTotal(), 2) }} de ${{ number_format($this->total(), 2) }}
-            @if ($this->remaining() > 0.005) · Resta ${{ number_format($this->remaining(), 2) }} (queda en cuenta corriente) @endif
+            Pagado: ${{ money($this->paidTotal()) }} de ${{ money($this->total()) }}
+            @if ($this->remaining() > 0.005) · Resta ${{ money($this->remaining()) }} (queda en cuenta corriente) @endif
         </p>
     </div>
 

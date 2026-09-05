@@ -44,7 +44,7 @@ class CurrentAccountTest extends TestCase
             ->test('clients.account', ['client' => $client])
             ->assertDontSee('FAC-0001')
             ->assertSee('FAC-0002')
-            ->assertSee('500.00');
+            ->assertSee('500,00');
     }
 
     public function test_can_register_client_payment_and_delete_it(): void

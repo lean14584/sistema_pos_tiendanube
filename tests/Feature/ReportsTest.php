@@ -49,7 +49,7 @@ class ReportsTest extends TestCase
             ->test('reports.index')
             ->assertSee('Coca Cola')
             ->assertSee('Bebidas')
-            ->assertSee('200.00') // only the in-range paid invoice's total, not draft or out-of-range
+            ->assertSee('200,00') // only the in-range paid invoice's total, not draft or out-of-range
             ->assertDontSee('600.00'); // sum if draft/out-of-range were wrongly included
     }
 

@@ -3,7 +3,7 @@
         <x-slot:actions>
             <div class="text-right">
                 <p class="text-[11px] uppercase tracking-wide text-white/70">Total a cobrar</p>
-                <p class="text-2xl font-bold text-white">${{ number_format($totalACobrar, 2) }}</p>
+                <p class="text-2xl font-bold text-white">${{ money($totalACobrar) }}</p>
             </div>
         </x-slot:actions>
     </x-page-header>
@@ -40,7 +40,7 @@
                                 <span class="block text-xs text-amber-500 dark:text-amber-400">Sin teléfono cargado</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">${{ number_format($row['saldo'], 2) }}</td>
+                        <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">${{ money($row['saldo']) }}</td>
                         <td class="px-4 py-3">
                             @if ($payingClientId === $client->id)
                                 <div class="flex items-center justify-end gap-1.5">

@@ -60,7 +60,7 @@
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $quote->issue_date->format('d/m/Y') }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $quote->valid_until->format('d/m/Y') }}</td>
                             <td class="px-5 py-3"><x-status-badge :status="$quote->status" /></td>
-                            <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($quote->total, 2) }}</td>
+                            <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($quote->total) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -88,7 +88,7 @@
                                 <span class="mx-1">·</span>
                                 válido hasta {{ $quote->valid_until->format('d/m/Y') }}
                             </p>
-                            <p class="font-semibold text-gray-900 dark:text-gray-100">${{ number_format($quote->total, 2) }}</p>
+                            <p class="font-semibold text-gray-900 dark:text-gray-100">${{ money($quote->total) }}</p>
                         </div>
                     </a>
                 @endforeach

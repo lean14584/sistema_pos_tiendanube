@@ -64,7 +64,9 @@ class CobranzasTest extends TestCase
             ->test('cobranzas.index')
             ->assertSee('Deudor')
             ->assertDontSee('Al Dia')
-            ->assertSee('5.000');
+            // Formato completo (no solo "5.000"), para no pasar "de casualidad"
+            // contra el link de WhatsApp si algún día ese texto cambia.
+            ->assertSee('5.000,00');
     }
 
     public function test_cobrar_desde_cobranzas_registra_el_pago_y_baja_el_saldo(): void

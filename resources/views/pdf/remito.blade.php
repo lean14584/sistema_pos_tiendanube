@@ -96,8 +96,8 @@
                     <td>{{ $item->description }}</td>
                     <td class="text-right">{{ rtrim(rtrim(number_format($item->quantity, 2), '0'), '.') }}</td>
                     @if ($conPrecios)
-                        <td class="text-right">${{ number_format($item->unit_price, 2) }}</td>
-                        <td class="text-right">${{ number_format($item->line_total, 2) }}</td>
+                        <td class="text-right">${{ money($item->unit_price) }}</td>
+                        <td class="text-right">${{ money($item->line_total) }}</td>
                     @endif
                 </tr>
             @endforeach
@@ -106,7 +106,7 @@
 
     @if ($conPrecios)
         <table class="totals-box">
-            <tr class="total-row"><td>Total</td><td class="text-right">${{ number_format($remito->total, 2) }}</td></tr>
+            <tr class="total-row"><td>Total</td><td class="text-right">${{ money($remito->total) }}</td></tr>
         </table>
     @endif
 

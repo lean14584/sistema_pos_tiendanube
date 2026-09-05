@@ -30,7 +30,7 @@ class DashboardTest extends TestCase
         Livewire::actingAs($admin)
             ->test('dashboard')
             ->assertSee('FAC-0001')
-            ->assertSee('500.00');
+            ->assertSee('500,00');
     }
 
     public function test_cajero_ahora_puede_facturar_desde_el_dashboard(): void
@@ -49,7 +49,7 @@ class DashboardTest extends TestCase
     {
         $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
-        $product = \App\Models\Product::create(['name' => 'Notebook Top', 'price' => 1000, 'stock' => 10]);
+        $product = Product::create(['name' => 'Notebook Top', 'price' => 1000, 'stock' => 10]);
 
         $invoice = Invoice::create([
             'number' => 'FAC-0002', 'client_id' => $client->id, 'tax_rate' => 0,

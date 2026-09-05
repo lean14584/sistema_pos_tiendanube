@@ -73,10 +73,10 @@
 
     <table class="summary">
         <tr>
-            <td><div class="k">Total vendido</div><div class="v">${{ number_format($summary['total'], 2) }}</div></td>
+            <td><div class="k">Total vendido</div><div class="v">${{ money($summary['total']) }}</div></td>
             <td><div class="k">Facturas</div><div class="v">{{ $summary['count'] }}</div></td>
-            <td><div class="k">Costo mercadería</div><div class="v">${{ number_format($profitability['cost'], 2) }}</div></td>
-            <td><div class="k">Ganancia bruta</div><div class="v">${{ number_format($profitability['profit'], 2) }}</div></td>
+            <td><div class="k">Costo mercadería</div><div class="v">${{ money($profitability['cost']) }}</div></td>
+            <td><div class="k">Ganancia bruta</div><div class="v">${{ money($profitability['profit']) }}</div></td>
             <td><div class="k">Margen</div><div class="v">{{ number_format($profitability['marginPct'], 1) }}%</div></td>
         </tr>
     </table>
@@ -89,7 +89,7 @@
             <thead><tr><th>Día</th><th class="r">Facturas</th><th class="r">Total</th></tr></thead>
             <tbody>
                 @foreach ($byDay as $r)
-                    <tr><td>{{ $r['label'] }}</td><td class="r">{{ $r['count'] }}</td><td class="r">${{ number_format($r['total'], 2) }}</td></tr>
+                    <tr><td>{{ $r['label'] }}</td><td class="r">{{ $r['count'] }}</td><td class="r">${{ money($r['total']) }}</td></tr>
                 @endforeach
             </tbody>
         </table>
@@ -102,7 +102,7 @@
                         <thead><tr><th>Artículo</th><th class="r">Cant.</th><th class="r">Total</th></tr></thead>
                         <tbody>
                             @foreach ($byArticle as $r)
-                                <tr><td>{{ $r['label'] }}</td><td class="r">{{ rtrim(rtrim(number_format($r['quantity'], 2), '0'), '.') }}</td><td class="r">${{ number_format($r['total'], 2) }}</td></tr>
+                                <tr><td>{{ $r['label'] }}</td><td class="r">{{ rtrim(rtrim(number_format($r['quantity'], 2), '0'), '.') }}</td><td class="r">${{ money($r['total']) }}</td></tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -113,7 +113,7 @@
                         <thead><tr><th>Categoría</th><th class="r">Cant.</th><th class="r">Total</th></tr></thead>
                         <tbody>
                             @foreach ($byCategory as $r)
-                                <tr><td>{{ $r['label'] }}</td><td class="r">{{ rtrim(rtrim(number_format($r['quantity'], 2), '0'), '.') }}</td><td class="r">${{ number_format($r['total'], 2) }}</td></tr>
+                                <tr><td>{{ $r['label'] }}</td><td class="r">{{ rtrim(rtrim(number_format($r['quantity'], 2), '0'), '.') }}</td><td class="r">${{ money($r['total']) }}</td></tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -129,7 +129,7 @@
                         <thead><tr><th>Medio</th><th class="r">Total</th></tr></thead>
                         <tbody>
                             @forelse ($byMethod as $r)
-                                <tr><td>{{ $r['label'] }}</td><td class="r">${{ number_format($r['total'], 2) }}</td></tr>
+                                <tr><td>{{ $r['label'] }}</td><td class="r">${{ money($r['total']) }}</td></tr>
                             @empty
                                 <tr><td class="muted" colspan="2">Sin pagos registrados.</td></tr>
                             @endforelse
@@ -142,7 +142,7 @@
                         <thead><tr><th>Cliente</th><th class="r">Fact.</th><th class="r">Total</th></tr></thead>
                         <tbody>
                             @foreach ($byClient as $r)
-                                <tr><td>{{ $r['label'] }}</td><td class="r">{{ $r['count'] }}</td><td class="r">${{ number_format($r['total'], 2) }}</td></tr>
+                                <tr><td>{{ $r['label'] }}</td><td class="r">{{ $r['count'] }}</td><td class="r">${{ money($r['total']) }}</td></tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -155,7 +155,7 @@
             <thead><tr><th>Hora</th><th class="r">Ventas</th><th class="r">Total</th></tr></thead>
             <tbody>
                 @foreach ($byHour as $r)
-                    <tr><td>{{ str_pad($r['hour'], 2, '0', STR_PAD_LEFT) }}:00 – {{ str_pad($r['hour'], 2, '0', STR_PAD_LEFT) }}:59</td><td class="r">{{ $r['count'] }}</td><td class="r">${{ number_format($r['total'], 2) }}</td></tr>
+                    <tr><td>{{ str_pad($r['hour'], 2, '0', STR_PAD_LEFT) }}:00 – {{ str_pad($r['hour'], 2, '0', STR_PAD_LEFT) }}:59</td><td class="r">{{ $r['count'] }}</td><td class="r">${{ money($r['total']) }}</td></tr>
                 @endforeach
             </tbody>
         </table>

@@ -23,6 +23,9 @@ class Index extends Component
 
     public string $new_stock = '';
 
+    /** Stock del producto al momento de elegirlo, para poder aplicar el ajuste como delta (ver save()). */
+    public string $baseline_stock = '';
+
     public string $reason = 'conteo_fisico';
 
     public string $notes = '';
@@ -50,6 +53,7 @@ class Index extends Component
     {
         $product = $this->product_id !== '' ? Product::find($this->product_id) : null;
         $this->new_stock = $product ? (string) $product->stock : '';
+        $this->baseline_stock = $this->new_stock;
     }
 
     #[Computed]
@@ -117,25 +121,33 @@ class Index extends Component
     {
         $this->validate();
 
-        $product = Product::findOrFail($this->product_id);
-        $newStock = (int) $this->new_stock;
-        $previous = $product->stock;
+        // El usuario tipea el stock final que contó, relativo al valor que
+        // vio al elegir el producto (baseline_stock). Aplicamos la diferencia
+        // como delta atómico (increment/decrement), no como un pisado de
+        // valor absoluto: si una venta descontó stock mientras esta pantalla
+        // estaba abierta, ese descuento no se pierde bajo el ajuste.
+        $delta = (int) $this->new_stock - (int) $this->baseline_stock;
 
-        DB::transaction(function () use ($product, $newStock, $previous) {
-            $product->update(['stock' => $newStock]);
+        [$product, $previous, $newStock] = DB::transaction(function () use ($delta) {
+            $product = Product::whereKey($this->product_id)->lockForUpdate()->firstOrFail();
+            $previous = $product->stock;
+
+            $product->increment('stock', $delta);
 
             StockAdjustment::create([
                 'product_id' => $product->id,
                 'user_id' => auth()->id(),
                 'previous_stock' => $previous,
-                'new_stock' => $newStock,
+                'new_stock' => $previous + $delta,
                 'reason' => $this->reason,
                 'notes' => $this->notes ?: null,
             ]);
+
+            return [$product, $previous, $previous + $delta];
         });
 
         session()->flash('status', "Stock de \"{$product->name}\" ajustado de {$previous} a {$newStock}.");
-        $this->reset(['product_id', 'productQuery', 'new_stock', 'notes']);
+        $this->reset(['product_id', 'productQuery', 'new_stock', 'baseline_stock', 'notes']);
         $this->reason = 'conteo_fisico';
     }
 

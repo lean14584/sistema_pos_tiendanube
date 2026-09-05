@@ -27,7 +27,7 @@
             <div>
                 <p class="text-xs text-gray-400 dark:text-gray-500 uppercase">Total vendido</p>
                 <p class="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
-                    ${{ number_format($summary['total'], 2) }}
+                    ${{ money($summary['total']) }}
                     @if ($variationPct === null)
                         <span class="text-xs font-normal text-gray-400 dark:text-gray-500">—</span>
                     @else
@@ -56,8 +56,8 @@
         </div>
     @else
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <x-stat-card label="Costo de mercadería" value="${{ number_format($profitability['cost'], 2) }}" icon="cube" accent="text-gray-600 bg-gradient-to-br from-gray-50 to-gray-100/60 dark:text-gray-400 dark:from-gray-500/15 dark:to-gray-500/5" />
-            <x-stat-card label="Ganancia bruta" value="${{ number_format($profitability['profit'], 2) }}" icon="banknotes" accent="text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:text-emerald-400 dark:from-emerald-500/15 dark:to-emerald-500/5" />
+            <x-stat-card label="Costo de mercadería" value="${{ money($profitability['cost']) }}" icon="cube" accent="text-gray-600 bg-gradient-to-br from-gray-50 to-gray-100/60 dark:text-gray-400 dark:from-gray-500/15 dark:to-gray-500/5" />
+            <x-stat-card label="Ganancia bruta" value="${{ money($profitability['profit']) }}" icon="banknotes" accent="text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:text-emerald-400 dark:from-emerald-500/15 dark:to-emerald-500/5" />
             <x-stat-card label="Margen" value="{{ number_format($profitability['marginPct'], 1) }}%" icon="chart-bar" accent="text-indigo-600 bg-gradient-to-br from-indigo-50 to-indigo-100/60 dark:text-indigo-400 dark:from-indigo-500/15 dark:to-indigo-500/5" />
         </div>
 
@@ -67,7 +67,7 @@
                 @foreach ($byDay as $row)
                     <div class="flex flex-col items-center justify-end shrink-0 group" style="min-width: 2rem;">
                         <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">${{ number_format($row['total'], 0) }}</span>
-                        <div class="w-6 rounded-t bg-indigo-500 dark:bg-indigo-400 hover:bg-indigo-600 dark:hover:bg-indigo-300 transition-colors" style="height: {{ $maxDay > 0 ? max(4, round(($row['total'] / $maxDay) * 120)) : 4 }}px" title="{{ $row['label'] }}: ${{ number_format($row['total'], 2) }} ({{ $row['count'] }} fact.)"></div>
+                        <div class="w-6 rounded-t bg-indigo-500 dark:bg-indigo-400 hover:bg-indigo-600 dark:hover:bg-indigo-300 transition-colors" style="height: {{ $maxDay > 0 ? max(4, round(($row['total'] / $maxDay) * 120)) : 4 }}px" title="{{ $row['label'] }}: ${{ money($row['total']) }} ({{ $row['count'] }} fact.)"></div>
                         <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">{{ $row['label'] }}</span>
                     </div>
                 @endforeach
@@ -82,7 +82,7 @@
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
-                                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ rtrim(rtrim(number_format($row['quantity'], 2), '0'), '.') }} u. · ${{ number_format($row['total'], 2) }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ rtrim(rtrim(number_format($row['quantity'], 2), '0'), '.') }} u. · ${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
                                 <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxArticle) }}%"></div>
@@ -99,7 +99,7 @@
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
-                                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ rtrim(rtrim(number_format($row['quantity'], 2), '0'), '.') }} u. · ${{ number_format($row['total'], 2) }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ rtrim(rtrim(number_format($row['quantity'], 2), '0'), '.') }} u. · ${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
                                 <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxCategory) }}%"></div>
@@ -116,7 +116,7 @@
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
-                                <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ number_format($row['total'], 2) }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
                                 <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxMethod) }}%"></div>
@@ -135,7 +135,7 @@
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
-                                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'factura' : 'facturas' }} · ${{ number_format($row['total'], 2) }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'factura' : 'facturas' }} · ${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
                                 <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxClient) }}%"></div>
@@ -154,7 +154,7 @@
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300">{{ str_pad($row['hour'], 2, '0', STR_PAD_LEFT) }}:00 – {{ str_pad($row['hour'], 2, '0', STR_PAD_LEFT) }}:59</span>
-                                <span class="text-gray-500 dark:text-gray-400">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ number_format($row['total'], 2) }}</span>
+                                <span class="text-gray-500 dark:text-gray-400">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
                                 <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxHour) }}%"></div>

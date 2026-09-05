@@ -6,7 +6,6 @@ use App\Models\CompanySettings;
 use App\Support\SalesReport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportsExportController extends Controller
@@ -45,8 +44,18 @@ class ReportsExportController extends Controller
 
             $money = fn ($v) => number_format((float) $v, 2, ',', '');
             $num = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, ',', ''), '0'), ',');
+            // Antepone ' a celdas que empiecen con = + - @: evita que Excel/LibreOffice
+            // las interprete como fórmula (ej. un nombre de cliente sincronizado desde
+            // Tiendanube, que no controlamos, con un payload tipo =HYPERLINK(...)).
+            $safe = function ($v) {
+                if (is_string($v) && preg_match('/^[=+\-@]/', $v)) {
+                    return "'".$v;
+                }
+
+                return $v;
+            };
             // Separador ; (convención es-AR para que Excel abra en columnas).
-            $row = fn (array $cols) => fputcsv($out, $cols, ';');
+            $row = fn (array $cols) => fputcsv($out, array_map($safe, $cols), ';');
 
             $row(['Informe de ventas']);
             $row(['Periodo', $rango['fromDate'].' a '.$rango['toDate']]);

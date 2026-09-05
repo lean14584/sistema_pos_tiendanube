@@ -44,7 +44,7 @@
                                         <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                     </td>
                                     <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">
-                                        ${{ number_format((float) $item['quantity'] * (float) $item['unit_price'], 2) }}
+                                        ${{ money((float) $item['quantity'] * (float) $item['unit_price']) }}
                                     </td>
                                     <td class="px-2 py-2 text-center">
                                         <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
@@ -73,23 +73,23 @@
             <div class="w-full max-w-xs space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Neto gravado</span>
-                    <span>${{ number_format($this->netoGravado(), 2) }}</span>
+                    <span>${{ money($this->netoGravado()) }}</span>
                 </div>
                 @if ($this->netoExento() > 0)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>Exento / no gravado</span>
-                        <span>${{ number_format($this->netoExento(), 2) }}</span>
+                        <span>${{ money($this->netoExento()) }}</span>
                     </div>
                 @endif
                 @foreach ($this->ivaBreakdown() as $linea)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>
-                        <span>${{ number_format($linea['iva'], 2) }}</span>
+                        <span>${{ money($linea['iva']) }}</span>
                     </div>
                 @endforeach
                 <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                     <span>Total a acreditar</span>
-                    <span>${{ number_format($this->total(), 2) }}</span>
+                    <span>${{ money($this->total()) }}</span>
                 </div>
             </div>
         </div>
@@ -125,7 +125,7 @@
         </div>
 
         <div class="flex gap-3 pt-2">
-            <button type="submit" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50">
                 Emitir Nota de Crédito
             </button>
             <a href="{{ route('invoices.show', $invoice) }}" wire:navigate class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all">

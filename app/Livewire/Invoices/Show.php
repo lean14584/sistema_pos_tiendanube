@@ -195,7 +195,7 @@ class Show extends Component
             return null;
         }
 
-        $mensaje = "Hola {$this->invoice->client->name}, te paso tu factura {$this->invoice->number} por un total de $".number_format((float) $this->invoice->total, 2).'. ¡Gracias!';
+        $mensaje = "Hola {$this->invoice->client->name}, te paso tu factura {$this->invoice->number} por un total de $".money((float) $this->invoice->total).'. ¡Gracias!';
 
         return 'https://wa.me/'.$telefono.'?text='.rawurlencode($mensaje);
     }

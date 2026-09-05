@@ -39,7 +39,7 @@
                             @forelse ($this->productResults as $product)
                                 <button type="button" wire:click="addProduct({{ $product->id }})" class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                     <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
-                                    <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">${{ number_format($product->price, 2) }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">${{ money($product->price) }}</span>
                                 </button>
                             @empty
                                 <p class="p-3 text-sm text-gray-400 dark:text-gray-500">Sin resultados.</p>
@@ -124,7 +124,7 @@
                     @if ($showName)
                         <span class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-tight line-clamp-2">{{ $label['name'] }}</span>
                     @endif
-                    <span class="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">${{ number_format($label['price'], 2) }}</span>
+                    <span class="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">${{ money($label['price']) }}</span>
                     @if ($showSku && $label['sku'])
                         <span class="text-[11px] font-mono tracking-widest text-gray-600 dark:text-gray-300 mt-1">{{ $label['sku'] }}</span>
                     @endif

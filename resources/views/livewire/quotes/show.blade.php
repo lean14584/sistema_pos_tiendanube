@@ -119,8 +119,8 @@
                     <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0">
                         <td class="py-2.5 text-gray-800 dark:text-gray-200">{{ $item->description }}</td>
                         <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">{{ rtrim(rtrim(number_format($item->quantity, 2), '0'), '.') }}</td>
-                        <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">${{ number_format($item->unit_price, 2) }}</td>
-                        <td class="py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($item->line_total, 2) }}</td>
+                        <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">${{ money($item->unit_price) }}</td>
+                        <td class="py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($item->line_total) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -131,15 +131,15 @@
             <div class="w-full max-w-xs space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Subtotal</span>
-                    <span>${{ number_format($quote->subtotal, 2) }}</span>
+                    <span>${{ money($quote->subtotal) }}</span>
                 </div>
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Impuesto ({{ $quote->tax_rate }}%)</span>
-                    <span>${{ number_format($quote->tax_amount, 2) }}</span>
+                    <span>${{ money($quote->tax_amount) }}</span>
                 </div>
                 <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                     <span>Total</span>
-                    <span>${{ number_format($quote->total, 2) }}</span>
+                    <span>${{ money($quote->total) }}</span>
                 </div>
             </div>
         </div>

@@ -40,8 +40,8 @@
     @endif
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <x-stat-card label="Total facturado (pagado)" value="${{ number_format($stats['totalRevenue'], 2) }}" icon="currency-dollar" color="emerald" />
-        <x-stat-card label="Pendiente de cobro" value="${{ number_format($stats['pendingAmount'], 2) }}" icon="clock" color="amber" />
+        <x-stat-card label="Total facturado (pagado)" value="${{ money($stats['totalRevenue']) }}" icon="currency-dollar" color="emerald" />
+        <x-stat-card label="Pendiente de cobro" value="${{ money($stats['pendingAmount']) }}" icon="clock" color="amber" />
         <x-stat-card label="Facturas vencidas" value="{{ $stats['overdueCount'] }}" icon="exclamation-triangle" color="red" />
         <x-stat-card label="Total de facturas" value="{{ $stats['totalInvoices'] }}" icon="document-text" color="sky" />
         <x-stat-card label="Alertas de stock" value="{{ $lowStockCount }}" icon="cube" color="indigo" />
@@ -58,7 +58,7 @@
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
-                                <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ number_format($row['total'], 2) }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
                                 <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $maxTopProduct > 0 ? max(2, round(($row['total'] / $maxTopProduct) * 100)) : 0 }}%"></div>
@@ -88,7 +88,7 @@
             @else
                 <div class="flex items-end gap-2 h-36">
                     @foreach ($monthlySales as $mes => $total)
-                        <div class="flex-1 h-full flex flex-col justify-end items-center" title="{{ $meses[$mes] }}: ${{ number_format($total, 2) }}">
+                        <div class="flex-1 h-full flex flex-col justify-end items-center" title="{{ $meses[$mes] }}: ${{ money($total) }}">
                             <div class="w-full rounded-t-md bg-indigo-500 dark:bg-indigo-400 transition-all" style="height: {{ $total > 0 ? max(2, round(($total / $maxMonthlySales) * 100)) : 0 }}%"></div>
                         </div>
                     @endforeach
@@ -141,7 +141,7 @@
                             <td class="px-5 py-3 text-gray-700 dark:text-gray-300">{{ $invoice->client->name ?? 'Cliente desconocido' }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $invoice->due_date->format('d/m/Y') }}</td>
                             <td class="px-5 py-3"><x-status-badge :status="$invoice->effective_status" /></td>
-                            <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($invoice->total, 2) }}</td>
+                            <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($invoice->total) }}</td>
                         </tr>
                     @endforeach
                 </tbody>

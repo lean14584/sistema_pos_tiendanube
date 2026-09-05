@@ -63,8 +63,8 @@
                     <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0">
                         <td class="py-2.5 text-gray-800 dark:text-gray-200">{{ $item->description }}</td>
                         <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">{{ rtrim(rtrim(number_format($item->quantity, 2), '0'), '.') }}</td>
-                        <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">${{ number_format($item->unit_price, 2) }}</td>
-                        <td class="py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($item->line_total, 2) }}</td>
+                        <td class="py-2.5 text-right text-gray-600 dark:text-gray-400">${{ money($item->unit_price) }}</td>
+                        <td class="py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($item->line_total) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -75,21 +75,21 @@
             <div class="w-full max-w-xs space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Subtotal</span>
-                    <span>${{ number_format($purchase->subtotal, 2) }}</span>
+                    <span>${{ money($purchase->subtotal) }}</span>
                 </div>
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Impuesto ({{ $purchase->tax_rate }}%)</span>
-                    <span>${{ number_format($purchase->tax_amount, 2) }}</span>
+                    <span>${{ money($purchase->tax_amount) }}</span>
                 </div>
                 @foreach ($purchase->taxes as $tax)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>{{ $tax->concepto }}</span>
-                        <span>${{ number_format($tax->amount, 2) }}</span>
+                        <span>${{ money($tax->amount) }}</span>
                     </div>
                 @endforeach
                 <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                     <span>Total</span>
-                    <span>${{ number_format($purchase->total, 2) }}</span>
+                    <span>${{ money($purchase->total) }}</span>
                 </div>
             </div>
         </div>
@@ -101,7 +101,7 @@
                     @foreach ($purchase->payments as $payment)
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600 dark:text-gray-400">{{ $payment->method->label() }}</span>
-                            <span class="text-gray-900 dark:text-gray-100 font-medium">${{ number_format($payment->amount, 2) }}</span>
+                            <span class="text-gray-900 dark:text-gray-100 font-medium">${{ money($payment->amount) }}</span>
                         </div>
                     @endforeach
                 </div>

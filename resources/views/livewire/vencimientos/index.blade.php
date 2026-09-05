@@ -22,9 +22,9 @@
                     <x-heroicon-o-arrow-down-left class="w-4 h-4" /> Por cobrar (clientes)
                 </h2>
                 <div class="text-right">
-                    <p class="text-lg font-bold text-emerald-700 dark:text-emerald-400">${{ number_format($totalCobrar, 2) }}</p>
+                    <p class="text-lg font-bold text-emerald-700 dark:text-emerald-400">${{ money($totalCobrar) }}</p>
                     @if ($vencidoCobrar > 0.009)
-                        <p class="text-[11px] text-red-600 dark:text-red-400">${{ number_format($vencidoCobrar, 2) }} vencido</p>
+                        <p class="text-[11px] text-red-600 dark:text-red-400">${{ money($vencidoCobrar) }} vencido</p>
                     @endif
                 </div>
             </div>
@@ -36,7 +36,7 @@
                             <p class="text-xs text-gray-400 dark:text-gray-500">{{ $row['label'] }} · vence {{ $row['due']->format('d/m/Y') }}</p>
                         </div>
                         <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium {{ $estadoChip[$row['estado']] }}">{{ $etiquetaDias($row['estado'], $row['dias']) }}</span>
-                        <span class="w-24 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">${{ number_format($row['amount'], 2) }}</span>
+                        <span class="w-24 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">${{ money($row['amount']) }}</span>
                     </a>
                 @empty
                     <div class="px-4 py-10 text-center text-sm text-gray-400 dark:text-gray-500">Nadie te debe. ¡Todo cobrado! 🎉</div>
@@ -51,9 +51,9 @@
                     <x-heroicon-o-arrow-up-right class="w-4 h-4" /> Por pagar (proveedores)
                 </h2>
                 <div class="text-right">
-                    <p class="text-lg font-bold text-indigo-700 dark:text-indigo-400">${{ number_format($totalPagar, 2) }}</p>
+                    <p class="text-lg font-bold text-indigo-700 dark:text-indigo-400">${{ money($totalPagar) }}</p>
                     @if ($vencidoPagar > 0.009)
-                        <p class="text-[11px] text-red-600 dark:text-red-400">${{ number_format($vencidoPagar, 2) }} vencido</p>
+                        <p class="text-[11px] text-red-600 dark:text-red-400">${{ money($vencidoPagar) }} vencido</p>
                     @endif
                 </div>
             </div>
@@ -65,7 +65,7 @@
                             <p class="text-xs text-gray-400 dark:text-gray-500">{{ $row['label'] }} · vence {{ $row['due']->format('d/m/Y') }}</p>
                         </div>
                         <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium {{ $estadoChip[$row['estado']] }}">{{ $etiquetaDias($row['estado'], $row['dias']) }}</span>
-                        <span class="w-24 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">${{ number_format($row['amount'], 2) }}</span>
+                        <span class="w-24 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">${{ money($row['amount']) }}</span>
                     </a>
                 @empty
                     <div class="px-4 py-10 text-center text-sm text-gray-400 dark:text-gray-500">No le debés nada a nadie. 👍</div>

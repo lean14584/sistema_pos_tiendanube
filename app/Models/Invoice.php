@@ -174,14 +174,17 @@ class Invoice extends Model
     }
 
     /**
-     * Cuánto ya se acreditó de esta factura vía Notas de Crédito con CAE
-     * (las que quedaron en borrador, rechazadas o canceladas no cuentan).
-     * Se usa para no dejar emitir una NC que supere el saldo pendiente.
+     * Cuánto ya se acreditó (o está en proceso de acreditarse) de esta
+     * factura vía Notas de Crédito. Cuenta también las que están en borrador
+     * sin CAE todavía: NotasCredito\Create::save() ya mueve stock y caja al
+     * crear la NC (antes de emitirla a AFIP), así que si no las contáramos acá
+     * una segunda NC contra la misma factura podría duplicar esa reversión
+     * mientras la primera sigue sin emitir.
      */
     protected function creditedTotal(): Attribute
     {
         return Attribute::get(
-            fn () => $this->creditNotes()->whereNotNull('cae')->get()->sum(fn (Invoice $nc) => $nc->total)
+            fn () => $this->creditNotes()->get()->sum(fn (Invoice $nc) => $nc->total)
         );
     }
 

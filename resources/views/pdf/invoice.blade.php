@@ -187,8 +187,8 @@
                 <tr>
                     <td>{{ $item->description }}</td>
                     <td class="text-right">{{ rtrim(rtrim(number_format($item->quantity, 2), '0'), '.') }}</td>
-                    <td class="text-right">${{ number_format($item->unit_price, 2) }}</td>
-                    <td class="text-right">${{ number_format($item->line_total, 2) }}</td>
+                    <td class="text-right">${{ money($item->unit_price) }}</td>
+                    <td class="text-right">${{ money($item->line_total) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -199,14 +199,14 @@
             <td style="width: 60%;"></td>
             <td style="width: 40%;">
                 <table class="totals-box">
-                    <tr><td>Neto gravado</td><td class="text-right">${{ number_format($invoice->neto_gravado, 2) }}</td></tr>
+                    <tr><td>Neto gravado</td><td class="text-right">${{ money($invoice->neto_gravado) }}</td></tr>
                     @if ($invoice->neto_exento > 0)
-                        <tr><td>Exento / no gravado</td><td class="text-right">${{ number_format($invoice->neto_exento, 2) }}</td></tr>
+                        <tr><td>Exento / no gravado</td><td class="text-right">${{ money($invoice->neto_exento) }}</td></tr>
                     @endif
                     @foreach ($invoice->ivaPorAlicuota() as $linea)
-                        <tr><td>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</td><td class="text-right">${{ number_format($linea['iva'], 2) }}</td></tr>
+                        <tr><td>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</td><td class="text-right">${{ money($linea['iva']) }}</td></tr>
                     @endforeach
-                    <tr class="total-row"><td>Total</td><td class="text-right">${{ number_format($invoice->total, 2) }}</td></tr>
+                    <tr class="total-row"><td>Total</td><td class="text-right">${{ money($invoice->total) }}</td></tr>
                 </table>
             </td>
         </tr>
@@ -239,7 +239,7 @@
                 @foreach ($invoice->payments as $payment)
                     <tr>
                         <td style="padding: 2px 0;">{{ $payment->method->label() }}</td>
-                        <td style="padding: 2px 0; text-align: right; font-weight: bold;">${{ number_format($payment->amount, 2) }}</td>
+                        <td style="padding: 2px 0; text-align: right; font-weight: bold;">${{ money($payment->amount) }}</td>
                     </tr>
                 @endforeach
             </table>

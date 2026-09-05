@@ -37,7 +37,7 @@
                                 <span class="min-w-0">
                                     <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                     <span class="block text-xs text-gray-500 dark:text-gray-400">
-                                        Stock: {{ $product->stock }}{{ $product->sku ? " · SKU: {$product->sku}" : '' }} · ${{ number_format($product->priceForList($this->currentPriceList()), 2) }}
+                                        Stock: {{ $product->stock }}{{ $product->sku ? " · SKU: {$product->sku}" : '' }} · ${{ money($product->priceForList($this->currentPriceList())) }}
                                     </span>
                                 </span>
                             </button>
@@ -72,7 +72,7 @@
                                     @endif
                                 </p>
                                 <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                                    <span>${{ number_format($item['unit_price'], 2) }} c/u · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</span>
+                                    <span>${{ money($item['unit_price']) }} c/u · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</span>
                                     <span class="text-gray-300 dark:text-gray-600">·</span>
                                     <span>Desc</span>
                                     <input type="number" min="0" max="100" step="0.01" wire:model.live="cart.{{ $index }}.discount" class="w-11 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500">
@@ -85,7 +85,7 @@
                                 <button wire:click="inc({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">+</button>
                             </div>
                             <span class="w-24 text-right text-base font-bold text-gray-900 dark:text-gray-100 shrink-0">
-                                ${{ number_format($this->lineTotal($item), 2) }}
+                                ${{ money($this->lineTotal($item)) }}
                             </span>
                             <button wire:click="removeItem({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
                                 <x-heroicon-o-x-mark class="w-5 h-5" />
@@ -144,19 +144,19 @@
                         <div class="bg-indigo-50/70 dark:bg-indigo-500/5 px-4 py-3 space-y-1.5">
                             <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                                 <span>Subtotal</span>
-                                <span>${{ number_format($this->subtotalBruto(), 2) }}</span>
+                                <span>${{ money($this->subtotalBruto()) }}</span>
                             </div>
                             @foreach ($this->promosAplicadas() as $promo)
                                 <div class="flex items-center justify-between text-sm">
                                     <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                                         <x-heroicon-o-gift class="w-3.5 h-3.5" /> {{ $promo['label'] }}
                                     </span>
-                                    <span class="text-emerald-600 dark:text-emerald-400 font-medium">−${{ number_format($promo['amount'], 2) }}</span>
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-medium">−${{ money($promo['amount']) }}</span>
                                 </div>
                             @endforeach
                             <div class="flex items-center justify-between text-sm font-semibold text-emerald-600 dark:text-emerald-400 pt-1 border-t border-indigo-100 dark:border-indigo-500/20">
                                 <span>Descuento total</span>
-                                <span>−${{ number_format($this->descuentosTotal(), 2) }}</span>
+                                <span>−${{ money($this->descuentosTotal()) }}</span>
                             </div>
                         </div>
                     @endif
@@ -170,7 +170,7 @@
                                 <span>Total a cobrar</span>
                                 <span class="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] normal-case">{{ $this->itemsCount() }} art.</span>
                             </div>
-                            <div class="text-4xl font-extrabold tracking-tight mt-0.5">${{ number_format($this->total(), 2) }}</div>
+                            <div class="text-4xl font-extrabold tracking-tight mt-0.5">${{ money($this->total()) }}</div>
                         </div>
                     </div>
                 </div>
@@ -204,13 +204,13 @@
                     @if (count($payments) > 0)
                         <div class="flex items-center justify-between text-sm pt-1">
                             <span class="text-gray-500 dark:text-gray-400">Pagado</span>
-                            <span class="font-medium text-gray-900 dark:text-gray-100">${{ number_format($this->paymentsTotal(), 2) }}</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-100">${{ money($this->paymentsTotal()) }}</span>
                         </div>
                     @endif
                     @if ($this->saldoPendiente() > 0)
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-amber-600 dark:text-amber-400">Saldo a cuenta corriente</span>
-                            <span class="font-semibold text-amber-600 dark:text-amber-400">${{ number_format($this->saldoPendiente(), 2) }}</span>
+                            <span class="font-semibold text-amber-600 dark:text-amber-400">${{ money($this->saldoPendiente()) }}</span>
                         </div>
                     @endif
                 </div>
@@ -228,7 +228,7 @@
                     class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-600/30 hover:from-emerald-700 hover:to-emerald-600 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     <x-heroicon-o-banknotes class="w-5 h-5" />
-                    <span wire:loading.remove wire:target="cobrar">Cobrar ${{ number_format($this->total(), 2) }}</span>
+                    <span wire:loading.remove wire:target="cobrar">Cobrar ${{ money($this->total()) }}</span>
                     <span wire:loading wire:target="cobrar">Cobrando...</span>
                 </button>
             </div>

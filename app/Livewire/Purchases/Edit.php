@@ -207,6 +207,8 @@ class Edit extends Component
             'tax_rate' => ['required', 'numeric', 'min:0'],
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'taxes.*.concepto' => ['required_with:taxes.*.amount', 'nullable', 'string', 'max:100'],
             'taxes.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]);
