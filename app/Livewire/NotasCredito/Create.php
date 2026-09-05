@@ -166,10 +166,15 @@ class Create extends Component
                     );
                 }
 
+                // Punto de venta, stock y caja de la NC son los de la
+                // sucursal de la FACTURA ORIGINAL, no la sesión activa de
+                // quien procesa la devolución ahora (puede ser un admin
+                // parado en otra sucursal, o haber pasado tiempo).
                 return InvoiceNumberGenerator::withLock($tipoNC->value, fn () => DB::transaction(function () use ($validItems, $tipoNC, $invoice) {
                     $nota = Invoice::create([
-                        'number' => InvoiceNumberGenerator::next($tipoNC->value),
+                        'number' => InvoiceNumberGenerator::next($tipoNC->value, $invoice->sucursal_id),
                         'client_id' => $invoice->client_id,
+                        'sucursal_id' => $invoice->sucursal_id,
                         'related_invoice_id' => $invoice->id,
                         'tipo_comprobante_interno' => $tipoNC,
                         'afecta_stock' => $this->afecta_stock,
@@ -189,17 +194,17 @@ class Create extends Component
                         ]);
                     }
 
-                    StockAdjuster::apply($validItems, $this->afecta_stock ? $tipoNC->stockSign() : 0);
+                    StockAdjuster::apply($validItems, $this->afecta_stock ? $tipoNC->stockSign() : 0, $invoice->sucursal_id);
 
                     foreach ($this->payments as $payment) {
                         if ((float) $payment['amount'] > 0) {
                             $created = $nota->payments()->create($payment);
-                            CashLinker::linkInvoiceRefund($nota, $created);
+                            CashLinker::linkInvoiceRefund($nota, $created, $invoice->sucursal_id);
                         }
                     }
 
                     return $nota;
-                }));
+                }), $invoice->sucursal_id);
             });
         } catch (RuntimeException $e) {
             $this->addError('items', $e->getMessage());

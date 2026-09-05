@@ -21,9 +21,9 @@ class CashLinker
      * cobro/pago hecho mientras se opera en una sucursal no debe terminar
      * anotado en la caja de otra.
      */
-    private static function openSession(): ?CashSession
+    private static function openSession(?int $sucursalId = null): ?CashSession
     {
-        return CashSession::where('status', 'open')->where('sucursal_id', CurrentSucursal::id())->first();
+        return CashSession::where('status', 'open')->where('sucursal_id', $sucursalId ?? CurrentSucursal::id())->first();
     }
 
     public static function linkClientPayment(ClientPayment $payment): void
@@ -94,11 +94,14 @@ class CashLinker
     }
 
     /**
-     * Devolución: el dinero sale de caja, no entra.
+     * Devolución: el dinero sale de caja, no entra. $sucursalId explícito
+     * (NotasCredito\Create lo pasa) porque la caja de una devolución es la
+     * de la sucursal de la factura ORIGINAL, no la sesión activa de quien
+     * procesa la devolución ahora.
      */
-    public static function linkInvoiceRefund(Invoice $invoice, InvoicePayment $payment): void
+    public static function linkInvoiceRefund(Invoice $invoice, InvoicePayment $payment, ?int $sucursalId = null): void
     {
-        $session = self::openSession();
+        $session = self::openSession($sucursalId);
 
         if (! $session) {
             return;

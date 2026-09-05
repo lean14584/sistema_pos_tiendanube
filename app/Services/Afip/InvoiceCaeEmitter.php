@@ -37,6 +37,13 @@ class InvoiceCaeEmitter
         $company = CompanySettings::current();
         $client = $invoice->client;
 
+        // El punto de venta a usar es el de la sucursal donde se hizo ESTA
+        // factura (guardado en creación), no la sesión de quien la emite
+        // ahora — puede haber pasado tiempo y el admin puede haber
+        // cambiado de sucursal activa mientras tanto. Cae al de la empresa
+        // solo para facturas viejas sin sucursal asignada.
+        $puntoVenta = $invoice->sucursal?->punto_venta ?? $company->punto_venta;
+
         // El tipo lo elige el usuario en el switch de Invoices/Create (Remito X /
         // Factura B / Factura A / Devolución), no se auto-detecta acá.
         $tipoComprobante = $invoice->tipo_comprobante_interno->aTipoComprobante();
@@ -76,18 +83,18 @@ class InvoiceCaeEmitter
         // atómica de nuestro lado, o dos emisiones simultáneas pueden
         // calcular el mismo próximo número (AFIP rechazaría la segunda,
         // pero mejor evitarlo antes de gastar una llamada de red).
-        $lock = Cache::lock("afip:emision:{$company->punto_venta}", 30);
+        $lock = Cache::lock("afip:emision:{$puntoVenta}", 30);
 
         $cbteNro = null;
 
-        $caeResponse = $lock->block(10, function () use ($invoice, $company, $tipoComprobante, $condicionIvaReceptorId, $comprobanteAsociado, &$cbteNro) {
+        $caeResponse = $lock->block(10, function () use ($invoice, $company, $puntoVenta, $tipoComprobante, $condicionIvaReceptorId, $comprobanteAsociado, &$cbteNro) {
             // Re-chequeo por si otra request emitió esta misma factura
             // mientras esperábamos el lock.
             if ($invoice->fresh()->cae !== null) {
                 throw new RuntimeException('Esta factura ya tiene CAE, no se puede reemitir.');
             }
 
-            $cbteNro = $this->gateway->getLastVoucherNumber($company->punto_venta, $tipoComprobante) + 1;
+            $cbteNro = $this->gateway->getLastVoucherNumber($puntoVenta, $tipoComprobante) + 1;
 
             // Desglose del IVA por alícuota (comprobante con alícuotas mezcladas).
             $alicuotas = $invoice->ivaPorAlicuota()
@@ -99,7 +106,7 @@ class InvoiceCaeEmitter
                 ->all();
 
             $request = new CaeRequest(
-                puntoVenta: $company->punto_venta,
+                puntoVenta: $puntoVenta,
                 tipoComprobante: $tipoComprobante,
                 cbteNro: $cbteNro,
                 docTipo: $invoice->client->tipo_documento->afipCode(),
@@ -120,7 +127,7 @@ class InvoiceCaeEmitter
             'cae' => $caeResponse->cae,
             'cae_vencimiento' => $caeResponse->caeVencimiento,
             'tipo_comprobante' => $tipoComprobante,
-            'punto_venta' => $company->punto_venta,
+            'punto_venta' => $puntoVenta,
             'numero_comprobante_afip' => $cbteNro,
             'condicion_iva_receptor_id' => $condicionIvaReceptorId,
             'condicion_iva_emisor' => $company->condicion_iva->value,
