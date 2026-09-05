@@ -6,6 +6,8 @@ use App\Enums\Role;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImportMapping;
+use App\Models\ProductStock;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -68,6 +70,7 @@ class ProductImportTest extends TestCase
     public function test_importar_crea_productos_nuevos_y_actualiza_los_existentes_por_sku(): void
     {
         $existente = Product::create(['name' => 'Coca Cola Vieja', 'sku' => 'BEB-001', 'price' => 1000, 'stock' => 5]);
+        ProductStock::create(['product_id' => $existente->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 5]);
 
         $archivo = $this->excel([
             ['Nombre', 'SKU', 'Precio de venta', 'Stock'],
@@ -93,6 +96,7 @@ class ProductImportTest extends TestCase
     public function test_actualiza_por_nombre_cuando_no_hay_sku_mapeado(): void
     {
         $existente = Product::create(['name' => 'Fideos 500g', 'price' => 800, 'stock' => 10]);
+        ProductStock::create(['product_id' => $existente->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 10]);
 
         $archivo = $this->excel([
             ['Nombre', 'Precio de venta', 'Stock'],

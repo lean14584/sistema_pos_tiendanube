@@ -96,8 +96,8 @@
                             <td class="px-5 py-3 {{ $product->margin_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
                                 ${{ money($product->price) }}
                             </td>
-                            <td class="px-5 py-3 {{ $product->stock_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
-                                {{ $product->stock }}
+                            <td class="px-5 py-3 {{ $product->stock_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}" title="En {{ $sucursalActiva?->name ?? 'tu sucursal' }}">
+                                {{ $product->stockEnSucursal() }}
                             </td>
                             <td class="px-5 py-3">
                                 <div class="flex justify-end gap-2">
@@ -178,7 +178,7 @@
                                 ${{ money($product->price) }}
                             </span>
                             <span class="{{ $product->stock_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
-                                Stock: {{ $product->stock }}
+                                Stock: {{ $product->stockEnSucursal() }}
                             </span>
                         </div>
                     </div>

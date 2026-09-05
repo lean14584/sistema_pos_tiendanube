@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['product_id', 'user_id', 'previous_stock', 'new_stock', 'reason', 'notes'])]
+#[Fillable(['product_id', 'sucursal_id', 'user_id', 'previous_stock', 'new_stock', 'reason', 'notes'])]
 class StockAdjustment extends Model
 {
     const UPDATED_AT = null;
@@ -26,6 +26,11 @@ class StockAdjustment extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function sucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class);
     }
 
     public function user(): BelongsTo

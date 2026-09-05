@@ -73,13 +73,14 @@
 
     <div class="grid grid-cols-2 gap-4">
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock en {{ $sucursalActiva?->name ?? 'tu sucursal' }}</label>
             <input
                 type="number" min="0" step="1"
                 wire:model="stock"
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
                 placeholder="0"
             >
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">El stock se maneja por sucursal — este valor es solo el de la sucursal activa.</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock mínimo</label>

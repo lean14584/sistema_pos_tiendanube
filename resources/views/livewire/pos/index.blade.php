@@ -37,7 +37,7 @@
                                 <span class="min-w-0">
                                     <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                     <span class="block text-xs text-gray-500 dark:text-gray-400">
-                                        Stock: {{ $product->stock }}{{ $product->sku ? " · SKU: {$product->sku}" : '' }} · ${{ money($product->priceForList($this->currentPriceList())) }}
+                                        Stock: {{ $product->stockEnSucursal() }}{{ $product->sku ? " · SKU: {$product->sku}" : '' }} · ${{ money($product->priceForList($this->currentPriceList())) }}
                                     </span>
                                 </span>
                             </button>

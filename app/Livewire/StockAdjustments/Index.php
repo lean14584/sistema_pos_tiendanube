@@ -4,7 +4,10 @@ namespace App\Livewire\StockAdjustments;
 
 use App\Enums\StockAdjustmentReason;
 use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\StockAdjustment;
+use App\Support\CurrentSucursal;
+use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -48,11 +51,11 @@ class Index extends Component
         }
     }
 
-    /** Precarga el stock actual del producto elegido, para partir de un valor real. */
+    /** Precarga el stock actual del producto elegido EN LA SUCURSAL ACTIVA, para partir de un valor real. */
     public function updatedProductId(): void
     {
         $product = $this->product_id !== '' ? Product::find($this->product_id) : null;
-        $this->new_stock = $product ? (string) $product->stock : '';
+        $this->new_stock = $product ? (string) $product->stockEnSucursal(CurrentSucursal::id()) : '';
         $this->baseline_stock = $this->new_stock;
     }
 
@@ -121,21 +124,40 @@ class Index extends Component
     {
         $this->validate();
 
+        $sucursalId = CurrentSucursal::id();
+
+        if ($sucursalId === null) {
+            $this->addError('product_id', 'No hay ninguna sucursal activa para ajustar stock.');
+
+            return;
+        }
+
         // El usuario tipea el stock final que contó, relativo al valor que
-        // vio al elegir el producto (baseline_stock). Aplicamos la diferencia
-        // como delta atómico (increment/decrement), no como un pisado de
-        // valor absoluto: si una venta descontó stock mientras esta pantalla
-        // estaba abierta, ese descuento no se pierde bajo el ajuste.
+        // vio al elegir el producto (baseline_stock) EN ESTA sucursal.
+        // Aplicamos la diferencia como delta atómico (increment/decrement),
+        // no como un pisado de valor absoluto: si una venta descontó stock
+        // mientras esta pantalla estaba abierta, ese descuento no se pierde
+        // bajo el ajuste.
         $delta = (int) $this->new_stock - (int) $this->baseline_stock;
+        $product = Product::findOrFail($this->product_id);
 
-        [$product, $previous, $newStock] = DB::transaction(function () use ($delta) {
-            $product = Product::whereKey($this->product_id)->lockForUpdate()->firstOrFail();
-            $previous = $product->stock;
+        [$previous, $newStock] = DB::transaction(function () use ($product, $sucursalId, $delta) {
+            // Bloquea (o crea) la fila de product_stocks de esta sucursal
+            // antes de leer el valor base, para que el "antes" del log de
+            // auditoría sea exacto aunque una venta descuente stock casi al
+            // mismo tiempo que se guarda este ajuste.
+            $row = ProductStock::firstOrCreate(
+                ['product_id' => $product->id, 'sucursal_id' => $sucursalId],
+                ['stock' => 0]
+            );
+            $row = ProductStock::whereKey($row->id)->lockForUpdate()->firstOrFail();
+            $previous = $row->stock;
 
-            $product->increment('stock', $delta);
+            StockAdjuster::applyManualDelta($product->id, $delta, $sucursalId);
 
             StockAdjustment::create([
                 'product_id' => $product->id,
+                'sucursal_id' => $sucursalId,
                 'user_id' => auth()->id(),
                 'previous_stock' => $previous,
                 'new_stock' => $previous + $delta,
@@ -143,7 +165,7 @@ class Index extends Component
                 'notes' => $this->notes ?: null,
             ]);
 
-            return [$product, $previous, $previous + $delta];
+            return [$previous, $previous + $delta];
         });
 
         session()->flash('status', "Stock de \"{$product->name}\" ajustado de {$previous} a {$newStock}.");
@@ -153,7 +175,7 @@ class Index extends Component
 
     public function render()
     {
-        $adjustments = StockAdjustment::with(['product', 'user'])
+        $adjustments = StockAdjustment::with(['product', 'user', 'sucursal'])
             ->when($this->filterProduct !== '', fn ($q) => $q->where('product_id', $this->filterProduct))
             ->when($this->desde !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->desde))
             ->when($this->hasta !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->hasta))
@@ -165,6 +187,7 @@ class Index extends Component
             'selectedProductName' => $this->product_id !== '' ? Product::find($this->product_id)?->name : null,
             'filterProductName' => $this->filterProduct !== '' ? Product::find($this->filterProduct)?->name : null,
             'reasons' => StockAdjustmentReason::cases(),
+            'sucursalActiva' => CurrentSucursal::get(),
         ]);
     }
 }

@@ -5,6 +5,8 @@ namespace App\Livewire\Products;
 use App\Enums\AlicuotaIva;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductStock;
+use App\Support\CurrentSucursal;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -61,7 +63,15 @@ class Create extends Component
         }
         unset($data['image']);
 
-        Product::create($data);
+        $product = Product::create($data);
+
+        // El stock inicial cargado acá es el de la sucursal activa: crear la
+        // fila de product_stocks correspondiente (products.stock ya quedó
+        // bien como agregado, por venir en $data desde la creación).
+        $sucursalId = CurrentSucursal::id();
+        if ($sucursalId !== null && (int) $data['stock'] > 0) {
+            ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $sucursalId, 'stock' => $data['stock']]);
+        }
 
         session()->flash('status', 'Producto creado.');
         $this->redirect(route('products.index'), navigate: true);
@@ -71,6 +81,7 @@ class Create extends Component
     {
         return view('livewire.products.create', [
             'categories' => Category::orderBy('name')->get(),
+            'sucursalActiva' => CurrentSucursal::get(),
         ]);
     }
 }

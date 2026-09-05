@@ -32,4 +32,9 @@ class Sucursal extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function productStocks(): HasMany
+    {
+        return $this->hasMany(ProductStock::class);
+    }
 }

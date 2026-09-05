@@ -19,7 +19,7 @@
                 @error('product_id') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Nuevo stock *</label>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Nuevo stock en {{ $sucursalActiva?->name ?? 'tu sucursal' }} *</label>
                 <input type="number" min="0" wire:model="new_stock" class="{{ $inputClass }}">
                 @error('new_stock') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
@@ -91,6 +91,7 @@
                 <tr class="text-left text-gray-500 dark:text-gray-400">
                     <th class="px-4 py-2.5 font-medium">Fecha</th>
                     <th class="px-4 py-2.5 font-medium">Producto</th>
+                    <th class="px-4 py-2.5 font-medium">Sucursal</th>
                     <th class="px-4 py-2.5 font-medium">Stock</th>
                     <th class="px-4 py-2.5 font-medium">Motivo</th>
                     <th class="px-4 py-2.5 font-medium">Usuario</th>
@@ -102,6 +103,7 @@
                     <tr class="border-t border-gray-100 dark:border-gray-800">
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ $adj->created_at->format('d/m/Y H:i') }}</td>
                         <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{{ $adj->product->name ?? 'Producto eliminado' }}</td>
+                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $adj->sucursal->name ?? '—' }}</td>
                         <td class="px-4 py-3 {{ $adj->delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">
                             {{ $adj->previous_stock }} → {{ $adj->new_stock }}
                             <span class="text-xs">({{ $adj->delta >= 0 ? '+' : '' }}{{ $adj->delta }})</span>
@@ -111,7 +113,7 @@
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $adj->notes ?: '—' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500">Todavía no se registraron ajustes de stock.</td></tr>
+                    <tr><td colspan="7" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500">Todavía no se registraron ajustes de stock.</td></tr>
                 @endforelse
             </tbody>
         </table>

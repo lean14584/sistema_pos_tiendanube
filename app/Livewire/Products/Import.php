@@ -6,7 +6,10 @@ use App\Enums\AlicuotaIva;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImportMapping;
+use App\Models\ProductStock;
+use App\Support\CurrentSucursal;
 use App\Support\ProductImport\ProductImportFields;
+use App\Support\StockAdjuster;
 use App\Support\TiendanubeSyncGuard;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -118,6 +121,9 @@ class Import extends Component
         $actualizados = 0;
         $omitidos = [];
         $categoriasCache = [];
+        // El stock que trae el Excel es el de esta sucursal (la activa de
+        // quien importa) — se resuelve una sola vez, no por fila.
+        $sucursalId = CurrentSucursal::id();
 
         // Cada alta/edición dispara ProductObserver → TiendanubeAutoSync::queue(),
         // que despacha un afterResponse() (llamada HTTP real a Tiendanube,
@@ -127,8 +133,8 @@ class Import extends Component
         // reflejar los productos importados en Tiendanube, usar "Enviar
         // productos" en el panel de Tiendanube (acción manual, ya pensada
         // para tardar).
-        TiendanubeSyncGuard::mute(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache) {
-            DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache) {
+        TiendanubeSyncGuard::mute(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache, $sucursalId) {
+            DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache, $sucursalId) {
                 foreach ($filas as $numero => $fila) {
                     $nombre = trim((string) $this->valor($fila, 'name'));
                     $precio = $this->valor($fila, 'price');
@@ -152,8 +158,9 @@ class Import extends Component
                         $datos['cost_price'] = $this->normalizarNumero($costo);
                     }
 
+                    $stockImportado = null;
                     if (($stock = $this->valor($fila, 'stock')) !== null && trim((string) $stock) !== '') {
-                        $datos['stock'] = (int) $this->normalizarNumero($stock);
+                        $stockImportado = (int) $this->normalizarNumero($stock);
                     }
 
                     if (($minStock = $this->valor($fila, 'min_stock')) !== null && trim((string) $minStock) !== '') {
@@ -193,9 +200,29 @@ class Import extends Component
 
                     if ($existente) {
                         $existente->update($datos);
+
+                        // El valor del Excel es el stock final en esta
+                        // sucursal, no un delta: se aplica como diferencia
+                        // contra lo que ya había acá (igual que Products\Edit).
+                        if ($stockImportado !== null && $sucursalId !== null) {
+                            $delta = $stockImportado - $existente->stockEnSucursal($sucursalId);
+                            if ($delta !== 0) {
+                                StockAdjuster::applyManualDelta($existente->id, $delta, $sucursalId);
+                            }
+                        }
+
                         $actualizados++;
                     } else {
-                        Product::create($datos);
+                        // Producto nuevo: el stock inicial va directo en el
+                        // create (agregado correcto desde el vamos, un solo
+                        // evento de auditoría de alta) más su fila en la
+                        // sucursal activa.
+                        $nuevo = Product::create([...$datos, 'stock' => $stockImportado ?? 0]);
+
+                        if ($stockImportado !== null && $stockImportado > 0 && $sucursalId !== null) {
+                            ProductStock::create(['product_id' => $nuevo->id, 'sucursal_id' => $sucursalId, 'stock' => $stockImportado]);
+                        }
+
                         $creados++;
                     }
                 }
