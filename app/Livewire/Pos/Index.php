@@ -32,8 +32,6 @@ class Index extends Component
     /** @var array<int, array{product_id:int, description:string, sku:?string, unit_price:float, discount:float, iva_rate:string, quantity:int}> */
     public array $cart = [];
 
-    public string $search = '';
-
     public string $barcode = '';
 
     public string $clientQuery = '';
@@ -115,17 +113,32 @@ class Index extends Component
         }
     }
 
+    /**
+     * Sugerencias en vivo mientras se tipea en el lector: el mismo input
+     * escanea (código exacto + Enter, vía addByBarcode) y busca por nombre o
+     * SKU parcial para elegir con el mouse/touch sin tener que saber el
+     * código exacto de memoria.
+     */
     #[Computed]
-    public function productos()
+    public function barcodeResults()
     {
-        return \App\Models\Product::query()
-            ->when(trim($this->search) !== '', function ($q) {
-                $term = trim($this->search);
-                $q->where('name', 'like', "%{$term}%")->orWhere('sku', 'like', "%{$term}%");
-            })
-            ->orderBy('name')
-            ->limit(60)
+        $term = trim($this->barcode);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Product::where('name', 'like', "%{$term}%")
+            ->orWhere('sku', 'like', "%{$term}%")
+            ->limit(8)
             ->get();
+    }
+
+    public function selectFromBarcode(int $productId): void
+    {
+        $this->barcode = '';
+        $this->resetErrorBag('barcode');
+        $this->addProduct($productId);
     }
 
     public function addProduct(int $productId): void
