@@ -21,6 +21,12 @@ class Index extends Component
             return;
         }
 
+        if ($sucursal->users()->exists()) {
+            $this->toastError("No se puede eliminar \"{$sucursal->name}\" porque tiene usuarios asignados.");
+
+            return;
+        }
+
         if ($sucursal->logo_path) {
             Storage::disk('public')->delete($sucursal->logo_path);
         }

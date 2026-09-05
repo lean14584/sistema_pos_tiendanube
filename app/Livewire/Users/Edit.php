@@ -3,6 +3,7 @@
 namespace App\Livewire\Users;
 
 use App\Enums\Role;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -25,6 +26,8 @@ class Edit extends Component
 
     public string $role = 'vendedor';
 
+    public string $sucursal_id = '';
+
     public bool $active = true;
 
     public function mount(User $user): void
@@ -33,6 +36,7 @@ class Edit extends Component
         $this->name = $user->name;
         $this->username = $user->username;
         $this->role = $user->role->value;
+        $this->sucursal_id = $user->sucursal_id ? (string) $user->sucursal_id : '';
         $this->active = $user->active;
     }
 
@@ -43,8 +47,11 @@ class Edit extends Component
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($this->user->id)],
             'password' => ['nullable', 'string', 'min:8'],
             'role' => ['required', Rule::enum(Role::class)],
+            'sucursal_id' => [Rule::requiredIf($this->role !== Role::Admin->value), 'nullable', 'exists:sucursales,id'],
             'active' => ['boolean'],
         ]);
+
+        $data['sucursal_id'] = $data['role'] === Role::Admin->value ? null : $data['sucursal_id'];
 
         if (empty($data['password'])) {
             unset($data['password']);
@@ -89,6 +96,9 @@ class Edit extends Component
     {
         return view('livewire.users.edit', [
             'roles' => Role::cases(),
+            // Incluye la sucursal actual del usuario aunque esté inactiva, para
+            // no romper el <select> si se desactivó después de asignarla.
+            'sucursales' => Sucursal::where('active', true)->orWhere('id', $this->user->sucursal_id)->orderBy('name')->get(),
             'editingSelf' => $this->user->id === Auth::id(),
         ]);
     }

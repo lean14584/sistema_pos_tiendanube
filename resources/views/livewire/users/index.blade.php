@@ -21,6 +21,7 @@
                         <th class="px-5 py-3 font-medium">Nombre</th>
                         <th class="px-5 py-3 font-medium">Usuario</th>
                         <th class="px-5 py-3 font-medium">Rol</th>
+                        <th class="px-5 py-3 font-medium">Sucursal</th>
                         <th class="px-5 py-3 font-medium">Estado</th>
                         <th class="px-5 py-3 font-medium"></th>
                     </tr>
@@ -36,6 +37,7 @@
                             </td>
                             <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ $user->username }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $user->role->label() }}</td>
+                            <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $user->sucursal->name ?? 'Todas' }}</td>
                             <td class="px-5 py-3">
                                 <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {{ $user->active ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20' : 'bg-gray-100 text-gray-700 ring-gray-500/20 dark:bg-gray-500/10 dark:text-gray-400 dark:ring-gray-500/20' }}">
                                     {{ $user->active ? 'Activo' : 'Inactivo' }}
@@ -71,7 +73,7 @@
                                         <span class="text-xs text-indigo-600 dark:text-indigo-400">(vos)</span>
                                     @endif
                                 </p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $user->username }} · {{ $user->role->label() }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $user->username }} · {{ $user->role->label() }} · {{ $user->sucursal->name ?? 'Todas' }}</p>
                             </div>
                             <div class="flex gap-1 shrink-0">
                                 <a href="{{ route('users.edit', $user) }}" wire:navigate class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">

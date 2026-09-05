@@ -8,11 +8,12 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'password', 'role', 'active'])]
+#[Fillable(['name', 'username', 'password', 'role', 'active', 'sucursal_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -40,5 +41,16 @@ class User extends Authenticatable
     public function cashSessions(): HasMany
     {
         return $this->hasMany(CashSession::class);
+    }
+
+    public function sucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class);
+    }
+
+    /** Un admin es global: opera en cualquier sucursal, no está atado a una. */
+    public function esAdminGlobal(): bool
+    {
+        return $this->role === Role::Admin;
     }
 }

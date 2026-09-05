@@ -3,6 +3,7 @@
 namespace App\Livewire\Users;
 
 use App\Enums\Role;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -19,6 +20,8 @@ class Create extends Component
 
     public string $role = 'vendedor';
 
+    public string $sucursal_id = '';
+
     public bool $active = true;
 
     public function save(): void
@@ -28,8 +31,12 @@ class Create extends Component
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', Rule::enum(Role::class)],
+            // Un admin es global (no pertenece a una sucursal); cajero/vendedor sí necesitan una.
+            'sucursal_id' => [Rule::requiredIf($this->role !== Role::Admin->value), 'nullable', 'exists:sucursales,id'],
             'active' => ['boolean'],
         ]);
+
+        $data['sucursal_id'] = $data['role'] === Role::Admin->value ? null : $data['sucursal_id'];
 
         User::create($data);
 
@@ -41,6 +48,7 @@ class Create extends Component
     {
         return view('livewire.users.create', [
             'roles' => Role::cases(),
+            'sucursales' => Sucursal::where('active', true)->orderBy('name')->get(),
         ]);
     }
 }
