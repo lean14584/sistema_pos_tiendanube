@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\AuditLog;
 use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\StockAdjustment;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -23,6 +25,10 @@ class StockAdjustmentTest extends TestCase
     public function test_registrar_un_ajuste_actualiza_el_stock_y_queda_guardado_el_motivo(): void
     {
         $product = Product::create(['name' => 'Harina 1kg', 'price' => 800, 'stock' => 20]);
+        // El stock real por sucursal vive en product_stocks; sin esta fila
+        // el producto arranca en 0 en "Principal" (la única sucursal que
+        // existe recién migrado) aunque products.stock diga 20.
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 20]);
 
         Livewire::actingAs($this->user(Role::Admin))
             ->test('stock-adjustments.index')
@@ -48,6 +54,7 @@ class StockAdjustmentTest extends TestCase
     public function test_el_ajuste_tambien_genera_un_log_de_auditoria_del_producto(): void
     {
         $product = Product::create(['name' => 'Fideos 500g', 'price' => 900, 'stock' => 10]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 10]);
         AuditLog::query()->delete(); // limpiar el log del create de arriba
 
         Livewire::actingAs($this->user(Role::Admin))

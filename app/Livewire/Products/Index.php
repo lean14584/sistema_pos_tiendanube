@@ -4,6 +4,7 @@ namespace App\Livewire\Products;
 
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Product;
+use App\Support\CurrentSucursal;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -44,7 +45,9 @@ class Index extends Component
 
     public function render()
     {
-        $products = Product::with('category')
+        $sucursalId = CurrentSucursal::id();
+
+        $products = Product::with(['category', 'stocks' => fn ($q) => $q->where('sucursal_id', $sucursalId)])
             ->when($this->query !== '', function ($q) {
                 $term = '%'.$this->query.'%';
                 $q->where(fn ($q2) => $q2->where('name', 'like', $term)
@@ -58,6 +61,7 @@ class Index extends Component
         return view('livewire.products.index', [
             'products' => $products,
             'hasAnyProducts' => Product::query()->exists(),
+            'sucursalActiva' => CurrentSucursal::get(),
         ]);
     }
 }

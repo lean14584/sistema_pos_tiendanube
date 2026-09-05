@@ -27,6 +27,12 @@ class Index extends Component
             return;
         }
 
+        if ($sucursal->productStocks()->where('stock', '>', 0)->exists()) {
+            $this->toastError("No se puede eliminar \"{$sucursal->name}\" porque todavía tiene stock cargado. Pasalo a otra sucursal con Ajuste de Stock primero.");
+
+            return;
+        }
+
         if ($sucursal->logo_path) {
             Storage::disk('public')->delete($sucursal->logo_path);
         }

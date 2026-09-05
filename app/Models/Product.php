@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\Auditable;
 use App\Observers\ProductObserver;
+use App\Support\CurrentSucursal;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -87,6 +88,25 @@ class Product extends Model
     public function stockAdjustments(): HasMany
     {
         return $this->hasMany(StockAdjustment::class);
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(ProductStock::class);
+    }
+
+    /** Stock de este producto en una sucursal puntual (0 si nunca se movió ahí). */
+    public function stockEnSucursal(?int $sucursalId = null): int
+    {
+        $sucursalId ??= CurrentSucursal::id();
+
+        if ($sucursalId === null) {
+            return 0;
+        }
+
+        return (int) ($this->relationLoaded('stocks')
+            ? $this->stocks->firstWhere('sucursal_id', $sucursalId)?->stock
+            : $this->stocks()->where('sucursal_id', $sucursalId)->value('stock')) ?: 0;
     }
 
     protected function marginAlert(): Attribute

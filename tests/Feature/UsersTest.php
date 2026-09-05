@@ -21,7 +21,8 @@ class UsersTest extends TestCase
 
     public function test_can_create_a_user(): void
     {
-        $sucursal = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'punto_venta' => 1]);
+        // Ya existe "Principal" (la crea la migración de product_stocks).
+        $sucursal = Sucursal::sole();
 
         Livewire::actingAs($this->admin())
             ->test('users.create')

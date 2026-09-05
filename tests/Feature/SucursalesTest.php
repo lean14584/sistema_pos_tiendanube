@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -99,7 +101,8 @@ class SucursalesTest extends TestCase
 
     public function test_can_delete_a_sucursal_if_more_than_one_exists(): void
     {
-        Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'punto_venta' => 1]);
+        // Ya existe "Principal" (la que crea la migración de product_stocks
+        // al no encontrar ninguna sucursal): con esta ya son 2+.
         $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa SRL', 'punto_venta' => 2]);
 
         Livewire::actingAs($this->admin())
@@ -109,9 +112,24 @@ class SucursalesTest extends TestCase
         $this->assertDatabaseMissing('sucursales', ['id' => $norte->id]);
     }
 
+    public function test_cannot_delete_a_sucursal_with_stock_cargado(): void
+    {
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa SRL', 'punto_venta' => 2]);
+        $product = Product::create(['name' => 'Yerba', 'price' => 3000, 'stock' => 5]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $norte->id, 'stock' => 5]);
+
+        Livewire::actingAs($this->admin())
+            ->test('sucursales.index')
+            ->call('delete', $norte->id);
+
+        $this->assertDatabaseHas('sucursales', ['id' => $norte->id]);
+    }
+
     public function test_cannot_delete_the_only_sucursal(): void
     {
-        $unica = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'punto_venta' => 1]);
+        // La única sucursal en un DB recién migrado es "Principal" (la
+        // crea automáticamente la migración de product_stocks).
+        $unica = Sucursal::sole();
 
         Livewire::actingAs($this->admin())
             ->test('sucursales.index')

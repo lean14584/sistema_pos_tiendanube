@@ -192,6 +192,17 @@
                     <p class="text-xs text-slate-400">{{ $user->role->label() }}</p>
                 </div>
             </div>
+
+            @if ($user->esAdminGlobal())
+                <div class="mb-3">
+                    @livewire('sucursal-switcher')
+                </div>
+            @elseif ($user->sucursal)
+                <p class="text-xs text-slate-400 mb-3 truncate">
+                    <x-heroicon-o-building-storefront class="w-3.5 h-3.5 inline -mt-0.5" /> {{ $user->sucursal->name }}
+                </p>
+            @endif
+
             <div
                 x-data="{
                     isDark: document.documentElement.classList.contains('dark'),
