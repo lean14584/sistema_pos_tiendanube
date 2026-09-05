@@ -80,4 +80,43 @@ class ReportsTest extends TestCase
         // El de mayor facturación aparece primero en el ranking.
         $component->assertSeeInOrder(['Distribuidora Norte', 'Kiosco Sur']);
     }
+
+    public function test_comparar_dos_periodos_elegidos_a_mano(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        // Período A (los últimos 30 días, rango por defecto): 2 ventas de $500.
+        foreach ([1, 2] as $i) {
+            $inv = Invoice::create([
+                'number' => "A-000{$i}", 'client_id' => $client->id, 'tax_rate' => 0,
+                'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+            ]);
+            $inv->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 500]);
+        }
+
+        // Período B (el mismo rango pero un año atrás): 1 venta de $1000.
+        $invB = Invoice::create([
+            'number' => 'B-0001', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now()->subYear(), 'due_date' => now()->subYear(), 'status' => 'paid',
+        ]);
+        $invB->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('reports.index')
+            ->set('compare', true);
+
+        $comparisonB = $component->viewData('comparisonB');
+        $this->assertSame(1, $comparisonB['summary']['count']);
+        $this->assertEqualsWithDelta(1000.0, $comparisonB['summary']['total'], 0.01);
+        $this->assertSame(2, $component->viewData('summary')['count']);
+        $this->assertEqualsWithDelta(1000.0, $component->viewData('summary')['total'], 0.01);
+    }
+
+    public function test_sin_activar_comparar_no_se_muestra_el_segundo_periodo(): void
+    {
+        Livewire::actingAs($this->admin())
+            ->test('reports.index')
+            ->assertDontSee('Período B')
+            ->assertSet('compare', false);
+    }
 }
