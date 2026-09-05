@@ -37,15 +37,15 @@
                         <tr class="border-t border-gray-100 dark:border-gray-800">
                             <td class="px-4 py-2 text-gray-900 dark:text-gray-100">{{ $item->description }}</td>
                             <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">{{ rtrim(rtrim(number_format($item->quantity, 2), '0'), '.') }}</td>
-                            <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">${{ number_format($item->unit_price, 2) }}</td>
-                            <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">${{ number_format($item->line_total, 2) }}</td>
+                            <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">${{ money($item->unit_price) }}</td>
+                            <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">${{ money($item->line_total) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr class="border-t border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40">
                         <td colspan="3" class="px-4 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Total</td>
-                        <td class="px-4 py-2 text-right font-semibold text-gray-900 dark:text-gray-100">${{ number_format($this->total(), 2) }}</td>
+                        <td class="px-4 py-2 text-right font-semibold text-gray-900 dark:text-gray-100">${{ money($this->total()) }}</td>
                     </tr>
                 </tfoot>
             </table>

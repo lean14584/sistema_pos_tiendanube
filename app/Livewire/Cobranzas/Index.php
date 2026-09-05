@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Cobranzas;
 
+use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Client;
 use App\Models\ClientPayment;
@@ -41,9 +42,19 @@ class Index extends Component
      */
     private function deudores()
     {
+        // Un 'paid' siempre da remaining = 0 y se descarta igual más abajo,
+        // así que ni vale la pena traerlo (la mayoría de la historia termina
+        // pagada). 'items' hace falta porque Invoice::total es un atributo
+        // calculado a partir de items, no una columna: sin este eager load,
+        // debitLines() (llamado por saldoCuentaCorriente()) dispara un
+        // lazy-load de items por factura — y esta pantalla se re-ejecuta
+        // cada ~300ms mientras se escribe en el buscador.
+        $pendientes = fn ($q) => $q->where('status', InvoiceStatus::Pending)->with('items', 'payments');
+
         $clients = Client::query()
             ->when(trim($this->search) !== '', fn ($q) => $q->where('name', 'like', '%'.trim($this->search).'%'))
-            ->with(['invoices' => fn ($q) => $q->whereNot('status', 'draft')->with('payments'), 'payments'])
+            ->whereHas('invoices', $pendientes)
+            ->with(['invoices' => $pendientes, 'payments'])
             ->orderBy('name')
             ->get();
 

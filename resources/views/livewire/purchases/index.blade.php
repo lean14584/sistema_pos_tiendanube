@@ -63,7 +63,7 @@
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $purchase->issue_date->format('d/m/Y') }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $purchase->due_date->format('d/m/Y') }}</td>
                             <td class="px-5 py-3"><x-status-badge :status="$purchase->effective_status" /></td>
-                            <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($purchase->total, 2) }}</td>
+                            <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($purchase->total) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -91,7 +91,7 @@
                                 <span class="mx-1">·</span>
                                 vence {{ $purchase->due_date->format('d/m/Y') }}
                             </p>
-                            <p class="font-semibold text-gray-900 dark:text-gray-100">${{ number_format($purchase->total, 2) }}</p>
+                            <p class="font-semibold text-gray-900 dark:text-gray-100">${{ money($purchase->total) }}</p>
                         </div>
                     </a>
                 @endforeach

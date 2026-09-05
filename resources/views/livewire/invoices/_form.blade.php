@@ -73,7 +73,7 @@
                         >
                             <span class="min-w-0">
                                 <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
-                                <span class="block text-xs text-gray-500 dark:text-gray-400">{{ $product->sku ? "SKU: {$product->sku} · " : '' }}${{ number_format($product->price, 2) }}</span>
+                                <span class="block text-xs text-gray-500 dark:text-gray-400">{{ $product->sku ? "SKU: {$product->sku} · " : '' }}${{ money($product->price) }}</span>
                             </span>
                             <x-heroicon-o-plus-circle class="w-5 h-5 text-indigo-500 shrink-0" />
                         </button>
@@ -124,7 +124,7 @@
                                     </select>
                                 </td>
                                 <td class="px-3 py-1 text-right text-gray-700 dark:text-gray-300">
-                                    ${{ number_format((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100), 2) }}
+                                    ${{ money((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100)) }}
                                 </td>
                                 <td class="px-2 py-1 text-center">
                                     <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
@@ -151,24 +151,24 @@
             <div class="bg-white/70 dark:bg-gray-900/40 px-4 py-3 space-y-1.5 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Neto gravado</span>
-                    <span>${{ number_format($this->netoGravado(), 2) }}</span>
+                    <span>${{ money($this->netoGravado()) }}</span>
                 </div>
                 @if ($this->netoExento() > 0)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>Exento / no gravado</span>
-                        <span>${{ number_format($this->netoExento(), 2) }}</span>
+                        <span>${{ money($this->netoExento()) }}</span>
                     </div>
                 @endif
                 @foreach ($this->ivaBreakdown() as $linea)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</span>
-                        <span>${{ number_format($linea['iva'], 2) }}</span>
+                        <span>${{ money($linea['iva']) }}</span>
                     </div>
                 @endforeach
             </div>
             <div class="bg-gradient-to-br from-indigo-600 to-violet-700 px-4 py-3 flex items-end justify-between text-white">
                 <span class="text-xs font-medium uppercase tracking-wide text-white/80">Total</span>
-                <span class="text-2xl font-extrabold tracking-tight">${{ number_format($this->total(), 2) }}</span>
+                <span class="text-2xl font-extrabold tracking-tight">${{ money($this->total()) }}</span>
             </div>
         </div>
     </div>
@@ -208,8 +208,8 @@
                 </div>
             @endif
             <p class="text-xs mt-2 {{ $this->remaining() > 0.005 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500' }}">
-                {{ $esDevolucion ? 'Reintegrado' : 'Pagado' }}: ${{ number_format($this->paidTotal(), 2) }} de ${{ number_format($this->total(), 2) }}
-                @if ($this->remaining() > 0.005) · Resta ${{ number_format($this->remaining(), 2) }} @endif
+                {{ $esDevolucion ? 'Reintegrado' : 'Pagado' }}: ${{ money($this->paidTotal()) }} de ${{ money($this->total()) }}
+                @if ($this->remaining() > 0.005) · Resta ${{ money($this->remaining()) }} @endif
             </p>
         </div>
     @endif

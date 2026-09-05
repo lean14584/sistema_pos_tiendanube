@@ -7,7 +7,7 @@
 Te enviamos el resumen de tu cuenta corriente con {{ $empresaNombre }}.
 
 @if ($saldo > 0.009)
-Saldo pendiente: **${{ number_format($saldo, 2) }}**.
+Saldo pendiente: **${{ money($saldo) }}**.
 @else
 No tenés saldo pendiente. ¡Gracias!
 @endif

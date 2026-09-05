@@ -94,7 +94,7 @@
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $product->sku ?: '—' }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $product->category?->name ?? '—' }}</td>
                             <td class="px-5 py-3 {{ $product->margin_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
-                                ${{ number_format($product->price, 2) }}
+                                ${{ money($product->price) }}
                             </td>
                             <td class="px-5 py-3 {{ $product->stock_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
                                 {{ $product->stock }}
@@ -175,7 +175,7 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ $product->sku ?: '—' }} · {{ $product->category?->name ?? '—' }}</p>
                         <div class="flex items-center justify-between text-sm">
                             <span class="{{ $product->margin_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
-                                ${{ number_format($product->price, 2) }}
+                                ${{ money($product->price) }}
                             </span>
                             <span class="{{ $product->stock_alert ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400' }}">
                                 Stock: {{ $product->stock }}

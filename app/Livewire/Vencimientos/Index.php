@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Vencimientos;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Client;
 use App\Models\Provider;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -17,7 +19,7 @@ class Index extends Component
      * e imputa los pagos a cuenta corriente a los más viejos primero (FIFO).
      * Devuelve los renglones que todavía quedan debiendo, con su vencimiento.
      *
-     * @param  \Illuminate\Support\Collection  $comprobantes  cada uno: ['due'=>Carbon,'remaining'=>float,'label'=>string]
+     * @param  Collection  $comprobantes  cada uno: ['due'=>Carbon,'remaining'=>float,'label'=>string]
      * @return array<int, array{label:string, due:Carbon, amount:float}>
      */
     private function aging($comprobantes, float $creditoACuenta): array
@@ -55,10 +57,19 @@ class Index extends Component
 
     public function render()
     {
+        // Solo importan los comprobantes pendientes: un 'paid' siempre da
+        // remaining = 0 y aging() lo descarta igual, así que ni vale la pena
+        // traerlo (la mayoría de la historia de facturación termina pagada).
+        // 'items' sigue haciendo falta: Invoice::total es un atributo
+        // calculado a partir de items, no una columna — sin eager load acá
+        // sería un N+1 lazy-load por factura.
+        $invoicesPendientes = fn ($q) => $q->where('status', InvoiceStatus::Pending)->with('items', 'payments');
+
         // ---- POR COBRAR (clientes) ----
         $porCobrar = collect();
         $clients = Client::query()
-            ->with(['invoices' => fn ($q) => $q->whereNot('status', 'draft')->with('items', 'payments'), 'payments'])
+            ->whereHas('invoices', $invoicesPendientes)
+            ->with(['invoices' => $invoicesPendientes, 'payments'])
             ->get();
 
         foreach ($clients as $client) {
@@ -80,10 +91,13 @@ class Index extends Component
             }
         }
 
+        $purchasesPendientes = fn ($q) => $q->where('status', InvoiceStatus::Pending)->with('items', 'taxes', 'payments');
+
         // ---- POR PAGAR (proveedores) ----
         $porPagar = collect();
         $providers = Provider::query()
-            ->with(['purchases' => fn ($q) => $q->whereNot('status', 'draft')->with('items', 'taxes', 'payments'), 'payments'])
+            ->whereHas('purchases', $purchasesPendientes)
+            ->with(['purchases' => $purchasesPendientes, 'payments'])
             ->get();
 
         foreach ($providers as $provider) {

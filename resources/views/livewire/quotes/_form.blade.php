@@ -50,7 +50,7 @@
                             <span class="min-w-0">
                                 <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                 <span class="block text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $product->sku ? "SKU: {$product->sku} · " : '' }}${{ number_format($product->price, 2) }}
+                                    {{ $product->sku ? "SKU: {$product->sku} · " : '' }}${{ money($product->price) }}
                                 </span>
                             </span>
                         </button>
@@ -93,7 +93,7 @@
                                     <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
                                 <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">
-                                    ${{ number_format((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100), 2) }}
+                                    ${{ money((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100)) }}
                                 </td>
                                 <td class="px-2 py-2 text-center">
                                     <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
@@ -120,7 +120,7 @@
             <div class="bg-white/70 dark:bg-gray-900/40 px-4 py-3 space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Subtotal</span>
-                    <span>${{ number_format($this->subtotal(), 2) }}</span>
+                    <span>${{ money($this->subtotal()) }}</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
                     <span>Impuesto (%)</span>
@@ -128,12 +128,12 @@
                 </div>
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Monto impuesto</span>
-                    <span>${{ number_format($this->taxAmount(), 2) }}</span>
+                    <span>${{ money($this->taxAmount()) }}</span>
                 </div>
             </div>
             <div class="bg-gradient-to-br from-indigo-600 to-violet-700 px-4 py-3 flex items-end justify-between text-white">
                 <span class="text-xs font-medium uppercase tracking-wide text-white/80">Total</span>
-                <span class="text-2xl font-extrabold tracking-tight">${{ number_format($this->total(), 2) }}</span>
+                <span class="text-2xl font-extrabold tracking-tight">${{ money($this->total()) }}</span>
             </div>
         </div>
     </div>

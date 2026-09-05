@@ -7,6 +7,7 @@ use App\Enums\CashSessionStatus;
 use App\Models\CashMovement;
 use App\Models\CashSession;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -40,16 +41,33 @@ class Index extends Component
             'openingAmount' => ['required', 'numeric', 'min:0'],
         ]);
 
-        CashSession::create([
-            'user_id' => Auth::id(),
-            'status' => CashSessionStatus::Open,
-            'opened_at' => now(),
-            'opening_amount' => $this->openingAmount,
-            'notes' => $this->openingNotes ?: null,
-        ]);
+        // El chequeo "¿ya hay una caja abierta?" y la creación tienen que
+        // ser atómicos: sin este lock, un doble clic en "Abrir caja" crea
+        // dos sesiones open a la vez, y la segunda queda huérfana (invisible
+        // para openSessionModel(), que solo trae una) hasta que alguien la
+        // encuentre mezclada con el turno siguiente.
+        $created = Cache::lock('caja:abrir-sesion', 10)->block(5, function () {
+            if ($this->openSessionModel()) {
+                $this->addError('openingAmount', 'Ya hay una caja abierta.');
 
-        $this->openingAmount = '';
-        $this->openingNotes = '';
+                return false;
+            }
+
+            CashSession::create([
+                'user_id' => Auth::id(),
+                'status' => CashSessionStatus::Open,
+                'opened_at' => now(),
+                'opening_amount' => $this->openingAmount,
+                'notes' => $this->openingNotes ?: null,
+            ]);
+
+            return true;
+        });
+
+        if ($created) {
+            $this->openingAmount = '';
+            $this->openingNotes = '';
+        }
     }
 
     public function addMovement(): void
@@ -121,7 +139,7 @@ class Index extends Component
 
     private function openSessionModel(): ?CashSession
     {
-        return CashSession::where('status', 'open')->first();
+        return CashSession::where('status', 'open')->latest('opened_at')->first();
     }
 
     public function render()

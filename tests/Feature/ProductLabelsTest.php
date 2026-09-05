@@ -29,9 +29,9 @@ class ProductLabelsTest extends TestCase
             ->call('addProduct', $product->id)
             ->set('selected.'.$product->id.'.qty', 3);
 
-        $component->assertSee('Yerba')->assertSee('1,500.00');
+        $component->assertSee('Yerba')->assertSee('1.500,00');
         // 3 etiquetas del mismo producto.
-        $component->assertSeeInOrder(['1,500.00', '1,500.00', '1,500.00']);
+        $component->assertSeeInOrder(['1.500,00', '1.500,00', '1.500,00']);
     }
 
     public function test_las_etiquetas_usan_el_precio_de_la_lista_elegida(): void
@@ -43,7 +43,7 @@ class ProductLabelsTest extends TestCase
             ->test('products.labels')
             ->call('addProduct', $product->id)
             ->set('price_list_id', $mayorista->id)
-            ->assertSee('1,200.00'); // 1000 + 20%
+            ->assertSee('1.200,00'); // 1000 + 20%
     }
 
     public function test_agregar_categoria_entera_suma_sus_productos(): void

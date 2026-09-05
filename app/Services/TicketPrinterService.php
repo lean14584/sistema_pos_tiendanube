@@ -202,7 +202,7 @@ class TicketPrinterService
 
     private function money(string|float $amount): string
     {
-        return number_format((float) $amount, 2);
+        return number_format((float) $amount, 2, ',', '.');
     }
 
     private function addCenter(string $text, bool $bold = false, int $size = self::FONT_SIZE_NORMAL): void

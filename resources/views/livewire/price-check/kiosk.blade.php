@@ -39,7 +39,7 @@
                         <p class="text-sm text-gray-400 mb-6">Código: {{ $product['sku'] }}</p>
                     @endif
                     <p class="text-6xl sm:text-7xl font-extrabold text-indigo-600 tracking-tight">
-                        ${{ number_format($product['price'], 2) }}
+                        ${{ money($product['price']) }}
                     </p>
                     <p class="mt-6 text-sm {{ $product['stock'] > 0 ? 'text-emerald-600' : 'text-red-500' }}">
                         {{ $product['stock'] > 0 ? 'Disponible' : 'Sin stock' }}

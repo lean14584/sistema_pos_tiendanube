@@ -6,9 +6,11 @@ use App\Enums\AlicuotaIva;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
+use App\Livewire\Invoices\Concerns\ManagesInvoiceLines;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
+use App\Models\PriceList;
 use App\Models\Product;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
@@ -23,6 +25,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Create extends Component
 {
+    use ManagesInvoiceLines;
+
     public string $client_id = '';
 
     public ?int $price_list_id = null;
@@ -64,9 +68,9 @@ class Create extends Component
     }
 
     /** Lista de precios vigente. null = precio base (sin ajuste). */
-    public function currentPriceList(): ?\App\Models\PriceList
+    public function currentPriceList(): ?PriceList
     {
-        return $this->price_list_id ? \App\Models\PriceList::find($this->price_list_id) : null;
+        return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
     }
 
     /** Al cambiar de cliente, tomo su lista asignada (o precio base) y recalculo. */
@@ -118,12 +122,6 @@ class Create extends Component
         }
     }
 
-    /** Neto de una línea: cantidad x precio, menos el descuento de la línea. */
-    private function lineNeto(array $item): float
-    {
-        return (float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100);
-    }
-
     #[Computed]
     public function productResults()
     {
@@ -137,114 +135,6 @@ class Create extends Component
             ->orWhere('sku', 'like', "%{$term}%")
             ->limit(8)
             ->get();
-    }
-
-    public function addProductItem(int $productId): void
-    {
-        $product = Product::findOrFail($productId);
-
-        $this->items[] = [
-            'product_id' => $product->id,
-            'description' => $product->name,
-            'quantity' => '1',
-            'unit_price' => (string) $product->priceForList($this->currentPriceList()),
-            'discount' => '0',
-            'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
-        ];
-
-        $this->productQuery = '';
-    }
-
-    public function addFreeformItem(): void
-    {
-        $this->items[] = [
-            'product_id' => null,
-            'description' => '',
-            'quantity' => '1',
-            'unit_price' => '0',
-            'discount' => '0',
-            'iva_rate' => '21',
-        ];
-    }
-
-    public function removeItem(int $index): void
-    {
-        unset($this->items[$index]);
-        $this->items = array_values($this->items);
-    }
-
-    public function subtotal(): float
-    {
-        return collect($this->items)->sum(fn ($item) => $this->lineNeto($item));
-    }
-
-    public function netoGravado(): float
-    {
-        return collect($this->items)
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
-            ->sum(fn ($item) => $this->lineNeto($item));
-    }
-
-    public function netoExento(): float
-    {
-        return collect($this->items)
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) <= 0)
-            ->sum(fn ($item) => $this->lineNeto($item));
-    }
-
-    public function taxAmount(): float
-    {
-        return collect($this->items)->sum(
-            fn ($item) => $this->lineNeto($item) * ((float) ($item['iva_rate'] ?? 0) / 100)
-        );
-    }
-
-    public function total(): float
-    {
-        return $this->subtotal() + $this->taxAmount();
-    }
-
-    /**
-     * Desglose del IVA por alícuota para mostrar en el formulario.
-     *
-     * @return array<int, array{tasa: float, iva: float}>
-     */
-    public function ivaBreakdown(): array
-    {
-        return collect($this->items)
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
-            ->groupBy(fn ($item) => (string) (float) $item['iva_rate'])
-            ->map(fn ($grupo, $tasa) => [
-                'tasa' => (float) $tasa,
-                'iva' => $grupo->sum(fn ($item) => $this->lineNeto($item) * ((float) $item['iva_rate'] / 100)),
-            ])
-            ->sortBy('tasa')
-            ->values()
-            ->all();
-    }
-
-    public function paidTotal(): float
-    {
-        return collect($this->payments)->sum(fn ($p) => (float) $p['amount']);
-    }
-
-    public function remaining(): float
-    {
-        return max(0, round($this->total() - $this->paidTotal(), 2));
-    }
-
-    public function addPayment(): void
-    {
-        $this->payments[] = [
-            'method' => 'efectivo',
-            'amount' => (string) $this->remaining(),
-        ];
-    }
-
-    public function removePayment(int $index): void
-    {
-        unset($this->payments[$index]);
-        $this->payments = array_values($this->payments);
     }
 
     public function save(): void
@@ -346,7 +236,7 @@ class Create extends Component
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
-            'priceLists' => \App\Models\PriceList::active()->orderBy('name')->get(),
+            'priceLists' => PriceList::active()->orderBy('name')->get(),
             'esNotaCredito' => false,
         ]);
     }

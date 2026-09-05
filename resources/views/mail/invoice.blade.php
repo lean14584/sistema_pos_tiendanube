@@ -4,7 +4,7 @@
 <x-mail::message>
 # Hola {{ $invoice->client->name }}
 
-Te enviamos tu factura **{{ $invoice->number }}** por un total de **${{ number_format($invoice->total, 2) }}**.
+Te enviamos tu factura **{{ $invoice->number }}** por un total de **${{ money($invoice->total) }}**.
 
 @if ($invoice->isFiscal)
 Comprobante fiscal autorizado por ARCA — CAE **{{ $invoice->cae }}**.

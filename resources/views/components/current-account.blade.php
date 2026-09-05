@@ -56,16 +56,16 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
             <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Total {{ strtolower($debitLabel) }}s</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ number_format($totalDebit, 2) }}</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($totalDebit) }}</p>
         </div>
         <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
             <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Total {{ strtolower($paymentLabel) }}s</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ number_format($totalCredit, 2) }}</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($totalCredit) }}</p>
         </div>
         <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
             <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">{{ $balance > 0 ? $balanceOwedLabel : 'Saldo' }}</p>
             <p class="text-lg font-semibold {{ $balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400' }}">
-                ${{ number_format(abs($balance), 2) }}
+                ${{ money(abs($balance)) }}
                 {{ $balance <= 0 ? '(sin saldo pendiente)' : '' }}
             </p>
         </div>
@@ -127,9 +127,9 @@
                                     {{ $row['description'] }}
                                 @endif
                             </td>
-                            <td class="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{{ $row['debit'] ? '$'.number_format($row['debit'], 2) : '—' }}</td>
-                            <td class="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{{ $row['credit'] ? '$'.number_format($row['credit'], 2) : '—' }}</td>
-                            <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($row['balance'], 2) }}</td>
+                            <td class="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{{ $row['debit'] ? '$'.money($row['debit']) : '—' }}</td>
+                            <td class="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{{ $row['credit'] ? '$'.money($row['credit']) : '—' }}</td>
+                            <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($row['balance']) }}</td>
                             <td class="px-5 py-3 text-right whitespace-nowrap">
                                 @if ($row['paymentId'])
                                     @if ($receiptRoute)

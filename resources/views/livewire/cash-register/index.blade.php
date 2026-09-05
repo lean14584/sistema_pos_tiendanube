@@ -17,7 +17,7 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
                     <input type="text" wire:model="openingNotes" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 </div>
-                <button type="submit" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
+                <button type="submit" wire:loading.attr="disabled" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50">
                     Abrir caja
                 </button>
             </div>
@@ -27,20 +27,20 @@
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Apertura</p>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ number_format($openSession->opening_amount, 2) }}</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($openSession->opening_amount) }}</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ $openSession->opened_at->format('d/m/Y H:i') }} · {{ $openSession->user->name }}</p>
                 </div>
                 <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Ingresos</p>
-                    <p class="text-lg font-semibold text-emerald-600 dark:text-emerald-400">${{ number_format($summary['ingresos'], 2) }}</p>
+                    <p class="text-lg font-semibold text-emerald-600 dark:text-emerald-400">${{ money($summary['ingresos']) }}</p>
                 </div>
                 <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Egresos</p>
-                    <p class="text-lg font-semibold text-red-600 dark:text-red-400">${{ number_format($summary['egresos'], 2) }}</p>
+                    <p class="text-lg font-semibold text-red-600 dark:text-red-400">${{ money($summary['egresos']) }}</p>
                 </div>
                 <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Saldo esperado</p>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ number_format($summary['expectedClosing'], 2) }}</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($summary['expectedClosing']) }}</p>
                 </div>
             </div>
 
@@ -67,7 +67,7 @@
                         <input type="date" wire:model="movDate" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     </div>
                 </div>
-                <button type="submit" class="mt-3 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">
+                <button type="submit" wire:loading.attr="disabled" class="mt-3 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50">
                     Agregar movimiento
                 </button>
             </form>
@@ -94,8 +94,8 @@
                                     <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $m->date->format('d/m/Y') }}</td>
                                     <td class="px-5 py-3 text-gray-700 dark:text-gray-300">{{ $m->concept }}</td>
                                     <td class="px-5 py-3 text-gray-500 dark:text-gray-400 capitalize">{{ $m->source->value }}</td>
-                                    <td class="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400">{{ $m->type->value === 'ingreso' ? '$'.number_format($m->amount, 2) : '—' }}</td>
-                                    <td class="px-5 py-3 text-right text-red-600 dark:text-red-400">{{ $m->type->value === 'egreso' ? '$'.number_format($m->amount, 2) : '—' }}</td>
+                                    <td class="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400">{{ $m->type->value === 'ingreso' ? '$'.money($m->amount) : '—' }}</td>
+                                    <td class="px-5 py-3 text-right text-red-600 dark:text-red-400">{{ $m->type->value === 'egreso' ? '$'.money($m->amount) : '—' }}</td>
                                     <td class="px-5 py-3 text-right">
                                         @if ($m->source->value === 'manual')
                                             <button wire:click="deleteMovement({{ $m->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all">
@@ -119,7 +119,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Monto de cierre (real) *</label>
-                        <input type="number" min="0" step="0.01" wire:model="closingAmount" placeholder="{{ number_format($summary['expectedClosing'], 2) }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="number" min="0" step="0.01" wire:model="closingAmount" placeholder="{{ money($summary['expectedClosing']) }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                         @error('closingAmount') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div class="sm:col-span-2">
@@ -129,7 +129,8 @@
                 </div>
                 <button
                     type="submit"
-                    class="mt-3 rounded-lg border border-red-300 dark:border-red-500/30 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    wire:loading.attr="disabled"
+                    class="mt-3 rounded-lg border border-red-300 dark:border-red-500/30 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-50"
                 >
                     Cerrar caja
                 </button>
@@ -168,12 +169,12 @@
                             @endphp
                             <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <td class="px-5 py-3 text-gray-700 dark:text-gray-300">{{ $s->user->name }}</td>
-                                <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $s->opened_at->format('d/m/Y H:i') }} · ${{ number_format($s->opening_amount, 2) }}</td>
-                                <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $s->closed_at?->format('d/m/Y H:i') }} · ${{ number_format($s->closing_amount, 2) }}</td>
-                                <td class="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400">${{ number_format($ingresos, 2) }}</td>
-                                <td class="px-5 py-3 text-right text-red-600 dark:text-red-400">${{ number_format($egresos, 2) }}</td>
+                                <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $s->opened_at->format('d/m/Y H:i') }} · ${{ money($s->opening_amount) }}</td>
+                                <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $s->closed_at?->format('d/m/Y H:i') }} · ${{ money($s->closing_amount) }}</td>
+                                <td class="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400">${{ money($ingresos) }}</td>
+                                <td class="px-5 py-3 text-right text-red-600 dark:text-red-400">${{ money($egresos) }}</td>
                                 <td class="px-5 py-3 text-right font-medium {{ abs($difference) > 0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100' }}">
-                                    ${{ number_format($difference, 2) }}
+                                    ${{ money($difference) }}
                                 </td>
                             </tr>
                         @endforeach

@@ -17,6 +17,7 @@ use App\Support\CashLinker;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\PromotionEngine;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -143,7 +144,7 @@ class Index extends Component
 
     public function addProduct(int $productId): void
     {
-        $product = \App\Models\Product::find($productId);
+        $product = Product::find($productId);
 
         if (! $product) {
             return;
@@ -181,8 +182,8 @@ class Index extends Component
             return;
         }
 
-        $product = \App\Models\Product::where('sku', $code)->first()
-            ?? \App\Models\Product::where('name', $code)->first();
+        $product = Product::where('sku', $code)->first()
+            ?? Product::where('name', $code)->first();
 
         if (! $product) {
             $this->addError('barcode', "No se encontró un producto con código «{$code}».");
@@ -231,7 +232,7 @@ class Index extends Component
      * Promociones vigentes de los productos que están en el carrito,
      * indexadas por product_id (a lo sumo una por producto).
      *
-     * @return \Illuminate\Support\Collection<int, Promotion>
+     * @return Collection<int, Promotion>
      */
     #[Computed]
     public function promoMap()
@@ -250,7 +251,7 @@ class Index extends Component
      * cada producto del carrito. Un producto con promo propia NO entra a la
      * familia. Devuelve product_id => ['amount' => float, 'label' => string].
      *
-     * @return \Illuminate\Support\Collection<int, array{amount: float, label: string}>
+     * @return Collection<int, array{amount: float, label: string}>
      */
     #[Computed]
     public function groupAllocations()
@@ -443,7 +444,7 @@ class Index extends Component
         $pagado = round($this->paymentsTotal(), 2);
 
         if ($pagado > $total + 0.001) {
-            $this->addError('payments', 'Lo pagado ($'.number_format($pagado, 2).') supera el total. Ajustá los montos.');
+            $this->addError('payments', 'Lo pagado ($'.money($pagado).') supera el total. Ajustá los montos.');
 
             return;
         }
@@ -524,9 +525,9 @@ class Index extends Component
         $this->payments = [];
         $this->client_id = $consumidorFinal->id;
 
-        $msg = "Venta {$invoice->number} registrada por $".number_format((float) $invoice->total, 2).'.';
+        $msg = "Venta {$invoice->number} registrada por $".money((float) $invoice->total).'.';
         if ($saldo > 0) {
-            $msg .= ' Saldo en cuenta corriente: $'.number_format($saldo, 2).'.';
+            $msg .= ' Saldo en cuenta corriente: $'.money($saldo).'.';
         }
         session()->flash('status', $msg);
     }

@@ -92,9 +92,9 @@
                     <tr>
                         <td>{{ \Illuminate\Support\Carbon::parse($m['date'])->format('d/m/Y') }}</td>
                         <td>{{ $m['description'] }}</td>
-                        <td class="num">{{ $m['debit'] ? '$'.number_format($m['debit'], 2) : '—' }}</td>
-                        <td class="num">{{ $m['credit'] ? '$'.number_format($m['credit'], 2) : '—' }}</td>
-                        <td class="num">${{ number_format($m['balance'], 2) }}</td>
+                        <td class="num">{{ $m['debit'] ? '$'.money($m['debit']) : '—' }}</td>
+                        <td class="num">{{ $m['credit'] ? '$'.money($m['credit']) : '—' }}</td>
+                        <td class="num">${{ money($m['balance']) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -104,7 +104,7 @@
     <div class="saldo-box">
         <div class="k">{{ $saldo > 0.009 ? $balanceOwedLabel : 'Saldo' }}</div>
         <div class="v" style="color: {{ $saldo > 0.009 ? '#dc2626' : '#059669' }};">
-            ${{ number_format(abs($saldo), 2) }}
+            ${{ money(abs($saldo)) }}
             @if ($saldo <= 0.009)<span style="font-size: 11px; font-weight: normal;"> (sin saldo pendiente)</span>@endif
         </div>
     </div>

@@ -89,8 +89,8 @@ class Client extends Model
         $nuevoSaldo = $this->saldoCuentaCorriente() + $nuevaDeuda;
 
         if ($nuevoSaldo > $limite + 0.009) {
-            return 'El saldo quedaría en $'.number_format($nuevoSaldo, 2)
-                .' y supera el límite de crédito de $'.number_format($limite, 2).' de '.$this->name.'.';
+            return 'El saldo quedaría en $'.money($nuevoSaldo)
+                .' y supera el límite de crédito de $'.money($limite).' de '.$this->name.'.';
         }
 
         return null;

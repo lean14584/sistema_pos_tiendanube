@@ -10,9 +10,11 @@ use App\Models\Invoice;
 use App\Support\CashLinker;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use RuntimeException;
 
 #[Layout('layouts.app')]
 class Create extends Component
@@ -141,56 +143,69 @@ class Create extends Component
             return;
         }
 
-        // No dejar cargar una NC por más de lo que todavía se puede acreditar
-        // de la factura original (lo mismo que ya chequea InvoiceCaeEmitter
-        // al emitir, pero acá antes de tocar stock/caja, no después).
-        $disponible = round((float) $this->invoice->total - (float) $this->invoice->creditedTotal, 2);
-
-        if (round($this->total(), 2) > $disponible + 0.009) {
-            $this->addError('items', 'El total a acreditar ($'.number_format($this->total(), 2)
-                .') supera el saldo pendiente de acreditar de la factura ($'.number_format(max($disponible, 0), 2).').');
-
-            return;
-        }
-
         $tipoNC = $this->invoice->tipo_comprobante === TipoComprobante::FacturaA
             ? TipoComprobanteInterno::NotaCreditoA
             : TipoComprobanteInterno::NotaCreditoB;
 
-        $notaCredito = InvoiceNumberGenerator::withLock($tipoNC->value, fn () => DB::transaction(function () use ($validItems, $tipoNC) {
-            $nota = Invoice::create([
-                'number' => InvoiceNumberGenerator::next($tipoNC->value),
-                'client_id' => $this->invoice->client_id,
-                'related_invoice_id' => $this->invoice->id,
-                'tipo_comprobante_interno' => $tipoNC,
-                'afecta_stock' => $this->afecta_stock,
-                'issue_date' => now()->toDateString(),
-                'due_date' => now()->toDateString(),
-                'tax_rate' => 0,
-                'status' => 'draft',
-            ]);
+        // El chequeo de "cuánto queda por acreditar" y la creación de la NC
+        // (que mueve stock y caja ya en borrador, antes de emitir a AFIP)
+        // tienen que ser una sola unidad atómica por factura: si no,
+        // dos submits casi simultáneos (doble clic, o dos personas) contra
+        // la misma factura pueden pasar el chequeo los dos y duplicar la
+        // reversión de stock/plata. Se relee la factura ya adentro del lock.
+        try {
+            $notaCredito = Cache::lock("nota-credito:factura:{$this->invoice->id}", 10)->block(5, function () use ($validItems, $tipoNC) {
+                $invoice = $this->invoice->fresh();
 
-            foreach ($validItems as $item) {
-                $nota->items()->create([
-                    'product_id' => $item['product_id'],
-                    'description' => $item['description'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'iva_rate' => $item['iva_rate'] ?? '21',
-                ]);
-            }
+                $disponible = round((float) $invoice->total - (float) $invoice->creditedTotal, 2);
 
-            StockAdjuster::apply($validItems, $this->afecta_stock ? $tipoNC->stockSign() : 0);
-
-            foreach ($this->payments as $payment) {
-                if ((float) $payment['amount'] > 0) {
-                    $created = $nota->payments()->create($payment);
-                    CashLinker::linkInvoiceRefund($nota, $created);
+                if (round($this->total(), 2) > $disponible + 0.009) {
+                    throw new RuntimeException(
+                        'El total a acreditar ($'.money($this->total())
+                            .') supera el saldo pendiente de acreditar de la factura ($'.money(max($disponible, 0)).').'
+                    );
                 }
-            }
 
-            return $nota;
-        }));
+                return InvoiceNumberGenerator::withLock($tipoNC->value, fn () => DB::transaction(function () use ($validItems, $tipoNC, $invoice) {
+                    $nota = Invoice::create([
+                        'number' => InvoiceNumberGenerator::next($tipoNC->value),
+                        'client_id' => $invoice->client_id,
+                        'related_invoice_id' => $invoice->id,
+                        'tipo_comprobante_interno' => $tipoNC,
+                        'afecta_stock' => $this->afecta_stock,
+                        'issue_date' => now()->toDateString(),
+                        'due_date' => now()->toDateString(),
+                        'tax_rate' => 0,
+                        'status' => 'draft',
+                    ]);
+
+                    foreach ($validItems as $item) {
+                        $nota->items()->create([
+                            'product_id' => $item['product_id'],
+                            'description' => $item['description'],
+                            'quantity' => $item['quantity'],
+                            'unit_price' => $item['unit_price'],
+                            'iva_rate' => $item['iva_rate'] ?? '21',
+                        ]);
+                    }
+
+                    StockAdjuster::apply($validItems, $this->afecta_stock ? $tipoNC->stockSign() : 0);
+
+                    foreach ($this->payments as $payment) {
+                        if ((float) $payment['amount'] > 0) {
+                            $created = $nota->payments()->create($payment);
+                            CashLinker::linkInvoiceRefund($nota, $created);
+                        }
+                    }
+
+                    return $nota;
+                }));
+            });
+        } catch (RuntimeException $e) {
+            $this->addError('items', $e->getMessage());
+
+            return;
+        }
 
         session()->flash('status', 'Nota de crédito generada.');
         $this->redirect(route('invoices.show', $notaCredito), navigate: true);

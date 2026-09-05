@@ -86,12 +86,12 @@
 
     <div class="amount-box">
         <div class="k">La suma de</div>
-        <div class="v">${{ number_format($payment->amount, 2) }}</div>
+        <div class="v">${{ money($payment->amount) }}</div>
     </div>
 
     <div class="saldo muted">
         Saldo restante en cuenta corriente:
-        <span class="num" style="color: {{ $saldo > 0.009 ? '#dc2626' : '#059669' }};">${{ number_format(max(0, $saldo), 2) }}</span>
+        <span class="num" style="color: {{ $saldo > 0.009 ? '#dc2626' : '#059669' }};">${{ money(max(0, $saldo)) }}</span>
         {{ $saldo > 0.009 ? '' : '(sin saldo pendiente)' }}
     </div>
 

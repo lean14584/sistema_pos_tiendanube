@@ -40,10 +40,10 @@
     </div>
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <x-stat-card label="Neto gravado" value="${{ number_format($totalNeto, 2) }}" icon="banknotes" />
-        <x-stat-card label="IVA liquidado" value="${{ number_format($totalIva, 2) }}" icon="receipt-percent" />
-        <x-stat-card label="Exento" value="${{ number_format($totalExento, 2) }}" icon="no-symbol" accent="text-gray-600 bg-gradient-to-br from-gray-50 to-gray-100/60 dark:text-gray-400 dark:from-gray-500/15 dark:to-gray-500/5" />
-        <x-stat-card label="Total" value="${{ number_format($totalGeneral, 2) }}" icon="calculator" accent="text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:text-emerald-400 dark:from-emerald-500/15 dark:to-emerald-500/5" />
+        <x-stat-card label="Neto gravado" value="${{ money($totalNeto) }}" icon="banknotes" />
+        <x-stat-card label="IVA liquidado" value="${{ money($totalIva) }}" icon="receipt-percent" />
+        <x-stat-card label="Exento" value="${{ money($totalExento) }}" icon="no-symbol" accent="text-gray-600 bg-gradient-to-br from-gray-50 to-gray-100/60 dark:text-gray-400 dark:from-gray-500/15 dark:to-gray-500/5" />
+        <x-stat-card label="Total" value="${{ money($totalGeneral) }}" icon="calculator" accent="text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:text-emerald-400 dark:from-emerald-500/15 dark:to-emerald-500/5" />
     </div>
 
     @if ($resumen->isNotEmpty())
@@ -53,8 +53,8 @@
                 @foreach ($resumen as $item)
                     <div>
                         <p class="text-xs text-gray-400 dark:text-gray-500 uppercase">{{ rtrim(rtrim(number_format($item['tasa'], 2), '0'), '.') }}%</p>
-                        <p class="font-semibold text-gray-900 dark:text-gray-100">${{ number_format($item['iva'], 2) }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">neto ${{ number_format($item['netoGravado'], 2) }}</p>
+                        <p class="font-semibold text-gray-900 dark:text-gray-100">${{ money($item['iva']) }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">neto ${{ money($item['netoGravado']) }}</p>
                     </div>
                 @endforeach
             </div>
@@ -90,10 +90,10 @@
                                 <span class="text-gray-400 dark:text-gray-500">· {{ $numeroCompleto($row) }}</span>
                             </td>
                             <td class="px-4 py-2 text-gray-700 dark:text-gray-300 truncate max-w-[220px]">{{ $row->denominacion }}</td>
-                            <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">${{ number_format($row->importeNetoGravado, 2) }}</td>
-                            <td class="px-4 py-2 text-right text-gray-500 dark:text-gray-400">${{ number_format($row->importeExento, 2) }}</td>
-                            <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">${{ number_format($row->ivaLiquidado, 2) }}</td>
-                            <td class="px-4 py-2 text-right font-medium text-gray-900 dark:text-gray-100">${{ number_format($row->importeTotal, 2) }}</td>
+                            <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">${{ money($row->importeNetoGravado) }}</td>
+                            <td class="px-4 py-2 text-right text-gray-500 dark:text-gray-400">${{ money($row->importeExento) }}</td>
+                            <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">${{ money($row->ivaLiquidado) }}</td>
+                            <td class="px-4 py-2 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($row->importeTotal) }}</td>
                         </tr>
                     @endforeach
                 </tbody>

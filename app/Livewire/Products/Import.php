@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImportMapping;
 use App\Support\ProductImport\ProductImportFields;
+use App\Support\TiendanubeSyncGuard;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
@@ -118,72 +119,87 @@ class Import extends Component
         $omitidos = [];
         $categoriasCache = [];
 
-        DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache) {
-            foreach ($filas as $numero => $fila) {
-                $nombre = trim((string) $this->valor($fila, 'name'));
-                $precio = $this->valor($fila, 'price');
+        // Cada alta/edición dispara ProductObserver → TiendanubeAutoSync::queue(),
+        // que despacha un afterResponse() (llamada HTTP real a Tiendanube,
+        // sin depender de un worker de colas). Con un Excel de cientos de
+        // filas eso son cientos de llamadas HTTP secuenciales colgando este
+        // mismo request al final. Silenciamos el auto-sync acá; para
+        // reflejar los productos importados en Tiendanube, usar "Enviar
+        // productos" en el panel de Tiendanube (acción manual, ya pensada
+        // para tardar).
+        TiendanubeSyncGuard::mute(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache) {
+            DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache) {
+                foreach ($filas as $numero => $fila) {
+                    $nombre = trim((string) $this->valor($fila, 'name'));
+                    $precio = $this->valor($fila, 'price');
 
-                if ($nombre === '' || $precio === null || $precio === '' || ! is_numeric($this->normalizarNumero($precio))) {
-                    $omitidos[] = 'Fila '.($numero + 2).': falta nombre o precio válido.';
+                    if ($nombre === '' || $precio === null || $precio === '' || ! is_numeric($this->normalizarNumero($precio))) {
+                        $omitidos[] = 'Fila '.($numero + 2).': falta nombre o precio válido.';
 
-                    continue;
-                }
-
-                $datos = [
-                    'name' => $nombre,
-                    'price' => $this->normalizarNumero($precio),
-                ];
-
-                if (($sku = $this->valor($fila, 'sku')) !== null && trim((string) $sku) !== '') {
-                    $datos['sku'] = trim((string) $sku);
-                }
-
-                if (($costo = $this->valor($fila, 'cost_price')) !== null && trim((string) $costo) !== '') {
-                    $datos['cost_price'] = $this->normalizarNumero($costo);
-                }
-
-                if (($stock = $this->valor($fila, 'stock')) !== null && trim((string) $stock) !== '') {
-                    $datos['stock'] = (int) $this->normalizarNumero($stock);
-                }
-
-                if (($minStock = $this->valor($fila, 'min_stock')) !== null && trim((string) $minStock) !== '') {
-                    $datos['min_stock'] = (int) $this->normalizarNumero($minStock);
-                }
-
-                if (($descripcion = $this->valor($fila, 'description')) !== null && trim((string) $descripcion) !== '') {
-                    $datos['description'] = trim((string) $descripcion);
-                }
-
-                if (($iva = $this->valor($fila, 'iva_rate')) !== null && trim((string) $iva) !== '') {
-                    $normalizado = AlicuotaIva::normalizar($this->normalizarNumero($iva));
-                    $datos['iva_rate'] = in_array($normalizado, AlicuotaIva::valores(), true) ? $normalizado : '21';
-                }
-
-                if (($categoria = $this->valor($fila, 'category')) !== null && trim((string) $categoria) !== '') {
-                    $nombreCategoria = trim((string) $categoria);
-                    $clave = mb_strtolower($nombreCategoria);
-                    if (! isset($categoriasCache[$clave])) {
-                        $categoriasCache[$clave] = Category::firstOrCreate(['name' => $nombreCategoria])->id;
+                        continue;
                     }
-                    $datos['category_id'] = $categoriasCache[$clave];
-                }
 
-                $existente = null;
-                if (! empty($datos['sku'])) {
-                    $existente = Product::whereRaw('LOWER(sku) = ?', [mb_strtolower($datos['sku'])])->first();
-                }
-                if (! $existente) {
-                    $existente = Product::whereRaw('LOWER(name) = ?', [mb_strtolower($nombre)])->first();
-                }
+                    $datos = [
+                        'name' => $nombre,
+                        'price' => $this->normalizarNumero($precio),
+                    ];
 
-                if ($existente) {
-                    $existente->update($datos);
-                    $actualizados++;
-                } else {
-                    Product::create($datos);
-                    $creados++;
+                    if (($sku = $this->valor($fila, 'sku')) !== null && trim((string) $sku) !== '') {
+                        $datos['sku'] = trim((string) $sku);
+                    }
+
+                    if (($costo = $this->valor($fila, 'cost_price')) !== null && trim((string) $costo) !== '') {
+                        $datos['cost_price'] = $this->normalizarNumero($costo);
+                    }
+
+                    if (($stock = $this->valor($fila, 'stock')) !== null && trim((string) $stock) !== '') {
+                        $datos['stock'] = (int) $this->normalizarNumero($stock);
+                    }
+
+                    if (($minStock = $this->valor($fila, 'min_stock')) !== null && trim((string) $minStock) !== '') {
+                        $datos['min_stock'] = (int) $this->normalizarNumero($minStock);
+                    }
+
+                    if (($descripcion = $this->valor($fila, 'description')) !== null && trim((string) $descripcion) !== '') {
+                        $datos['description'] = trim((string) $descripcion);
+                    }
+
+                    if (($iva = $this->valor($fila, 'iva_rate')) !== null && trim((string) $iva) !== '') {
+                        $normalizado = AlicuotaIva::normalizar($this->normalizarNumero($iva));
+                        $datos['iva_rate'] = in_array($normalizado, AlicuotaIva::valores(), true) ? $normalizado : '21';
+                    }
+
+                    if (($categoria = $this->valor($fila, 'category')) !== null && trim((string) $categoria) !== '') {
+                        $nombreCategoria = trim((string) $categoria);
+                        $clave = mb_strtolower($nombreCategoria);
+                        if (! isset($categoriasCache[$clave])) {
+                            $categoriasCache[$clave] = Category::firstOrCreate(['name' => $nombreCategoria])->id;
+                        }
+                        $datos['category_id'] = $categoriasCache[$clave];
+                    }
+
+                    // La colación por defecto de la conexión (utf8mb4_unicode_ci,
+                    // ver config/database.php) ya compara sin distinguir
+                    // mayúsculas/minúsculas: el LOWER() de acá era redundante y,
+                    // de paso, evitaba que MySQL pudiera usar el índice de
+                    // sku/name (una función sobre la columna invalida el índice).
+                    $existente = null;
+                    if (! empty($datos['sku'])) {
+                        $existente = Product::where('sku', $datos['sku'])->first();
+                    }
+                    if (! $existente) {
+                        $existente = Product::where('name', $nombre)->first();
+                    }
+
+                    if ($existente) {
+                        $existente->update($datos);
+                        $actualizados++;
+                    } else {
+                        Product::create($datos);
+                        $creados++;
+                    }
                 }
-            }
+            });
         });
 
         // Recordar el mapeo para la próxima vez que suban un Excel con estas mismas cabeceras.
