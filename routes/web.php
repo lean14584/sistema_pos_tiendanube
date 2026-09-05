@@ -122,6 +122,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('module:stock-adjustments')->get('ajustes-stock', App\Livewire\StockAdjustments\Index::class)->name('stock-adjustments.index');
 
+    Route::middleware('module:stock-transfers')->get('envios-mercaderia', App\Livewire\StockTransfers\Index::class)->name('stock-transfers.index');
+
     Route::middleware('module:categories')->prefix('categories')->name('categories.')->group(function () {
         Route::get('/', CategoryIndex::class)->name('index');
         Route::get('/new', CategoryCreate::class)->name('create');
