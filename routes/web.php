@@ -1,67 +1,85 @@
 <?php
 
+use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\BackupDownloadController;
+use App\Http\Controllers\ClientAccountStatementController;
+use App\Http\Controllers\InvoicePdfController;
+use App\Http\Controllers\LibroIvaExportController;
+use App\Http\Controllers\MercadoPagoWebhookController;
+use App\Http\Controllers\ProductExportController;
+use App\Http\Controllers\ProviderAccountStatementController;
+use App\Http\Controllers\ReciboPdfController;
+use App\Http\Controllers\RemitoPdfController;
+use App\Http\Controllers\ReportsExportController;
+use App\Http\Controllers\TiendanubeWebhookController;
 use App\Livewire\Audit\Index as AuditIndex;
 use App\Livewire\Auth\Login;
 use App\Livewire\CashRegister\Index as CashRegisterIndex;
-use App\Livewire\CompanySettings\Edit as CompanySettingsEdit;
-use App\Livewire\Categories\Edit as CategoryEdit;
 use App\Livewire\Categories\Create as CategoryCreate;
+use App\Livewire\Categories\Edit as CategoryEdit;
 use App\Livewire\Categories\Index as CategoryIndex;
 use App\Livewire\Clients\Account as ClientAccount;
-use App\Livewire\Clients\Edit as ClientEdit;
 use App\Livewire\Clients\Create as ClientCreate;
+use App\Livewire\Clients\Edit as ClientEdit;
 use App\Livewire\Clients\Index as ClientIndex;
+use App\Livewire\CompanySettings\Edit as CompanySettingsEdit;
 use App\Livewire\Dashboard;
-use App\Livewire\Invoices\Edit as InvoiceEdit;
 use App\Livewire\Invoices\Create as InvoiceCreate;
+use App\Livewire\Invoices\Edit as InvoiceEdit;
+use App\Livewire\Invoices\FacturarRemito;
 use App\Livewire\Invoices\Index as InvoiceIndex;
 use App\Livewire\Invoices\Show as InvoiceShow;
 use App\Livewire\LibroIva\Index as LibroIvaIndex;
 use App\Livewire\Messages\Index as MessagesIndex;
 use App\Livewire\NotasCredito\Create as NotaCreditoCreate;
-use App\Livewire\Products\Edit as ProductEdit;
+use App\Livewire\Pos\Index;
+use App\Livewire\PriceCheck\Kiosk;
 use App\Livewire\Products\Create as ProductCreate;
+use App\Livewire\Products\Edit as ProductEdit;
+use App\Livewire\Products\Historial;
+use App\Livewire\Products\Import;
 use App\Livewire\Products\Index as ProductIndex;
+use App\Livewire\Products\Labels;
 use App\Livewire\Providers\Account as ProviderAccount;
-use App\Livewire\Providers\Edit as ProviderEdit;
 use App\Livewire\Providers\Create as ProviderCreate;
+use App\Livewire\Providers\Edit as ProviderEdit;
 use App\Livewire\Providers\Index as ProviderIndex;
-use App\Livewire\Purchases\Edit as PurchaseEdit;
 use App\Livewire\Purchases\Create as PurchaseCreate;
+use App\Livewire\Purchases\Edit as PurchaseEdit;
 use App\Livewire\Purchases\Index as PurchaseIndex;
 use App\Livewire\Purchases\Show as PurchaseShow;
 use App\Livewire\Purchases\Suggestions as PurchaseSuggestions;
-use App\Livewire\Quotes\Edit as QuoteEdit;
 use App\Livewire\Quotes\Create as QuoteCreate;
+use App\Livewire\Quotes\Edit as QuoteEdit;
 use App\Livewire\Quotes\Index as QuoteIndex;
 use App\Livewire\Quotes\Show as QuoteShow;
 use App\Livewire\Reports\Index as ReportsIndex;
+use App\Livewire\Sucursales\Create as SucursalCreate;
+use App\Livewire\Sucursales\Edit as SucursalEdit;
+use App\Livewire\Sucursales\Index as SucursalIndex;
 use App\Livewire\Tasks\Create as TaskCreate;
 use App\Livewire\Tasks\Index as TaskIndex;
-use App\Livewire\Users\Edit as UserEdit;
 use App\Livewire\Users\Create as UserCreate;
+use App\Livewire\Users\Edit as UserEdit;
 use App\Livewire\Users\Index as UserIndex;
-use App\Http\Controllers\Auth\LogoutController;
-use App\Http\Controllers\InvoicePdfController;
-use App\Http\Controllers\LibroIvaExportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', Login::class)->middleware('guest')->name('login');
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
 
 // Webhook público de Mercado Pago (sin auth ni CSRF; se valida contra la API).
-Route::match(['get', 'post'], '/mp/webhook', \App\Http\Controllers\MercadoPagoWebhookController::class)->name('mp.webhook');
+Route::match(['get', 'post'], '/mp/webhook', MercadoPagoWebhookController::class)->name('mp.webhook');
 
 // Webhook público de Tiendanube (sin auth ni CSRF; firma HMAC opcional).
-Route::post('/tiendanube/webhook', \App\Http\Controllers\TiendanubeWebhookController::class)->name('tiendanube.webhook');
+Route::post('/tiendanube/webhook', TiendanubeWebhookController::class)->name('tiendanube.webhook');
 
 // Kiosco público de consulta de precios (para dejar fijo en el salón).
-Route::get('/precios', \App\Livewire\PriceCheck\Kiosk::class)->name('precios');
+Route::get('/precios', Kiosk::class)->name('precios');
 
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
 
-    Route::middleware('module:pos')->get('pos', \App\Livewire\Pos\Index::class)->name('pos.index');
+    Route::middleware('module:pos')->get('pos', Index::class)->name('pos.index');
 
     Route::middleware('module:quotes')->prefix('quotes')->name('quotes.')->group(function () {
         Route::get('/', QuoteIndex::class)->name('index');
@@ -76,8 +94,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}', InvoiceShow::class)->name('show');
         Route::get('/{invoice}/edit', InvoiceEdit::class)->name('edit');
         Route::get('/{invoice}/pdf', InvoicePdfController::class)->name('pdf');
-        Route::get('/{invoice}/remito-pdf', \App\Http\Controllers\RemitoPdfController::class)->name('remito-pdf');
-        Route::get('/{invoice}/facturar', \App\Livewire\Invoices\FacturarRemito::class)->name('facturar-remito');
+        Route::get('/{invoice}/remito-pdf', RemitoPdfController::class)->name('remito-pdf');
+        Route::get('/{invoice}/facturar', FacturarRemito::class)->name('facturar-remito');
         Route::get('/{invoice}/nota-credito', NotaCreditoCreate::class)->name('nota-credito.create');
     });
 
@@ -86,23 +104,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/new', ClientCreate::class)->name('create');
         Route::get('/{client}/edit', ClientEdit::class)->name('edit');
         Route::get('/{client}/account', ClientAccount::class)->name('account');
-        Route::get('/{client}/estado-cuenta', \App\Http\Controllers\ClientAccountStatementController::class)->name('statement');
-        Route::get('/recibo/{payment}', \App\Http\Controllers\ReciboPdfController::class)->name('recibo');
+        Route::get('/{client}/estado-cuenta', ClientAccountStatementController::class)->name('statement');
+        Route::get('/recibo/{payment}', ReciboPdfController::class)->name('recibo');
     });
 
-    Route::middleware('module:cobranzas')->get('cobranzas', \App\Livewire\Cobranzas\Index::class)->name('cobranzas.index');
+    Route::middleware('module:cobranzas')->get('cobranzas', App\Livewire\Cobranzas\Index::class)->name('cobranzas.index');
 
     Route::middleware('module:products')->prefix('products')->name('products.')->group(function () {
         Route::get('/', ProductIndex::class)->name('index');
         Route::get('/new', ProductCreate::class)->name('create');
-        Route::get('/etiquetas', \App\Livewire\Products\Labels::class)->name('labels');
-        Route::get('/importar', \App\Livewire\Products\Import::class)->name('import');
-        Route::get('/exportar', \App\Http\Controllers\ProductExportController::class)->name('export');
+        Route::get('/etiquetas', Labels::class)->name('labels');
+        Route::get('/importar', Import::class)->name('import');
+        Route::get('/exportar', ProductExportController::class)->name('export');
         Route::get('/{product}/edit', ProductEdit::class)->name('edit');
-        Route::get('/{product}/historial', \App\Livewire\Products\Historial::class)->name('historial');
+        Route::get('/{product}/historial', Historial::class)->name('historial');
     });
 
-    Route::middleware('module:stock-adjustments')->get('ajustes-stock', \App\Livewire\StockAdjustments\Index::class)->name('stock-adjustments.index');
+    Route::middleware('module:stock-adjustments')->get('ajustes-stock', App\Livewire\StockAdjustments\Index::class)->name('stock-adjustments.index');
 
     Route::middleware('module:categories')->prefix('categories')->name('categories.')->group(function () {
         Route::get('/', CategoryIndex::class)->name('index');
@@ -111,12 +129,12 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('module:price-lists')->prefix('price-lists')->name('price-lists.')->group(function () {
-        Route::get('/', \App\Livewire\PriceLists\Index::class)->name('index');
+        Route::get('/', App\Livewire\PriceLists\Index::class)->name('index');
     });
 
     Route::middleware('module:promotions')->prefix('promociones')->name('promotions.')->group(function () {
-        Route::get('/', \App\Livewire\Promotions\Index::class)->name('index');
-        Route::get('/familias', \App\Livewire\PromotionGroups\Index::class)->name('groups.index');
+        Route::get('/', App\Livewire\Promotions\Index::class)->name('index');
+        Route::get('/familias', App\Livewire\PromotionGroups\Index::class)->name('groups.index');
     });
 
     Route::middleware('module:providers')->prefix('providers')->name('providers.')->group(function () {
@@ -124,7 +142,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/new', ProviderCreate::class)->name('create');
         Route::get('/{provider}/edit', ProviderEdit::class)->name('edit');
         Route::get('/{provider}/account', ProviderAccount::class)->name('account');
-        Route::get('/{provider}/estado-cuenta', \App\Http\Controllers\ProviderAccountStatementController::class)->name('statement');
+        Route::get('/{provider}/estado-cuenta', ProviderAccountStatementController::class)->name('statement');
     });
 
     Route::middleware('module:purchases')->prefix('purchases')->name('purchases.')->group(function () {
@@ -139,12 +157,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/', CashRegisterIndex::class)->name('index');
     });
 
-    Route::middleware('module:vencimientos')->get('vencimientos', \App\Livewire\Vencimientos\Index::class)->name('vencimientos.index');
+    Route::middleware('module:vencimientos')->get('vencimientos', App\Livewire\Vencimientos\Index::class)->name('vencimientos.index');
 
     Route::middleware('module:reports')->prefix('reports')->name('reports.')->group(function () {
         Route::get('/', ReportsIndex::class)->name('index');
-        Route::get('/export/pdf', [\App\Http\Controllers\ReportsExportController::class, 'pdf'])->name('export.pdf');
-        Route::get('/export/csv', [\App\Http\Controllers\ReportsExportController::class, 'csv'])->name('export.csv');
+        Route::get('/export/pdf', [ReportsExportController::class, 'pdf'])->name('export.pdf');
+        Route::get('/export/csv', [ReportsExportController::class, 'csv'])->name('export.csv');
     });
 
     Route::middleware('module:users')->prefix('users')->name('users.')->group(function () {
@@ -167,17 +185,23 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('module:company-settings')->prefix('tiendanube')->name('tiendanube.')->group(function () {
-        Route::get('/', \App\Livewire\Tiendanube\Index::class)->name('index');
+        Route::get('/', App\Livewire\Tiendanube\Index::class)->name('index');
+    });
+
+    Route::middleware('module:sucursales')->prefix('sucursales')->name('sucursales.')->group(function () {
+        Route::get('/', SucursalIndex::class)->name('index');
+        Route::get('/new', SucursalCreate::class)->name('create');
+        Route::get('/{sucursal}/edit', SucursalEdit::class)->name('edit');
     });
 
     Route::middleware('module:audit')->get('auditoria', AuditIndex::class)->name('audit.index');
 
     Route::middleware('module:backups')->prefix('respaldo')->name('backups.')->group(function () {
-        Route::get('/', \App\Livewire\Backups\Index::class)->name('index');
-        Route::get('/descargar', \App\Http\Controllers\BackupDownloadController::class)->name('download');
+        Route::get('/', App\Livewire\Backups\Index::class)->name('index');
+        Route::get('/descargar', BackupDownloadController::class)->name('download');
     });
 
-    Route::middleware('module:health')->get('estado', \App\Livewire\Health\Index::class)->name('health.index');
+    Route::middleware('module:health')->get('estado', App\Livewire\Health\Index::class)->name('health.index');
 
     Route::middleware('module:libro-iva')->prefix('libro-iva')->name('libro-iva.')->group(function () {
         Route::get('/', LibroIvaIndex::class)->name('index');
