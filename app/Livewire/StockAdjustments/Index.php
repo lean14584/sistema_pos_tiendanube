@@ -6,6 +6,7 @@ use App\Enums\StockAdjustmentReason;
 use App\Models\Product;
 use App\Models\StockAdjustment;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -18,6 +19,8 @@ class Index extends Component
 
     public string $product_id = '';
 
+    public string $productQuery = '';
+
     public string $new_stock = '';
 
     public string $reason = 'conteo_fisico';
@@ -27,6 +30,8 @@ class Index extends Component
     #[Url]
     public string $filterProduct = '';
 
+    public string $filterProductQuery = '';
+
     #[Url]
     public string $desde = '';
 
@@ -35,7 +40,7 @@ class Index extends Component
 
     public function updating(string $name): void
     {
-        if (in_array($name, ['filterProduct', 'desde', 'hasta'], true)) {
+        if (in_array($name, ['desde', 'hasta'], true)) {
             $this->resetPage();
         }
     }
@@ -45,6 +50,57 @@ class Index extends Component
     {
         $product = $this->product_id !== '' ? Product::find($this->product_id) : null;
         $this->new_stock = $product ? (string) $product->stock : '';
+    }
+
+    #[Computed]
+    public function productResults()
+    {
+        $term = trim($this->productQuery);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Product::where('name', 'like', "%{$term}%")
+            ->orWhere('sku', 'like', "%{$term}%")
+            ->limit(8)
+            ->get();
+    }
+
+    public function selectProduct(int $productId): void
+    {
+        $this->productQuery = '';
+        $this->product_id = (string) $productId;
+        $this->updatedProductId();
+    }
+
+    #[Computed]
+    public function filterProductResults()
+    {
+        $term = trim($this->filterProductQuery);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Product::where('name', 'like', "%{$term}%")
+            ->orWhere('sku', 'like', "%{$term}%")
+            ->limit(8)
+            ->get();
+    }
+
+    public function selectFilterProduct(int $productId): void
+    {
+        $this->filterProductQuery = '';
+        $this->filterProduct = (string) $productId;
+        $this->resetPage();
+    }
+
+    public function clearFilterProduct(): void
+    {
+        $this->filterProduct = '';
+        $this->filterProductQuery = '';
+        $this->resetPage();
     }
 
     protected function rules(): array
@@ -79,7 +135,7 @@ class Index extends Component
         });
 
         session()->flash('status', "Stock de \"{$product->name}\" ajustado de {$previous} a {$newStock}.");
-        $this->reset(['product_id', 'new_stock', 'notes']);
+        $this->reset(['product_id', 'productQuery', 'new_stock', 'notes']);
         $this->reason = 'conteo_fisico';
     }
 
@@ -94,7 +150,8 @@ class Index extends Component
 
         return view('livewire.stock-adjustments.index', [
             'adjustments' => $adjustments,
-            'products' => Product::orderBy('name')->get(),
+            'selectedProductName' => $this->product_id !== '' ? Product::find($this->product_id)?->name : null,
+            'filterProductName' => $this->filterProduct !== '' ? Product::find($this->filterProduct)?->name : null,
             'reasons' => StockAdjustmentReason::cases(),
         ]);
     }

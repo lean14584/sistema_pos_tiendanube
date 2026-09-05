@@ -5,13 +5,11 @@
 <form wire:submit="save" class="space-y-6 max-w-3xl">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proveedor *</label>
-            <select wire:model="provider_id" required class="{{ $inputClass }}">
-                <option value="">Seleccionar...</option>
-                @foreach ($providers as $provider)
-                    <option value="{{ $provider->id }}">{{ $provider->name }}</option>
-                @endforeach
-            </select>
+            <x-provider-picker
+                :provider-name="$selectedProviderName ?? '—'"
+                :provider-query="$providerQuery"
+                :provider-results="$this->providerResults"
+            />
             @error('provider_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
         </div>
         <div>

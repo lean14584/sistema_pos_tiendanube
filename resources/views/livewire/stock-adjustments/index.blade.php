@@ -11,13 +11,11 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="sm:col-span-2">
-                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Producto *</label>
-                <select wire:model.live="product_id" class="{{ $inputClass }}">
-                    <option value="">Seleccionar...</option>
-                    @foreach ($products as $p)
-                        <option value="{{ $p->id }}">{{ $p->name }} (stock actual: {{ $p->stock }})</option>
-                    @endforeach
-                </select>
+                <x-product-picker
+                    :product-name="$selectedProductName ?? '—'"
+                    :product-query="$productQuery"
+                    :product-results="$this->productResults"
+                />
                 @error('product_id') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
@@ -47,12 +45,41 @@
     </form>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        <select wire:model.live="filterProduct" class="{{ $inputClass }}">
-            <option value="">Todos los productos</option>
-            @foreach ($products as $p)
-                <option value="{{ $p->id }}">{{ $p->name }}</option>
-            @endforeach
-        </select>
+        <div>
+            @if ($filterProduct !== '')
+                <div class="flex items-center justify-between gap-2 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 px-3 py-2 text-sm">
+                    <span class="truncate text-gray-800 dark:text-gray-100">{{ $filterProductName }}</span>
+                    <button type="button" wire:click="clearFilterProduct" class="text-gray-400 hover:text-red-500 shrink-0">
+                        <x-heroicon-o-x-mark class="w-4 h-4" />
+                    </button>
+                </div>
+            @else
+                <div class="relative">
+                    <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                    <input
+                        type="text"
+                        wire:model.live.debounce.200ms="filterProductQuery"
+                        placeholder="Filtrar por producto..."
+                        class="{{ $inputClass }} pl-9"
+                    >
+                    @if (trim($filterProductQuery) !== '')
+                        <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
+                            @forelse ($this->filterProductResults as $product)
+                                <button
+                                    type="button"
+                                    wire:click="selectFilterProduct({{ $product->id }})"
+                                    class="w-full flex items-center px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                                >
+                                    <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
+                                </button>
+                            @empty
+                                <p class="p-3 text-sm text-gray-400 dark:text-gray-500">Sin resultados para "{{ $filterProductQuery }}".</p>
+                            @endforelse
+                        </div>
+                    @endif
+                </div>
+            @endif
+        </div>
         <input type="date" wire:model.live="desde" class="{{ $inputClass }}" placeholder="Desde">
         <input type="date" wire:model.live="hasta" class="{{ $inputClass }}" placeholder="Hasta">
     </div>

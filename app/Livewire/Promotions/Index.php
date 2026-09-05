@@ -6,6 +6,7 @@ use App\Enums\PromotionType;
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Product;
 use App\Models\Promotion;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -17,6 +18,8 @@ class Index extends Component
     public ?int $editingId = null;
 
     public string $product_id = '';
+
+    public string $productQuery = '';
 
     public string $type = 'nxm';
 
@@ -49,10 +52,32 @@ class Index extends Component
         ];
     }
 
+    #[Computed]
+    public function productResults()
+    {
+        $term = trim($this->productQuery);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Product::where('name', 'like', "%{$term}%")
+            ->orWhere('sku', 'like', "%{$term}%")
+            ->limit(8)
+            ->get();
+    }
+
+    public function selectProduct(int $productId): void
+    {
+        $this->productQuery = '';
+        $this->product_id = (string) $productId;
+    }
+
     public function edit(Promotion $promotion): void
     {
         $this->editingId = $promotion->id;
         $this->product_id = (string) $promotion->product_id;
+        $this->productQuery = '';
         $this->type = $promotion->type->value;
         $this->buy_qty = (string) ($promotion->buy_qty ?? 2);
         $this->pay_qty = (string) ($promotion->pay_qty ?? 1);
@@ -65,7 +90,7 @@ class Index extends Component
 
     public function cancel(): void
     {
-        $this->reset(['editingId', 'product_id', 'starts_at', 'ends_at']);
+        $this->reset(['editingId', 'product_id', 'productQuery', 'starts_at', 'ends_at']);
         $this->type = 'nxm';
         $this->buy_qty = '2';
         $this->pay_qty = '1';
@@ -152,7 +177,7 @@ class Index extends Component
     {
         return view('livewire.promotions.index', [
             'promotions' => Promotion::with('product')->latest()->get(),
-            'products' => Product::orderBy('name')->get(),
+            'selectedProductName' => $this->product_id !== '' ? Product::find($this->product_id)?->name : null,
             'types' => PromotionType::cases(),
         ]);
     }
