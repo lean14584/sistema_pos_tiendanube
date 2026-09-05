@@ -139,6 +139,7 @@ class PurchasesTest extends TestCase
         $purchase->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 1, 'unit_price' => 1000]);
         $product->increment('stock', 1);
         $oldPayment = $purchase->payments()->create(['method' => 'efectivo', 'amount' => 1000]);
+        $this->actingAs($admin);
         \App\Support\CashLinker::linkPurchasePayment($purchase, $oldPayment);
 
         $this->assertSame(1, CashMovement::count());
@@ -171,6 +172,7 @@ class PurchasesTest extends TestCase
         ]);
         $purchase->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 1, 'unit_price' => 1000]);
         $payment = $purchase->payments()->create(['method' => 'efectivo', 'amount' => 1000]);
+        $this->actingAs($admin);
         \App\Support\CashLinker::linkPurchasePayment($purchase, $payment);
 
         $this->assertSame(1, CashMovement::count());

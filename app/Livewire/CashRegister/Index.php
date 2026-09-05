@@ -50,21 +50,24 @@ class Index extends Component
             return;
         }
 
-        // El chequeo "¿ya hay una caja abierta EN ESTA SUCURSAL?" y la
+        // El chequeo "¿ya tengo YO una caja abierta en esta sucursal?" y la
         // creación tienen que ser atómicos: sin este lock, un doble clic en
         // "Abrir caja" crea dos sesiones open a la vez, y la segunda queda
         // huérfana (invisible para openSessionModel(), que solo trae una)
         // hasta que alguien la encuentre mezclada con el turno siguiente. El
-        // lock es por sucursal para que abrir en una no bloquee a otra.
-        $created = Cache::lock("caja:abrir-sesion:{$sucursalId}", 10)->block(5, function () use ($sucursalId) {
+        // lock es por (sucursal, usuario): varios cajeros del mismo local
+        // pueden abrir su propia caja al mismo tiempo sin bloquearse entre
+        // ellos, pero uno mismo no puede tener dos abiertas a la vez.
+        $userId = Auth::id();
+        $created = Cache::lock("caja:abrir-sesion:{$sucursalId}:{$userId}", 10)->block(5, function () use ($sucursalId, $userId) {
             if ($this->openSessionModel()) {
-                $this->addError('openingAmount', 'Ya hay una caja abierta.');
+                $this->addError('openingAmount', 'Ya tenés una caja abierta.');
 
                 return false;
             }
 
             CashSession::create([
-                'user_id' => Auth::id(),
+                'user_id' => $userId,
                 'sucursal_id' => $sucursalId,
                 'status' => CashSessionStatus::Open,
                 'opened_at' => now(),
@@ -148,9 +151,17 @@ class Index extends Component
         $this->closingNotes = '';
     }
 
+    /**
+     * MI caja abierta en la sucursal activa — no "la" caja del local, porque
+     * ahora puede haber varias abiertas a la vez (una por cajero).
+     */
     private function openSessionModel(): ?CashSession
     {
-        return CashSession::where('status', 'open')->where('sucursal_id', CurrentSucursal::id())->latest('opened_at')->first();
+        return CashSession::where('status', 'open')
+            ->where('sucursal_id', CurrentSucursal::id())
+            ->where('user_id', Auth::id())
+            ->latest('opened_at')
+            ->first();
     }
 
     public function render()
@@ -183,11 +194,22 @@ class Index extends Component
             ->limit(30)
             ->get();
 
+        // Otras cajas que ahora mismo están abiertas en el mismo local (de
+        // otros cajeros) — solo para que se vea quién más está trabajando;
+        // no se puede operar sobre ellas desde acá, cada quien maneja la suya.
+        $otherOpenSessions = CashSession::with('user')
+            ->where('status', 'open')
+            ->where('sucursal_id', CurrentSucursal::id())
+            ->where('user_id', '!=', Auth::id())
+            ->orderBy('opened_at')
+            ->get();
+
         return view('livewire.cash-register.index', [
             'openSession' => $openSession,
             'sessionMovements' => $sessionMovements,
             'summary' => $summary,
             'closedSessions' => $closedSessions,
+            'otherOpenSessions' => $otherOpenSessions,
             'sucursalActiva' => CurrentSucursal::get(),
         ]);
     }
