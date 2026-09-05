@@ -8,6 +8,7 @@ use App\Models\Provider;
 use App\Models\ProviderPayment;
 use App\Support\CashLinker;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -35,7 +36,7 @@ class Account extends Component
         $this->validate([
             'date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'method' => ['required'],
+            'method' => ['required', Rule::enum(PaymentMethod::class)],
             'notes' => ['nullable', 'string'],
         ]);
 

@@ -24,6 +24,16 @@
         </div>
     </div>
 
+    @if ($editingSelf ?? false)
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tu contraseña actual <span class="text-gray-400 font-normal">(solo si cambiás la contraseña de arriba)</span>
+            </label>
+            <input type="password" wire:model="current_password" class="{{ $inputClass }}">
+            @error('current_password') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+        </div>
+    @endif
+
     <div class="grid grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>

@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\Quote;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -182,7 +183,7 @@ class Create extends Component
             return;
         }
 
-        $quote = DB::transaction(function () use ($validItems) {
+        $quote = Cache::lock('quote-number', 10)->block(10, fn () => DB::transaction(function () use ($validItems) {
             $quote = Quote::create([
                 'number' => $this->nextNumber(),
                 'client_id' => $this->client_id,
@@ -204,17 +205,29 @@ class Create extends Component
             }
 
             return $quote;
-        });
+        }));
 
         session()->flash('status', 'Presupuesto creado.');
         $this->redirect(route('quotes.show', $quote), navigate: true);
     }
 
+    /**
+     * Antes calculaba Quote::count()+1: si se borraba un presupuesto del
+     * medio, el conteo bajaba y el próximo número calculado ya existía,
+     * violando el índice único de `number` y perdiendo el presupuesto al
+     * guardar. Ahora sigue al último número real, como ya hace
+     * InvoiceNumberGenerator para facturas/remitos.
+     */
     private function nextNumber(): string
     {
-        $count = Quote::count() + 1;
+        $last = Quote::where('number', 'like', 'PRE-%')->orderByDesc('id')->value('number');
 
-        return 'PRE-'.str_pad((string) $count, 4, '0', STR_PAD_LEFT);
+        $seq = 1;
+        if ($last && preg_match('/-(\d+)$/', $last, $m)) {
+            $seq = (int) $m[1] + 1;
+        }
+
+        return 'PRE-'.str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
     }
 
     public function render()

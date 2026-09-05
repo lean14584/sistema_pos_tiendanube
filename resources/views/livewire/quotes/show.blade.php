@@ -59,9 +59,12 @@
                 </div>
                 <button
                     x-on:click="confirmThen('¿Pasar el presupuesto ' + @js($quote->number) + ' a una venta?', () => $wire.convertToInvoice())"
-                    class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
+                    wire:loading.attr="disabled"
+                    wire:target="convertToInvoice"
+                    class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Convertir a venta
+                    <span wire:loading.remove wire:target="convertToInvoice">Convertir a venta</span>
+                    <span wire:loading wire:target="convertToInvoice">Convirtiendo...</span>
                 </button>
             </div>
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">

@@ -37,18 +37,28 @@
                 @error('tiendanube_store_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Access Token</label>
-                <input type="password" wire:model="tiendanube_token" placeholder="••••••••••••"
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Access Token
+                    @if ($this->tokenCargado())
+                        <span class="text-emerald-600 dark:text-emerald-400 font-normal">(cargado)</span>
+                    @endif
+                </label>
+                <input type="password" wire:model="tiendanube_token" placeholder="{{ $this->tokenCargado() ? 'Dejalo vacío para no cambiarlo' : '••••••••••••' }}"
                     class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 @error('tiendanube_token') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-start gap-1.5">
                     <x-heroicon-o-lock-closed class="w-4 h-4 shrink-0 mt-0.5" />
-                    Se guarda en el servidor. Lo sacás autorizando tu app en el panel de Tiendanube.
+                    Se guarda en el servidor, nunca se muestra de vuelta acá. Lo sacás autorizando tu app en el panel de Tiendanube.
                 </p>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client secret <span class="text-gray-400 font-normal">(opcional, para validar webhooks)</span></label>
-                <input type="password" wire:model="tiendanube_webhook_secret" placeholder="••••••••••••"
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Client secret <span class="text-gray-400 font-normal">(opcional, para validar webhooks)</span>
+                    @if ($this->secretoCargado())
+                        <span class="text-emerald-600 dark:text-emerald-400 font-normal">(cargado)</span>
+                    @endif
+                </label>
+                <input type="password" wire:model="tiendanube_webhook_secret" placeholder="{{ $this->secretoCargado() ? 'Dejalo vacío para no cambiarlo' : '••••••••••••' }}"
                     class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 @error('tiendanube_webhook_secret') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>

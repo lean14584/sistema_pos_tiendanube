@@ -15,14 +15,20 @@
 ])
 
 @php
-    $movements = collect($debits)->map(fn ($d) => [
-        'date' => $d['date'],
-        'description' => "{$debitLabel} {$d['label']}",
-        'debit' => (float) $d['amount'],
-        'credit' => 0,
-        'href' => $d['href'] ?? null,
-        'paymentId' => null,
-    ])->merge(
+    // `amount` puede venir con signo negativo (Nota de Crédito/Devolución):
+    // esas líneas van a la columna "Haber", no a "Debe".
+    $movements = collect($debits)->map(function ($d) use ($debitLabel) {
+        $amount = (float) $d['amount'];
+
+        return [
+            'date' => $d['date'],
+            'description' => "{$debitLabel} {$d['label']}",
+            'debit' => max($amount, 0.0),
+            'credit' => max(-$amount, 0.0),
+            'href' => $d['href'] ?? null,
+            'paymentId' => null,
+        ];
+    })->merge(
         collect($payments)->map(fn ($p) => [
             'date' => $p->date->toDateString(),
             'description' => "{$paymentLabel} · {$p->method->label()}".($p->notes ? " · {$p->notes}" : ''),
@@ -41,8 +47,8 @@
         return $m;
     });
 
-    $totalDebit = collect($debits)->sum('amount');
-    $totalCredit = collect($payments)->sum('amount');
+    $totalDebit = $movements->sum('debit');
+    $totalCredit = $movements->sum('credit');
     $balance = $totalDebit - $totalCredit;
 @endphp
 

@@ -21,12 +21,18 @@ class AccountLedger
      */
     public static function build(Collection $debits, Collection $payments, string $debitLabel, string $paymentLabel): Collection
     {
-        $movements = $debits->map(fn ($d) => [
-            'date' => $d['date'],
-            'description' => "{$debitLabel} {$d['label']}",
-            'debit' => (float) $d['amount'],
-            'credit' => 0.0,
-        ])->merge(
+        // `amount` puede venir con signo negativo (Nota de Crédito/Devolución):
+        // esas líneas van a la columna "Haber", no a "Debe".
+        $movements = $debits->map(function ($d) use ($debitLabel) {
+            $amount = (float) $d['amount'];
+
+            return [
+                'date' => $d['date'],
+                'description' => "{$debitLabel} {$d['label']}",
+                'debit' => max($amount, 0.0),
+                'credit' => max(-$amount, 0.0),
+            ];
+        })->merge(
             $payments->map(fn ($p) => [
                 'date' => $p->date->toDateString(),
                 'description' => "{$paymentLabel} · {$p->method->label()}".($p->notes ? " · {$p->notes}" : ''),

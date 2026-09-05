@@ -30,14 +30,45 @@ class Client extends Model
     }
 
     /**
-     * Saldo actual de cuenta corriente (lo que nos debe): facturas no
-     * borrador menos lo pagado al momento, menos los cobros a cuenta.
+     * Líneas de "debe" para la cuenta corriente: una por comprobante no
+     * borrador, con `amount` ya con signo — Nota de Crédito y Devolución
+     * restan en vez de sumar (antes se sumaban igual que una Factura, lo
+     * que hacía subir la deuda del cliente en vez de bajarla). También
+     * excluye el Remito X que ya fue facturado, para no contar el mismo
+     * envío dos veces (una como remito, otra como la factura generada).
+     *
+     * Usado tanto por saldoCuentaCorriente() como por la pantalla de cuenta
+     * corriente y el PDF de resumen, para que los tres muestren el mismo
+     * número.
+     *
+     * @return Collection<int, array{date: string, label: string, amount: float, invoice: Invoice}>
+     */
+    public function debitLines(): Collection
+    {
+        $this->loadMissing(['invoices' => fn ($q) => $q->whereNot('status', 'draft')->with('items', 'payments')]);
+
+        $remitosYaFacturados = $this->invoices->pluck('remito_id')->filter()->all();
+
+        return $this->invoices
+            ->reject(fn (Invoice $i) => $i->esRemito() && in_array($i->id, $remitosYaFacturados, true))
+            ->map(fn (Invoice $i) => [
+                'date' => $i->issue_date->toDateString(),
+                'label' => $i->number,
+                'amount' => $i->signoDeuda() * ((float) $i->total - (float) $i->payments->sum('amount')),
+                'invoice' => $i,
+            ])
+            ->values();
+    }
+
+    /**
+     * Saldo actual de cuenta corriente (lo que nos debe): débitos de
+     * debitLines() menos los cobros a cuenta.
      */
     public function saldoCuentaCorriente(): float
     {
-        $this->loadMissing(['invoices' => fn ($q) => $q->whereNot('status', 'draft')->with('items', 'payments'), 'payments']);
+        $this->loadMissing('payments');
 
-        $debito = $this->invoices->sum(fn ($i) => (float) $i->total - (float) $i->payments->sum('amount'));
+        $debito = $this->debitLines()->sum('amount');
         $cobrado = (float) $this->payments->sum('amount');
 
         return round($debito - $cobrado, 2);

@@ -10,6 +10,7 @@ use App\Models\Provider;
 use App\Models\Purchase;
 use App\Support\CashLinker;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -190,7 +191,7 @@ class Create extends Component
             return;
         }
 
-        $purchase = DB::transaction(function () {
+        $purchase = Cache::lock('purchase-number', 10)->block(10, fn () => DB::transaction(function () {
             $purchase = Purchase::create([
                 'number' => $this->nextNumber(),
                 'provider_id' => $this->provider_id,
@@ -227,17 +228,29 @@ class Create extends Component
             }
 
             return $purchase;
-        });
+        }));
 
         session()->flash('status', 'Compra registrada.');
         $this->redirect(route('purchases.show', $purchase), navigate: true);
     }
 
+    /**
+     * Antes calculaba Purchase::count()+1: si se borraba una compra del
+     * medio, el conteo bajaba y el próximo número calculado ya existía,
+     * violando el índice único de `number` y perdiendo la compra al
+     * guardar. Ahora sigue al último número real, como ya hace
+     * InvoiceNumberGenerator para facturas/remitos.
+     */
     private function nextNumber(): string
     {
-        $count = Purchase::count() + 1;
+        $last = Purchase::where('number', 'like', 'COM-%')->orderByDesc('id')->value('number');
 
-        return 'COM-'.str_pad((string) $count, 4, '0', STR_PAD_LEFT);
+        $seq = 1;
+        if ($last && preg_match('/-(\d+)$/', $last, $m)) {
+            $seq = (int) $m[1] + 1;
+        }
+
+        return 'COM-'.str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
     }
 
     public function render()

@@ -7,7 +7,6 @@ use App\Enums\Role;
 use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
 use App\Enums\TipoDocumento;
-use App\Exceptions\Afip\AfipValidationException;
 use App\Models\CashMovement;
 use App\Models\CashSession;
 use App\Models\Client;
@@ -176,16 +175,19 @@ class NotaCreditoTest extends TestCase
         $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
         $factura = $this->facturaEmitida($fake, $product); // total = 3000
 
+        // save() ahora rechaza esto antes de tocar stock/caja, no lo deja
+        // pasar para que recién explote al emitir el CAE (como antes).
         Livewire::actingAs($this->admin())
             ->test('notas-credito.create', ['invoice' => $factura])
             ->set('items.0.quantity', '3')
             ->set('items.0.unit_price', '5000') // fuerza un total > al de la factura
-            ->call('save');
+            ->call('save')
+            ->assertHasErrors('items');
 
-        $nota = Invoice::where('related_invoice_id', $factura->id)->first();
-
-        $this->expectException(AfipValidationException::class);
-        app(InvoiceCaeEmitter::class)->emit($nota);
+        $this->assertNull(Invoice::where('related_invoice_id', $factura->id)->first());
+        // El stock que dejó la factura original (10 - 3 vendidas) no se
+        // tocó: la NC rechazada nunca llegó a mover nada.
+        $this->assertSame(7, $product->fresh()->stock);
     }
 
     public function test_no_se_puede_emitir_nota_de_credito_para_una_factura_sin_cae(): void

@@ -154,6 +154,19 @@ class Invoice extends Model
         return $this->tipo_comprobante_interno === TipoComprobanteInterno::RemitoX;
     }
 
+    /**
+     * +1 si este comprobante suma a la deuda del cliente (Factura, Remito),
+     * -1 si la reduce (Nota de Crédito, Devolución). Usado por
+     * Client::debitLines() para que el saldo de cuenta corriente no sume
+     * las NC/Devoluciones en vez de restarlas.
+     */
+    public function signoDeuda(): int
+    {
+        return $this->tipo_comprobante_interno->esNotaCredito()
+            || $this->tipo_comprobante_interno === TipoComprobanteInterno::Devolucion
+            ? -1 : 1;
+    }
+
     /** La factura ya generada a partir de este remito, o null. */
     public function facturaGenerada(): ?Invoice
     {

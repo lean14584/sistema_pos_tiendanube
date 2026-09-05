@@ -4,6 +4,8 @@ namespace App\Livewire\Users;
 
 use App\Enums\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -18,6 +20,8 @@ class Edit extends Component
     public string $username = '';
 
     public string $password = '';
+
+    public string $current_password = '';
 
     public string $role = 'vendedor';
 
@@ -46,6 +50,35 @@ class Edit extends Component
             unset($data['password']);
         }
 
+        // Una sesión de admin secuestrada podría, si no fuera por esto,
+        // cambiarse la contraseña sin conocer la actual y expulsar al dueño
+        // legítimo de su propia cuenta. Solo aplica al cambiar la propia
+        // contraseña (no bloquea a un admin editando la de otro usuario).
+        if ($this->user->id === Auth::id() && isset($data['password'])) {
+            if (! Hash::check($this->current_password, $this->user->password)) {
+                $this->addError('current_password', 'La contraseña actual no es correcta.');
+
+                return;
+            }
+        }
+
+        // Mismo resguardo que ya tiene Index::delete(): sin esto, editar al
+        // único admin activo (sacarle el rol o desactivarlo) deja el sistema
+        // sin nadie que pueda entrar a Usuarios/Configuración/Auditoría, y no
+        // hay forma de revertirlo desde la interfaz.
+        $dejaDeSerAdminActivo = $this->user->role === Role::Admin && $this->user->active
+            && (Role::from($data['role']) !== Role::Admin || ! ($data['active'] ?? false));
+
+        if ($dejaDeSerAdminActivo) {
+            $activeAdmins = User::where('role', Role::Admin)->where('active', true)->count();
+
+            if ($activeAdmins <= 1) {
+                $this->addError('role', 'No se puede sacar el rol de administrador ni desactivar al último administrador activo del sistema.');
+
+                return;
+            }
+        }
+
         $this->user->update($data);
 
         session()->flash('status', 'Usuario actualizado.');
@@ -56,6 +89,7 @@ class Edit extends Component
     {
         return view('livewire.users.edit', [
             'roles' => Role::cases(),
+            'editingSelf' => $this->user->id === Auth::id(),
         ]);
     }
 }

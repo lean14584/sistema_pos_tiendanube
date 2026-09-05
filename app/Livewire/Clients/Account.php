@@ -10,6 +10,7 @@ use App\Models\CompanySettings;
 use App\Support\CashLinker;
 use App\Support\Whatsapp;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -37,7 +38,7 @@ class Account extends Component
         $this->validate([
             'date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'method' => ['required'],
+            'method' => ['required', Rule::enum(PaymentMethod::class)],
             'notes' => ['nullable', 'string'],
         ]);
 
@@ -83,21 +84,16 @@ class Account extends Component
 
     public function render()
     {
-        $invoices = $this->client->invoices()->whereNot('status', 'draft')->with('items', 'payments')->get();
         $payments = $this->client->payments()->orderBy('date')->get();
-
-        // Se dejan cargadas para que saldoCuentaCorriente() reutilice estos
-        // mismos datos (loadMissing) en vez de volver a consultarlos.
-        $this->client->setRelation('invoices', $invoices);
         $this->client->setRelation('payments', $payments);
 
-        // El débito de cada factura es lo que realmente queda debiendo: total
-        // menos lo que se pagó en el momento de la venta (invoice_payments).
-        $debits = $invoices->map(fn ($invoice) => [
-            'date' => $invoice->issue_date->toDateString(),
-            'label' => $invoice->number,
-            'amount' => (float) $invoice->total - (float) $invoice->payments->sum('amount'),
-            'href' => route('invoices.show', $invoice),
+        // debitLines() ya trae el signo correcto (NC/Devolución restan) y
+        // excluye el Remito ya facturado; acá solo se agrega el link de la fila.
+        $debits = $this->client->debitLines()->map(fn ($d) => [
+            'date' => $d['date'],
+            'label' => $d['label'],
+            'amount' => $d['amount'],
+            'href' => route('invoices.show', $d['invoice']),
         ]);
 
         // Saldo (nos debe) para el recordatorio de WhatsApp.

@@ -64,6 +64,11 @@ class FacturaTogglesTest extends TestCase
         $tmp = sys_get_temp_dir().'/afip_test_'.uniqid().'.crt';
         config(['afip.cert_path' => $tmp]);
 
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        $csr = openssl_csr_new(['commonName' => 'Test'], $key);
+        $cert = openssl_csr_sign($csr, null, $key, 365);
+        openssl_x509_export($cert, $certPem);
+
         try {
             Livewire::actingAs($this->admin())
                 ->test('company-settings.edit')
@@ -71,7 +76,7 @@ class FacturaTogglesTest extends TestCase
                 ->set('razon_social', 'Mi Empresa S.A.')
                 ->set('punto_venta', '1')
                 ->set('condicion_iva', 'responsable_inscripto')
-                ->set('cert', UploadedFile::fake()->createWithContent('certificado.crt', "-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----"))
+                ->set('cert', UploadedFile::fake()->createWithContent('certificado.crt', $certPem))
                 ->call('save')
                 ->assertHasNoErrors();
 
@@ -90,6 +95,21 @@ class FacturaTogglesTest extends TestCase
             ->set('punto_venta', '1')
             ->set('condicion_iva', 'responsable_inscripto')
             ->set('cert', UploadedFile::fake()->create('malo.txt', 1))
+            ->call('save')
+            ->assertHasErrors('cert');
+    }
+
+    public function test_rechaza_un_certificado_con_extension_correcta_pero_contenido_basura(): void
+    {
+        // La extensión sola no alcanza: antes esto se guardaba igual y el
+        // sistema quedaba sin poder facturar A/B recién cuando se lo notaba.
+        Livewire::actingAs($this->admin())
+            ->test('company-settings.edit')
+            ->set('cuit', '20111111112')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('punto_venta', '1')
+            ->set('condicion_iva', 'responsable_inscripto')
+            ->set('cert', UploadedFile::fake()->createWithContent('certificado.crt', "-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----"))
             ->call('save')
             ->assertHasErrors('cert');
     }

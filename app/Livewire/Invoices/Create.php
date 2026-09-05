@@ -287,7 +287,7 @@ class Create extends Component
             }
         }
 
-        $invoice = DB::transaction(function () use ($validItems, $tipo) {
+        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($validItems, $tipo) {
             $invoice = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value),
                 'client_id' => $this->client_id,
@@ -326,7 +326,7 @@ class Create extends Component
             }
 
             return $invoice;
-        });
+        }));
 
         if ($this->printOnSave) {
             try {
