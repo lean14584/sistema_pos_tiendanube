@@ -121,8 +121,8 @@
                     <th class="px-4 py-2.5 font-medium">De</th>
                     <th class="px-4 py-2.5 font-medium">A</th>
                     <th class="px-4 py-2.5 font-medium">Productos</th>
-                    <th class="px-4 py-2.5 font-medium">Usuario</th>
-                    <th class="px-4 py-2.5 font-medium">Notas</th>
+                    <th class="px-4 py-2.5 font-medium">Estado</th>
+                    <th class="px-4 py-2.5 font-medium"></th>
                 </tr>
             </thead>
             <tbody>
@@ -134,8 +134,16 @@
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
                             {{ $transfer->items->map(fn ($i) => ($i->product->name ?? 'Producto eliminado').' x'.$i->quantity)->implode(', ') }}
                         </td>
-                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $transfer->user->name ?? 'Sistema' }}</td>
-                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $transfer->notes ?: '—' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {{ $transfer->status->colorClasses() }}">
+                                {{ $transfer->status->label() }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ route('stock-transfers.show', $transfer) }}" wire:navigate class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium">
+                                Ver
+                            </a>
+                        </td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500">Todavía no se registraron envíos entre sucursales.</td></tr>

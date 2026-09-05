@@ -21,7 +21,7 @@ class StockTransferTest extends TestCase
         return User::factory()->create(['role' => Role::Admin, 'active' => true]);
     }
 
-    public function test_admin_puede_enviar_mercaderia_de_una_sucursal_a_otra(): void
+    public function test_crear_un_envio_solo_descuenta_del_origen_queda_pendiente(): void
     {
         $principal = Sucursal::sole();
         $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
@@ -39,16 +39,138 @@ class StockTransferTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
+        // Descontado en origen, TODAVÍA NO acreditado en destino (queda
+        // pendiente de que confirmen la recepción).
         $this->assertSame(6, $product->stockEnSucursal($principal->id));
-        $this->assertSame(4, $product->stockEnSucursal($norte->id));
-        $this->assertSame(10, $product->fresh()->stock); // agregado sin cambios
+        $this->assertSame(0, $product->stockEnSucursal($norte->id));
+        $this->assertSame(6, $product->fresh()->stock);
 
         $transfer = StockTransfer::first();
         $this->assertNotNull($transfer);
+        $this->assertSame('pendiente', $transfer->status->value);
         $this->assertSame($principal->id, $transfer->from_sucursal_id);
         $this->assertSame($norte->id, $transfer->to_sucursal_id);
         $this->assertSame(1, $transfer->items()->count());
         $this->assertSame(4, $transfer->items()->first()->quantity);
+        $this->assertNull($transfer->items()->first()->quantity_received);
+    }
+
+    public function test_confirmar_recepcion_completa_acredita_el_destino(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $admin = $this->admin();
+
+        $product = Product::create(['name' => 'Yerba', 'price' => 3000, 'stock' => 10]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $principal->id, 'stock' => 10]);
+
+        Livewire::actingAs($admin)
+            ->test('stock-transfers.index')
+            ->set('from_sucursal_id', (string) $principal->id)
+            ->set('to_sucursal_id', (string) $norte->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '4')
+            ->call('save');
+
+        $transfer = StockTransfer::first();
+
+        Livewire::actingAs($admin)
+            ->test('stock-transfers.show', ['transfer' => $transfer])
+            ->set('received.0', '4')
+            ->call('confirmarRecepcion')
+            ->assertHasNoErrors();
+
+        $this->assertSame(4, $product->stockEnSucursal($norte->id));
+        $this->assertSame(10, $product->fresh()->stock); // 6 + 4
+        $this->assertSame('recibido', $transfer->fresh()->status->value);
+        $this->assertNotNull($transfer->fresh()->received_at);
+        $this->assertSame($admin->id, $transfer->fresh()->received_by_user_id);
+    }
+
+    public function test_confirmar_recepcion_parcial_por_rotura_no_acredita_la_diferencia(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $admin = $this->admin();
+
+        $product = Product::create(['name' => 'Yerba', 'price' => 3000, 'stock' => 10]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $principal->id, 'stock' => 10]);
+
+        Livewire::actingAs($admin)
+            ->test('stock-transfers.index')
+            ->set('from_sucursal_id', (string) $principal->id)
+            ->set('to_sucursal_id', (string) $norte->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '10')
+            ->call('save');
+
+        $transfer = StockTransfer::first();
+
+        // Se enviaron 10, llegaron 8 (2 se rompieron en el traslado).
+        Livewire::actingAs($admin)
+            ->test('stock-transfers.show', ['transfer' => $transfer])
+            ->set('received.0', '8')
+            ->call('confirmarRecepcion')
+            ->assertHasNoErrors();
+
+        $this->assertSame(8, $product->stockEnSucursal($norte->id));
+        $this->assertSame(8, $product->fresh()->stock); // 0 en origen + 8 en destino, las otras 2 se perdieron
+        $this->assertSame(8, $transfer->items()->first()->quantity_received);
+    }
+
+    public function test_no_se_puede_confirmar_recepcion_por_mas_de_lo_enviado(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $admin = $this->admin();
+
+        $product = Product::create(['name' => 'Yerba', 'price' => 3000, 'stock' => 10]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $principal->id, 'stock' => 10]);
+
+        Livewire::actingAs($admin)
+            ->test('stock-transfers.index')
+            ->set('from_sucursal_id', (string) $principal->id)
+            ->set('to_sucursal_id', (string) $norte->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '4')
+            ->call('save');
+
+        $transfer = StockTransfer::first();
+
+        Livewire::actingAs($admin)
+            ->test('stock-transfers.show', ['transfer' => $transfer])
+            ->set('received.0', '99')
+            ->call('confirmarRecepcion')
+            ->assertHasErrors(['received.0']);
+
+        $this->assertSame('pendiente', $transfer->fresh()->status->value);
+        $this->assertSame(0, $product->stockEnSucursal($norte->id));
+    }
+
+    public function test_solo_alguien_parado_en_el_destino_o_un_admin_puede_confirmar_recepcion(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $admin = $this->admin();
+        $vendedorPrincipal = User::factory()->create(['role' => Role::Vendedor, 'active' => true, 'sucursal_id' => $principal->id]);
+
+        $product = Product::create(['name' => 'Yerba', 'price' => 3000, 'stock' => 10]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $principal->id, 'stock' => 10]);
+
+        Livewire::actingAs($admin)
+            ->test('stock-transfers.index')
+            ->set('from_sucursal_id', (string) $principal->id)
+            ->set('to_sucursal_id', (string) $norte->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '4')
+            ->call('save');
+
+        $transfer = StockTransfer::first();
+
+        // El vendedor del ORIGEN (no del destino) no puede confirmar.
+        Livewire::actingAs($vendedorPrincipal)
+            ->test('stock-transfers.show', ['transfer' => $transfer])
+            ->assertSet('puedeConfirmar', false);
     }
 
     public function test_no_se_puede_enviar_mas_de_lo_que_hay_en_el_origen(): void

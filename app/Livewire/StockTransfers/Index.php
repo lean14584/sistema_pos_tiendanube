@@ -135,6 +135,10 @@ class Index extends Component
             }
         }
 
+        // Solo se descuenta del ORIGEN acá. El destino recién se acredita
+        // cuando alguien ahí confirma qué recibió (StockTransfers\Show):
+        // puede diferir de lo enviado por rotura o pérdida en el traslado,
+        // y así no aparece "stock fantasma" en destino antes de llegar.
         DB::transaction(function () use ($fromId, $toId) {
             $transfer = StockTransfer::create([
                 'from_sucursal_id' => $fromId,
@@ -150,11 +154,10 @@ class Index extends Component
                 ]);
 
                 StockAdjuster::applyManualDelta($item['product_id'], -(int) $item['quantity'], $fromId);
-                StockAdjuster::applyManualDelta($item['product_id'], (int) $item['quantity'], $toId);
             }
         });
 
-        session()->flash('status', 'Envío de mercadería registrado.');
+        session()->flash('status', 'Envío registrado. Queda pendiente hasta que confirmen la recepción en destino.');
         $this->reset(['to_sucursal_id', 'notes', 'items', 'productQuery']);
     }
 
