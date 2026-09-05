@@ -7,6 +7,7 @@ use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -24,7 +25,7 @@ class CreditLimitTest extends TestCase
     public function test_pos_bloquea_venta_a_cuenta_que_supera_el_limite(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $client = Client::create(['name' => 'Fiado', 'email' => 'f@test.com', 'credit_limit' => 5000]);
         $product = Product::create(['name' => 'Caja', 'price' => 8000, 'iva_rate' => 0, 'stock' => 10]);
@@ -43,7 +44,7 @@ class CreditLimitTest extends TestCase
     public function test_pos_permite_si_paga_lo_suficiente_para_no_pasar_el_limite(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $client = Client::create(['name' => 'Fiado', 'email' => 'f@test.com', 'credit_limit' => 5000]);
         $product = Product::create(['name' => 'Caja', 'price' => 8000, 'iva_rate' => 0, 'stock' => 10]);
@@ -65,7 +66,7 @@ class CreditLimitTest extends TestCase
     public function test_sin_limite_no_bloquea(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $client = Client::create(['name' => 'Sin Limite', 'email' => 's@test.com']); // credit_limit null
         $product = Product::create(['name' => 'Caja', 'price' => 99999, 'iva_rate' => 0, 'stock' => 10]);

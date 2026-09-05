@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -95,7 +96,7 @@ class PriceListAndDiscountTest extends TestCase
     public function test_pos_descuento_por_linea_baja_el_total_cobrado(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $product = Product::create(['name' => 'Arroz', 'price' => 1000, 'iva_rate' => 0, 'stock' => 20]);
 

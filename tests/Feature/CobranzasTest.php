@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\Sucursal;
 use App\Models\User;
 use App\Support\Whatsapp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,7 +73,7 @@ class CobranzasTest extends TestCase
     public function test_cobrar_desde_cobranzas_registra_el_pago_y_baja_el_saldo(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $deudor = Client::create(['name' => 'Deudor', 'email' => 'd@test.com', 'phone' => '3511234567']);
         $this->facturaImpaga($deudor, 5000);

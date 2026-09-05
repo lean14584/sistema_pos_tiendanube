@@ -7,6 +7,7 @@ use App\Enums\TipoComprobanteInterno;
 use App\Models\CashSession;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -24,7 +25,7 @@ class PosTipoComprobanteTest extends TestCase
     public function test_el_pos_respeta_el_tipo_de_comprobante_elegido(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $product = Product::create(['name' => 'Agua', 'price' => 500, 'iva_rate' => 0, 'stock' => 10]);
 
@@ -43,7 +44,7 @@ class PosTipoComprobanteTest extends TestCase
     public function test_por_defecto_usa_el_tipo_predeterminado_de_la_empresa(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $product = Product::create(['name' => 'Agua', 'price' => 500, 'iva_rate' => 0, 'stock' => 10]);
 

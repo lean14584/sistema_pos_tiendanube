@@ -7,6 +7,7 @@ use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\PriceList;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -77,7 +78,7 @@ class PosTest extends TestCase
     public function test_cobrar_crea_la_venta_descuenta_stock_y_registra_caja(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $product = Product::create(['name' => 'Alfajor', 'price' => 500, 'iva_rate' => 0, 'stock' => 5]);
 
@@ -97,7 +98,7 @@ class PosTest extends TestCase
     public function test_pago_parcial_deja_saldo_en_cuenta_del_cliente(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $product = Product::create(['name' => 'Yerba', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
         $cliente = Client::create(['name' => 'Juan Perez', 'email' => 'juan@test.com', 'condicion_iva' => 'consumidor_final', 'tipo_documento' => 'sin_identificar']);

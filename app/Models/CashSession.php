@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'status', 'opened_at', 'opening_amount', 'closed_at', 'closing_amount', 'notes'])]
+#[Fillable(['user_id', 'sucursal_id', 'status', 'opened_at', 'opening_amount', 'closed_at', 'closing_amount', 'notes'])]
 class CashSession extends Model
 {
     protected function casts(): array
@@ -27,6 +27,11 @@ class CashSession extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function sucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class);
     }
 
     public function movements(): HasMany
