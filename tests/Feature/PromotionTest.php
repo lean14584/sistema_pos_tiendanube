@@ -7,6 +7,7 @@ use App\Models\CashSession;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Promotion;
+use App\Models\Sucursal;
 use App\Models\User;
 use App\Support\PromotionEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,7 +68,7 @@ class PromotionTest extends TestCase
     public function test_pos_aplica_2x1_al_total_y_lo_guarda_en_la_factura(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $product = Product::create(['name' => 'Alfajor', 'price' => 100, 'iva_rate' => 0, 'stock' => 100]);
         $this->promo($product, ['type' => 'nxm', 'buy_qty' => 2, 'pay_qty' => 1]);

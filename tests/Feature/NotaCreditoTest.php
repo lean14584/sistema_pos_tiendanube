@@ -13,6 +13,7 @@ use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Models\User;
 use App\Services\Afip\AfipGatewayInterface;
 use App\Services\Afip\InvoiceCaeEmitter;
@@ -42,6 +43,7 @@ class NotaCreditoTest extends TestCase
     {
         return CashSession::create([
             'user_id' => $user->id,
+            'sucursal_id' => Sucursal::sole()->id,
             'status' => 'open',
             'opened_at' => now(),
             'opening_amount' => 0,

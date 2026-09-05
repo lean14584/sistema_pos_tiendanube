@@ -8,6 +8,7 @@ use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -26,6 +27,7 @@ class InvoiceStockAndCashTest extends TestCase
     {
         return CashSession::create([
             'user_id' => $user->id,
+            'sucursal_id' => Sucursal::sole()->id,
             'status' => 'open',
             'opened_at' => now(),
             'opening_amount' => 0,

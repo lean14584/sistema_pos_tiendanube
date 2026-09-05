@@ -1,5 +1,5 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <x-page-header title="Caja" subtitle="Apertura, movimientos y cierre de caja" icon="banknotes" />
+    <x-page-header title="Caja" subtitle="Apertura, movimientos y cierre de caja de {{ $sucursalActiva?->name ?? 'tu sucursal' }}" icon="banknotes" />
 
     @if (! $openSession)
         <form wire:submit="openSession" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 max-w-md">

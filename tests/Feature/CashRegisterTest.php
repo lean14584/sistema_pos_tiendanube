@@ -9,6 +9,7 @@ use App\Models\ClientPayment;
 use App\Models\Product;
 use App\Models\Provider;
 use App\Models\ProviderPayment;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -48,7 +49,7 @@ class CashRegisterTest extends TestCase
     public function test_manual_movement_affects_summary(): void
     {
         $admin = $this->admin();
-        $session = CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 1000]);
+        $session = CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 1000]);
 
         Livewire::actingAs($admin)
             ->test('cash-register.index')
@@ -63,7 +64,7 @@ class CashRegisterTest extends TestCase
     public function test_client_payment_creates_cash_ingreso_when_session_open(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
 
         Livewire::actingAs($admin)
@@ -77,7 +78,7 @@ class CashRegisterTest extends TestCase
     public function test_provider_payment_creates_cash_egreso_when_session_open(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
         $provider = Provider::create(['name' => 'Proveedor 1']);
 
         Livewire::actingAs($admin)
@@ -104,7 +105,7 @@ class CashRegisterTest extends TestCase
     public function test_deleting_client_payment_removes_linked_cash_movement(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
 
         Livewire::actingAs($admin)
@@ -125,7 +126,7 @@ class CashRegisterTest extends TestCase
     public function test_manual_movement_can_be_deleted_from_the_open_session(): void
     {
         $admin = $this->admin();
-        $session = CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $session = CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
         $movement = $session->movements()->create(['type' => 'egreso', 'concept' => 'Error de carga', 'amount' => 100, 'source' => 'manual', 'date' => now()]);
 
         Livewire::actingAs($admin)
@@ -141,7 +142,7 @@ class CashRegisterTest extends TestCase
         // así que cualquiera con acceso a Caja podía borrar el movimiento
         // manual de una caja de OTRO día ya cerrada, tapando un faltante.
         $admin = $this->admin();
-        $closedSession = CashSession::create(['user_id' => $admin->id, 'status' => 'closed', 'opened_at' => now()->subDay(), 'closed_at' => now()->subDay(), 'opening_amount' => 0, 'closing_amount' => 0]);
+        $closedSession = CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'closed', 'opened_at' => now()->subDay(), 'closed_at' => now()->subDay(), 'opening_amount' => 0, 'closing_amount' => 0]);
         $movement = $closedSession->movements()->create(['type' => 'egreso', 'concept' => 'Faltante', 'amount' => 5000, 'source' => 'manual', 'date' => now()->subDay()]);
 
         // Sin ninguna caja abierta ahora mismo.
@@ -155,10 +156,10 @@ class CashRegisterTest extends TestCase
     public function test_no_se_puede_borrar_un_movimiento_de_otra_sesion_aunque_haya_una_abierta(): void
     {
         $admin = $this->admin();
-        $vieja = CashSession::create(['user_id' => $admin->id, 'status' => 'closed', 'opened_at' => now()->subDay(), 'closed_at' => now()->subDay(), 'opening_amount' => 0, 'closing_amount' => 0]);
+        $vieja = CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'closed', 'opened_at' => now()->subDay(), 'closed_at' => now()->subDay(), 'opening_amount' => 0, 'closing_amount' => 0]);
         $movementVieja = $vieja->movements()->create(['type' => 'egreso', 'concept' => 'Faltante viejo', 'amount' => 5000, 'source' => 'manual', 'date' => now()->subDay()]);
 
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         Livewire::actingAs($admin)
             ->test('cash-register.index')
@@ -173,7 +174,7 @@ class CashRegisterTest extends TestCase
 
         for ($i = 0; $i < 35; $i++) {
             CashSession::create([
-                'user_id' => $admin->id, 'status' => 'closed',
+                'user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'closed',
                 'opened_at' => now()->subDays(35 - $i), 'closed_at' => now()->subDays(35 - $i),
                 'opening_amount' => 0, 'closing_amount' => 0,
             ]);
@@ -187,7 +188,7 @@ class CashRegisterTest extends TestCase
     public function test_invoice_with_payment_creates_cash_ingreso(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
         $product = Product::create(['name' => 'Servicio', 'price' => 800, 'iva_rate' => 0]);
 

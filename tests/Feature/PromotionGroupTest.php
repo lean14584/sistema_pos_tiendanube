@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\CashSession;
 use App\Models\Product;
 use App\Models\PromotionGroup;
+use App\Models\Sucursal;
 use App\Models\User;
 use App\Support\PromotionEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,7 +53,7 @@ class PromotionGroupTest extends TestCase
     public function test_pos_aplica_la_promo_de_familia_regalando_la_mas_barata(): void
     {
         $admin = $this->admin();
-        CashSession::create(['user_id' => $admin->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         $coca = Product::create(['name' => 'Coca', 'price' => 1000, 'iva_rate' => 0, 'stock' => 50]);
         $fanta = Product::create(['name' => 'Fanta', 'price' => 900, 'iva_rate' => 0, 'stock' => 50]);

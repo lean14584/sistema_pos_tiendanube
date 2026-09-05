@@ -15,9 +15,15 @@ use App\Models\PurchasePayment;
 
 class CashLinker
 {
+    /**
+     * La caja abierta DE LA SUCURSAL ACTIVA — no "la" caja abierta a secas.
+     * Cada sucursal tiene su propia caja (ver CashRegister\Index), así que un
+     * cobro/pago hecho mientras se opera en una sucursal no debe terminar
+     * anotado en la caja de otra.
+     */
     private static function openSession(): ?CashSession
     {
-        return CashSession::where('status', 'open')->first();
+        return CashSession::where('status', 'open')->where('sucursal_id', CurrentSucursal::id())->first();
     }
 
     public static function linkClientPayment(ClientPayment $payment): void

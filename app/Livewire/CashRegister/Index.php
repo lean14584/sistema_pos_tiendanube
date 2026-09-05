@@ -6,6 +6,7 @@ use App\Enums\CashMovementType;
 use App\Enums\CashSessionStatus;
 use App\Models\CashMovement;
 use App\Models\CashSession;
+use App\Support\CurrentSucursal;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
@@ -41,12 +42,21 @@ class Index extends Component
             'openingAmount' => ['required', 'numeric', 'min:0'],
         ]);
 
-        // El chequeo "¿ya hay una caja abierta?" y la creación tienen que
-        // ser atómicos: sin este lock, un doble clic en "Abrir caja" crea
-        // dos sesiones open a la vez, y la segunda queda huérfana (invisible
-        // para openSessionModel(), que solo trae una) hasta que alguien la
-        // encuentre mezclada con el turno siguiente.
-        $created = Cache::lock('caja:abrir-sesion', 10)->block(5, function () {
+        $sucursalId = CurrentSucursal::id();
+
+        if ($sucursalId === null) {
+            $this->addError('openingAmount', 'No hay ninguna sucursal activa para abrir caja.');
+
+            return;
+        }
+
+        // El chequeo "¿ya hay una caja abierta EN ESTA SUCURSAL?" y la
+        // creación tienen que ser atómicos: sin este lock, un doble clic en
+        // "Abrir caja" crea dos sesiones open a la vez, y la segunda queda
+        // huérfana (invisible para openSessionModel(), que solo trae una)
+        // hasta que alguien la encuentre mezclada con el turno siguiente. El
+        // lock es por sucursal para que abrir en una no bloquee a otra.
+        $created = Cache::lock("caja:abrir-sesion:{$sucursalId}", 10)->block(5, function () use ($sucursalId) {
             if ($this->openSessionModel()) {
                 $this->addError('openingAmount', 'Ya hay una caja abierta.');
 
@@ -55,6 +65,7 @@ class Index extends Component
 
             CashSession::create([
                 'user_id' => Auth::id(),
+                'sucursal_id' => $sucursalId,
                 'status' => CashSessionStatus::Open,
                 'opened_at' => now(),
                 'opening_amount' => $this->openingAmount,
@@ -139,7 +150,7 @@ class Index extends Component
 
     private function openSessionModel(): ?CashSession
     {
-        return CashSession::where('status', 'open')->latest('opened_at')->first();
+        return CashSession::where('status', 'open')->where('sucursal_id', CurrentSucursal::id())->latest('opened_at')->first();
     }
 
     public function render()
@@ -162,8 +173,12 @@ class Index extends Component
         // Sin límite esto crecía para siempre y se recargaba entera en cada
         // acción de Caja (abrir, agregar movimiento, cerrar). Las cajas más
         // viejas se consultan en el histórico, no hace falta tenerlas acá.
+        // Solo las de la sucursal activa: un admin cambia de sucursal activa
+        // para ver el histórico de otro local (igual que el resto del
+        // sistema desde la Fase 3).
         $closedSessions = CashSession::with('user', 'movements')
             ->where('status', 'closed')
+            ->where('sucursal_id', CurrentSucursal::id())
             ->orderByDesc('closed_at')
             ->limit(30)
             ->get();
@@ -173,6 +188,7 @@ class Index extends Component
             'sessionMovements' => $sessionMovements,
             'summary' => $summary,
             'closedSessions' => $closedSessions,
+            'sucursalActiva' => CurrentSucursal::get(),
         ]);
     }
 }

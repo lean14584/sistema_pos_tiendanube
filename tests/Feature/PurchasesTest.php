@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Provider;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -27,6 +28,7 @@ class PurchasesTest extends TestCase
     {
         return CashSession::create([
             'user_id' => $user->id,
+            'sucursal_id' => Sucursal::sole()->id,
             'status' => 'open',
             'opened_at' => now(),
             'opening_amount' => 0,
