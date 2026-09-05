@@ -47,6 +47,7 @@
         ['module' => 'tasks', 'group' => 'Equipo', 'pattern' => 'tasks.*', 'href' => route('tasks.index'), 'label' => 'Tareas', 'icon' => 'check-circle', 'badge' => $openTasksCount],
         ['module' => 'users', 'group' => 'Equipo', 'pattern' => 'users.*', 'href' => route('users.index'), 'label' => 'Usuarios', 'icon' => 'shield-check'],
 
+        ['module' => 'sucursales', 'group' => 'Configuración', 'pattern' => 'sucursales.*', 'href' => route('sucursales.index'), 'label' => 'Sucursales', 'icon' => 'building-storefront'],
         ['module' => 'company-settings', 'group' => 'Configuración', 'pattern' => 'company-settings.*', 'href' => route('company-settings.edit'), 'label' => 'Datos de la empresa', 'icon' => 'building-office'],
         ['module' => 'company-settings', 'group' => 'Configuración', 'pattern' => 'tiendanube.*', 'href' => route('tiendanube.index'), 'label' => 'Tiendanube', 'icon' => 'shopping-bag'],
         ['module' => 'audit', 'group' => 'Configuración', 'pattern' => 'audit.*', 'href' => route('audit.index'), 'label' => 'Auditoría', 'icon' => 'clipboard-document-check'],
