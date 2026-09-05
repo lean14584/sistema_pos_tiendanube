@@ -144,6 +144,7 @@ class InvoiceStockAndCashTest extends TestCase
         $invoice->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 2, 'unit_price' => 1000]);
         $product->increment('stock', 2);
         $payment = $invoice->payments()->create(['method' => 'efectivo', 'amount' => 2000]);
+        $this->actingAs($admin);
         \App\Support\CashLinker::linkInvoiceRefund($invoice, $payment);
 
         $this->assertSame(7, $product->fresh()->stock);

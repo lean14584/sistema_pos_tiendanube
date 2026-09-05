@@ -1,6 +1,19 @@
 <div class="p-8 max-w-5xl mx-auto">
     <x-page-header title="Caja" subtitle="Apertura, movimientos y cierre de caja de {{ $sucursalActiva?->name ?? 'tu sucursal' }}" icon="banknotes" />
 
+    @if ($otherOpenSessions->isNotEmpty())
+        <div class="mb-6 bg-indigo-50/60 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-xl p-4">
+            <p class="text-xs font-medium text-indigo-700 dark:text-indigo-300 uppercase mb-2">Otras cajas abiertas ahora en {{ $sucursalActiva?->name ?? 'esta sucursal' }}</p>
+            <ul class="flex flex-wrap gap-3">
+                @foreach ($otherOpenSessions as $s)
+                    <li class="text-sm text-indigo-800 dark:text-indigo-200 bg-white dark:bg-gray-900 rounded-lg border border-indigo-100 dark:border-indigo-500/20 px-3 py-1.5">
+                        {{ $s->user->name }} · desde las {{ $s->opened_at->format('H:i') }}
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     @if (! $openSession)
         <form wire:submit="openSession" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 max-w-md">
             <div class="flex items-center gap-2 mb-4">
