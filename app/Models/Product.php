@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ObservedBy(ProductObserver::class)]
-#[Fillable(['category_id', 'name', 'sku', 'price', 'iva_rate', 'cost_price', 'stock', 'min_stock', 'description', 'image_path', 'tiendanube_product_id', 'tiendanube_variant_id'])]
+#[Fillable(['category_id', 'name', 'sku', 'sold_by_weight', 'price', 'iva_rate', 'cost_price', 'stock', 'min_stock', 'description', 'image_path', 'tiendanube_product_id', 'tiendanube_variant_id'])]
 class Product extends Model
 {
     use Auditable;
@@ -27,6 +27,7 @@ class Product extends Model
             'cost_price' => 'decimal:2',
             'stock' => 'integer',
             'min_stock' => 'integer',
+            'sold_by_weight' => 'boolean',
         ];
     }
 

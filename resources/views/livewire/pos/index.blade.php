@@ -79,11 +79,18 @@
                                     <span>%</span>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-1 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
-                                <button wire:click="dec({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">−</button>
-                                <span class="w-8 text-center text-sm font-bold text-gray-900 dark:text-gray-100">{{ $item['quantity'] }}</span>
-                                <button wire:click="inc({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">+</button>
-                            </div>
+                            @if ($item['by_weight'] ?? false)
+                                <div class="flex items-center gap-1 shrink-0 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5">
+                                    <x-heroicon-o-scale class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                    <span class="text-sm font-bold text-amber-700 dark:text-amber-400">{{ number_format($item['quantity'], 3) }} kg</span>
+                                </div>
+                            @else
+                                <div class="flex items-center gap-1 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
+                                    <button wire:click="dec({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">−</button>
+                                    <span class="w-8 text-center text-sm font-bold text-gray-900 dark:text-gray-100">{{ $item['quantity'] }}</span>
+                                    <button wire:click="inc({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">+</button>
+                                </div>
+                            @endif
                             <span class="w-24 text-right text-base font-bold text-gray-900 dark:text-gray-100 shrink-0">
                                 ${{ money($this->lineTotal($item)) }}
                             </span>

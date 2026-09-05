@@ -16,6 +16,7 @@ use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\PromotionEngine;
+use App\Support\ScaleBarcodeParser;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,7 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    /** @var array<int, array{product_id:int, description:string, sku:?string, unit_price:float, discount:float, iva_rate:string, quantity:int}> */
+    /** @var array<int, array{product_id:int, description:string, sku:?string, unit_price:float, discount:float, iva_rate:string, quantity:float, by_weight?:bool}> */
     public array $cart = [];
 
     public string $barcode = '';
@@ -170,8 +171,10 @@ class Index extends Component
     }
 
     /**
-     * Lo dispara el lector de código de barras (o Enter en el buscador): busca
-     * por SKU exacto, o por nombre si es único.
+     * Lo dispara el lector de código de barras (o Enter en el buscador). Si
+     * el código tiene el formato de balanza configurado (peso variable, ver
+     * ScaleBarcodeParser), agrega el producto pesado por el peso leído; si
+     * no, busca por SKU exacto o por nombre si es único.
      */
     public function addByBarcode(): void
     {
@@ -180,6 +183,19 @@ class Index extends Component
 
         if ($code === '') {
             return;
+        }
+
+        $pesado = ScaleBarcodeParser::parse($code, CompanySettings::current());
+
+        if ($pesado) {
+            $product = Product::where('sold_by_weight', true)->where('sku', $pesado['sku'])->first();
+
+            if ($product) {
+                $this->resetErrorBag('barcode');
+                $this->addWeightedProduct($product, $pesado['weightKg']);
+
+                return;
+            }
         }
 
         $product = Product::where('sku', $code)->first()
@@ -195,16 +211,36 @@ class Index extends Component
         $this->addProduct($product->id);
     }
 
+    /**
+     * Agrega una línea nueva por cada pesada (no se suma a una línea
+     * existente del mismo producto: cada paso por la balanza es una pesada
+     * distinta, con su propio peso — a diferencia de escanear el mismo
+     * producto de unidad suelta dos veces, que sí incrementa la cantidad).
+     */
+    private function addWeightedProduct(Product $product, float $weightKg): void
+    {
+        $this->cart[] = [
+            'product_id' => $product->id,
+            'description' => $product->name,
+            'sku' => $product->sku,
+            'unit_price' => $product->priceForList($this->currentPriceList()),
+            'discount' => 0,
+            'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
+            'quantity' => $weightKg,
+            'by_weight' => true,
+        ];
+    }
+
     public function inc(int $index): void
     {
-        if (isset($this->cart[$index])) {
+        if (isset($this->cart[$index]) && ! ($this->cart[$index]['by_weight'] ?? false)) {
             $this->cart[$index]['quantity']++;
         }
     }
 
     public function dec(int $index): void
     {
-        if (! isset($this->cart[$index])) {
+        if (! isset($this->cart[$index]) || ($this->cart[$index]['by_weight'] ?? false)) {
             return;
         }
 
@@ -237,7 +273,11 @@ class Index extends Component
     #[Computed]
     public function promoMap()
     {
-        $ids = collect($this->cart)->pluck('product_id')->unique()->all();
+        // Los productos pesados quedan afuera de promociones (2x1, NxM):
+        // esas promos son de unidades enteras, no de peso variable.
+        $ids = collect($this->cart)
+            ->reject(fn ($i) => $i['by_weight'] ?? false)
+            ->pluck('product_id')->unique()->all();
 
         if ($ids === []) {
             return collect();
@@ -256,7 +296,7 @@ class Index extends Component
     #[Computed]
     public function groupAllocations()
     {
-        $cartByProduct = collect($this->cart)->keyBy('product_id');
+        $cartByProduct = collect($this->cart)->reject(fn ($i) => $i['by_weight'] ?? false)->keyBy('product_id');
 
         if ($cartByProduct->isEmpty()) {
             return collect();
@@ -325,7 +365,7 @@ class Index extends Component
      */
     public function lineDiscountPct(array $line): float
     {
-        $gross = (float) $line['unit_price'] * (int) $line['quantity'];
+        $gross = (float) $line['unit_price'] * (float) $line['quantity'];
 
         if ($gross <= 0) {
             return (float) ($line['discount'] ?? 0);
@@ -343,7 +383,7 @@ class Index extends Component
     /** Total de una línea (con descuentos y IVA). */
     public function lineTotal(array $line): float
     {
-        $gross = (float) $line['unit_price'] * (int) $line['quantity'];
+        $gross = (float) $line['unit_price'] * (float) $line['quantity'];
         $neto = $gross * (1 - $this->lineDiscountPct($line) / 100);
 
         return $neto * (1 + (float) $line['iva_rate'] / 100);
@@ -358,7 +398,7 @@ class Index extends Component
     public function subtotalBruto(): float
     {
         return collect($this->cart)->sum(
-            fn ($i) => (float) $i['unit_price'] * (int) $i['quantity'] * (1 + (float) $i['iva_rate'] / 100)
+            fn ($i) => (float) $i['unit_price'] * (float) $i['quantity'] * (1 + (float) $i['iva_rate'] / 100)
         );
     }
 
@@ -395,9 +435,10 @@ class Index extends Component
             ->all();
     }
 
+    /** Cuenta unidades para las líneas normales y 1 "artículo" por cada pesada (no los kg). */
     public function itemsCount(): int
     {
-        return collect($this->cart)->sum('quantity');
+        return (int) collect($this->cart)->sum(fn ($i) => ($i['by_weight'] ?? false) ? 1 : $i['quantity']);
     }
 
     /** Suma de lo que se está pagando en el momento (todos los medios cargados). */

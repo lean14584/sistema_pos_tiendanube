@@ -66,6 +66,77 @@ class PosTest extends TestCase
         $this->assertEqualsWithDelta(900.0, $pos->get('cart')[0]['unit_price'], 0.01);
     }
 
+    private function activarBalanza(): void
+    {
+        \App\Models\CompanySettings::current()->update([
+            'barcode_scale_enabled' => true,
+            'barcode_scale_prefix' => '20',
+            'barcode_scale_code_digits' => 5,
+            'barcode_scale_weight_digits' => 5,
+        ]);
+    }
+
+    public function test_escanear_codigo_de_balanza_agrega_el_producto_por_el_peso_leido(): void
+    {
+        $this->activarBalanza();
+        // Precio por kilo: $2000. Peso leído: 0.35 kg (350g) → línea de $700.
+        Product::create(['name' => 'Jamón cocido', 'sku' => '00023', 'sold_by_weight' => true, 'price' => 2000, 'iva_rate' => 21, 'stock' => 0]);
+
+        $pos = Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('barcode', '2000023003505')
+            ->call('addByBarcode');
+
+        $pos->assertHasNoErrors('barcode');
+        $this->assertCount(1, $pos->get('cart'));
+        $this->assertEqualsWithDelta(0.35, $pos->get('cart')[0]['quantity'], 0.0001);
+        $this->assertTrue($pos->get('cart')[0]['by_weight']);
+        // $700 neto (0.35kg x $2000/kg) + 21% IVA = $847.
+        $this->assertEqualsWithDelta(847.0, $pos->instance()->lineTotal($pos->get('cart')[0]), 0.01);
+    }
+
+    public function test_escanear_el_mismo_producto_pesado_dos_veces_agrega_dos_lineas_no_las_suma(): void
+    {
+        $this->activarBalanza();
+        Product::create(['name' => 'Jamón cocido', 'sku' => '00023', 'sold_by_weight' => true, 'price' => 2000, 'iva_rate' => 21, 'stock' => 0]);
+
+        $pos = Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('barcode', '2000023003505')->call('addByBarcode')
+            ->set('barcode', '2000023003505')->call('addByBarcode');
+
+        $this->assertCount(2, $pos->get('cart'));
+    }
+
+    public function test_vender_un_producto_pesado_no_toca_el_stock(): void
+    {
+        $this->activarBalanza();
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $product = Product::create(['name' => 'Jamón cocido', 'sku' => '00023', 'sold_by_weight' => true, 'price' => 2000, 'iva_rate' => 0, 'stock' => 0]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('barcode', '2000023003505')->call('addByBarcode')
+            ->call('addPayment')
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        $this->assertDatabaseHas('invoices', ['status' => 'paid']);
+        $this->assertEquals(0, $product->fresh()->stock); // sin control de stock, no se toca
+    }
+
+    public function test_codigo_de_balanza_con_checksum_invalido_cae_al_match_exacto_y_falla(): void
+    {
+        $this->activarBalanza();
+
+        Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('barcode', '2000023003506') // mismo código, dígito verificador corrupto
+            ->call('addByBarcode')
+            ->assertHasErrors('barcode');
+    }
+
     public function test_codigo_inexistente_muestra_error(): void
     {
         Livewire::actingAs($this->admin())

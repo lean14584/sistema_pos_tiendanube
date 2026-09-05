@@ -20,6 +20,8 @@ class Create extends Component
 
     public string $sku = '';
 
+    public bool $sold_by_weight = false;
+
     public string $price = '';
 
     public string $iva_rate = '21';
@@ -41,7 +43,8 @@ class Create extends Component
     {
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['nullable', 'string', 'max:255'],
+            'sku' => ['nullable', 'string', 'max:255', Rule::requiredIf($this->sold_by_weight)],
+            'sold_by_weight' => ['boolean'],
             'price' => ['required', 'numeric', 'min:0'],
             'iva_rate' => ['required', Rule::in(AlicuotaIva::valores())],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
@@ -52,11 +55,23 @@ class Create extends Component
             'image' => ['nullable', 'image', 'max:4096'],
         ]);
 
+        if ($this->sold_by_weight && $data['sku'] !== null && ! ctype_digit($data['sku'])) {
+            $this->addError('sku', 'El código de un producto por peso tiene que ser numérico (es el PLU que reconoce la balanza).');
+
+            return;
+        }
+
         $data['cost_price'] = $data['cost_price'] !== '' ? $data['cost_price'] : null;
         $data['min_stock'] = $data['min_stock'] !== '' ? $data['min_stock'] : null;
         $data['category_id'] = $data['category_id'] !== '' ? $data['category_id'] : null;
         $data['sku'] = $data['sku'] !== '' ? $data['sku'] : null;
         $data['description'] = $data['description'] !== '' ? $data['description'] : null;
+
+        // Los productos por peso no llevan control de stock (se reponen a
+        // granel, no por unidad) — se ignora lo que se haya tipeado en Stock.
+        if ($data['sold_by_weight']) {
+            $data['stock'] = 0;
+        }
 
         if ($this->image) {
             $data['image_path'] = $this->image->store('products', 'public');
@@ -69,7 +84,7 @@ class Create extends Component
         // fila de product_stocks correspondiente (products.stock ya quedó
         // bien como agregado, por venir en $data desde la creación).
         $sucursalId = CurrentSucursal::id();
-        if ($sucursalId !== null && (int) $data['stock'] > 0) {
+        if (! $data['sold_by_weight'] && $sucursalId !== null && (int) $data['stock'] > 0) {
             ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $sucursalId, 'stock' => $data['stock']]);
         }
 
