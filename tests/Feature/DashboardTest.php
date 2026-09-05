@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Category;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
@@ -84,6 +85,26 @@ class DashboardTest extends TestCase
             // ...pero al cambiar el selector al año pasado, el gráfico deja de mostrar el mensaje vacío.
             ->set('year', $lastYear)
             ->assertDontSee("Sin ventas registradas en {$lastYear}");
+    }
+
+    public function test_dashboard_consolidado_muestra_ventas_por_categoria_y_por_metodo_de_pago(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $category = Category::create(['name' => 'Almacén']);
+        $product = Product::create(['name' => 'Fideos', 'price' => 1000, 'category_id' => $category->id]);
+
+        $invoice = Invoice::create([
+            'number' => 'FAC-0004', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'paid',
+        ]);
+        $invoice->items()->create(['product_id' => $product->id, 'description' => 'Fideos', 'quantity' => 1, 'unit_price' => 1000]);
+        $invoice->payments()->create(['method' => 'efectivo', 'amount' => 1000]);
+
+        Livewire::actingAs($admin)
+            ->test('dashboard')
+            ->assertSee('Almacén')
+            ->assertSee('Efectivo');
     }
 
     public function test_el_conteo_de_stock_bajo_se_consulta_una_sola_vez_por_request(): void

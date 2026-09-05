@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Support\Permissions;
+use App\Support\SalesReport;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
@@ -56,6 +57,10 @@ class Dashboard extends Component
             'monthlySales' => $agg['monthlySales'],
             'maxMonthlySales' => max($agg['monthlySales']) ?: 0,
             'availableYears' => collect($agg['availableYears']),
+            'byCategory' => collect($agg['byCategory']),
+            'maxCategory' => collect($agg['byCategory'])->max('total') ?? 0,
+            'byMethod' => collect($agg['byMethod']),
+            'maxMethod' => collect($agg['byMethod'])->max('total') ?? 0,
         ]);
     }
 
@@ -110,12 +115,19 @@ class Dashboard extends Component
             }
         }
 
+        // Consolidado del año elegido, por categoría y por medio de pago:
+        // reusa SalesReport (mismo agregado que Informes) en vez de duplicar
+        // la lógica de agrupamiento acá.
+        $anio = SalesReport::build("{$this->year}-01-01", "{$this->year}-12-31");
+
         return [
             'stats' => $stats,
             'pendientesEmisionCount' => $pendientesEmision->count(),
             'topProducts' => $topProducts->all(),
             'monthlySales' => $monthlySales,
             'availableYears' => $availableYears->all(),
+            'byCategory' => $anio['byCategory']->take(5)->all(),
+            'byMethod' => $anio['byMethod']->all(),
         ];
     }
 }

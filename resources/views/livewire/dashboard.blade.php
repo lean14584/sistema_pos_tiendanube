@@ -102,6 +102,50 @@
         </section>
     </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+            <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Top 5 categorías en {{ $year }}</h2>
+            @if ($byCategory->isEmpty())
+                <p class="text-sm text-gray-400 dark:text-gray-500">Sin ventas registradas en {{ $year }}.</p>
+            @else
+                <div class="space-y-3">
+                    @foreach ($byCategory as $row)
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ money($row['total']) }}</span>
+                            </div>
+                            <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+                                <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $maxCategory > 0 ? max(2, round(($row['total'] / $maxCategory) * 100)) : 0 }}%"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </section>
+
+        <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+            <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Medios de pago en {{ $year }}</h2>
+            @if ($byMethod->isEmpty())
+                <p class="text-sm text-gray-400 dark:text-gray-500">Sin pagos registrados en {{ $year }}.</p>
+            @else
+                <div class="space-y-3">
+                    @foreach ($byMethod as $row)
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ money($row['total']) }}</span>
+                            </div>
+                            <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+                                <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $maxMethod > 0 ? max(2, round(($row['total'] / $maxMethod) * 100)) : 0 }}%"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </section>
+    </div>
+
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">
         <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
             <h2 class="font-medium text-gray-900 dark:text-gray-100">Facturas recientes</h2>

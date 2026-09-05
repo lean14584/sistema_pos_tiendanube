@@ -49,6 +49,49 @@
         </div>
     </div>
 
+    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4 mb-6">
+        <label class="flex items-center gap-2 cursor-pointer w-fit">
+            <input type="checkbox" wire:model.live="compare" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Comparar contra otro período</span>
+        </label>
+
+        @if ($compare)
+            <div class="flex flex-col sm:flex-row sm:items-end gap-3 mt-3">
+                <div>
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde (período B)</label>
+                    <input type="date" wire:model.live="fromDateB" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta (período B)</label>
+                    <input type="date" wire:model.live="toDateB" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+            </div>
+
+            @php
+                $diffTotal = $comparisonB['summary']['total'] > 0 ? (($summary['total'] - $comparisonB['summary']['total']) / $comparisonB['summary']['total']) * 100 : null;
+                $diffCount = $comparisonB['summary']['count'] > 0 ? (($summary['count'] - $comparisonB['summary']['count']) / $comparisonB['summary']['count']) * 100 : null;
+                $pillClass = fn ($pct) => $pct === null ? 'text-gray-400 dark:text-gray-500' : ($pct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400');
+            @endphp
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-2">Período A ({{ \Carbon\Carbon::parse($fromDate)->format('d/m/y') }}–{{ \Carbon\Carbon::parse($toDate)->format('d/m/y') }})</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($summary['total']) }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $summary['count'] }} {{ $summary['count'] === 1 ? 'venta' : 'ventas' }}</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-2">Período B ({{ \Carbon\Carbon::parse($fromDateB)->format('d/m/y') }}–{{ \Carbon\Carbon::parse($toDateB)->format('d/m/y') }})</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($comparisonB['summary']['total']) }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $comparisonB['summary']['count'] }} {{ $comparisonB['summary']['count'] === 1 ? 'venta' : 'ventas' }}</p>
+                </div>
+                <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-2">Diferencia (A vs B)</p>
+                    <p class="text-lg font-semibold {{ $pillClass($diffTotal) }}">{{ $diffTotal === null ? '—' : ($diffTotal >= 0 ? '+' : '').number_format($diffTotal, 1).'%' }} <span class="text-xs font-normal text-gray-400 dark:text-gray-500">plata</span></p>
+                    <p class="text-sm font-medium {{ $pillClass($diffCount) }}">{{ $diffCount === null ? '—' : ($diffCount >= 0 ? '+' : '').number_format($diffCount, 1).'%' }} <span class="text-xs font-normal text-gray-400 dark:text-gray-500">cant. de ventas</span></p>
+                </div>
+            </div>
+        @endif
+    </div>
+
     @if ($summary['count'] === 0)
         <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-12 text-center text-gray-400 dark:text-gray-500">
             <x-heroicon-o-chart-bar class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
