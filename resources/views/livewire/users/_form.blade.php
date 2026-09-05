@@ -37,7 +37,7 @@
     <div class="grid grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
-            <select wire:model="role" class="{{ $inputClass }}">
+            <select wire:model.live="role" class="{{ $inputClass }}">
                 @foreach ($roles as $r)
                     <option value="{{ $r->value }}">{{ $r->label() }}</option>
                 @endforeach
@@ -50,6 +50,22 @@
             </label>
         </div>
     </div>
+
+    @if ($role !== 'admin')
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sucursal *</label>
+            <select wire:model="sucursal_id" class="{{ $inputClass }}">
+                <option value="">Elegir sucursal...</option>
+                @foreach ($sucursales as $s)
+                    <option value="{{ $s->id }}">{{ $s->name }}</option>
+                @endforeach
+            </select>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Cajero y vendedor operan en una sola sucursal.</p>
+            @error('sucursal_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+        </div>
+    @else
+        <p class="text-xs text-gray-400 dark:text-gray-500">Un administrador ve y opera en todas las sucursales.</p>
+    @endif
 
     <div class="flex gap-3 pt-2">
         <button type="submit" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all">

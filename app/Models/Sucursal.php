@@ -6,6 +6,7 @@ use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'razon_social', 'logo_path', 'punto_venta', 'active'])]
 class Sucursal extends Model
@@ -25,5 +26,10 @@ class Sucursal extends Model
     protected function logoUrl(): Attribute
     {
         return Attribute::get(fn () => $this->logo_path ? asset('storage/'.$this->logo_path) : null);
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
     }
 }

@@ -39,7 +39,7 @@ class Index extends Component
     public function render()
     {
         return view('livewire.users.index', [
-            'users' => User::orderBy('name')->paginate(20),
+            'users' => User::with('sucursal')->orderBy('name')->paginate(20),
         ]);
     }
 }
