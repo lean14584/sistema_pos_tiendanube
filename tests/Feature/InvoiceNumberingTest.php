@@ -6,6 +6,7 @@ use App\Enums\TipoComprobanteInterno;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
+use App\Models\Sucursal;
 use App\Support\InvoiceNumberGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -26,8 +27,20 @@ class InvoiceNumberingTest extends TestCase
         ]);
     }
 
-    public function test_usa_el_punto_de_venta_de_la_empresa_a_cuatro_digitos(): void
+    public function test_usa_el_punto_de_venta_de_la_sucursal_a_cuatro_digitos(): void
     {
+        // Sin usuario logueado, CurrentSucursal cae a "la primera sucursal"
+        // (la única que existe en un DB recién migrado: "Principal").
+        Sucursal::sole()->update(['punto_venta' => 3]);
+
+        $this->assertSame('0003-00000001', InvoiceNumberGenerator::next(TipoComprobanteInterno::FacturaB->value));
+    }
+
+    public function test_sin_ninguna_sucursal_resoluble_usa_el_punto_de_venta_de_la_empresa(): void
+    {
+        // Único caso donde CurrentSucursal no tiene nada que resolver:
+        // borramos la sucursal auto-creada para simular ese escenario.
+        Sucursal::query()->delete();
         CompanySettings::current()->update(['punto_venta' => 3]);
 
         $this->assertSame('0003-00000001', InvoiceNumberGenerator::next(TipoComprobanteInterno::FacturaB->value));

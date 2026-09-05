@@ -8,6 +8,7 @@ use App\Concerns\HasOverdueStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
+use App\Support\CurrentSucursal;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
 #[Fillable([
-    'number', 'client_id', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
+    'number', 'client_id', 'sucursal_id', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
     'tipo_comprobante_interno', 'related_invoice_id', 'remito_id', 'afecta_stock', 'mp_external_reference',
     'tiendanube_order_id',
 ])]
@@ -36,6 +37,20 @@ class Invoice extends Model
     protected $attributes = [
         'tipo_comprobante_interno' => 'factura_b',
     ];
+
+    /**
+     * Si quien crea la factura no especificó de qué sucursal es (caso
+     * normal: una venta nueva), se asume la sucursal activa de quien la está
+     * generando. Notas de Crédito y "facturar remito" SÍ la pasan explícita
+     * (la de la factura/remito original, no la sesión de quien la procesa
+     * después) — ver NotasCredito\Create y Invoices\FacturarRemito.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Invoice $invoice) {
+            $invoice->sucursal_id ??= CurrentSucursal::id();
+        });
+    }
 
     protected function casts(): array
     {
@@ -102,6 +117,11 @@ class Invoice extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function sucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class);
     }
 
     public function items(): HasMany
