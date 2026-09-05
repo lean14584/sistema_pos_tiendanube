@@ -48,6 +48,8 @@ class Create extends Component
 
     public string $productQuery = '';
 
+    public string $providerQuery = '';
+
     public function mount(): void
     {
         $this->issue_date = now()->toDateString();
@@ -81,6 +83,28 @@ class Create extends Component
         ];
 
         $this->productQuery = '';
+    }
+
+    #[Computed]
+    public function providerResults()
+    {
+        $term = trim($this->providerQuery);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Provider::where('name', 'like', "%{$term}%")
+            ->orWhere('phone', 'like', "%{$term}%")
+            ->orWhere('tax_id', 'like', "%{$term}%")
+            ->limit(8)
+            ->get();
+    }
+
+    public function selectProvider(int $providerId): void
+    {
+        $this->providerQuery = '';
+        $this->provider_id = (string) $providerId;
     }
 
     public function removeItem(int $index): void
@@ -219,7 +243,7 @@ class Create extends Component
     public function render()
     {
         return view('livewire.purchases.create', [
-            'providers' => Provider::orderBy('name')->get(),
+            'selectedProviderName' => $this->provider_id !== '' ? Provider::find($this->provider_id)?->name : null,
             'statuses' => InvoiceStatus::cases(),
             'tiposComprobante' => TipoComprobante::cases(),
             'paymentMethods' => PaymentMethod::cases(),

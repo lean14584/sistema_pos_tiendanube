@@ -17,13 +17,11 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Producto *</label>
-                <select wire:model="product_id" class="{{ $inputClass }}">
-                    <option value="">Seleccionar...</option>
-                    @foreach ($products as $p)
-                        <option value="{{ $p->id }}">{{ $p->name }}</option>
-                    @endforeach
-                </select>
+                <x-product-picker
+                    :product-name="$selectedProductName ?? '—'"
+                    :product-query="$productQuery"
+                    :product-results="$this->productResults"
+                />
                 @error('product_id') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>

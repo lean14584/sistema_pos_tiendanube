@@ -50,6 +50,8 @@ class Edit extends Component
 
     public string $productQuery = '';
 
+    public string $providerQuery = '';
+
     public function mount(Purchase $purchase): void
     {
         $this->purchase = $purchase;
@@ -108,6 +110,28 @@ class Edit extends Component
         ];
 
         $this->productQuery = '';
+    }
+
+    #[Computed]
+    public function providerResults()
+    {
+        $term = trim($this->providerQuery);
+
+        if ($term === '') {
+            return collect();
+        }
+
+        return Provider::where('name', 'like', "%{$term}%")
+            ->orWhere('phone', 'like', "%{$term}%")
+            ->orWhere('tax_id', 'like', "%{$term}%")
+            ->limit(8)
+            ->get();
+    }
+
+    public function selectProvider(int $providerId): void
+    {
+        $this->providerQuery = '';
+        $this->provider_id = (string) $providerId;
     }
 
     public function removeItem(int $index): void
@@ -248,7 +272,7 @@ class Edit extends Component
     public function render()
     {
         return view('livewire.purchases.edit', [
-            'providers' => Provider::orderBy('name')->get(),
+            'selectedProviderName' => $this->provider_id !== '' ? Provider::find($this->provider_id)?->name : null,
             'statuses' => InvoiceStatus::cases(),
             'tiposComprobante' => TipoComprobante::cases(),
             'paymentMethods' => PaymentMethod::cases(),
