@@ -7,17 +7,25 @@ use App\Models\Product;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    use ShowsToasts;
+    use ShowsToasts, WithPagination;
 
     #[Url]
     public string $query = '';
 
     #[Url]
     public bool $onlyAlerts = false;
+
+    public function updating(string $name): void
+    {
+        if (in_array($name, ['query', 'onlyAlerts'], true)) {
+            $this->resetPage();
+        }
+    }
 
     public function delete(Product $product): void
     {
@@ -45,7 +53,7 @@ class Index extends Component
             })
             ->when($this->onlyAlerts, fn ($q) => $q->lowStock())
             ->orderBy('name')
-            ->get();
+            ->paginate(20);
 
         return view('livewire.products.index', [
             'products' => $products,

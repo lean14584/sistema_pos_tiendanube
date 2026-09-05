@@ -213,6 +213,11 @@ class Show extends Component
     public function delete(): void
     {
         abort_if($this->invoice->isFiscal, 403, 'No se puede eliminar una factura con CAE. Emití una Nota de Crédito.');
+        abort_if(
+            $this->invoice->esRemito() && $this->invoice->facturaGenerada() !== null,
+            403,
+            'Este remito ya fue facturado, no se puede eliminar: eliminá o corregí la factura generada primero.'
+        );
 
         DB::transaction(function () {
             $items = $this->invoice->items->map(fn ($item) => [

@@ -87,6 +87,7 @@ class Edit extends Component
 
         $this->validarExtension('cert', ['crt', 'pem', 'cer']);
         $this->validarExtension('key', ['key', 'pem']);
+        $this->validarContenidoAfip();
 
         if ($this->getErrorBag()->hasAny(['cert', 'key'])) {
             return;
@@ -132,6 +133,31 @@ class Edit extends Component
 
         if (! in_array($ext, $extensiones, true)) {
             $this->addError($campo, 'Extensión inválida. Se esperaba: .'.implode(', .', $extensiones));
+        }
+    }
+
+    /**
+     * La extensión sola no garantiza nada (un .crt puede tener cualquier
+     * contenido): parsea el certificado/clave de verdad antes de aceptarlos,
+     * para no quedar sin poder facturar A/B por haber subido, sin darse
+     * cuenta, un archivo corrupto o que no es lo que dice ser.
+     */
+    private function validarContenidoAfip(): void
+    {
+        if ($this->cert && ! $this->getErrorBag()->has('cert')) {
+            $contenido = file_get_contents($this->cert->getRealPath());
+
+            if ($contenido === false || openssl_x509_parse($contenido) === false) {
+                $this->addError('cert', 'El archivo no es un certificado X.509 válido (PEM/DER). Revisá que sea el archivo correcto.');
+            }
+        }
+
+        if ($this->key && ! $this->getErrorBag()->has('key')) {
+            $contenido = file_get_contents($this->key->getRealPath());
+
+            if ($contenido === false || openssl_pkey_get_private($contenido) === false) {
+                $this->addError('key', 'El archivo no es una clave privada válida (PEM). Si tiene contraseña, subila sin contraseña (sin encriptar).');
+            }
         }
     }
 

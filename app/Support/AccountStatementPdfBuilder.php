@@ -19,16 +19,9 @@ class AccountStatementPdfBuilder
 {
     public function forClient(Client $client): DomPDF
     {
-        $invoices = $client->invoices()->whereNot('status', 'draft')->with('items', 'payments')->get();
         $payments = $client->payments()->orderBy('date')->get();
 
-        $debits = $invoices->map(fn ($i) => [
-            'date' => $i->issue_date->toDateString(),
-            'label' => $i->number,
-            'amount' => (float) $i->total - (float) $i->payments->sum('amount'),
-        ]);
-
-        return $this->build('Cliente', $client->name, AccountLedger::build($debits, $payments, 'Factura', 'Cobro'), 'Nos debe');
+        return $this->build('Cliente', $client->name, AccountLedger::build($client->debitLines(), $payments, 'Factura', 'Cobro'), 'Nos debe');
     }
 
     public function forProvider(Provider $provider): DomPDF

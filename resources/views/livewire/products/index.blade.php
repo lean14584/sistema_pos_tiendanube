@@ -186,4 +186,10 @@
             </div>
         @endif
     </div>
+
+    @if ($hasAnyProducts && $products->isNotEmpty())
+        <div class="mt-4">
+            {{ $products->links() }}
+        </div>
+    @endif
 </div>

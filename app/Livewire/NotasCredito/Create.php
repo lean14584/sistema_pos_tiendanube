@@ -131,11 +131,33 @@ class Create extends Component
             return;
         }
 
+        $cantidadOPrecioInvalido = $validItems->contains(
+            fn ($item) => (float) $item['quantity'] <= 0 || (float) $item['unit_price'] < 0
+        );
+
+        if ($cantidadOPrecioInvalido) {
+            $this->addError('items', 'Cada ítem necesita una cantidad mayor a cero y un precio unitario válido.');
+
+            return;
+        }
+
+        // No dejar cargar una NC por más de lo que todavía se puede acreditar
+        // de la factura original (lo mismo que ya chequea InvoiceCaeEmitter
+        // al emitir, pero acá antes de tocar stock/caja, no después).
+        $disponible = round((float) $this->invoice->total - (float) $this->invoice->creditedTotal, 2);
+
+        if (round($this->total(), 2) > $disponible + 0.009) {
+            $this->addError('items', 'El total a acreditar ($'.number_format($this->total(), 2)
+                .') supera el saldo pendiente de acreditar de la factura ($'.number_format(max($disponible, 0), 2).').');
+
+            return;
+        }
+
         $tipoNC = $this->invoice->tipo_comprobante === TipoComprobante::FacturaA
             ? TipoComprobanteInterno::NotaCreditoA
             : TipoComprobanteInterno::NotaCreditoB;
 
-        $notaCredito = DB::transaction(function () use ($validItems, $tipoNC) {
+        $notaCredito = InvoiceNumberGenerator::withLock($tipoNC->value, fn () => DB::transaction(function () use ($validItems, $tipoNC) {
             $nota = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipoNC->value),
                 'client_id' => $this->invoice->client_id,
@@ -168,7 +190,7 @@ class Create extends Component
             }
 
             return $nota;
-        });
+        }));
 
         session()->flash('status', 'Nota de crédito generada.');
         $this->redirect(route('invoices.show', $notaCredito), navigate: true);

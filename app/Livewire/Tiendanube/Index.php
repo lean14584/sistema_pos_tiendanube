@@ -36,8 +36,22 @@ class Index extends Component
     {
         $this->company = CompanySettings::current();
         $this->tiendanube_store_id = (string) $this->company->tiendanube_store_id;
-        $this->tiendanube_token = (string) $this->company->tiendanube_token;
-        $this->tiendanube_webhook_secret = (string) $this->company->tiendanube_webhook_secret;
+        // Token y secreto NO se precargan acá: Livewire serializa el estado
+        // del componente en el HTML de la página, así que un input type=
+        // password con el valor real igual lo manda en texto plano al
+        // navegador (visible con "ver código fuente"). Se dejan vacíos y se
+        // muestran solo como "cargado/no cargado" (ver tokenCargado()); si
+        // el campo queda vacío al guardar, saveCredentials() no lo pisa.
+    }
+
+    public function tokenCargado(): bool
+    {
+        return filled($this->company->tiendanube_token);
+    }
+
+    public function secretoCargado(): bool
+    {
+        return filled($this->company->tiendanube_webhook_secret);
     }
 
     public function saveCredentials(): void
@@ -48,8 +62,19 @@ class Index extends Component
             'tiendanube_webhook_secret' => ['nullable', 'string', 'max:255'],
         ]);
 
+        // Campo vacío = "no cambiar" (no hay forma de distinguir "vacío a
+        // propósito" de "no tocado" ya que nunca se precarga el valor real).
+        if (blank($data['tiendanube_token'])) {
+            unset($data['tiendanube_token']);
+        }
+        if (blank($data['tiendanube_webhook_secret'])) {
+            unset($data['tiendanube_webhook_secret']);
+        }
+
         $this->company->update($data);
         $this->company->refresh();
+        $this->tiendanube_token = '';
+        $this->tiendanube_webhook_secret = '';
         $this->reset('resultado', 'error');
 
         session()->flash('status', 'Credenciales de Tiendanube guardadas.');

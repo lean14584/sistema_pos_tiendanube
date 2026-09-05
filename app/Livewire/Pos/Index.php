@@ -317,8 +317,11 @@ class Index extends Component
             return (float) ($line['discount'] ?? 0);
         }
 
-        $manual = $gross * (float) ($line['discount'] ?? 0) / 100;
-        $descuento = min($gross, $manual + $this->promoDiscountAmount($line));
+        // max(0, ...) también en $manual: un descuento negativo (llegado por
+        // fuera del input normal, que solo permite 0-100) no puede convertirse
+        // en un recargo — como mucho, descuento 0.
+        $manual = max(0, $gross * (float) ($line['discount'] ?? 0) / 100);
+        $descuento = max(0, min($gross, $manual + $this->promoDiscountAmount($line)));
 
         return round($descuento / $gross * 100, 4);
     }
@@ -458,7 +461,7 @@ class Index extends Component
         }
         $status = $pagado + 0.001 >= $total ? 'paid' : 'pending';
 
-        $invoice = DB::transaction(function () use ($tipo, $clientId, $status) {
+        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo, $clientId, $status) {
             $invoice = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value),
                 'client_id' => $clientId,
@@ -491,7 +494,7 @@ class Index extends Component
             }
 
             return $invoice;
-        });
+        }));
 
         if ($this->printOnSale) {
             try {

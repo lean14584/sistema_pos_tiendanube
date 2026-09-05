@@ -62,7 +62,7 @@ class FacturarRemito extends Component
             return;
         }
 
-        $factura = DB::transaction(function () use ($tipo) {
+        $factura = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo) {
             $factura = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value),
                 'client_id' => $this->remito->client_id,
@@ -89,7 +89,7 @@ class FacturarRemito extends Component
             }
 
             return $factura;
-        });
+        }));
 
         session()->flash('status', 'Factura generada a partir del remito.');
         $this->redirect(route('invoices.show', $factura), navigate: true);

@@ -571,7 +571,7 @@ class TiendanubeSync
      */
     private function crearFacturaDesdePedido(array $tn): void
     {
-        DB::transaction(function () use ($tn) {
+        InvoiceNumberGenerator::withLock(TipoComprobanteInterno::RemitoX->value, fn () => DB::transaction(function () use ($tn) {
             $cliente = $this->clienteDelPedido($tn);
             $fecha = isset($tn['created_at']) ? Carbon::parse($tn['created_at']) : now();
 
@@ -597,7 +597,7 @@ class TiendanubeSync
                     'unit_price' => $this->numero($item['price'] ?? 0),
                 ]);
             }
-        });
+        }));
     }
 
     /**

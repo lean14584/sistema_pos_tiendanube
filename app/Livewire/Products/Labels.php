@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Products;
 
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Category;
 use App\Models\CompanySettings;
 use App\Models\PriceList;
@@ -13,6 +14,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Labels extends Component
 {
+    use ShowsToasts;
+
     public string $productQuery = '';
 
     /** @var array<int, array{id:int,name:string,sku:?string,qty:int}> */
@@ -67,14 +70,24 @@ class Labels extends Component
         $this->productQuery = '';
     }
 
+    /** Tope de productos por categoría al agregar de una: son etiquetas que
+     * viajan al navegador en el estado de Livewire, no una tabla paginada. */
+    private const MAX_POR_CATEGORIA = 300;
+
     public function addCategory(): void
     {
         if (! $this->catToAdd) {
             return;
         }
 
-        Product::where('category_id', $this->catToAdd)->orderBy('name')->get()
+        $total = Product::where('category_id', $this->catToAdd)->count();
+
+        Product::where('category_id', $this->catToAdd)->orderBy('name')->limit(self::MAX_POR_CATEGORIA)->get()
             ->each(fn (Product $p) => $this->addProduct($p->id));
+
+        if ($total > self::MAX_POR_CATEGORIA) {
+            $this->toastError("La categoría tiene {$total} productos: se agregaron los primeros ".self::MAX_POR_CATEGORIA.' por nombre. Agregá el resto a mano o de a partes.');
+        }
 
         $this->catToAdd = null;
     }

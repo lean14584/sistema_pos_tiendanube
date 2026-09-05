@@ -9,6 +9,7 @@ use App\Models\CompanySettings;
 use App\Support\CashLinker;
 use App\Support\Whatsapp;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -76,7 +77,7 @@ class Index extends Component
             'payingClientId' => ['required', 'exists:clients,id'],
             'payDate' => ['required', 'date'],
             'payAmount' => ['required', 'numeric', 'min:0.01'],
-            'payMethod' => ['required'],
+            'payMethod' => ['required', Rule::enum(PaymentMethod::class)],
         ]);
 
         $payment = ClientPayment::create([

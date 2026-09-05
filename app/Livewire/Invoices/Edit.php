@@ -52,6 +52,11 @@ class Edit extends Component
     public function mount(Invoice $invoice): void
     {
         abort_if($invoice->isFiscal, 403, 'Esta factura ya tiene CAE y no puede editarse.');
+        abort_if(
+            $invoice->esRemito() && $invoice->facturaGenerada() !== null,
+            403,
+            'Este remito ya fue facturado, no se puede editar: corregí la factura generada en su lugar.'
+        );
 
         $this->invoice = $invoice;
         $this->client_id = (string) $invoice->client_id;
