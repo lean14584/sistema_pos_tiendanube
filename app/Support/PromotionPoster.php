@@ -6,6 +6,7 @@ use App\Models\CompanySettings;
 use App\Models\Promotion;
 use App\Models\PromotionGroup;
 use GdImage;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Genera un cartel de ofertas (PNG) con las promociones activas, para
@@ -57,7 +58,7 @@ class PromotionPoster
     }
 
     /**
-     * @return array<int, array{title:string, badge:string, detail:string}>
+     * @return array<int, array{title:string, badge:string, detail:string, image_path:?string}>
      */
     public static function items(): array
     {
@@ -67,6 +68,7 @@ class PromotionPoster
                 'title' => $p->product->name,
                 'badge' => $p->shortLabel(),
                 'detail' => '$'.money($p->product->price),
+                'image_path' => self::resolveImagePath($p->product->image_path),
             ]);
 
         $grupos = PromotionGroup::activeNow()->with('products')->get()
@@ -74,14 +76,36 @@ class PromotionPoster
             ->map(function (PromotionGroup $g) {
                 $nombres = $g->products->pluck('name');
 
+                // Usa la foto del primer producto de la familia que tenga una
+                // cargada; si ninguno tiene, la tarjeta cae al círculo de color.
+                $imagePath = null;
+                foreach ($g->products as $producto) {
+                    $imagePath = self::resolveImagePath($producto->image_path);
+                    if ($imagePath) {
+                        break;
+                    }
+                }
+
                 return [
                     'title' => $g->name,
                     'badge' => $g->shortLabel(),
                     'detail' => $nombres->take(3)->implode(', ').($nombres->count() > 3 ? '...' : ''),
+                    'image_path' => $imagePath,
                 ];
             });
 
         return $individuales->concat($grupos)->values()->all();
+    }
+
+    private static function resolveImagePath(?string $imagePath): ?string
+    {
+        if (! $imagePath) {
+            return null;
+        }
+
+        $disk = Storage::disk('public');
+
+        return $disk->exists($imagePath) ? $disk->path($imagePath) : null;
     }
 
     /** PNG crudo, listo para servir con Content-Type: image/png. */
@@ -192,13 +216,20 @@ class PromotionPoster
             self::roundedRect($im, $x1 + 5, $y1 + 7, $x2 + 5, $y2 + 7, 24, $shadowColor);
             self::roundedRect($im, $x1, $y1, $x2, $y2, 24, $white);
 
-            $badgeColor = self::paletteColor($im, $i);
             $badgeCx = $x1 + 95;
             $badgeCy = (int) ($y1 + self::CARD_H / 2);
-            imagefilledellipse($im, $badgeCx, $badgeCy, $badgeDiameter, $badgeDiameter, $badgeColor);
-
             $angle = $i % 2 === 0 ? -7 : 7;
-            self::drawBadgeLabel($im, mb_strtoupper($item['badge']), $badgeCx, $badgeCy, $angle, $badgeDiameter, $white);
+
+            $thumb = ! empty($item['image_path']) ? self::loadSquareThumbnail($item['image_path'], 128) : null;
+
+            if ($thumb !== null) {
+                self::drawProductPhoto($im, $thumb, $badgeCx, $badgeCy, $i, mb_strtoupper($item['badge']), $angle);
+                imagedestroy($thumb);
+            } else {
+                $badgeColor = self::paletteColor($im, $i);
+                imagefilledellipse($im, $badgeCx, $badgeCy, $badgeDiameter, $badgeDiameter, $badgeColor);
+                self::drawBadgeLabel($im, mb_strtoupper($item['badge']), $badgeCx, $badgeCy, $angle, $badgeDiameter, $white);
+            }
 
             $textX = $x1 + 185;
             $maxTextW = $cardW - 205;
@@ -213,6 +244,64 @@ class PromotionPoster
             $detail = self::fitTextToWidth(self::fontMono(), 19, $maxTextW, $item['detail']);
             imagettftext($im, 19, 0, $textX, $y2 - 22, $detailColor, self::fontMono(), $detail);
         }
+    }
+
+    /**
+     * Dibuja la foto del producto en un marco cuadrado de color (redondeado)
+     * y le pega encima, en la esquina, un "sticker" circular con el badge de
+     * descuento — como una oferta pegada sobre la foto en un folleto real.
+     */
+    private static function drawProductPhoto(GdImage $im, GdImage $thumb, int $cx, int $cy, int $index, string $badgeText, float $angle): void
+    {
+        $frameSize = 150;
+        $photoSize = imagesx($thumb);
+        $margin = (int) (($frameSize - $photoSize) / 2);
+        $fx1 = $cx - (int) ($frameSize / 2);
+        $fy1 = $cy - (int) ($frameSize / 2);
+
+        $frameColor = self::paletteColor($im, $index);
+        self::roundedRect($im, $fx1, $fy1, $fx1 + $frameSize, $fy1 + $frameSize, 22, $frameColor);
+        imagecopy($im, $thumb, $fx1 + $margin, $fy1 + $margin, 0, 0, $photoSize, $photoSize);
+
+        $white = imagecolorallocate($im, 255, 255, 255);
+        $stickerColor = imagecolorallocate($im, 220, 38, 38); // rojo "oferta", fijo para que se distinga de la foto
+        $stickerD = 76;
+        $stickerCx = $fx1 + $frameSize - 12;
+        $stickerCy = $fy1 + 4;
+
+        imagefilledellipse($im, $stickerCx, $stickerCy, $stickerD + 8, $stickerD + 8, $white);
+        imagefilledellipse($im, $stickerCx, $stickerCy, $stickerD, $stickerD, $stickerColor);
+        self::drawBadgeLabel($im, $badgeText, $stickerCx, $stickerCy, $angle, $stickerD, $white);
+    }
+
+    /** Recorta al cuadrado (centrado) y reescala; null si el archivo no es una imagen válida. */
+    private static function loadSquareThumbnail(string $absolutePath, int $size): ?GdImage
+    {
+        if (! is_file($absolutePath)) {
+            return null;
+        }
+
+        $data = @file_get_contents($absolutePath);
+        if ($data === false) {
+            return null;
+        }
+
+        $src = @imagecreatefromstring($data);
+        if ($src === false) {
+            return null;
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+        $side = min($srcW, $srcH);
+        $srcX = (int) (($srcW - $side) / 2);
+        $srcY = (int) (($srcH - $side) / 2);
+
+        $thumb = imagecreatetruecolor($size, $size);
+        imagecopyresampled($thumb, $src, 0, 0, $srcX, $srcY, $size, $size, $side, $side);
+        imagedestroy($src);
+
+        return $thumb;
     }
 
     /**
