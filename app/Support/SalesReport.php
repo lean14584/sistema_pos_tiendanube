@@ -13,14 +13,19 @@ use Carbon\Carbon;
 class SalesReport
 {
     /**
+     * $sucursalId: si se pasa, el informe queda acotado a esa sucursal (lo
+     * usa un cajero/vendedor, que solo puede ver la suya). null = todas las
+     * sucursales consolidadas (solo lo elige un admin global).
+     *
      * @return array<string, mixed>
      */
-    public static function build(string $fromDate, string $toDate): array
+    public static function build(string $fromDate, string $toDate, ?int $sucursalId = null): array
     {
         $invoices = Invoice::whereNot('status', 'draft')
             ->whereDate('issue_date', '>=', $fromDate)
             ->whereDate('issue_date', '<=', $toDate)
-            ->with('items.product.category', 'payments', 'client')
+            ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
+            ->with('items.product.category', 'payments', 'client', 'sucursal')
             ->get();
 
         $summary = [
@@ -32,6 +37,7 @@ class SalesReport
         $byCategory = collect();
         $byMethod = collect();
         $byClient = collect();
+        $bySucursal = collect();
         $byDay = collect();
         $byHourBuckets = array_fill(0, 24, ['count' => 0, 'total' => 0.0]);
         $totalCost = 0.0;
@@ -51,6 +57,13 @@ class SalesReport
             $client['total'] += $total;
             $client['count']++;
             $byClient->put($clientKey, $client);
+
+            $sucursalKey = $invoice->sucursal_id ?? 'sin-sucursal';
+            $sucursalLabel = $invoice->sucursal?->name ?? 'Sin sucursal';
+            $suc = $bySucursal->get($sucursalKey, ['label' => $sucursalLabel, 'total' => 0.0, 'count' => 0]);
+            $suc['total'] += $total;
+            $suc['count']++;
+            $bySucursal->put($sucursalKey, $suc);
 
             foreach ($invoice->items as $item) {
                 $lineTotal = (float) $item->line_total;
@@ -88,6 +101,7 @@ class SalesReport
         $byCategory = $byCategory->sortByDesc('total')->values();
         $byMethod = $byMethod->sortByDesc('total')->values();
         $byClient = $byClient->sortByDesc('total')->take(8)->values();
+        $bySucursal = $bySucursal->sortByDesc('total')->values();
         $byDay = $byDay->sortKeys()->values();
         $byHour = collect($byHourBuckets)
             ->map(fn ($bucket, $hour) => array_merge($bucket, ['hour' => $hour]))
@@ -107,6 +121,7 @@ class SalesReport
         $prevTotal = Invoice::whereNot('status', 'draft')
             ->whereDate('issue_date', '>=', $prevFrom)
             ->whereDate('issue_date', '<=', $prevTo)
+            ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->with('items')
             ->get()
             ->sum(fn (Invoice $i) => $i->total);
@@ -120,12 +135,14 @@ class SalesReport
             'byCategory' => $byCategory,
             'byMethod' => $byMethod,
             'byClient' => $byClient,
+            'bySucursal' => $bySucursal,
             'byDay' => $byDay,
             'byHour' => $byHour,
             'maxArticle' => $byArticle->max('total') ?? 0,
             'maxCategory' => $byCategory->max('total') ?? 0,
             'maxMethod' => $byMethod->max('total') ?? 0,
             'maxClient' => $byClient->max('total') ?? 0,
+            'maxSucursal' => $bySucursal->max('total') ?? 0,
             'maxDay' => $byDay->max('total') ?? 0,
             'maxHour' => $byHour->max('total') ?? 0,
             'profitability' => $profitability,

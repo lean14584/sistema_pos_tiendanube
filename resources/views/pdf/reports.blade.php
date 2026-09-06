@@ -84,6 +84,18 @@
     @if ($summary['count'] === 0)
         <p class="muted">No hay ventas en el período seleccionado.</p>
     @else
+        @if ($bySucursal->count() > 1)
+            <h2>Ventas por sucursal</h2>
+            <table class="data">
+                <thead><tr><th>Sucursal</th><th class="r">Ventas</th><th class="r">Total</th></tr></thead>
+                <tbody>
+                    @foreach ($bySucursal as $r)
+                        <tr><td>{{ $r['label'] }}</td><td class="r">{{ $r['count'] }}</td><td class="r">${{ money($r['total']) }}</td></tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+
         <h2>Ventas por día</h2>
         <table class="data">
             <thead><tr><th>Día</th><th class="r">Facturas</th><th class="r">Total</th></tr></thead>

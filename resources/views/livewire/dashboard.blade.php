@@ -70,13 +70,23 @@
         </section>
 
         <section class="lg:col-span-3 bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-4 gap-2">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100">Ventas por mes</h2>
-                <select wire:model.live="year" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                    @foreach ($availableYears as $y)
-                        <option value="{{ $y }}">{{ $y }}</option>
-                    @endforeach
-                </select>
+                <div class="flex gap-2">
+                    @if ($puedeVerTodasLasSucursales)
+                        <select wire:model.live="sucursal_id" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <option value="">Todas las sucursales</option>
+                            @foreach ($sucursales as $s)
+                                <option value="{{ $s->id }}">{{ $s->name }}</option>
+                            @endforeach
+                        </select>
+                    @endif
+                    <select wire:model.live="year" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        @foreach ($availableYears as $y)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
 
             @php
@@ -101,6 +111,25 @@
             @endif
         </section>
     </div>
+
+    @if ($puedeVerTodasLasSucursales && $sucursal_id === '' && $bySucursal->count() > 1)
+        <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5 mb-6">
+            <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por sucursal en {{ $year }}</h2>
+            <div class="space-y-3">
+                @foreach ($bySucursal as $row)
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
+                            <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}</span>
+                        </div>
+                        <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+                            <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $maxSucursal > 0 ? max(2, round(($row['total'] / $maxSucursal) * 100)) : 0 }}%"></div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">

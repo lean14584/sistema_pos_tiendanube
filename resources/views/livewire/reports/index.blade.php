@@ -5,10 +5,10 @@
 <div class="p-8 max-w-5xl mx-auto">
     <x-page-header title="Informes de ventas" subtitle="Facturas no borrador, agrupadas por distintos criterios" icon="chart-bar">
         <x-slot:actions>
-            <a href="{{ route('reports.export.pdf', ['fromDate' => $fromDate, 'toDate' => $toDate]) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">
+            <a href="{{ route('reports.export.pdf', ['fromDate' => $fromDate, 'toDate' => $toDate, 'sucursal_id' => $sucursal_id]) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">
                 <x-heroicon-o-document-arrow-down class="w-4 h-4" /> PDF
             </a>
-            <a href="{{ route('reports.export.csv', ['fromDate' => $fromDate, 'toDate' => $toDate]) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">
+            <a href="{{ route('reports.export.csv', ['fromDate' => $fromDate, 'toDate' => $toDate, 'sucursal_id' => $sucursal_id]) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">
                 <x-heroicon-o-table-cells class="w-4 h-4" /> Excel
             </a>
         </x-slot:actions>
@@ -23,6 +23,17 @@
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
             <input type="date" wire:model.live="toDate" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
         </div>
+        @if ($puedeVerTodasLasSucursales)
+            <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sucursal</label>
+                <select wire:model.live="sucursal_id" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <option value="">Todas (consolidado)</option>
+                    @foreach ($sucursales as $s)
+                        <option value="{{ $s->id }}">{{ $s->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endif
         <div class="flex gap-6 sm:ml-auto text-sm">
             <div>
                 <p class="text-xs text-gray-400 dark:text-gray-500 uppercase">Total vendido</p>
@@ -118,6 +129,25 @@
         </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            @if ($puedeVerTodasLasSucursales && $sucursal_id === '' && $bySucursal->count() > 1)
+                <section class="lg:col-span-2 bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+                    <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por sucursal</h2>
+                    <div class="space-y-3">
+                        @foreach ($bySucursal as $row)
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
+                                    <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}</span>
+                                </div>
+                                <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+                                    <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxSucursal) }}%"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
             <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por artículo</h2>
                 <div class="space-y-3">
