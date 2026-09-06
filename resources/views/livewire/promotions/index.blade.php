@@ -4,6 +4,9 @@
     </a>
     <x-page-header title="Promociones" subtitle="El POS aplica estas promos solo, según el producto y la cantidad." icon="gift">
         <x-slot:actions>
+            <a href="{{ route('promotions.poster') }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">
+                <x-heroicon-o-photo class="w-4 h-4" /> Generar cartel de ofertas
+            </a>
             <a href="{{ route('promotions.groups.index') }}" wire:navigate class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">
                 <x-heroicon-o-user-group class="w-4 h-4" /> Promos por familia
             </a>

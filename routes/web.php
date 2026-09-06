@@ -7,6 +7,7 @@ use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\LibroIvaExportController;
 use App\Http\Controllers\MercadoPagoWebhookController;
 use App\Http\Controllers\ProductExportController;
+use App\Http\Controllers\PromotionPosterController;
 use App\Http\Controllers\ProviderAccountStatementController;
 use App\Http\Controllers\ReciboPdfController;
 use App\Http\Controllers\RemitoPdfController;
@@ -155,6 +156,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:promotions')->prefix('promociones')->name('promotions.')->group(function () {
         Route::get('/', App\Livewire\Promotions\Index::class)->name('index');
         Route::get('/familias', App\Livewire\PromotionGroups\Index::class)->name('groups.index');
+        Route::get('/cartel', PromotionPosterController::class)->name('poster');
     });
 
     Route::middleware('module:providers')->prefix('providers')->name('providers.')->group(function () {
