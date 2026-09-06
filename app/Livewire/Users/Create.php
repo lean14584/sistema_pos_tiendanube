@@ -17,6 +17,8 @@ class Create extends Component
 
     public string $username = '';
 
+    public string $email = '';
+
     public string $password = '';
 
     public string $role = 'vendedor';
@@ -46,6 +48,7 @@ class Create extends Component
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', Rule::enum(Role::class)],
             // Un admin es global (no pertenece a una sucursal); el resto sí necesita una.
@@ -58,6 +61,10 @@ class Create extends Component
 
             return;
         }
+
+        // Nunca guardar '' en una columna unique/nullable: dos usuarios sin
+        // email chocarían entre sí en el índice único.
+        $data['email'] = $data['email'] !== '' ? $data['email'] : null;
 
         $data['sucursal_id'] = $data['role'] === Role::Admin->value ? null : $data['sucursal_id'];
 

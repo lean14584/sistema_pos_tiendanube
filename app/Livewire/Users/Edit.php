@@ -20,6 +20,8 @@ class Edit extends Component
 
     public string $username = '';
 
+    public string $email = '';
+
     public string $password = '';
 
     public string $current_password = '';
@@ -47,6 +49,7 @@ class Edit extends Component
         $this->user = $user;
         $this->name = $user->name;
         $this->username = $user->username;
+        $this->email = $user->email ?? '';
         $this->role = $user->role->value;
         $this->sucursal_id = $user->sucursal_id ? (string) $user->sucursal_id : '';
         $this->active = $user->active;
@@ -65,6 +68,7 @@ class Edit extends Component
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($this->user->id)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)],
             'password' => ['nullable', 'string', 'min:8'],
             'role' => ['required', Rule::enum(Role::class)],
             'sucursal_id' => [Rule::requiredIf($this->role !== Role::Admin->value), 'nullable', 'exists:sucursales,id'],
@@ -76,6 +80,8 @@ class Edit extends Component
 
             return;
         }
+
+        $data['email'] = $data['email'] !== '' ? $data['email'] : null;
 
         $data['sucursal_id'] = $data['role'] === Role::Admin->value ? null : $data['sucursal_id'];
 

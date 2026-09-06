@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\Auditable;
 use App\Enums\Role;
+use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'password', 'role', 'active', 'sucursal_id'])]
+#[Fillable(['name', 'username', 'email', 'password', 'role', 'active', 'sucursal_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -36,6 +37,11 @@ class User extends Authenticatable
             'role' => Role::class,
             'active' => 'boolean',
         ];
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     public function cashSessions(): HasMany

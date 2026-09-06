@@ -7,26 +7,33 @@
             <span class="font-semibold text-gray-900 dark:text-gray-100 text-lg">{{ config('app.name') }}</span>
         </div>
 
-        @if (session('status'))
-            <p class="text-sm text-emerald-600 dark:text-emerald-400 text-center mb-4">{{ session('status') }}</p>
-        @endif
-
         <form wire:submit="submit" class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Usuario</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                 <input
-                    type="text"
-                    wire:model="username"
+                    type="email"
+                    wire:model="email"
                     autofocus
                     required
                     class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
+                @error('email') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña nueva</label>
                 <input
                     type="password"
                     wire:model="password"
+                    required
+                    class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                @error('password') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Repetir contraseña</label>
+                <input
+                    type="password"
+                    wire:model="password_confirmation"
                     required
                     class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
@@ -40,17 +47,9 @@
                 type="submit"
                 class="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
             >
-                <span wire:loading.remove wire:target="submit">Ingresar</span>
-                <span wire:loading wire:target="submit">Ingresando...</span>
+                <span wire:loading.remove wire:target="submit">Cambiar contraseña</span>
+                <span wire:loading wire:target="submit">Guardando...</span>
             </button>
         </form>
-
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-4 text-center">
-            <a href="{{ route('password.request') }}" wire:navigate class="text-indigo-600 dark:text-indigo-400 hover:underline">¿Olvidaste tu contraseña?</a>
-        </p>
-
-        @if (app()->environment('local'))
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">Usuario inicial: admin / admin</p>
-        @endif
     </div>
 </div>

@@ -59,6 +59,8 @@ use App\Livewire\StockTransfers\Show;
 use App\Livewire\Sucursales\Create as SucursalCreate;
 use App\Livewire\Sucursales\Edit as SucursalEdit;
 use App\Livewire\Sucursales\Index as SucursalIndex;
+use App\Livewire\Auth\ForgotPassword;
+use App\Livewire\Auth\ResetPassword;
 use App\Livewire\Tasks\Create as TaskCreate;
 use App\Livewire\Tasks\Index as TaskIndex;
 use App\Livewire\Users\Create as UserCreate;
@@ -68,6 +70,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/login', Login::class)->middleware('guest')->name('login');
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', ForgotPassword::class)->name('password.request');
+    Route::get('/reset-password/{token}', ResetPassword::class)->name('password.reset');
+});
 
 // Webhook público de Mercado Pago (sin auth ni CSRF; se valida contra la API).
 Route::match(['get', 'post'], '/mp/webhook', MercadoPagoWebhookController::class)->name('mp.webhook');

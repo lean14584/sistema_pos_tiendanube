@@ -24,6 +24,14 @@
         </div>
     </div>
 
+    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Email <span class="text-gray-400 font-normal">(opcional, para poder recuperar la contraseña)</span>
+        </label>
+        <input type="email" wire:model="email" class="{{ $inputClass }}" placeholder="usuario@ejemplo.com">
+        @error('email') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+    </div>
+
     @if ($editingSelf ?? false)
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
