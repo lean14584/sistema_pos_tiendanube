@@ -9,12 +9,15 @@ use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\ProductStock;
+use App\Models\Sucursal;
 use App\Models\User;
 use App\Services\Tiendanube\TiendanubeClient;
 use App\Services\Tiendanube\TiendanubeSync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -37,7 +40,7 @@ class TiendanubeTest extends TestCase
     }
 
     /** POST al webhook con una firma HMAC válida para el secret de conectar(). */
-    private function postWebhook(array $payload, string $secret = 'secreto'): \Illuminate\Testing\TestResponse
+    private function postWebhook(array $payload, string $secret = 'secreto'): TestResponse
     {
         $firma = base64_encode(hash_hmac('sha256', json_encode($payload), $secret, true));
 
@@ -120,8 +123,8 @@ class TiendanubeTest extends TestCase
 
         // Las dos productos comparten la misma categoría de Tiendanube (501):
         // se crea una sola categoría local y ambos quedan asignados.
-        $this->assertSame(1, \App\Models\Category::where('tiendanube_category_id', 501)->count());
-        $categoria = \App\Models\Category::where('tiendanube_category_id', 501)->first();
+        $this->assertSame(1, Category::where('tiendanube_category_id', 501)->count());
+        $categoria = Category::where('tiendanube_category_id', 501)->first();
         $this->assertSame('Indumentaria', $categoria->name);
         $this->assertSame($categoria->id, Product::where('tiendanube_product_id', 11)->first()->category_id);
         $this->assertSame($categoria->id, Product::where('tiendanube_product_id', 12)->first()->category_id);
@@ -152,10 +155,13 @@ class TiendanubeTest extends TestCase
         $this->conectar();
         $this->fakeApi();
 
-        Product::create([
+        $p = Product::create([
             'name' => 'Remera', 'price' => 1500, 'stock' => 8,
             'tiendanube_product_id' => 11, 'tiendanube_variant_id' => 91,
         ]);
+        // pushStock manda el stock DE LA SUCURSAL de Tiendanube (ver
+        // TiendanubeSync::sucursalId), no el agregado de products.stock.
+        ProductStock::create(['product_id' => $p->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 8]);
 
         Livewire::actingAs($this->admin())
             ->test('tiendanube.index')
@@ -203,7 +209,10 @@ class TiendanubeTest extends TestCase
         $this->conectar();
         Http::fake(fn ($request) => Http::response([], 200));
 
-        Product::create(['name' => 'Gorra', 'price' => 500, 'stock' => 4, 'tiendanube_product_id' => 11, 'tiendanube_variant_id' => 91]);
+        $p = Product::create(['name' => 'Gorra', 'price' => 500, 'stock' => 4, 'tiendanube_product_id' => 11, 'tiendanube_variant_id' => 91]);
+        // pushProduct ahora manda el stock DE LA SUCURSAL de Tiendanube (ver
+        // TiendanubeSync::sucursalId), no el agregado de products.stock.
+        ProductStock::create(['product_id' => $p->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 4]);
 
         Livewire::actingAs($this->admin())
             ->test('tiendanube.index')
@@ -299,7 +308,7 @@ class TiendanubeTest extends TestCase
         });
 
         // Categoría local sin vincular (para el push).
-        \App\Models\Category::create(['name' => 'Bazar']);
+        Category::create(['name' => 'Bazar']);
 
         Livewire::actingAs($this->admin())
             ->test('tiendanube.index')
@@ -320,7 +329,7 @@ class TiendanubeTest extends TestCase
             return Http::response([], 200);
         });
 
-        $cat = \App\Models\Category::create(['name' => 'Indumentaria', 'tiendanube_category_id' => 501]);
+        $cat = Category::create(['name' => 'Indumentaria', 'tiendanube_category_id' => 501]);
         Product::create(['name' => 'Remera', 'price' => 1500, 'stock' => 4, 'category_id' => $cat->id]);
 
         Livewire::actingAs($this->admin())

@@ -3,6 +3,7 @@
 namespace App\Livewire\Tiendanube;
 
 use App\Models\CompanySettings;
+use App\Models\Sucursal;
 use App\Services\Tiendanube\TiendanubeClient;
 use App\Services\Tiendanube\TiendanubeSync;
 use Livewire\Attributes\Layout;
@@ -18,6 +19,8 @@ class Index extends Component
     public string $tiendanube_token = '';
 
     public string $tiendanube_webhook_secret = '';
+
+    public string $tiendanube_sucursal_id = '';
 
     /** Resultado de la última acción, para mostrar en pantalla. */
     public ?string $resultado = null;
@@ -36,6 +39,7 @@ class Index extends Component
     {
         $this->company = CompanySettings::current();
         $this->tiendanube_store_id = (string) $this->company->tiendanube_store_id;
+        $this->tiendanube_sucursal_id = $this->company->tiendanube_sucursal_id ? (string) $this->company->tiendanube_sucursal_id : '';
         // Token y secreto NO se precargan acá: Livewire serializa el estado
         // del componente en el HTML de la página, así que un input type=
         // password con el valor real igual lo manda en texto plano al
@@ -60,7 +64,10 @@ class Index extends Component
             'tiendanube_store_id' => ['nullable', 'string', 'max:50'],
             'tiendanube_token' => ['nullable', 'string', 'max:255'],
             'tiendanube_webhook_secret' => ['nullable', 'string', 'max:255'],
+            'tiendanube_sucursal_id' => ['nullable', 'exists:sucursales,id'],
         ]);
+
+        $data['tiendanube_sucursal_id'] = $data['tiendanube_sucursal_id'] ?: null;
 
         // Campo vacío = "no cambiar" (no hay forma de distinguir "vacío a
         // propósito" de "no tocado" ya que nunca se precarga el valor real).
@@ -256,6 +263,7 @@ class Index extends Component
     {
         return view('livewire.tiendanube.index', [
             'configurado' => app(TiendanubeClient::class)->isConfigured(),
+            'sucursales' => Sucursal::where('active', true)->orderBy('name')->get(),
         ]);
     }
 }

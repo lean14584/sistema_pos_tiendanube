@@ -8,11 +8,17 @@ use App\Enums\TipoComprobanteInterno;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'punto_venta', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits'])]
+#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'punto_venta', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'tiendanube_sucursal_id', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits'])]
 class CompanySettings extends Model
 {
     use Auditable;
+
+    public function tiendanubeSucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class, 'tiendanube_sucursal_id');
+    }
 
     protected function casts(): array
     {
