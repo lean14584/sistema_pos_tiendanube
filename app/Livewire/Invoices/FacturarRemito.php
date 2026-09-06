@@ -6,7 +6,9 @@ use App\Enums\AlicuotaIva;
 use App\Enums\TipoComprobanteInterno;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
+use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -20,6 +22,12 @@ class FacturarRemito extends Component
 
     public function mount(Invoice $invoice): void
     {
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || $invoice->sucursal_id === CurrentSucursal::id(),
+            403,
+            'No podés facturar un remito de otra sucursal.'
+        );
+
         abort_if(! $invoice->esRemito(), 403, 'Solo se puede facturar un Remito.');
         abort_if($invoice->facturaGenerada() !== null, 403, 'Este remito ya fue facturado.');
 

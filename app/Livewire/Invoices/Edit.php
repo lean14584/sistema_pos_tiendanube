@@ -13,7 +13,9 @@ use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -55,6 +57,12 @@ class Edit extends Component
 
     public function mount(Invoice $invoice): void
     {
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || $invoice->sucursal_id === CurrentSucursal::id(),
+            403,
+            'No podés editar una factura de otra sucursal.'
+        );
+
         abort_if($invoice->isFiscal, 403, 'Esta factura ya tiene CAE y no puede editarse.');
         abort_if(
             $invoice->esRemito() && $invoice->facturaGenerada() !== null,

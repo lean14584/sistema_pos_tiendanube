@@ -8,8 +8,10 @@ use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
 use App\Models\Invoice;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -31,6 +33,12 @@ class Create extends Component
 
     public function mount(Invoice $invoice): void
     {
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || $invoice->sucursal_id === CurrentSucursal::id(),
+            403,
+            'No podés emitir una Nota de Crédito para una factura de otra sucursal.'
+        );
+
         abort_if(! $invoice->isFiscal, 403, 'Solo se puede emitir una Nota de Crédito para una factura con CAE.');
         abort_if($invoice->related_invoice_id !== null, 403, 'Una Nota de Crédito no puede tener, a su vez, otra Nota de Crédito.');
 

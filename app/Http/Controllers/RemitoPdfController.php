@@ -4,13 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\CompanySettings;
 use App\Models\Invoice;
+use App\Support\CurrentSucursal;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class RemitoPdfController extends Controller
 {
     public function __invoke(Invoice $invoice, Request $request)
     {
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || $invoice->sucursal_id === CurrentSucursal::id(),
+            403,
+            'No podés descargar un remito de otra sucursal.'
+        );
+
         abort_if(! $invoice->esRemito(), 404);
 
         $invoice->load('client', 'items');

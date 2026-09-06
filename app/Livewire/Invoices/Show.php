@@ -13,8 +13,10 @@ use App\Services\Afip\InvoiceCaeEmitter;
 use App\Services\MercadoPago\MercadoPagoQrService;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\MercadoPagoPaymentApplier;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
@@ -38,6 +40,15 @@ class Show extends Component
 
     public function mount(Invoice $invoice): void
     {
+        // Antes cualquier rol podía abrir la factura de cualquier sucursal
+        // con solo cambiar el id en la URL — el listado ya filtra, pero eso
+        // no protege el acceso directo.
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || $invoice->sucursal_id === CurrentSucursal::id(),
+            403,
+            'No podés ver una factura de otra sucursal.'
+        );
+
         $this->invoice = $invoice;
     }
 
