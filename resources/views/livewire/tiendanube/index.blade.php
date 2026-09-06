@@ -62,6 +62,17 @@
                     class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 @error('tiendanube_webhook_secret') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sucursal para el stock online</label>
+                <select wire:model="tiendanube_sucursal_id" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <option value="">La primera sucursal (por defecto)</option>
+                    @foreach ($sucursales as $s)
+                        <option value="{{ $s->id }}">{{ $s->name }}</option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">El stock que Tiendanube trae, envía y descuenta corresponde SOLO a esta sucursal (no al total de todas). Si tenés más de una, elegí cuál es la que abastece a la tienda online.</p>
+                @error('tiendanube_sucursal_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            </div>
 
             <div class="flex flex-col sm:flex-row gap-2 pt-1">
                 <button type="submit"

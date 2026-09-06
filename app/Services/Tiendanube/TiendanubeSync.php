@@ -5,9 +5,12 @@ namespace App\Services\Tiendanube;
 use App\Enums\TipoComprobanteInterno;
 use App\Models\Category;
 use App\Models\Client;
+use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Support\InvoiceNumberGenerator;
+use App\Support\StockAdjuster;
 use App\Support\TiendanubeSyncGuard;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -49,10 +52,14 @@ class TiendanubeSync
 
                     $existente = Product::where('tiendanube_product_id', $tn['id'])->first();
 
+                    // El stock NO va en $datos: se fija aparte pasando por
+                    // StockAdjuster (ver setStockFromTiendanube), para no
+                    // pisar products.stock directo y desincronizarlo de
+                    // product_stocks (agregado por sucursal, ver Fase 3 de
+                    // multisucursal).
                     $datos = [
                         'name' => $this->texto($tn['name'] ?? ''),
                         'price' => $this->numero($variante['price'] ?? 0),
-                        'stock' => (int) ($variante['stock'] ?? 0),
                         'sku' => $variante['sku'] ?? null,
                         'category_id' => $this->resolverCategoria($tn['categories'] ?? []),
                         'tiendanube_product_id' => $tn['id'],
@@ -61,11 +68,14 @@ class TiendanubeSync
 
                     if ($existente) {
                         $existente->update($datos);
+                        $producto = $existente;
                         $actualizados++;
                     } else {
-                        Product::create($datos);
+                        $producto = Product::create($datos);
                         $creados++;
                     }
+
+                    $this->setStockFromTiendanube($producto, (int) ($variante['stock'] ?? 0));
                 }
 
                 if (count($productos) < $perPage) {
@@ -135,15 +145,16 @@ class TiendanubeSync
     {
         $enviados = 0;
         $errores = 0;
+        $sucursalId = $this->sucursalId();
 
         Product::whereNotNull('tiendanube_product_id')
             ->whereNotNull('tiendanube_variant_id')
-            ->each(function (Product $p) use (&$enviados, &$errores) {
+            ->each(function (Product $p) use (&$enviados, &$errores, $sucursalId) {
                 try {
                     $this->client->updateVariantStock(
                         (int) $p->tiendanube_product_id,
                         (int) $p->tiendanube_variant_id,
-                        (int) $p->stock,
+                        $p->stockEnSucursal($sucursalId),
                     );
                     $enviados++;
                 } catch (\Throwable $e) {
@@ -193,7 +204,7 @@ class TiendanubeSync
                 $this->client->updateVariant(
                     (int) $p->tiendanube_product_id,
                     (int) $p->tiendanube_variant_id,
-                    ['price' => $this->precio($p->price), 'stock' => (int) $p->stock, 'sku' => $p->sku],
+                    ['price' => $this->precio($p->price), 'stock' => $p->stockEnSucursal($this->sucursalId()), 'sku' => $p->sku],
                 );
             }
 
@@ -204,7 +215,7 @@ class TiendanubeSync
             'name' => ['es' => $p->name],
             'variants' => [[
                 'price' => $this->precio($p->price),
-                'stock' => (int) $p->stock,
+                'stock' => $p->stockEnSucursal($this->sucursalId()),
                 'sku' => $p->sku,
             ]],
         ];
@@ -244,8 +255,8 @@ class TiendanubeSync
                 foreach ($productos as $tn) {
                     $local = Product::where('tiendanube_product_id', $tn['id'])->first();
 
-                    if ($local) {
-                        $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+                    if ($local && isset($tn['variants'][0]['stock'])) {
+                        $this->setStockFromTiendanube($local, (int) $tn['variants'][0]['stock']);
                         $actualizados++;
                     }
                 }
@@ -379,7 +390,10 @@ class TiendanubeSync
             }
 
             $tn = $this->client->getProduct($tiendanubeProductId);
-            $local->update(['stock' => (int) ($tn['variants'][0]['stock'] ?? $local->stock)]);
+
+            if (isset($tn['variants'][0]['stock'])) {
+                $this->setStockFromTiendanube($local, (int) $tn['variants'][0]['stock']);
+            }
         });
     }
 
@@ -567,6 +581,37 @@ class TiendanubeSync
     }
 
     /**
+     * A qué sucursal corresponde el stock de Tiendanube (ver ABM en
+     * Tiendanube\Index y la migración add_tiendanube_sucursal_id_to_
+     * company_settings_table). Sin configurar explícitamente, cae a la
+     * primera sucursal — mismo criterio que CurrentSucursal, para que un
+     * comercio de una sola sucursal siga sincronizando sin tener que elegir
+     * nada.
+     */
+    private function sucursalId(): int
+    {
+        return CompanySettings::current()->tiendanube_sucursal_id
+            ?? Sucursal::orderBy('id')->value('id');
+    }
+
+    /**
+     * Fija el stock ABSOLUTO de un producto en la sucursal de Tiendanube,
+     * pasando por StockAdjuster. Antes esto pisaba `products.stock`
+     * directo: como ese campo pasó a ser un AGREGADO (suma de
+     * product_stocks) con la Fase 3 de multisucursal, escribirlo a mano acá
+     * lo desincronizaba del stock real por sucursal.
+     */
+    private function setStockFromTiendanube(Product $product, int $nuevoStock): void
+    {
+        $sucursalId = $this->sucursalId();
+        $delta = $nuevoStock - $product->stockEnSucursal($sucursalId);
+
+        if ($delta !== 0) {
+            StockAdjuster::applyManualDelta($product->id, $delta, $sucursalId);
+        }
+    }
+
+    /**
      * @param  array<string,mixed>  $tn
      */
     private function crearFacturaDesdePedido(array $tn): void
@@ -617,7 +662,6 @@ class TiendanubeSync
             ['name' => $nombre],
         );
     }
-
 
     /**
      * Los textos de Tiendanube vienen como objeto por idioma
