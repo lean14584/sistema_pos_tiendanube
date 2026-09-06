@@ -38,6 +38,11 @@ class Sucursal extends Model
         return $this->hasMany(ProductStock::class);
     }
 
+    public function productBatches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class);
+    }
+
     public function cashSessions(): HasMany
     {
         return $this->hasMany(CashSession::class);

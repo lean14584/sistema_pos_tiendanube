@@ -11,6 +11,7 @@ use App\Http\Controllers\ProviderAccountStatementController;
 use App\Http\Controllers\ReciboPdfController;
 use App\Http\Controllers\RemitoPdfController;
 use App\Http\Controllers\ReportsExportController;
+use App\Http\Controllers\StockTransferPdfController;
 use App\Http\Controllers\TiendanubeWebhookController;
 use App\Livewire\Audit\Index as AuditIndex;
 use App\Livewire\Auth\Login;
@@ -54,6 +55,7 @@ use App\Livewire\Quotes\Edit as QuoteEdit;
 use App\Livewire\Quotes\Index as QuoteIndex;
 use App\Livewire\Quotes\Show as QuoteShow;
 use App\Livewire\Reports\Index as ReportsIndex;
+use App\Livewire\StockTransfers\Show;
 use App\Livewire\Sucursales\Create as SucursalCreate;
 use App\Livewire\Sucursales\Edit as SucursalEdit;
 use App\Livewire\Sucursales\Index as SucursalIndex;
@@ -124,9 +126,11 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('module:stock-transfers')->prefix('envios-mercaderia')->name('stock-transfers.')->group(function () {
         Route::get('/', App\Livewire\StockTransfers\Index::class)->name('index');
-        Route::get('/{transfer}', App\Livewire\StockTransfers\Show::class)->name('show');
-        Route::get('/{transfer}/pdf', App\Http\Controllers\StockTransferPdfController::class)->name('pdf');
+        Route::get('/{transfer}', Show::class)->name('show');
+        Route::get('/{transfer}/pdf', StockTransferPdfController::class)->name('pdf');
     });
+
+    Route::middleware('module:product-batches')->get('lotes-vencimientos', App\Livewire\ProductBatches\Index::class)->name('product-batches.index');
 
     Route::middleware('module:categories')->prefix('categories')->name('categories.')->group(function () {
         Route::get('/', CategoryIndex::class)->name('index');

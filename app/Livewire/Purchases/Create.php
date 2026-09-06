@@ -6,9 +6,11 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobante;
 use App\Models\Product;
+use App\Models\ProductBatch;
 use App\Models\Provider;
 use App\Models\Purchase;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +40,7 @@ class Create extends Component
 
     public string $status = 'draft';
 
-    /** @var array<int, array{product_id: int, description: string, quantity: string, unit_price: string}> */
+    /** @var array<int, array{product_id: int, description: string, quantity: string, unit_price: string, batch_number: string, expiration_date: string}> */
     public array $items = [];
 
     /** @var array<int, array{method: string, amount: string}> */
@@ -81,6 +83,8 @@ class Create extends Component
             'description' => $product->name,
             'quantity' => '1',
             'unit_price' => (string) $product->price,
+            'batch_number' => '',
+            'expiration_date' => '',
         ];
 
         $this->productQuery = '';
@@ -183,6 +187,8 @@ class Create extends Component
             'notes' => ['nullable', 'string'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.batch_number' => ['nullable', 'string', 'max:60'],
+            'items.*.expiration_date' => ['nullable', 'date'],
             'taxes.*.concepto' => ['required_with:taxes.*.amount', 'nullable', 'string', 'max:100'],
             'taxes.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]);
@@ -221,6 +227,22 @@ class Create extends Component
             }
 
             StockAdjuster::apply($this->items, 1);
+
+            $sucursalId = CurrentSucursal::id();
+
+            foreach ($this->items as $item) {
+                if ($sucursalId !== null && ! empty($item['expiration_date'])) {
+                    ProductBatch::create([
+                        'product_id' => $item['product_id'],
+                        'sucursal_id' => $sucursalId,
+                        'purchase_id' => $purchase->id,
+                        'batch_number' => $item['batch_number'] !== '' ? $item['batch_number'] : null,
+                        'quantity_received' => $item['quantity'],
+                        'quantity_remaining' => $item['quantity'],
+                        'expiration_date' => $item['expiration_date'],
+                    ]);
+                }
+            }
 
             foreach ($this->payments as $payment) {
                 if ((float) $payment['amount'] > 0) {

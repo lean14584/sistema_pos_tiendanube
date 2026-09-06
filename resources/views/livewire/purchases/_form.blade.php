@@ -116,6 +116,18 @@
                                     </button>
                                 </td>
                             </tr>
+                            @if ($showBatchFields ?? false)
+                                <tr wire:key="item-batch-{{ $index }}" class="border-t border-gray-50 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-800/20">
+                                    <td colspan="5" class="px-4 py-2">
+                                        <div class="flex flex-wrap items-center gap-3 text-xs">
+                                            <span class="text-gray-400 dark:text-gray-500">Lote / vencimiento (opcional, para productos perecederos):</span>
+                                            <input type="text" wire:model="items.{{ $index }}.batch_number" placeholder="N° de lote" class="w-32 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                            <input type="date" wire:model="items.{{ $index }}.expiration_date" class="rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        </div>
+                                        @error("items.{$index}.expiration_date") <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                                    </td>
+                                </tr>
+                            @endif
                         @endforeach
                     </tbody>
                 </table>
