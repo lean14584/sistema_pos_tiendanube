@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CompanySettings;
+use App\Support\CurrentSucursal;
 use App\Support\SalesReport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportsExportController extends Controller
@@ -18,10 +20,25 @@ class ReportsExportController extends Controller
         ]);
     }
 
+    /**
+     * Igual que Reports\Index: un cajero/vendedor solo puede exportar la suya,
+     * sin importar lo que venga en la URL — si no se hiciera este chequeo acá
+     * también, alguien podría pegar la URL de export con otro sucursal_id (o
+     * ninguno) y esquivar el scope que sí aplica la pantalla.
+     */
+    private function sucursalId(Request $request): ?int
+    {
+        if (! Auth::user()?->esAdminGlobal()) {
+            return CurrentSucursal::id();
+        }
+
+        return $request->filled('sucursal_id') ? (int) $request->input('sucursal_id') : null;
+    }
+
     public function pdf(Request $request)
     {
         $rango = $this->rango($request);
-        $data = SalesReport::build($rango['fromDate'], $rango['toDate']);
+        $data = SalesReport::build($rango['fromDate'], $rango['toDate'], $this->sucursalId($request));
         $data['company'] = CompanySettings::current();
 
         $nombre = 'informe-ventas-'.$rango['fromDate'].'-a-'.$rango['toDate'].'.pdf';
@@ -32,7 +49,7 @@ class ReportsExportController extends Controller
     public function csv(Request $request): StreamedResponse
     {
         $rango = $this->rango($request);
-        $data = SalesReport::build($rango['fromDate'], $rango['toDate']);
+        $data = SalesReport::build($rango['fromDate'], $rango['toDate'], $this->sucursalId($request));
 
         $nombre = 'informe-ventas-'.$rango['fromDate'].'-a-'.$rango['toDate'].'.csv';
 
@@ -68,6 +85,15 @@ class ReportsExportController extends Controller
             $row(['Ganancia bruta', $money($data['profitability']['profit'])]);
             $row(['Margen %', $money($data['profitability']['marginPct'])]);
             $row([]);
+
+            if ($data['bySucursal']->count() > 1) {
+                $row(['Ventas por sucursal']);
+                $row(['Sucursal', 'Ventas', 'Total']);
+                foreach ($data['bySucursal'] as $r) {
+                    $row([$r['label'], $r['count'], $money($r['total'])]);
+                }
+                $row([]);
+            }
 
             $row(['Ventas por dia']);
             $row(['Dia', 'Facturas', 'Total']);

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +106,46 @@ class DashboardTest extends TestCase
             ->test('dashboard')
             ->assertSee('Almacén')
             ->assertSee('Efectivo');
+    }
+
+    public function test_admin_ve_el_desglose_de_ventas_por_sucursal(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $invP = Invoice::create(['number' => 'P-0001', 'client_id' => $client->id, 'sucursal_id' => $principal->id, 'tax_rate' => 0, 'issue_date' => now(), 'due_date' => now(), 'status' => 'paid']);
+        $invP->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 500]);
+
+        $invN = Invoice::create(['number' => 'N-0001', 'client_id' => $client->id, 'sucursal_id' => $norte->id, 'tax_rate' => 0, 'issue_date' => now(), 'due_date' => now(), 'status' => 'paid']);
+        $invN->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 1500]);
+
+        Livewire::actingAs($admin)
+            ->test('dashboard')
+            ->assertSee('Ventas por sucursal')
+            ->assertSee($principal->name)
+            ->assertSee($norte->name);
+    }
+
+    public function test_vendedor_solo_ve_las_estadisticas_de_su_propia_sucursal(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $vendedor = User::factory()->create(['role' => Role::Vendedor, 'active' => true, 'sucursal_id' => $principal->id]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $invP = Invoice::create(['number' => 'P-0001', 'client_id' => $client->id, 'sucursal_id' => $principal->id, 'tax_rate' => 0, 'issue_date' => now(), 'due_date' => now(), 'status' => 'paid']);
+        $invP->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 500]);
+
+        $invN = Invoice::create(['number' => 'N-0001', 'client_id' => $client->id, 'sucursal_id' => $norte->id, 'tax_rate' => 0, 'issue_date' => now(), 'due_date' => now(), 'status' => 'paid']);
+        $invN->items()->create(['description' => 'Secreto de Norte', 'quantity' => 1, 'unit_price' => 1500]);
+
+        $component = Livewire::actingAs($vendedor)->test('dashboard');
+
+        $this->assertEqualsWithDelta(500.0, $component->viewData('stats')['totalRevenue'], 0.01);
+        $component->assertDontSee('Secreto de Norte');
+        $component->assertDontSee('Ventas por sucursal'); // no ve el selector ni el desglose
     }
 
     public function test_el_conteo_de_stock_bajo_se_consulta_una_sola_vez_por_request(): void
