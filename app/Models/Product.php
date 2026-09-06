@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 #[ObservedBy(ProductObserver::class)]
 #[Fillable(['category_id', 'name', 'sku', 'sold_by_weight', 'price', 'iva_rate', 'cost_price', 'stock', 'min_stock', 'description', 'image_path', 'tiendanube_product_id', 'tiendanube_variant_id'])]
@@ -52,7 +53,7 @@ class Product extends Model
     /** URL pública de la foto del producto, o null si no tiene. */
     public function imageUrl(): ?string
     {
-        return $this->image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->image_path) : null;
+        return $this->image_path ? Storage::disk('public')->url($this->image_path) : null;
     }
 
     /**
@@ -94,6 +95,11 @@ class Product extends Model
     public function stocks(): HasMany
     {
         return $this->hasMany(ProductStock::class);
+    }
+
+    public function batches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class);
     }
 
     /** Stock de este producto en una sucursal puntual (0 si nunca se movió ahí). */

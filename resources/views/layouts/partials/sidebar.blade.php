@@ -3,10 +3,12 @@
     use App\Models\Invoice;
     use App\Models\Message;
     use App\Models\Product;
+    use App\Models\ProductBatch;
     use App\Models\Task;
     use App\Support\Permissions;
 
     $lowStockCount = Product::lowStockCountCached();
+    $expiringBatchesCount = ProductBatch::alertCountCached();
     $pendientesEmision = Invoice::pendientesDeEmisionCountCached();
     $unreadMessagesCount = auth()->check() ? Message::unreadFor(auth()->id())->count() : 0;
     $openTasksCount = 0;
@@ -34,6 +36,7 @@
         ['module' => 'promotions', 'group' => 'Productos', 'pattern' => 'promotions.*', 'href' => route('promotions.index'), 'label' => 'Promociones', 'icon' => 'gift'],
         ['module' => 'stock-adjustments', 'group' => 'Productos', 'pattern' => 'stock-adjustments.*', 'href' => route('stock-adjustments.index'), 'label' => 'Ajustes de Stock', 'icon' => 'wrench'],
         ['module' => 'stock-transfers', 'group' => 'Productos', 'pattern' => 'stock-transfers.*', 'href' => route('stock-transfers.index'), 'label' => 'Envío de Mercadería', 'icon' => 'arrows-right-left'],
+        ['module' => 'product-batches', 'group' => 'Productos', 'pattern' => 'product-batches.*', 'href' => route('product-batches.index'), 'label' => 'Lotes y Vencimientos', 'icon' => 'calendar-days', 'badge' => $expiringBatchesCount],
         ['module' => 'price-check', 'group' => 'Productos', 'pattern' => 'precios', 'href' => route('precios'), 'label' => 'Consultar precios', 'icon' => 'magnifying-glass', 'target' => '_blank'],
 
         ['module' => 'providers', 'group' => 'Compras', 'pattern' => 'providers.*', 'href' => route('providers.index'), 'label' => 'Proveedores', 'icon' => 'truck'],
