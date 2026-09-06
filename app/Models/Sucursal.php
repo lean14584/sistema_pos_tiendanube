@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['name', 'razon_social', 'logo_path', 'punto_venta', 'active'])]
 class Sucursal extends Model
@@ -41,6 +42,11 @@ class Sucursal extends Model
     public function productBatches(): HasMany
     {
         return $this->hasMany(ProductBatch::class);
+    }
+
+    public function mercadoPagoConfig(): HasOne
+    {
+        return $this->hasOne(SucursalMercadoPagoConfig::class);
     }
 
     public function cashSessions(): HasMany

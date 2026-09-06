@@ -17,8 +17,19 @@ class Index extends Component
 
     public function delete(User $user): void
     {
-        if ($user->id === Auth::id()) {
+        $actor = Auth::user();
+
+        if ($user->id === $actor->id) {
             $this->toastError('No podés eliminar tu propio usuario mientras estás en sesión.');
+
+            return;
+        }
+
+        // Un encargado solo borra Cajero/Vendedor de SU sucursal, sin
+        // importar qué id le llegue por wire:click (mismo criterio que
+        // Users\Edit::mount()).
+        if ($actor->esEncargado() && ! ($user->sucursal_id === $actor->sucursal_id && in_array($user->role, [Role::Vendedor, Role::Cajero], true))) {
+            $this->toastError('No podés eliminar este usuario.');
 
             return;
         }
@@ -38,8 +49,20 @@ class Index extends Component
 
     public function render()
     {
+        $actor = Auth::user();
+
+        $users = User::with('sucursal')
+            ->when($actor->esEncargado(), fn ($q) => $q->where(function ($outer) use ($actor) {
+                $outer->where('id', $actor->id)
+                    ->orWhere(function ($inner) use ($actor) {
+                        $inner->where('sucursal_id', $actor->sucursal_id)->whereIn('role', [Role::Vendedor, Role::Cajero]);
+                    });
+            }))
+            ->orderBy('name')
+            ->paginate(20);
+
         return view('livewire.users.index', [
-            'users' => User::with('sucursal')->orderBy('name')->paginate(20),
+            'users' => $users,
         ]);
     }
 }

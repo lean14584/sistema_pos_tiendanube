@@ -32,12 +32,32 @@ class Edit extends Component
 
     public function mount(User $user): void
     {
+        $actor = Auth::user();
+
+        // Un encargado solo edita usuarios Cajero/Vendedor de SU sucursal (o
+        // a sí mismo, para cambiar su propia contraseña — ver save()).
+        if ($actor->esEncargado() && $user->id !== $actor->id) {
+            abort_unless(
+                $user->sucursal_id === $actor->sucursal_id && in_array($user->role, [Role::Vendedor, Role::Cajero], true),
+                403,
+                'No podés editar este usuario.'
+            );
+        }
+
         $this->user = $user;
         $this->name = $user->name;
         $this->username = $user->username;
         $this->role = $user->role->value;
         $this->sucursal_id = $user->sucursal_id ? (string) $user->sucursal_id : '';
         $this->active = $user->active;
+    }
+
+    /** Un encargado no puede ascender a nadie a Admin/Encargado (excepto no tocarse su propio rol, ver save()). */
+    private function puedeAsignarRol(Role $role): bool
+    {
+        $actor = Auth::user();
+
+        return ! $actor->esEncargado() || $this->user->id === $actor->id || in_array($role, [Role::Vendedor, Role::Cajero], true);
     }
 
     public function save(): void
@@ -51,7 +71,27 @@ class Edit extends Component
             'active' => ['boolean'],
         ]);
 
+        if (! $this->puedeAsignarRol(Role::from($data['role']))) {
+            $this->addError('role', 'No podés asignar ese rol.');
+
+            return;
+        }
+
         $data['sucursal_id'] = $data['role'] === Role::Admin->value ? null : $data['sucursal_id'];
+
+        $actor = Auth::user();
+
+        if ($actor->esEncargado()) {
+            if ($this->user->id === $actor->id) {
+                // No puede cambiarse su propio rol ni sucursal desde acá: una
+                // sesión de encargado comprometida no debería poder
+                // autopromoverse a Admin manipulando el request.
+                $data['role'] = $this->user->role->value;
+                $data['sucursal_id'] = $this->user->sucursal_id;
+            } else {
+                $data['sucursal_id'] = (string) $actor->sucursal_id;
+            }
+        }
 
         if (empty($data['password'])) {
             unset($data['password']);
@@ -94,11 +134,20 @@ class Edit extends Component
 
     public function render()
     {
+        $actor = Auth::user();
+        // Editando a un tercero, un encargado solo puede dejarlo en
+        // Cajero/Vendedor y en su propia sucursal. Editándose a sí mismo ve
+        // las opciones completas (no importa: save() ignora cualquier cambio
+        // a su propio rol/sucursal, ver arriba).
+        $restringir = $actor->esEncargado() && $this->user->id !== $actor->id;
+
         return view('livewire.users.edit', [
-            'roles' => Role::cases(),
+            'roles' => $restringir ? [Role::Vendedor, Role::Cajero] : Role::cases(),
             // Incluye la sucursal actual del usuario aunque esté inactiva, para
             // no romper el <select> si se desactivó después de asignarla.
-            'sucursales' => Sucursal::where('active', true)->orWhere('id', $this->user->sucursal_id)->orderBy('name')->get(),
+            'sucursales' => $restringir
+                ? Sucursal::where('id', $actor->sucursal_id)->get()
+                : Sucursal::where('active', true)->orWhere('id', $this->user->sucursal_id)->orderBy('name')->get(),
             'editingSelf' => $this->user->id === Auth::id(),
         ]);
     }

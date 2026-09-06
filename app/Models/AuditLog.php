@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-#[Fillable(['user_id', 'auditable_type', 'auditable_id', 'event', 'changes'])]
+#[Fillable(['user_id', 'sucursal_id', 'auditable_type', 'auditable_id', 'event', 'changes'])]
 class AuditLog extends Model
 {
     const UPDATED_AT = null;
@@ -39,6 +39,11 @@ class AuditLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function sucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class);
     }
 
     public function auditable(): MorphTo

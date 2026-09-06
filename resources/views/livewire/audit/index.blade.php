@@ -32,7 +32,7 @@
 <div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Auditoría" subtitle="Altas, bajas y modificaciones en facturas, presupuestos, productos, clientes, proveedores, compras, promociones y usuarios." icon="clipboard-document-check" />
 
-    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-6">
         <select wire:model.live="modelo" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
             <option value="">Todos los modelos</option>
             @foreach ($tiposAuditados as $clase => $etiqueta)
@@ -45,6 +45,14 @@
                 <option value="{{ $usuario->id }}">{{ $usuario->name }}</option>
             @endforeach
         </select>
+        @if ($puedeVerTodasLasSucursales)
+            <select wire:model.live="sucursal_id" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <option value="">Todas las sucursales</option>
+                @foreach ($sucursales as $s)
+                    <option value="{{ $s->id }}">{{ $s->name }}</option>
+                @endforeach
+            </select>
+        @endif
         <input type="date" wire:model.live="desde" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Desde">
         <input type="date" wire:model.live="hasta" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Hasta">
     </div>
@@ -62,6 +70,9 @@
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
                         <th class="px-4 py-2 font-medium">Fecha</th>
                         <th class="px-4 py-2 font-medium">Usuario</th>
+                        @if ($puedeVerTodasLasSucursales)
+                            <th class="px-4 py-2 font-medium">Sucursal</th>
+                        @endif
                         <th class="px-4 py-2 font-medium">Modelo</th>
                         <th class="px-4 py-2 font-medium">Evento</th>
                         <th class="px-4 py-2 font-medium">Cambios</th>
@@ -72,6 +83,9 @@
                         <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 align-top">
                             <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ $log->created_at->format('d/m/Y H:i') }}</td>
                             <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $log->user->name ?? 'Sistema' }}</td>
+                            @if ($puedeVerTodasLasSucursales)
+                                <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $log->sucursal->name ?? '—' }}</td>
+                            @endif
                             <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
                                 @if ($rutaRegistro($log))
                                     <a href="{{ $rutaRegistro($log) }}" wire:navigate class="text-indigo-600 dark:text-indigo-400 hover:underline">

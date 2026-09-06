@@ -27,9 +27,18 @@ class MercadoPagoWebhookController extends Controller
             return response('ok', 200);
         }
 
+        // El body del webhook trae el `user_id` (collector) del vendedor de
+        // MP que originó el evento. Sin resolver primero de qué sucursal es,
+        // no hay forma de saber con qué access_token consultar el pago —
+        // cada sucursal puede tener una cuenta de MP distinta (ver
+        // MercadoPagoQrService::configFor). Si no matchea ninguna sucursal
+        // con config propia, sucursalId queda null y se usa el token global.
+        $mpUserId = $request->input('user_id');
+        $sucursalId = $mpUserId ? $mp->resolveSucursalByCollectorId((int) $mpUserId) : null;
+
         $reference = match ($type) {
-            'payment' => $mp->paymentPaidReference((string) $id),
-            'merchant_order' => $mp->merchantOrderPaidReference((string) $id),
+            'payment' => $mp->paymentPaidReference((string) $id, $sucursalId),
+            'merchant_order' => $mp->merchantOrderPaidReference((string) $id, $sucursalId),
             default => null,
         };
 

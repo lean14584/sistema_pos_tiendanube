@@ -3,6 +3,7 @@
 namespace App\Services\MercadoPago;
 
 use App\Models\Invoice;
+use App\Models\SucursalMercadoPagoConfig;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -16,51 +17,112 @@ use RuntimeException;
  * el monto a la caja (createOrder); el próximo cliente que escanea ve el importe
  * ya cargado. El pago se confirma por webhook o por polling (paymentStatus).
  *
+ * Cada sucursal puede tener su propia cuenta de Mercado Pago (ver ABM en
+ * Sucursales\Edit, tabla `sucursal_mercadopago_configs`). Si una sucursal no
+ * tiene nada configurado, se usa el token global de `config('mercadopago')`
+ * (`.env`) — así un comercio de una sola sucursal sigue funcionando sin tener
+ * que cargar nada en el ABM.
+ *
  * Doc: https://www.mercadopago.com.ar/developers/es/docs/qr-code/integration-configuration
  */
 class MercadoPagoQrService
 {
-    public function isConfigured(): bool
+    public function isConfigured(?int $sucursalId = null): bool
     {
-        return ! empty(config('mercadopago.access_token'));
+        return ! empty($this->configFor($sucursalId)['access_token']);
     }
 
-    private function http(): PendingRequest
+    /**
+     * @return array<string, mixed>
+     */
+    private function configFor(?int $sucursalId): array
     {
-        $token = config('mercadopago.access_token');
+        $config = [
+            'access_token' => config('mercadopago.access_token'),
+            'base_url' => config('mercadopago.base_url'),
+            'store_external_id' => config('mercadopago.store_external_id'),
+            'pos_external_id' => config('mercadopago.pos_external_id'),
+            'store_name' => config('mercadopago.store_name'),
+            'pos_name' => config('mercadopago.pos_name'),
+            'store_street' => config('mercadopago.store_street'),
+            'store_number' => config('mercadopago.store_number'),
+            'store_city' => config('mercadopago.store_city'),
+            'store_state' => config('mercadopago.store_state'),
+            'store_lat' => config('mercadopago.store_lat'),
+            'store_lng' => config('mercadopago.store_lng'),
+            'category' => config('mercadopago.category'),
+            'notification_url' => config('mercadopago.notification_url'),
+        ];
 
-        if (empty($token)) {
-            throw new RuntimeException('Falta configurar MP_ACCESS_TOKEN en el .env');
+        if ($sucursalId === null) {
+            return $config;
         }
 
-        return Http::baseUrl(config('mercadopago.base_url'))
-            ->withToken($token)
+        $row = SucursalMercadoPagoConfig::where('sucursal_id', $sucursalId)->first();
+
+        if (! $row || empty($row->access_token)) {
+            return $config;
+        }
+
+        foreach ($config as $key => $value) {
+            if ($key === 'base_url') {
+                continue; // la URL de la API de MP es la misma para todas las cuentas.
+            }
+
+            if ($row->{$key} !== null && $row->{$key} !== '') {
+                $config[$key] = $row->{$key};
+            }
+        }
+
+        return $config;
+    }
+
+    private function http(?int $sucursalId): PendingRequest
+    {
+        $config = $this->configFor($sucursalId);
+
+        if (empty($config['access_token'])) {
+            throw new RuntimeException($sucursalId
+                ? 'Falta configurar el Access Token de Mercado Pago para esta sucursal (o el MP_ACCESS_TOKEN global).'
+                : 'Falta configurar MP_ACCESS_TOKEN en el .env');
+        }
+
+        return Http::baseUrl($config['base_url'])
+            ->withToken($config['access_token'])
             ->acceptJson()
             ->timeout(15);
     }
 
     /**
      * ID del vendedor (collector) dueño del access token. Se cachea porque
-     * no cambia y se necesita en casi todos los endpoints de Instore.
+     * no cambia y se necesita en casi todos los endpoints de Instore. Si es
+     * para una sucursal con config propia, además se persiste en
+     * `sucursal_mercadopago_configs.collector_id` para poder resolver, dado
+     * el `user_id` de un webhook, de qué sucursal es (ver
+     * MercadoPagoWebhookController).
      */
-    public function collectorId(): int
+    public function collectorId(?int $sucursalId = null): int
     {
-        return Cache::remember('mp:collector_id:'.md5((string) config('mercadopago.access_token')), now()->addDay(), function () {
-            $res = $this->http()->get('/users/me');
-            $res->throw();
+        $config = $this->configFor($sucursalId);
+        $token = $config['access_token'];
 
-            return (int) $res->json('id');
+        return Cache::remember('mp:collector_id:'.md5((string) $token), now()->addDay(), function () use ($token, $sucursalId) {
+            $res = Http::baseUrl(config('mercadopago.base_url'))->withToken($token)->acceptJson()->timeout(15)->get('/users/me');
+            $res->throw();
+            $id = (int) $res->json('id');
+
+            if ($sucursalId !== null) {
+                SucursalMercadoPagoConfig::where('sucursal_id', $sucursalId)->update(['collector_id' => $id]);
+            }
+
+            return $id;
         });
     }
 
-    private function storeExternalId(): string
+    /** Dado el `user_id` (collector) que manda un webhook, a qué sucursal corresponde (null = ninguna con config propia, usar el token global). */
+    public function resolveSucursalByCollectorId(int $collectorId): ?int
     {
-        return (string) config('mercadopago.store_external_id');
-    }
-
-    private function posExternalId(): string
-    {
-        return (string) config('mercadopago.pos_external_id');
+        return SucursalMercadoPagoConfig::where('collector_id', $collectorId)->value('sucursal_id');
     }
 
     /**
@@ -70,24 +132,25 @@ class MercadoPagoQrService
      *
      * @return array{store_id:int, pos_id:int, qr_image:?string, qr_template:?string}
      */
-    public function ensureStoreAndPos(): array
+    public function ensureStoreAndPos(?int $sucursalId = null): array
     {
-        $collector = $this->collectorId();
+        $config = $this->configFor($sucursalId);
+        $collector = $this->collectorId($sucursalId);
 
         // --- Sucursal ---
-        $storeId = $this->findStoreId($collector);
+        $storeId = $this->findStoreId($sucursalId, $collector, $config);
 
         if ($storeId === null) {
-            $res = $this->http()->post("/users/{$collector}/stores", [
-                'name' => config('mercadopago.store_name'),
-                'external_id' => $this->storeExternalId(),
+            $res = $this->http($sucursalId)->post("/users/{$collector}/stores", [
+                'name' => $config['store_name'],
+                'external_id' => $config['store_external_id'],
                 'location' => [
-                    'street_number' => (string) config('mercadopago.store_number'),
-                    'street_name' => config('mercadopago.store_street'),
-                    'city_name' => config('mercadopago.store_city'),
-                    'state_name' => config('mercadopago.store_state'),
-                    'latitude' => config('mercadopago.store_lat'),
-                    'longitude' => config('mercadopago.store_lng'),
+                    'street_number' => (string) $config['store_number'],
+                    'street_name' => $config['store_street'],
+                    'city_name' => $config['store_city'],
+                    'state_name' => $config['store_state'],
+                    'latitude' => $config['store_lat'],
+                    'longitude' => $config['store_lng'],
                     'reference' => '',
                 ],
             ]);
@@ -101,10 +164,10 @@ class MercadoPagoQrService
         }
 
         // --- Caja (POS) ---
-        $pos = $this->findPos();
+        $pos = $this->findPos($sucursalId, $config);
 
         if ($pos === null) {
-            $pos = $this->createPosWithRetry($storeId);
+            $pos = $this->createPosWithRetry($sucursalId, $storeId, $config);
         }
 
         return [
@@ -116,21 +179,22 @@ class MercadoPagoQrService
     }
 
     /**
+     * @param  array<string, mixed>  $config
      * @return array<string,mixed>
      */
-    private function createPosWithRetry(int $storeId): array
+    private function createPosWithRetry(?int $sucursalId, int $storeId, array $config): array
     {
         $body = [
-            'name' => config('mercadopago.pos_name'),
+            'name' => $config['pos_name'],
             'fixed_amount' => false,
             'store_id' => $storeId,
-            'external_store_id' => $this->storeExternalId(),
-            'external_id' => $this->posExternalId(),
-            'category' => config('mercadopago.category'),
+            'external_store_id' => $config['store_external_id'],
+            'external_id' => $config['pos_external_id'],
+            'category' => $config['category'],
         ];
 
         for ($attempt = 1; $attempt <= 3; $attempt++) {
-            $res = $this->http()->post('/pos', $body);
+            $res = $this->http($sucursalId)->post('/pos', $body);
 
             if ($res->successful()) {
                 return $res->json();
@@ -149,10 +213,13 @@ class MercadoPagoQrService
         return [];
     }
 
-    private function findStoreId(int $collector): ?int
+    /**
+     * @param  array<string, mixed>  $config
+     */
+    private function findStoreId(?int $sucursalId, int $collector, array $config): ?int
     {
-        $res = $this->http()->get("/users/{$collector}/stores/search", [
-            'external_id' => $this->storeExternalId(),
+        $res = $this->http($sucursalId)->get("/users/{$collector}/stores/search", [
+            'external_id' => $config['store_external_id'],
         ]);
 
         if ($res->failed()) {
@@ -165,12 +232,13 @@ class MercadoPagoQrService
     }
 
     /**
+     * @param  array<string, mixed>  $config
      * @return array<string,mixed>|null
      */
-    private function findPos(): ?array
+    private function findPos(?int $sucursalId, array $config): ?array
     {
-        $res = $this->http()->get('/pos/search', [
-            'external_id' => $this->posExternalId(),
+        $res = $this->http($sucursalId)->get('/pos/search', [
+            'external_id' => $config['pos_external_id'],
         ]);
 
         if ($res->failed()) {
@@ -184,15 +252,19 @@ class MercadoPagoQrService
 
     /**
      * Empuja el monto de una factura a la caja. Después de esto, el cliente
-     * que escanee el QR de la pared ve el importe ya cargado.
+     * que escanee el QR de la pared ve el importe ya cargado. Usa la
+     * sucursal de la factura (ver Fase 5 de multisucursal) para elegir con
+     * qué cuenta de Mercado Pago cobrar.
      *
      * Devuelve el external_reference generado (se guarda en la factura para
      * poder consultar el estado después).
      */
     public function createOrder(Invoice $invoice): string
     {
-        $collector = $this->collectorId();
-        $pos = $this->posExternalId();
+        $sucursalId = $invoice->sucursal_id;
+        $config = $this->configFor($sucursalId);
+        $collector = $this->collectorId($sucursalId);
+        $pos = $config['pos_external_id'];
 
         $reference = 'INV-'.$invoice->id.'-'.now()->timestamp;
 
@@ -210,11 +282,11 @@ class MercadoPagoQrService
             ]],
         ];
 
-        if ($url = config('mercadopago.notification_url')) {
+        if ($url = $config['notification_url']) {
             $payload['notification_url'] = $url;
         }
 
-        $res = $this->http()->put(
+        $res = $this->http($sucursalId)->put(
             "/instore/qr/seller/collectors/{$collector}/pos/{$pos}/orders",
             $payload
         );
@@ -228,9 +300,9 @@ class MercadoPagoQrService
      *
      * @return string 'paid' | 'pending' | 'none'
      */
-    public function paymentStatus(string $externalReference): string
+    public function paymentStatus(string $externalReference, ?int $sucursalId = null): string
     {
-        $res = $this->http()->get('/merchant_orders/search', [
+        $res = $this->http($sucursalId)->get('/merchant_orders/search', [
             'external_reference' => $externalReference,
         ]);
 
@@ -264,9 +336,9 @@ class MercadoPagoQrService
      * Dado el id de una merchant_order (que llega por webhook), devuelve el
      * external_reference si el pedido está pagado; null en caso contrario.
      */
-    public function merchantOrderPaidReference(string $orderId): ?string
+    public function merchantOrderPaidReference(string $orderId, ?int $sucursalId = null): ?string
     {
-        $res = $this->http()->get("/merchant_orders/{$orderId}");
+        $res = $this->http($sucursalId)->get("/merchant_orders/{$orderId}");
 
         if ($res->failed()) {
             return null;
@@ -282,9 +354,9 @@ class MercadoPagoQrService
      * Dado el id de un pago (webhook type=payment), devuelve el
      * external_reference si el pago fue aprobado; null en caso contrario.
      */
-    public function paymentPaidReference(string $paymentId): ?string
+    public function paymentPaidReference(string $paymentId, ?int $sucursalId = null): ?string
     {
-        $res = $this->http()->get("/v1/payments/{$paymentId}");
+        $res = $this->http($sucursalId)->get("/v1/payments/{$paymentId}");
 
         if ($res->failed()) {
             return null;
@@ -299,12 +371,13 @@ class MercadoPagoQrService
      * Borra el pedido cargado en la caja (por ejemplo si el cliente se
      * arrepiente antes de pagar). Deja la caja lista para el próximo cobro.
      */
-    public function cancelOrder(): void
+    public function cancelOrder(?int $sucursalId = null): void
     {
-        $collector = $this->collectorId();
-        $pos = $this->posExternalId();
+        $config = $this->configFor($sucursalId);
+        $collector = $this->collectorId($sucursalId);
+        $pos = $config['pos_external_id'];
 
-        $this->http()->delete(
+        $this->http($sucursalId)->delete(
             "/instore/qr/seller/collectors/{$collector}/pos/{$pos}/orders"
         );
     }
