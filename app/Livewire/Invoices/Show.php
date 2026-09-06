@@ -43,7 +43,7 @@ class Show extends Component
 
     public function mpConfigured(): bool
     {
-        return app(MercadoPagoQrService::class)->isConfigured();
+        return app(MercadoPagoQrService::class)->isConfigured($this->invoice->sucursal_id);
     }
 
     /**
@@ -67,7 +67,7 @@ class Show extends Component
             $reference = $mp->createOrder($this->invoice);
             $this->invoice->update(['mp_external_reference' => $reference]);
 
-            $data = $mp->ensureStoreAndPos();
+            $data = $mp->ensureStoreAndPos($this->invoice->sucursal_id);
             $this->qrImage = $data['qr_image'];
             $this->qrState = 'waiting';
             $this->showQrModal = true;
@@ -87,7 +87,7 @@ class Show extends Component
             return;
         }
 
-        $status = app(MercadoPagoQrService::class)->paymentStatus($this->invoice->mp_external_reference);
+        $status = app(MercadoPagoQrService::class)->paymentStatus($this->invoice->mp_external_reference, $this->invoice->sucursal_id);
 
         if ($status === 'paid') {
             $this->markPaidFromQr();
@@ -104,7 +104,7 @@ class Show extends Component
     public function cancelQrCharge(): void
     {
         try {
-            app(MercadoPagoQrService::class)->cancelOrder();
+            app(MercadoPagoQrService::class)->cancelOrder($this->invoice->sucursal_id);
         } catch (\Throwable $e) {
             // Si falla el borrado del pedido no bloqueamos el cierre del modal.
         }

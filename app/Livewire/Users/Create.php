@@ -5,6 +5,7 @@ namespace App\Livewire\Users;
 use App\Enums\Role;
 use App\Models\Sucursal;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -24,6 +25,22 @@ class Create extends Component
 
     public bool $active = true;
 
+    public function mount(): void
+    {
+        // Un encargado da de alta usuarios SOLO en su propia sucursal —
+        // precargada acá, y de nuevo forzada en save() por si se manipula el
+        // valor del campo desde el cliente.
+        if (Auth::user()->esEncargado()) {
+            $this->sucursal_id = (string) Auth::user()->sucursal_id;
+        }
+    }
+
+    /** Un encargado no puede dar de alta a otro Admin ni a otro Encargado. */
+    private function puedeAsignarRol(Role $role): bool
+    {
+        return ! Auth::user()->esEncargado() || in_array($role, [Role::Vendedor, Role::Cajero], true);
+    }
+
     public function save(): void
     {
         $data = $this->validate([
@@ -31,12 +48,22 @@ class Create extends Component
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', Rule::enum(Role::class)],
-            // Un admin es global (no pertenece a una sucursal); cajero/vendedor sí necesitan una.
+            // Un admin es global (no pertenece a una sucursal); el resto sí necesita una.
             'sucursal_id' => [Rule::requiredIf($this->role !== Role::Admin->value), 'nullable', 'exists:sucursales,id'],
             'active' => ['boolean'],
         ]);
 
+        if (! $this->puedeAsignarRol(Role::from($data['role']))) {
+            $this->addError('role', 'No podés asignar ese rol.');
+
+            return;
+        }
+
         $data['sucursal_id'] = $data['role'] === Role::Admin->value ? null : $data['sucursal_id'];
+
+        if (Auth::user()->esEncargado()) {
+            $data['sucursal_id'] = (string) Auth::user()->sucursal_id;
+        }
 
         User::create($data);
 
@@ -46,9 +73,13 @@ class Create extends Component
 
     public function render()
     {
+        $esEncargado = Auth::user()->esEncargado();
+
         return view('livewire.users.create', [
-            'roles' => Role::cases(),
-            'sucursales' => Sucursal::where('active', true)->orderBy('name')->get(),
+            'roles' => $esEncargado ? [Role::Vendedor, Role::Cajero] : Role::cases(),
+            'sucursales' => $esEncargado
+                ? Sucursal::where('id', Auth::user()->sucursal_id)->get()
+                : Sucursal::where('active', true)->orderBy('name')->get(),
         ]);
     }
 }

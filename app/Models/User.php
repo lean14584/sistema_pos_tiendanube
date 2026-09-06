@@ -18,7 +18,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, Auditable;
+    use Auditable, HasFactory, Notifiable;
 
     // Nunca se audita el hash de la contraseña, ni por seguridad ni
     // porque aporte algo útil como diff.
@@ -52,5 +52,11 @@ class User extends Authenticatable
     public function esAdminGlobal(): bool
     {
         return $this->role === Role::Admin;
+    }
+
+    /** Un encargado manda en su propia sucursal (usuarios, compras, auditoría) pero no es global. */
+    public function esEncargado(): bool
+    {
+        return $this->role === Role::Encargado;
     }
 }

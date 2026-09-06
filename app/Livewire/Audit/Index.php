@@ -3,7 +3,10 @@
 namespace App\Livewire\Audit;
 
 use App\Models\AuditLog;
+use App\Models\Sucursal;
 use App\Models\User;
+use App\Support\CurrentSucursal;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -20,6 +23,10 @@ class Index extends Component
     #[Url]
     public string $userId = '';
 
+    /** Solo un admin global puede elegir esto (ver render()); un encargado ve solo la suya. */
+    #[Url]
+    public string $sucursal_id = '';
+
     #[Url]
     public string $desde = '';
 
@@ -31,12 +38,24 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function puedeVerTodasLasSucursales(): bool
+    {
+        return (bool) Auth::user()?->esAdminGlobal();
+    }
+
     public function render()
     {
+        // Un encargado ve solo la auditoría de SU sucursal, sin importar lo
+        // que llegue por la URL (mismo criterio que Reports\Index).
+        $sucursalId = $this->puedeVerTodasLasSucursales()
+            ? ($this->sucursal_id !== '' ? (int) $this->sucursal_id : null)
+            : CurrentSucursal::id();
+
         $logs = AuditLog::query()
-            ->with(['user', 'auditable'])
+            ->with(['user', 'sucursal', 'auditable'])
             ->when($this->modelo !== '', fn ($q) => $q->where('auditable_type', $this->modelo))
             ->when($this->userId !== '', fn ($q) => $q->where('user_id', $this->userId))
+            ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->when($this->desde !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->desde))
             ->when($this->hasta !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->hasta))
             ->orderByDesc('created_at')
@@ -46,6 +65,8 @@ class Index extends Component
             'logs' => $logs,
             'tiposAuditados' => AuditLog::tiposAuditados(),
             'usuarios' => User::orderBy('name')->get(),
+            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::orderBy('name')->get() : collect(),
+            'puedeVerTodasLasSucursales' => $this->puedeVerTodasLasSucursales(),
         ]);
     }
 }

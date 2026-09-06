@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\AuditLog;
+use App\Support\CurrentSucursal;
 use BackedEnum;
 use Illuminate\Support\Carbon;
 
@@ -105,6 +106,7 @@ trait Auditable
     {
         AuditLog::create([
             'user_id' => auth()->id(),
+            'sucursal_id' => CurrentSucursal::id(),
             'auditable_type' => static::class,
             'auditable_id' => $this->getKey(),
             'event' => $event,

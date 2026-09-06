@@ -58,6 +58,51 @@
         </label>
     </div>
 
+    @isset($sucursal)
+        <div class="border-t border-gray-200 dark:border-gray-800 pt-5">
+            <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Mercado Pago</h2>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Opcional: cuenta de Mercado Pago propia de esta sucursal para el cobro con QR. Si se deja vacío, se usa la cuenta global configurada en el sistema.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Access Token
+                        @if ($this->mpTokenCargado())
+                            <span class="text-emerald-600 dark:text-emerald-400 font-normal">(cargado)</span>
+                        @endif
+                    </label>
+                    <input type="password" wire:model="mp_access_token" placeholder="{{ $this->mpTokenCargado() ? 'Dejalo vacío para no cambiarlo' : 'APP_USR-...' }}"
+                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    @error('mp_access_token') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">External store ID</label>
+                    <input type="text" wire:model="mp_store_external_id" placeholder="SUC001"
+                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    @error('mp_store_external_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">External POS ID</label>
+                    <input type="text" wire:model="mp_pos_external_id" placeholder="CAJA001"
+                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    @error('mp_pos_external_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de la sucursal en MP</label>
+                    <input type="text" wire:model="mp_store_name" placeholder="{{ $sucursal->name }}"
+                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    @error('mp_store_name') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de la caja en MP</label>
+                    <input type="text" wire:model="mp_pos_name" placeholder="Caja 1"
+                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    @error('mp_pos_name') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+        </div>
+    @endisset
+
     <div class="flex gap-3 pt-2">
         <button
             type="submit"
