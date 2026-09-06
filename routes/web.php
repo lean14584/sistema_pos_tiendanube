@@ -114,6 +114,9 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('module:products')->prefix('products')->name('products.')->group(function () {
         Route::get('/', ProductIndex::class)->name('index');
+    });
+
+    Route::middleware('module:products-manage')->prefix('products')->name('products.')->group(function () {
         Route::get('/new', ProductCreate::class)->name('create');
         Route::get('/etiquetas', Labels::class)->name('labels');
         Route::get('/importar', Import::class)->name('import');

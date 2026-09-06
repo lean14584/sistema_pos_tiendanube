@@ -1,19 +1,21 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <x-page-header title="Productos" subtitle="Gestioná tu catálogo de productos" icon="cube">
-        <x-slot:actions>
-            <a href="{{ route('products.export') }}" class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
-                <x-heroicon-o-arrow-down-tray class="w-4 h-4" /> Exportar
-            </a>
-            <a href="{{ route('products.import') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
-                <x-heroicon-o-arrow-up-tray class="w-4 h-4" /> Importar
-            </a>
-            <a href="{{ route('products.labels') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
-                <x-heroicon-o-printer class="w-4 h-4" /> Etiquetas
-            </a>
-            <a href="{{ route('products.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
-                <x-heroicon-o-plus class="w-4 h-4" /> Nuevo producto
-            </a>
-        </x-slot:actions>
+    <x-page-header title="Productos" subtitle="{{ $canManageProducts ? 'Gestioná tu catálogo de productos' : 'Consultá tu catálogo de productos' }}" icon="cube">
+        @if ($canManageProducts)
+            <x-slot:actions>
+                <a href="{{ route('products.export') }}" class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-arrow-down-tray class="w-4 h-4" /> Exportar
+                </a>
+                <a href="{{ route('products.import') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-arrow-up-tray class="w-4 h-4" /> Importar
+                </a>
+                <a href="{{ route('products.labels') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-printer class="w-4 h-4" /> Etiquetas
+                </a>
+                <a href="{{ route('products.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-plus class="w-4 h-4" /> Nuevo producto
+                </a>
+            </x-slot:actions>
+        @endif
     </x-page-header>
 
     <div class="flex items-center gap-3 mb-4">
@@ -37,9 +39,11 @@
             <div class="p-12 text-center text-gray-400 dark:text-gray-500">
                 <x-heroicon-o-cube class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
                 <p class="text-sm">Todavía no agregaste productos.</p>
-                <a href="{{ route('products.create') }}" wire:navigate class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
-                    Agregar el primero
-                </a>
+                @if ($canManageProducts)
+                    <a href="{{ route('products.create') }}" wire:navigate class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
+                        Agregar el primero
+                    </a>
+                @endif
             </div>
         @elseif ($products->isEmpty())
             <div class="p-12 text-center text-gray-400 dark:text-gray-500">
@@ -100,29 +104,31 @@
                                 {{ $product->stockEnSucursal() }}
                             </td>
                             <td class="px-5 py-3">
-                                <div class="flex justify-end gap-2">
-                                    <a
-                                        href="{{ route('products.historial', $product) }}"
-                                        wire:navigate
-                                        title="Ver historial"
-                                        class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
-                                    >
-                                        <x-heroicon-o-clock class="w-4 h-4" />
-                                    </a>
-                                    <a
-                                        href="{{ route('products.edit', $product) }}"
-                                        wire:navigate
-                                        class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
-                                    >
-                                        <x-heroicon-o-pencil class="w-4 h-4" />
-                                    </a>
-                                    <button
-                                        x-on:click="confirmThen('¿Eliminar el producto ' + @js($product->name) + '?', () => $wire.delete({{ $product->id }}))"
-                                        class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
-                                    >
-                                        <x-heroicon-o-trash class="w-4 h-4" />
-                                    </button>
-                                </div>
+                                @if ($canManageProducts)
+                                    <div class="flex justify-end gap-2">
+                                        <a
+                                            href="{{ route('products.historial', $product) }}"
+                                            wire:navigate
+                                            title="Ver historial"
+                                            class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
+                                        >
+                                            <x-heroicon-o-clock class="w-4 h-4" />
+                                        </a>
+                                        <a
+                                            href="{{ route('products.edit', $product) }}"
+                                            wire:navigate
+                                            class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
+                                        >
+                                            <x-heroicon-o-pencil class="w-4 h-4" />
+                                        </a>
+                                        <button
+                                            x-on:click="confirmThen('¿Eliminar el producto ' + @js($product->name) + '?', () => $wire.delete({{ $product->id }}))"
+                                            class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
+                                        >
+                                            <x-heroicon-o-trash class="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
@@ -148,29 +154,31 @@
                                 @endif
                                 <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</p>
                             </div>
-                            <div class="flex gap-1 shrink-0">
-                                <a
-                                    href="{{ route('products.historial', $product) }}"
-                                    wire:navigate
-                                    title="Ver historial"
-                                    class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-                                >
-                                    <x-heroicon-o-clock class="w-4 h-4" />
-                                </a>
-                                <a
-                                    href="{{ route('products.edit', $product) }}"
-                                    wire:navigate
-                                    class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-                                >
-                                    <x-heroicon-o-pencil class="w-4 h-4" />
-                                </a>
-                                <button
-                                    x-on:click="confirmThen('¿Eliminar el producto ' + @js($product->name) + '?', () => $wire.delete({{ $product->id }}))"
-                                    class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-                                >
-                                    <x-heroicon-o-trash class="w-4 h-4" />
-                                </button>
-                            </div>
+                            @if ($canManageProducts)
+                                <div class="flex gap-1 shrink-0">
+                                    <a
+                                        href="{{ route('products.historial', $product) }}"
+                                        wire:navigate
+                                        title="Ver historial"
+                                        class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                    >
+                                        <x-heroicon-o-clock class="w-4 h-4" />
+                                    </a>
+                                    <a
+                                        href="{{ route('products.edit', $product) }}"
+                                        wire:navigate
+                                        class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                    >
+                                        <x-heroicon-o-pencil class="w-4 h-4" />
+                                    </a>
+                                    <button
+                                        x-on:click="confirmThen('¿Eliminar el producto ' + @js($product->name) + '?', () => $wire.delete({{ $product->id }}))"
+                                        class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                                    >
+                                        <x-heroicon-o-trash class="w-4 h-4" />
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ $product->sku ?: '—' }} · {{ $product->category?->name ?? '—' }}</p>
                         <div class="flex items-center justify-between text-sm">

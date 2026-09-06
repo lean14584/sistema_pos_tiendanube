@@ -201,8 +201,6 @@ class ProductImportTest extends TestCase
     {
         $cajero = User::factory()->create(['role' => Role::Cajero, 'active' => true]);
 
-        // El módulo "products" ya incluye a cajero (igual que crear/editar productos);
-        // este test documenta ese comportamiento existente, no lo cambia.
-        $this->actingAs($cajero)->get(route('products.import'))->assertOk();
+        $this->actingAs($cajero)->get(route('products.import'))->assertForbidden();
     }
 }

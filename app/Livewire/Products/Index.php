@@ -5,6 +5,8 @@ namespace App\Livewire\Products;
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Product;
 use App\Support\CurrentSucursal;
+use App\Support\Permissions;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -30,6 +32,8 @@ class Index extends Component
 
     public function delete(Product $product): void
     {
+        abort_unless(Permissions::canAccess(Auth::user()->role, 'products-manage'), 403, 'Tu rol no tiene permiso para eliminar productos.');
+
         $inUse = $product->invoiceItems()->exists() || $product->purchaseItems()->exists() || $product->quoteItems()->exists();
 
         if ($inUse) {
@@ -62,6 +66,7 @@ class Index extends Component
             'products' => $products,
             'hasAnyProducts' => Product::query()->exists(),
             'sucursalActiva' => CurrentSucursal::get(),
+            'canManageProducts' => Permissions::canAccess(Auth::user()->role, 'products-manage'),
         ]);
     }
 }

@@ -77,7 +77,7 @@ class PriceCheckAndRolesTest extends TestCase
 
     public function test_permisos_del_vendedor(): void
     {
-        foreach (['dashboard', 'quotes', 'invoices', 'clients', 'products', 'categories', 'reports', 'price-check'] as $m) {
+        foreach (['dashboard', 'quotes', 'invoices', 'clients', 'products', 'products-manage', 'categories', 'reports', 'price-check'] as $m) {
             $this->assertTrue(Permissions::canAccess(Role::Vendedor, $m), "vendedor debería ver {$m}");
         }
         foreach (['cash-register', 'providers', 'purchases', 'users', 'company-settings'] as $m) {
@@ -90,7 +90,7 @@ class PriceCheckAndRolesTest extends TestCase
         foreach (['dashboard', 'invoices', 'clients', 'cash-register', 'products', 'price-check'] as $m) {
             $this->assertTrue(Permissions::canAccess(Role::Cajero, $m), "cajero debería ver {$m}");
         }
-        foreach (['providers', 'purchases', 'quotes', 'reports', 'users', 'company-settings'] as $m) {
+        foreach (['providers', 'purchases', 'quotes', 'reports', 'users', 'company-settings', 'products-manage'] as $m) {
             $this->assertFalse(Permissions::canAccess(Role::Cajero, $m), "cajero NO debería ver {$m}");
         }
     }
@@ -101,6 +101,26 @@ class PriceCheckAndRolesTest extends TestCase
 
         $this->actingAs($cajero)->get(route('invoices.index'))->assertOk();
         $this->actingAs($cajero)->get(route('providers.index'))->assertForbidden();
+    }
+
+    public function test_cajero_solo_consulta_productos_no_los_gestiona(): void
+    {
+        $cajero = $this->user(Role::Cajero);
+        $product = Product::create(['name' => 'Coca 1.5L', 'price' => 1800, 'stock' => 10, 'sku' => '7790001']);
+
+        $this->actingAs($cajero)->get(route('products.index'))->assertOk();
+        $this->actingAs($cajero)->get(route('products.create'))->assertForbidden();
+        $this->actingAs($cajero)->get(route('products.edit', $product))->assertForbidden();
+        $this->actingAs($cajero)->get(route('products.historial', $product))->assertForbidden();
+        $this->actingAs($cajero)->get(route('products.labels'))->assertForbidden();
+        $this->actingAs($cajero)->get(route('products.export'))->assertForbidden();
+
+        Livewire::actingAs($cajero)
+            ->test('products.index')
+            ->call('delete', $product->id)
+            ->assertForbidden();
+
+        $this->assertNotNull($product->fresh());
     }
 
     public function test_vendedor_no_entra_a_caja(): void
