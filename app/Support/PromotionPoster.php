@@ -172,11 +172,24 @@ class PromotionPoster
         $dark = imagecolorallocate($im, 45, 20, 45);
         $shadow = imagecolorallocatealpha($im, 0, 0, 0, 45);
 
-        $nombre = $company->nombre_fantasia ?: $company->razon_social;
+        // La razón social es la que se carga en "Datos de la empresa" y
+        // prácticamente siempre está completa (hace falta para facturar);
+        // el nombre de fantasía es opcional, así que solo se usa si no hay
+        // razón social cargada todavía.
+        $nombre = $company->razon_social ?: $company->nombre_fantasia;
 
         if ($nombre) {
-            self::roundedRect($im, 290, 55, 790, 118, 31, $white);
-            self::centeredText($im, self::fontBold(), 24, 540, 87, 0, $dark, mb_strtoupper($nombre));
+            $label = mb_strtoupper($nombre);
+            $maxWidth = self::WIDTH - 160;
+            $fontSize = self::fitSingleLineByWidth(self::fontBold(), $label, $maxWidth, 24, 16);
+            $label = self::fitTextToWidth(self::fontBold(), $fontSize, $maxWidth, $label);
+            $box = imagettfbbox($fontSize, 0, self::fontBold(), $label);
+            $textWidth = $box[2] - $box[0];
+            $pillWidth = (int) max(320, min($maxWidth + 90, $textWidth + 90));
+            $pillX1 = (int) ((self::WIDTH - $pillWidth) / 2);
+
+            self::roundedRect($im, $pillX1, 55, $pillX1 + $pillWidth, 118, 31, $white);
+            self::centeredText($im, self::fontBold(), $fontSize, self::WIDTH / 2, 87, 0, $dark, $label);
         }
 
         self::centeredText($im, self::fontBold(), 100, 546, 264, -4, $shadow, '¡OFERTAS!');
@@ -338,6 +351,19 @@ class PromotionPoster
         if ($line2 !== '') {
             self::centeredText($im, self::fontBold(), $lineSize, $cx, $cy + (int) ($lineGap / 2), $angle, $color, $line2);
         }
+    }
+
+    /** Tamaño de letra más grande (entre $min y $max) cuyo ANCHO entra en $maxWidth; si ni al mínimo entra, devuelve el mínimo igual (el texto se recorta al dibujarlo). */
+    private static function fitSingleLineByWidth(string $font, string $text, int $maxWidth, int $max, int $min): int
+    {
+        for ($size = $max; $size >= $min; $size--) {
+            $box = imagettfbbox($size, 0, $font, $text);
+            if ($box[2] - $box[0] <= $maxWidth) {
+                return $size;
+            }
+        }
+
+        return $min;
     }
 
     /** Tamaño de letra más grande (entre $min y $max) cuya diagonal (sin rotar) entra en $budget; null si ni al mínimo entra. */
