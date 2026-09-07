@@ -6,10 +6,13 @@ use App\Enums\QuoteStatus;
 use App\Enums\TipoComprobanteInterno;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
+use App\Models\PuntoVenta;
 use App\Models\Quote;
+use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -20,9 +23,26 @@ class Show extends Component
 
     public string $priceMode = 'keep';
 
+    /** Vacío = usar el único/por defecto de la sucursal activa (no se muestra selector). */
+    public string $punto_venta = '';
+
     public function mount(Quote $quote): void
     {
         $this->quote = $quote;
+
+        $default = CurrentSucursal::get()?->puntoVentaPorDefecto();
+        $this->punto_venta = $default ? (string) $default->numero : '';
+    }
+
+    /** Puntos de venta activos de la sucursal donde se está convirtiendo el presupuesto. */
+    #[Computed]
+    public function puntosVentaOpciones()
+    {
+        $sucursalId = CurrentSucursal::id();
+
+        return $sucursalId
+            ? PuntoVenta::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get()
+            : collect();
     }
 
     public function setStatus(string $status): void
@@ -52,10 +72,19 @@ class Show extends Component
         $default = CompanySettings::current()->tipoComprobantePorDefecto();
         $tipo = $default->esFiscal() ? $default : TipoComprobanteInterno::FacturaB;
 
-        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($updatePrices, $tipo) {
+        $puntoVentaNumero = $this->puntosVentaOpciones()->firstWhere('numero', (int) $this->punto_venta)?->numero;
+
+        if ($puntoVentaNumero === null) {
+            $this->addError('punto_venta', 'Elegí un punto de venta válido.');
+
+            return;
+        }
+
+        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($updatePrices, $tipo, $puntoVentaNumero) {
             $invoice = Invoice::create([
-                'number' => InvoiceNumberGenerator::next($tipo->value),
+                'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
                 'client_id' => $this->quote->client_id,
+                'punto_venta' => $puntoVentaNumero,
                 'tipo_comprobante_interno' => $tipo,
                 'issue_date' => now()->toDateString(),
                 'due_date' => now()->addDays(15)->toDateString(),
@@ -95,7 +124,7 @@ class Show extends Component
             ]);
 
             return $invoice;
-        }));
+        }), null, $puntoVentaNumero);
 
         $this->redirect(route('invoices.show', $invoice), navigate: true);
     }

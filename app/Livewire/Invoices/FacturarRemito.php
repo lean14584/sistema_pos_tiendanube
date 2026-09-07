@@ -72,12 +72,18 @@ class FacturarRemito extends Component
 
         // Punto de venta de la factura resultante = el del remito original
         // (misma sucursal, misma venta física), no la sesión de quien la
-        // factura ahora.
-        $factura = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo) {
+        // factura ahora. Fallback al por defecto de la sucursal solo para
+        // remitos viejos creados antes de que existiera esta columna.
+        $puntoVentaNumero = $this->remito->punto_venta
+            ?? $this->remito->sucursal?->puntoVentaPorDefecto()?->numero
+            ?? 1;
+
+        $factura = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo, $puntoVentaNumero) {
             $factura = Invoice::create([
-                'number' => InvoiceNumberGenerator::next($tipo->value, $this->remito->sucursal_id),
+                'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
                 'client_id' => $this->remito->client_id,
                 'sucursal_id' => $this->remito->sucursal_id,
+                'punto_venta' => $puntoVentaNumero,
                 'tipo_comprobante_interno' => $tipo,
                 'remito_id' => $this->remito->id,
                 'issue_date' => now()->toDateString(),
@@ -101,7 +107,7 @@ class FacturarRemito extends Component
             }
 
             return $factura;
-        }), $this->remito->sucursal_id);
+        }), null, $puntoVentaNumero);
 
         session()->flash('status', 'Factura generada a partir del remito.');
         $this->redirect(route('invoices.show', $factura), navigate: true);

@@ -616,13 +616,21 @@ class TiendanubeSync
      */
     private function crearFacturaDesdePedido(array $tn): void
     {
-        InvoiceNumberGenerator::withLock(TipoComprobanteInterno::RemitoX->value, fn () => DB::transaction(function () use ($tn) {
+        // Sucursal y punto de venta son los configurados para Tiendanube
+        // (no hay sesión/usuario activo en un webhook para que
+        // CurrentSucursal resuelva nada).
+        $sucursalId = $this->sucursalId();
+        $puntoVentaNumero = Sucursal::find($sucursalId)?->puntoVentaPorDefecto()?->numero ?? 1;
+
+        InvoiceNumberGenerator::withLock(TipoComprobanteInterno::RemitoX->value, fn () => DB::transaction(function () use ($tn, $sucursalId, $puntoVentaNumero) {
             $cliente = $this->clienteDelPedido($tn);
             $fecha = isset($tn['created_at']) ? Carbon::parse($tn['created_at']) : now();
 
             $invoice = Invoice::create([
-                'number' => InvoiceNumberGenerator::next(TipoComprobanteInterno::RemitoX->value),
+                'number' => InvoiceNumberGenerator::next(TipoComprobanteInterno::RemitoX->value, null, $puntoVentaNumero),
                 'client_id' => $cliente->id,
+                'sucursal_id' => $sucursalId,
+                'punto_venta' => $puntoVentaNumero,
                 'tipo_comprobante_interno' => TipoComprobanteInterno::RemitoX,
                 'issue_date' => $fecha->toDateString(),
                 'due_date' => $fecha->toDateString(),
@@ -642,7 +650,7 @@ class TiendanubeSync
                     'unit_price' => $this->numero($item['price'] ?? 0),
                 ]);
             }
-        }));
+        }), null, $puntoVentaNumero);
     }
 
     /**

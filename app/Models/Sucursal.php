@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'razon_social', 'logo_path', 'punto_venta', 'active'])]
+#[Fillable(['name', 'razon_social', 'logo_path', 'active'])]
 class Sucursal extends Model
 {
     use Auditable;
@@ -20,8 +20,22 @@ class Sucursal extends Model
     {
         return [
             'active' => 'boolean',
-            'punto_venta' => 'integer',
         ];
+    }
+
+    public function puntosVenta(): HasMany
+    {
+        return $this->hasMany(PuntoVenta::class);
+    }
+
+    /**
+     * El punto de venta que se usa cuando no se elige ninguno a mano (el
+     * primero cargado, cronológicamente). Si la sucursal tiene uno solo
+     * (el caso más común), es el único disponible y no hace falta elegir.
+     */
+    public function puntoVentaPorDefecto(): ?PuntoVenta
+    {
+        return $this->puntosVenta()->where('active', true)->orderBy('id')->first();
     }
 
     protected function logoUrl(): Attribute

@@ -21,14 +21,12 @@ class CompanySettingsTest extends TestCase
             ->test('company-settings.edit')
             ->set('cuit', '20111111112')
             ->set('razon_social', 'Mi Empresa S.A.')
-            ->set('punto_venta', '3')
             ->set('condicion_iva', 'monotributista')
             ->call('save');
 
         $company = CompanySettings::current();
         $this->assertSame('20111111112', $company->cuit);
         $this->assertSame('Mi Empresa S.A.', $company->razon_social);
-        $this->assertSame(3, $company->punto_venta);
         $this->assertSame('monotributista', $company->condicion_iva->value);
     }
 
@@ -40,7 +38,6 @@ class CompanySettingsTest extends TestCase
             ->test('company-settings.edit')
             ->set('cuit', '')
             ->set('razon_social', 'Almacén Don José')
-            ->set('punto_venta', '1')
             ->set('condicion_iva', 'monotributista')
             ->call('save')
             ->assertHasNoErrors();
@@ -58,7 +55,6 @@ class CompanySettingsTest extends TestCase
             ->test('company-settings.edit')
             ->set('cuit', '123')
             ->set('razon_social', 'Almacén Don José')
-            ->set('punto_venta', '1')
             ->set('condicion_iva', 'monotributista')
             ->call('save')
             ->assertHasErrors(['cuit']);
@@ -72,7 +68,6 @@ class CompanySettingsTest extends TestCase
             ->test('company-settings.edit')
             ->set('cuit', '20111111112')
             ->set('razon_social', 'Mi Empresa S.A.')
-            ->set('punto_venta', '1')
             ->set('condicion_iva', 'monotributista')
             ->set('barcode_scale_enabled', true)
             ->set('barcode_scale_prefix', '20')
@@ -96,7 +91,6 @@ class CompanySettingsTest extends TestCase
             ->test('company-settings.edit')
             ->set('cuit', '20111111112')
             ->set('razon_social', 'Mi Empresa S.A.')
-            ->set('punto_venta', '1')
             ->set('condicion_iva', 'monotributista')
             ->set('barcode_scale_enabled', true)
             ->set('barcode_scale_prefix', '20')

@@ -126,6 +126,18 @@
                     </select>
                 </div>
 
+                @if ($this->puntosVentaOpciones->count() > 1)
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Punto de venta</label>
+                        <select wire:model="punto_venta" class="{{ $posSelect }}">
+                            @foreach ($this->puntosVentaOpciones as $pv)
+                                <option value="{{ $pv->numero }}">{{ $pv->label() }}</option>
+                            @endforeach
+                        </select>
+                        @error('punto_venta') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                @endif
+
                 {{-- Cliente y lista --}}
                 <div>
                     <x-client-picker

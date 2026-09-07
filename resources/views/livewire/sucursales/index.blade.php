@@ -1,5 +1,5 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <x-page-header title="Sucursales" subtitle="Locales de la empresa, cada uno con su punto de venta AFIP" icon="building-storefront">
+    <x-page-header title="Sucursales" subtitle="Locales de la empresa, cada uno con su punto de venta ARCA" icon="building-storefront">
         <x-slot:actions>
             <a href="{{ route('sucursales.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
                 <x-heroicon-o-plus class="w-4 h-4" /> Nueva sucursal

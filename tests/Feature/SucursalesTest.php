@@ -43,7 +43,11 @@ class SucursalesTest extends TestCase
         $this->assertDatabaseHas('sucursales', [
             'name' => 'Sucursal Centro',
             'razon_social' => 'Mi Empresa SRL',
-            'punto_venta' => 2,
+            'active' => true,
+        ]);
+        $this->assertDatabaseHas('puntos_venta', [
+            'sucursal_id' => Sucursal::where('name', 'Sucursal Centro')->value('id'),
+            'numero' => 2,
             'active' => true,
         ]);
     }
@@ -61,7 +65,8 @@ class SucursalesTest extends TestCase
 
     public function test_punto_venta_no_se_puede_repetir_entre_sucursales(): void
     {
-        Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'punto_venta' => 3]);
+        $centro = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL']);
+        $centro->puntosVenta()->create(['numero' => 3, 'active' => true]);
 
         Livewire::actingAs($this->admin())
             ->test('sucursales.create')
@@ -85,18 +90,70 @@ class SucursalesTest extends TestCase
         $this->assertDatabaseHas('sucursales', ['id' => $sucursal->id, 'name' => 'Nueva']);
     }
 
-    public function test_editar_puede_reusar_su_propio_punto_de_venta(): void
+    public function test_se_puede_agregar_un_punto_de_venta_adicional_a_una_sucursal(): void
     {
-        // La regla unique con ->ignore() no debe rechazar la sucursal contra
-        // sí misma si no cambió el punto de venta.
-        $sucursal = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'punto_venta' => 5, 'active' => true]);
+        $sucursal = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'active' => true]);
+        $sucursal->puntosVenta()->create(['numero' => 5, 'active' => true]);
 
         Livewire::actingAs($this->admin())
             ->test('sucursales.edit', ['sucursal' => $sucursal])
-            ->set('name', 'Centro renombrado')
-            ->set('punto_venta', '5')
-            ->call('save')
+            ->set('nuevoPuntoVentaNumero', '6')
+            ->set('nuevoPuntoVentaNombre', 'Online')
+            ->call('agregarPuntoVenta')
             ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('puntos_venta', ['sucursal_id' => $sucursal->id, 'numero' => 6, 'nombre' => 'Online']);
+    }
+
+    public function test_no_se_puede_agregar_un_punto_de_venta_ya_usado_por_otra_sucursal(): void
+    {
+        $centro = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'active' => true]);
+        $centro->puntosVenta()->create(['numero' => 5, 'active' => true]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa SRL', 'active' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test('sucursales.edit', ['sucursal' => $norte])
+            ->set('nuevoPuntoVentaNumero', '5')
+            ->call('agregarPuntoVenta')
+            ->assertHasErrors(['nuevoPuntoVentaNumero' => 'unique']);
+    }
+
+    public function test_no_se_puede_desactivar_el_unico_punto_de_venta_activo(): void
+    {
+        $sucursal = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'active' => true]);
+        $pv = $sucursal->puntosVenta()->create(['numero' => 5, 'active' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test('sucursales.edit', ['sucursal' => $sucursal])
+            ->call('togglePuntoVenta', $pv->id)
+            ->assertHasErrors('puntosVenta');
+
+        $this->assertDatabaseHas('puntos_venta', ['id' => $pv->id, 'active' => true]);
+    }
+
+    public function test_no_se_puede_borrar_un_punto_de_venta_que_ya_facturo(): void
+    {
+        $sucursal = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'active' => true]);
+        $pv = $sucursal->puntosVenta()->create(['numero' => 5, 'active' => true]);
+        $sucursal->puntosVenta()->create(['numero' => 6, 'active' => true]);
+
+        \App\Models\Invoice::create([
+            'number' => '0005-00000001',
+            'client_id' => \App\Models\Client::consumidorFinal()->id,
+            'sucursal_id' => $sucursal->id,
+            'punto_venta' => 5,
+            'issue_date' => now(),
+            'due_date' => now(),
+            'tax_rate' => 0,
+            'status' => 'draft',
+        ]);
+
+        Livewire::actingAs($this->admin())
+            ->test('sucursales.edit', ['sucursal' => $sucursal])
+            ->call('eliminarPuntoVenta', $pv->id)
+            ->assertHasErrors('puntosVenta');
+
+        $this->assertDatabaseHas('puntos_venta', ['id' => $pv->id]);
     }
 
     public function test_can_delete_a_sucursal_if_more_than_one_exists(): void

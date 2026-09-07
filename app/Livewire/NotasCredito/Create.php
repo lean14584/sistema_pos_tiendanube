@@ -175,14 +175,22 @@ class Create extends Component
                 }
 
                 // Punto de venta, stock y caja de la NC son los de la
-                // sucursal de la FACTURA ORIGINAL, no la sesión activa de
+                // FACTURA ORIGINAL (mismo punto de venta, no solo misma
+                // sucursal — puede tener varios), no la sesión activa de
                 // quien procesa la devolución ahora (puede ser un admin
-                // parado en otra sucursal, o haber pasado tiempo).
-                return InvoiceNumberGenerator::withLock($tipoNC->value, fn () => DB::transaction(function () use ($validItems, $tipoNC, $invoice) {
+                // parado en otra sucursal, o haber pasado tiempo). Fallback
+                // al por defecto de la sucursal solo para facturas viejas
+                // creadas antes de que existiera esta columna.
+                $puntoVentaNumero = $invoice->punto_venta
+                    ?? $invoice->sucursal?->puntoVentaPorDefecto()?->numero
+                    ?? 1;
+
+                return InvoiceNumberGenerator::withLock($tipoNC->value, fn () => DB::transaction(function () use ($validItems, $tipoNC, $invoice, $puntoVentaNumero) {
                     $nota = Invoice::create([
-                        'number' => InvoiceNumberGenerator::next($tipoNC->value, $invoice->sucursal_id),
+                        'number' => InvoiceNumberGenerator::next($tipoNC->value, null, $puntoVentaNumero),
                         'client_id' => $invoice->client_id,
                         'sucursal_id' => $invoice->sucursal_id,
+                        'punto_venta' => $puntoVentaNumero,
                         'related_invoice_id' => $invoice->id,
                         'tipo_comprobante_interno' => $tipoNC,
                         'afecta_stock' => $this->afecta_stock,
@@ -212,7 +220,7 @@ class Create extends Component
                     }
 
                     return $nota;
-                }), $invoice->sucursal_id);
+                }), null, $puntoVentaNumero);
             });
         } catch (RuntimeException $e) {
             $this->addError('items', $e->getMessage());

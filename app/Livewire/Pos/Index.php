@@ -12,8 +12,10 @@ use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\PromotionGroup;
+use App\Models\PuntoVenta;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\PromotionEngine;
 use App\Support\ScaleBarcodeParser;
@@ -52,12 +54,29 @@ class Index extends Component
     /** Tipo de comprobante a generar (Factura A/B, Remito X, etc.). */
     public string $tipo_comprobante_interno = '';
 
+    /** Vacío = usar el único/por defecto de la sucursal activa (no se muestra selector). */
+    public string $punto_venta = '';
+
     public function mount(): void
     {
         $cf = Client::consumidorFinal();
         $this->client_id = $cf->id;
         $this->price_list_id = $cf->price_list_id; // null = precio base
         $this->tipo_comprobante_interno = CompanySettings::current()->tipoComprobantePorDefecto()->value;
+
+        $default = CurrentSucursal::get()?->puntoVentaPorDefecto();
+        $this->punto_venta = $default ? (string) $default->numero : '';
+    }
+
+    /** Puntos de venta activos de la sucursal donde se está vendiendo. */
+    #[Computed]
+    public function puntosVentaOpciones()
+    {
+        $sucursalId = CurrentSucursal::id();
+
+        return $sucursalId
+            ? PuntoVenta::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get()
+            : collect();
     }
 
     /** Lista de precios vigente. null = precio base (sin ajuste). */
@@ -516,10 +535,21 @@ class Index extends Component
         }
         $status = $pagado + 0.001 >= $total ? 'paid' : 'pending';
 
-        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo, $clientId, $status) {
+        // El punto de venta elegido tiene que ser uno de los realmente
+        // habilitados para la sucursal activa.
+        $puntoVentaNumero = $this->puntosVentaOpciones()->firstWhere('numero', (int) $this->punto_venta)?->numero;
+
+        if ($puntoVentaNumero === null) {
+            $this->addError('punto_venta', 'Elegí un punto de venta válido.');
+
+            return;
+        }
+
+        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo, $clientId, $status, $puntoVentaNumero) {
             $invoice = Invoice::create([
-                'number' => InvoiceNumberGenerator::next($tipo->value),
+                'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
                 'client_id' => $clientId,
+                'punto_venta' => $puntoVentaNumero,
                 'tipo_comprobante_interno' => $tipo,
                 'issue_date' => now()->toDateString(),
                 'due_date' => now()->toDateString(),
@@ -549,7 +579,7 @@ class Index extends Component
             }
 
             return $invoice;
-        }));
+        }), null, $puntoVentaNumero);
 
         if ($this->printOnSale) {
             try {

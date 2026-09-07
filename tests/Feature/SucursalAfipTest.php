@@ -41,8 +41,9 @@ class SucursalAfipTest extends TestCase
     public function test_cada_sucursal_numera_sus_comprobantes_con_su_propio_punto_de_venta(): void
     {
         $principal = Sucursal::sole();
-        $principal->update(['punto_venta' => 1]);
-        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $principal->puntosVenta()->first()->update(['numero' => 1]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa']);
+        $norte->puntosVenta()->create(['numero' => 2, 'active' => true]);
 
         $admin = $this->admin();
         $this->actingAs($admin);
@@ -61,7 +62,8 @@ class SucursalAfipTest extends TestCase
     public function test_una_venta_hecha_por_un_cajero_queda_con_la_sucursal_de_su_cajero(): void
     {
         $principal = Sucursal::sole();
-        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa']);
+        $norte->puntosVenta()->create(['numero' => 2, 'active' => true]);
         $cajeroNorte = User::factory()->create(['role' => Role::Cajero, 'active' => true, 'sucursal_id' => $norte->id]);
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
         $product = Product::create(['name' => 'Producto', 'price' => 1000, 'stock' => 10]);
@@ -82,11 +84,12 @@ class SucursalAfipTest extends TestCase
     public function test_emitir_a_afip_usa_el_punto_de_venta_de_la_sucursal_de_la_factura_no_la_sesion_actual(): void
     {
         $this->fake();
-        CompanySettings::current()->update(['condicion_iva' => 'responsable_inscripto', 'punto_venta' => 1]);
+        CompanySettings::current()->update(['condicion_iva' => 'responsable_inscripto']);
 
         $principal = Sucursal::sole();
-        $principal->update(['punto_venta' => 1]);
-        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 9]);
+        $principal->puntosVenta()->first()->update(['numero' => 1]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa']);
+        $norte->puntosVenta()->create(['numero' => 9, 'active' => true]);
 
         $client = Client::create([
             'name' => 'Cliente Test', 'email' => 'cliente@test.com',

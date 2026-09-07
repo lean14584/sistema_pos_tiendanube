@@ -67,6 +67,17 @@
                     <span wire:loading wire:target="convertToInvoice">Convirtiendo...</span>
                 </button>
             </div>
+            @if ($this->puntosVentaOpciones->count() > 1)
+                <div class="mt-3 max-w-xs">
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Punto de venta</label>
+                    <select wire:model="punto_venta" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        @foreach ($this->puntosVentaOpciones as $pv)
+                            <option value="{{ $pv->numero }}">{{ $pv->label() }}</option>
+                        @endforeach
+                    </select>
+                    @error('punto_venta') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+            @endif
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
                 @if ($priceMode === 'keep')
                     La factura se generará con los precios tal como fueron presupuestados.

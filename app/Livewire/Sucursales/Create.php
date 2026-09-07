@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Sucursales;
 
+use App\Models\PuntoVenta;
 use App\Models\Sucursal;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -27,17 +28,29 @@ class Create extends Component
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'razon_social' => ['required', 'string', 'max:255'],
-            'punto_venta' => ['required', 'integer', 'min:1', 'max:9999', 'unique:sucursales,punto_venta'],
+            // Único en toda la empresa (no solo entre sucursales): un mismo
+            // CUIT no puede repetir punto de venta, y ahora una sucursal
+            // puede tener varios.
+            'punto_venta' => ['required', 'integer', 'min:1', 'max:9999', 'unique:puntos_venta,numero'],
             'active' => ['boolean'],
             'logo' => ['nullable', 'image', 'max:2048'],
         ]);
+
+        $puntoVentaNumero = (int) $data['punto_venta'];
+        unset($data['punto_venta']);
 
         if ($this->logo) {
             $data['logo_path'] = $this->logo->store('sucursal-logos', 'public');
         }
         unset($data['logo']);
 
-        Sucursal::create($data);
+        $sucursal = Sucursal::create($data);
+
+        PuntoVenta::create([
+            'sucursal_id' => $sucursal->id,
+            'numero' => $puntoVentaNumero,
+            'active' => true,
+        ]);
 
         session()->flash('status', 'Sucursal creada.');
         $this->redirect(route('sucursales.index'), navigate: true);

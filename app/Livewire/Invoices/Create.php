@@ -12,8 +12,10 @@ use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
+use App\Models\PuntoVenta;
 use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,9 @@ class Create extends Component
     public ?int $price_list_id = null;
 
     public string $tipo_comprobante_interno = 'factura_b';
+
+    /** Vacío = usar el único/por defecto de la sucursal activa (no se muestra selector). */
+    public string $punto_venta = '';
 
     public string $issue_date;
 
@@ -65,6 +70,20 @@ class Create extends Component
         // Arranca en un tipo que la empresa tenga habilitado (evita quedar
         // en Factura B cuando B está apagada, por ejemplo).
         $this->tipo_comprobante_interno = CompanySettings::current()->tipoComprobantePorDefecto()->value;
+
+        $default = CurrentSucursal::get()?->puntoVentaPorDefecto();
+        $this->punto_venta = $default ? (string) $default->numero : '';
+    }
+
+    /** Puntos de venta activos de la sucursal donde se está facturando. */
+    #[Computed]
+    public function puntosVentaOpciones()
+    {
+        $sucursalId = CurrentSucursal::id();
+
+        return $sucursalId
+            ? PuntoVenta::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get()
+            : collect();
     }
 
     /** Lista de precios vigente. null = precio base (sin ajuste). */
@@ -166,6 +185,17 @@ class Create extends Component
             return;
         }
 
+        // El punto de venta elegido tiene que ser uno de los realmente
+        // habilitados para la sucursal activa — nunca confiar en lo que
+        // venga del componente sin volver a chequearlo contra la base.
+        $puntoVentaNumero = $this->puntosVentaOpciones()->firstWhere('numero', (int) $this->punto_venta)?->numero;
+
+        if ($puntoVentaNumero === null) {
+            $this->addError('punto_venta', 'Elegí un punto de venta válido.');
+
+            return;
+        }
+
         // Límite de crédito: solo comprobantes que generan deuda (no NC ni devolución).
         if (! $tipo->esNotaCredito() && $tipo !== TipoComprobanteInterno::Devolucion) {
             $pendiente = round($this->total() - $this->paidTotal(), 2);
@@ -177,10 +207,11 @@ class Create extends Component
             }
         }
 
-        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($validItems, $tipo) {
+        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($validItems, $tipo, $puntoVentaNumero) {
             $invoice = Invoice::create([
-                'number' => InvoiceNumberGenerator::next($tipo->value),
+                'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
                 'client_id' => $this->client_id,
+                'punto_venta' => $puntoVentaNumero,
                 'tipo_comprobante_interno' => $tipo,
                 'issue_date' => $this->issue_date,
                 'due_date' => $this->due_date,
@@ -216,7 +247,7 @@ class Create extends Component
             }
 
             return $invoice;
-        }));
+        }), null, $puntoVentaNumero);
 
         if ($this->printOnSave) {
             try {

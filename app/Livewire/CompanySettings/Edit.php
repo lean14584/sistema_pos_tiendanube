@@ -26,8 +26,6 @@ class Edit extends Component
 
     public string $domicilio = '';
 
-    public string $punto_venta = '1';
-
     public string $condicion_iva = 'responsable_inscripto';
 
     public bool $factura_a_habilitada = true;
@@ -57,7 +55,6 @@ class Edit extends Component
         $this->razon_social = $this->company->razon_social;
         $this->nombre_fantasia = (string) $this->company->nombre_fantasia;
         $this->domicilio = (string) $this->company->domicilio;
-        $this->punto_venta = (string) $this->company->punto_venta;
         $this->condicion_iva = $this->company->condicion_iva->value;
         $this->factura_a_habilitada = $this->company->factura_a_habilitada;
         $this->factura_b_habilitada = $this->company->factura_b_habilitada;
@@ -90,7 +87,6 @@ class Edit extends Component
             'razon_social' => ['required', 'string', 'max:255'],
             'nombre_fantasia' => ['nullable', 'string', 'max:255'],
             'domicilio' => ['nullable', 'string', 'max:255'],
-            'punto_venta' => ['required', 'integer', 'min:1', 'max:9999'],
             'condicion_iva' => ['required', Rule::enum(CondicionIva::class)],
             'factura_a_habilitada' => ['boolean'],
             'factura_b_habilitada' => ['boolean'],

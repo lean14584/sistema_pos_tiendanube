@@ -201,6 +201,10 @@ class AfipSoapGateway implements AfipGatewayInterface
             throw new AfipConnectionException('No se pudo autenticar contra el WSAA de ARCA: '.$e->getMessage(), previous: $e);
         }
 
+        if ($ticket === false) {
+            throw new AfipConnectionException('El WSAA de ARCA devolvió un ticket con formato inválido.');
+        }
+
         $this->token = (string) $ticket->credentials->token;
         $this->sign = (string) $ticket->credentials->sign;
         $expirationTime = Carbon::parse((string) $ticket->header->expirationTime);
@@ -295,7 +299,10 @@ class AfipSoapGateway implements AfipGatewayInterface
             }
         }
 
-        return self::ALICUOTAS_IVA['21.0'];
+        // Antes caía en 21% en silencio: una alícuota no contemplada se
+        // declaraba a ARCA bajo la tasa equivocada sin que nadie se
+        // enterara. Mismo criterio que AlicuotaResolver::codigo().
+        throw new \DomainException("Alícuota de IVA sin código ARCA: {$tasa}%.");
     }
 
     /**

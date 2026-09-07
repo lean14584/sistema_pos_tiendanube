@@ -37,12 +37,13 @@ class InvoiceCaeEmitter
         $company = CompanySettings::current();
         $client = $invoice->client;
 
-        // El punto de venta a usar es el de la sucursal donde se hizo ESTA
-        // factura (guardado en creación), no la sesión de quien la emite
-        // ahora — puede haber pasado tiempo y el admin puede haber
-        // cambiado de sucursal activa mientras tanto. Cae al de la empresa
-        // solo para facturas viejas sin sucursal asignada.
-        $puntoVenta = $invoice->sucursal?->punto_venta ?? $company->punto_venta;
+        // El punto de venta a usar es el que ya quedó guardado en la
+        // factura al crearla (elegido a mano, o el único/por defecto de su
+        // sucursal) — nunca se re-deriva acá, porque la sucursal puede
+        // haber sumado o cambiado puntos de venta desde entonces. El
+        // fallback es solo para facturas viejas creadas antes de que
+        // existiera esta columna.
+        $puntoVenta = $invoice->punto_venta ?? $invoice->sucursal?->puntoVentaPorDefecto()?->numero ?? 1;
 
         // El tipo lo elige el usuario en el switch de Invoices/Create (Remito X /
         // Factura B / Factura A / Devolución), no se auto-detecta acá.

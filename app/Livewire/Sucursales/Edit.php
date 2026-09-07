@@ -2,10 +2,11 @@
 
 namespace App\Livewire\Sucursales;
 
+use App\Models\Invoice;
+use App\Models\PuntoVenta;
 use App\Models\Sucursal;
 use App\Models\SucursalMercadoPagoConfig;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -21,9 +22,11 @@ class Edit extends Component
 
     public string $razon_social = '';
 
-    public string $punto_venta = '';
-
     public bool $active = true;
+
+    public string $nuevoPuntoVentaNumero = '';
+
+    public string $nuevoPuntoVentaNombre = '';
 
     /** Archivo recién seleccionado, pendiente de guardar (null = no tocar el logo actual). */
     public $logo = null;
@@ -44,7 +47,6 @@ class Edit extends Component
         $this->sucursal = $sucursal;
         $this->name = $sucursal->name;
         $this->razon_social = $sucursal->razon_social;
-        $this->punto_venta = (string) $sucursal->punto_venta;
         $this->active = $sucursal->active;
 
         $mp = $sucursal->mercadoPagoConfig;
@@ -63,12 +65,78 @@ class Edit extends Component
         return filled($this->sucursal->mercadoPagoConfig?->access_token);
     }
 
+    /** Puntos de venta de esta sucursal, más nuevos primero para ver rápido lo recién agregado. */
+    public function puntosVenta()
+    {
+        return $this->sucursal->puntosVenta()->orderByDesc('id')->get();
+    }
+
+    public function agregarPuntoVenta(): void
+    {
+        $data = $this->validate([
+            'nuevoPuntoVentaNumero' => ['required', 'integer', 'min:1', 'max:9999', 'unique:puntos_venta,numero'],
+            'nuevoPuntoVentaNombre' => ['nullable', 'string', 'max:100'],
+        ], [], ['nuevoPuntoVentaNumero' => 'número de punto de venta']);
+
+        PuntoVenta::create([
+            'sucursal_id' => $this->sucursal->id,
+            'numero' => $data['nuevoPuntoVentaNumero'],
+            'nombre' => $data['nuevoPuntoVentaNombre'] ?: null,
+            'active' => true,
+        ]);
+
+        $this->reset('nuevoPuntoVentaNumero', 'nuevoPuntoVentaNombre');
+        session()->flash('status', 'Punto de venta agregado.');
+    }
+
+    /** No deja apagar el único punto de venta activo: rompería la facturación de esta sucursal. */
+    public function togglePuntoVenta(int $id): void
+    {
+        $pv = $this->sucursal->puntosVenta()->findOrFail($id);
+
+        if ($pv->active) {
+            $quedanActivos = $this->sucursal->puntosVenta()->where('active', true)->where('id', '!=', $id)->exists();
+
+            if (! $quedanActivos) {
+                $this->addError('puntosVenta', 'Tiene que quedar al menos un punto de venta activo en esta sucursal.');
+
+                return;
+            }
+        }
+
+        $pv->update(['active' => ! $pv->active]);
+    }
+
+    /**
+     * Solo se puede borrar un punto de venta que nunca se usó (sin ninguna
+     * factura emitida con ese número) — si ya facturó algo, desactivarlo en
+     * vez de borrarlo, para no perder trazabilidad de ese historial.
+     */
+    public function eliminarPuntoVenta(int $id): void
+    {
+        $pv = $this->sucursal->puntosVenta()->findOrFail($id);
+
+        if ($this->sucursal->puntosVenta()->count() <= 1) {
+            $this->addError('puntosVenta', 'Tiene que quedar al menos un punto de venta en esta sucursal.');
+
+            return;
+        }
+
+        if (Invoice::where('punto_venta', $pv->numero)->exists()) {
+            $this->addError('puntosVenta', 'Ese punto de venta ya tiene facturas emitidas: desactivalo en vez de borrarlo.');
+
+            return;
+        }
+
+        $pv->delete();
+        session()->flash('status', 'Punto de venta eliminado.');
+    }
+
     public function save(): void
     {
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'razon_social' => ['required', 'string', 'max:255'],
-            'punto_venta' => ['required', 'integer', 'min:1', 'max:9999', Rule::unique('sucursales', 'punto_venta')->ignore($this->sucursal->id)],
             'active' => ['boolean'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'mp_access_token' => ['nullable', 'string', 'max:255'],

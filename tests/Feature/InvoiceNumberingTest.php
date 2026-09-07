@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\TipoComprobanteInterno;
 use App\Models\Client;
-use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Sucursal;
 use App\Support\InvoiceNumberGenerator;
@@ -31,25 +30,24 @@ class InvoiceNumberingTest extends TestCase
     {
         // Sin usuario logueado, CurrentSucursal cae a "la primera sucursal"
         // (la única que existe en un DB recién migrado: "Principal").
-        Sucursal::sole()->update(['punto_venta' => 3]);
+        Sucursal::sole()->puntosVenta()->first()->update(['numero' => 3]);
 
         $this->assertSame('0003-00000001', InvoiceNumberGenerator::next(TipoComprobanteInterno::FacturaB->value));
     }
 
-    public function test_sin_ninguna_sucursal_resoluble_usa_el_punto_de_venta_de_la_empresa(): void
+    public function test_sin_ninguna_sucursal_resoluble_usa_0001_como_ultimo_fallback(): void
     {
         // Único caso donde CurrentSucursal no tiene nada que resolver:
-        // borramos la sucursal auto-creada para simular ese escenario.
+        // borramos la sucursal auto-creada para simular ese escenario. Ya
+        // no hay fallback a nivel empresa (se sacó junto con el punto de
+        // venta único de CompanySettings): cae directo a "0001".
         Sucursal::query()->delete();
-        CompanySettings::current()->update(['punto_venta' => 3]);
 
-        $this->assertSame('0003-00000001', InvoiceNumberGenerator::next(TipoComprobanteInterno::FacturaB->value));
+        $this->assertSame('0001-00000001', InvoiceNumberGenerator::next(TipoComprobanteInterno::FacturaB->value));
     }
 
     public function test_serie_independiente_por_tipo_y_correlativa(): void
     {
-        CompanySettings::current()->update(['punto_venta' => 1]);
-
         $n1 = InvoiceNumberGenerator::next(TipoComprobanteInterno::FacturaB->value);
         $this->crear(TipoComprobanteInterno::FacturaB->value, $n1);
 

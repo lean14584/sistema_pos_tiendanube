@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Sucursal;
 use Closure;
@@ -30,23 +29,23 @@ class InvoiceNumberGenerator
      * mecanismo que ya usa InvoiceCaeEmitter para la numeración AFIP.
      */
     /**
-     * $sucursalId: de qué sucursal es el punto de venta a usar. Si no se
-     * pasa, se resuelve a la sucursal activa (CurrentSucursal) — correcto
-     * para una venta nueva (se numera en el momento, en la sucursal donde
-     * está pasando). Notas de Crédito y "facturar remito" SÍ pasan la
-     * sucursal explícita (la del comprobante original), para no numerar con
-     * el punto de venta de la sesión de quien los procesa después.
+     * $puntoVentaNumero: qué punto de venta usar, cuando ya se conoce de
+     * antemano (elegido a mano en el formulario, o heredado de un
+     * comprobante original). Si no se pasa, se resuelve al punto de venta
+     * por defecto de $sucursalId (o de la sucursal activa si tampoco se
+     * pasa esa) — correcto para una venta nueva sin selector (sucursal con
+     * un solo punto de venta).
      */
-    public static function withLock(string $tipoInterno, Closure $callback, ?int $sucursalId = null): mixed
+    public static function withLock(string $tipoInterno, Closure $callback, ?int $sucursalId = null, ?int $puntoVentaNumero = null): mixed
     {
-        $pv = self::puntoVenta($sucursalId);
+        $pv = self::formatPv($puntoVentaNumero ?? self::resolveDefaultPuntoVenta($sucursalId));
 
         return Cache::lock("invoice-number:{$pv}:{$tipoInterno}", 10)->block(10, $callback);
     }
 
-    public static function next(string $tipoInterno, ?int $sucursalId = null): string
+    public static function next(string $tipoInterno, ?int $sucursalId = null, ?int $puntoVentaNumero = null): string
     {
-        $pv = self::puntoVenta($sucursalId);
+        $pv = self::formatPv($puntoVentaNumero ?? self::resolveDefaultPuntoVenta($sucursalId));
 
         // Último correlativo de esta serie (mismo punto de venta y tipo).
         $last = Invoice::where('tipo_comprobante_interno', $tipoInterno)
@@ -63,18 +62,24 @@ class InvoiceNumberGenerator
     }
 
     /**
-     * Punto de venta a 4 dígitos: el de la sucursal (propia o activa), o el
-     * de la empresa si no hay ninguna sucursal resoluble (cae a 0001 si
-     * tampoco hay eso).
+     * Punto de venta por defecto a 4 dígitos, para cuando no se eligió
+     * ninguno a mano: el primero (activo) de la sucursal indicada, o "0001"
+     * si esa sucursal no tiene ningún punto de venta cargado todavía.
      */
     public static function puntoVenta(?int $sucursalId = null): string
     {
+        return self::formatPv(self::resolveDefaultPuntoVenta($sucursalId));
+    }
+
+    private static function resolveDefaultPuntoVenta(?int $sucursalId): int
+    {
         $sucursalId ??= CurrentSucursal::id();
 
-        $pv = ($sucursalId ? Sucursal::find($sucursalId)?->punto_venta : null)
-            ?? CompanySettings::current()->punto_venta
-            ?? 1;
+        return ($sucursalId ? Sucursal::find($sucursalId)?->puntoVentaPorDefecto()?->numero : null) ?? 1;
+    }
 
+    private static function formatPv(int $pv): string
+    {
         return str_pad((string) $pv, 4, '0', STR_PAD_LEFT);
     }
 }

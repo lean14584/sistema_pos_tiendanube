@@ -23,6 +23,17 @@
             </div>
         @endif
 
+        @if (isset($punto_venta) && $this->puntosVentaOpciones->count() > 1)
+            <div>
+                <x-select label="Punto de venta" wire:model="punto_venta">
+                    @foreach ($this->puntosVentaOpciones as $pv)
+                        <option value="{{ $pv->numero }}">{{ $pv->label() }}</option>
+                    @endforeach
+                </x-select>
+                @error('punto_venta') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+        @endif
+
         <div>
             <x-client-picker
                 :client-name="$clients->firstWhere('id', (int) $client_id)?->name ?? '—'"
