@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\CompanySettings;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\PromotionGroup;
+use App\Models\Sucursal;
 use App\Models\User;
+use App\Support\PromotionPoster;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -89,5 +92,42 @@ class PromotionPosterTest extends TestCase
 
         $response->assertOk();
         $this->assertNotFalse(getimagesizefromstring($response->getContent()));
+    }
+
+    public function test_encabezado_usa_la_razon_social_global_como_primera_opcion(): void
+    {
+        $company = CompanySettings::current();
+        $company->update(['razon_social' => 'Mi Empresa S.A.', 'nombre_fantasia' => 'Fantasía']);
+
+        $this->assertSame('Mi Empresa S.A.', PromotionPoster::headerName($company->fresh()));
+    }
+
+    public function test_encabezado_cae_al_nombre_de_fantasia_si_no_hay_razon_social_global(): void
+    {
+        $company = CompanySettings::current();
+        $company->update(['razon_social' => '', 'nombre_fantasia' => 'Fantasía']);
+
+        $this->assertSame('Fantasía', PromotionPoster::headerName($company->fresh()));
+    }
+
+    public function test_encabezado_cae_a_la_razon_social_de_una_sucursal_como_ultimo_recurso(): void
+    {
+        // Reproduce el caso real: el usuario cargó "razón social" en la
+        // pantalla de Sucursales (que es un campo aparte, para facturar por
+        // sucursal) pensando que era el dato global de la empresa.
+        $company = CompanySettings::current();
+        $company->update(['razon_social' => '', 'nombre_fantasia' => null]);
+
+        Sucursal::create(['name' => 'Alternativa', 'razon_social' => 'Super Perro', 'punto_venta' => 3, 'active' => true]);
+
+        $this->assertSame('Super Perro', PromotionPoster::headerName($company->fresh()));
+    }
+
+    public function test_encabezado_vacio_si_no_hay_nada_cargado_en_ningun_lado(): void
+    {
+        $company = CompanySettings::current();
+        $company->update(['razon_social' => '', 'nombre_fantasia' => null]);
+
+        $this->assertNull(PromotionPoster::headerName($company->fresh()));
     }
 }

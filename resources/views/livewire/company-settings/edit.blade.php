@@ -22,14 +22,14 @@
 
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CUIT *</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CUIT</label>
                 <input
                     type="text"
                     wire:model="cuit"
-                    required
                     class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
                     placeholder="20111111112"
                 >
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Sin esto no vas a poder facturar con CAE de ARCA, pero podés guardar el resto de los datos igual.</p>
                 @error('cuit') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>

@@ -29,13 +29,14 @@
     </div>
 
     <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Razón social *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Razón social de esta sucursal *</label>
         <input
             type="text"
             wire:model="razon_social"
             required
             class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
         >
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Es la que se usa para facturar desde esta sucursal en particular. El nombre general de la empresa se carga en Configuración → Datos de la Empresa.</p>
         @error('razon_social') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
     </div>
 

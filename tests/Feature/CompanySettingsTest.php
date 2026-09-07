@@ -32,6 +32,38 @@ class CompanySettingsTest extends TestCase
         $this->assertSame('monotributista', $company->condicion_iva->value);
     }
 
+    public function test_se_puede_guardar_razon_social_y_otros_datos_sin_cargar_el_cuit_todavia(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('cuit', '')
+            ->set('razon_social', 'Almacén Don José')
+            ->set('punto_venta', '1')
+            ->set('condicion_iva', 'monotributista')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $company = CompanySettings::current();
+        $this->assertSame('', $company->cuit);
+        $this->assertSame('Almacén Don José', $company->razon_social);
+    }
+
+    public function test_un_cuit_invalido_igual_se_rechaza_aunque_ya_no_sea_obligatorio(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('cuit', '123')
+            ->set('razon_social', 'Almacén Don José')
+            ->set('punto_venta', '1')
+            ->set('condicion_iva', 'monotributista')
+            ->call('save')
+            ->assertHasErrors(['cuit']);
+    }
+
     public function test_admin_puede_configurar_la_balanza_con_formato_2_5_5(): void
     {
         $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);

@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\CompanySettings;
 use App\Models\Promotion;
 use App\Models\PromotionGroup;
+use App\Models\Sucursal;
 use GdImage;
 use Illuminate\Support\Facades\Storage;
 
@@ -166,17 +167,30 @@ class PromotionPoster
         imagefilledellipse($im, 120, (int) ($height * 0.65), 260, 260, $yellow);
     }
 
+    /**
+     * Nombre a mostrar en el encabezado del cartel: la razón social se
+     * carga en "Datos de la empresa" (global) y prácticamente siempre está
+     * completa (hace falta para facturar); el nombre de fantasía es
+     * opcional. Si todavía no se cargó ninguna de las dos (setup a medio
+     * hacer), como último recurso se usa la razón social de alguna
+     * sucursal — existe un campo con el mismo nombre ahí, para facturar
+     * por sucursal, y es fácil cargarlo ahí por error pensando que es el
+     * dato global.
+     */
+    public static function headerName(CompanySettings $company): ?string
+    {
+        return $company->razon_social
+            ?: $company->nombre_fantasia
+            ?: Sucursal::where('razon_social', '!=', '')->orderBy('id')->value('razon_social');
+    }
+
     private static function drawHeader(GdImage $im, CompanySettings $company): void
     {
         $white = imagecolorallocate($im, 255, 255, 255);
         $dark = imagecolorallocate($im, 45, 20, 45);
         $shadow = imagecolorallocatealpha($im, 0, 0, 0, 45);
 
-        // La razón social es la que se carga en "Datos de la empresa" y
-        // prácticamente siempre está completa (hace falta para facturar);
-        // el nombre de fantasía es opcional, así que solo se usa si no hay
-        // razón social cargada todavía.
-        $nombre = $company->razon_social ?: $company->nombre_fantasia;
+        $nombre = self::headerName($company);
 
         if ($nombre) {
             $label = mb_strtoupper($nombre);

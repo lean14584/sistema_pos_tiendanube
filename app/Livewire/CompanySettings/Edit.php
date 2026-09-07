@@ -82,7 +82,11 @@ class Edit extends Component
     public function save(): void
     {
         $data = $this->validate([
-            'cuit' => ['required', 'digits:11'],
+            // El CUIT no es obligatorio para guardar el resto de los datos
+            // (nombre, logo, etc.) — antes lo era, y bloqueaba TODO el
+            // formulario (incluida la razón social) hasta tener el trámite
+            // de AFIP resuelto. Sigue validado en formato si se carga.
+            'cuit' => ['nullable', 'digits:11'],
             'razon_social' => ['required', 'string', 'max:255'],
             'nombre_fantasia' => ['nullable', 'string', 'max:255'],
             'domicilio' => ['nullable', 'string', 'max:255'],
