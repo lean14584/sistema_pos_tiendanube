@@ -87,13 +87,15 @@ class Account extends Component
         $payments = $this->client->payments()->orderBy('date')->get();
         $this->client->setRelation('payments', $payments);
 
-        // debitLines() ya trae el signo correcto (NC/Devolución restan) y
-        // excluye el Remito ya facturado; acá solo se agrega el link de la fila.
+        // debitLines() ya trae el signo correcto (NC/Devolución restan), el
+        // saldo de apertura (migración) si lo hay, y excluye el Remito ya
+        // facturado; acá solo se agrega el link de la fila.
         $debits = $this->client->debitLines()->map(fn ($d) => [
             'date' => $d['date'],
             'label' => $d['label'],
+            'description' => $d['description'],
             'amount' => $d['amount'],
-            'href' => route('invoices.show', $d['invoice']),
+            'href' => $d['invoice'] ? route('invoices.show', $d['invoice']) : null,
         ]);
 
         // Saldo (nos debe) para el recordatorio de WhatsApp.

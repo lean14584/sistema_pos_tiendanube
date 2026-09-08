@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 #[ObservedBy(ClientObserver::class)]
-#[Fillable(['name', 'email', 'phone', 'address', 'tax_id', 'condicion_iva', 'tipo_documento', 'price_list_id', 'credit_limit', 'tiendanube_customer_id'])]
+#[Fillable(['name', 'email', 'phone', 'address', 'tax_id', 'condicion_iva', 'tipo_documento', 'price_list_id', 'credit_limit', 'tiendanube_customer_id', 'opening_balance', 'opening_balance_date'])]
 class Client extends Model
 {
     use Auditable;
@@ -26,6 +26,8 @@ class Client extends Model
             'condicion_iva' => CondicionIva::class,
             'tipo_documento' => TipoDocumento::class,
             'credit_limit' => 'decimal:2',
+            'opening_balance' => 'decimal:2',
+            'opening_balance_date' => 'date',
         ];
     }
 
@@ -49,20 +51,45 @@ class Client extends Model
 
         $remitosYaFacturados = $this->invoices->pluck('remito_id')->filter()->all();
 
-        return $this->invoices
+        $lineas = $this->invoices
             ->reject(fn (Invoice $i) => $i->esRemito() && in_array($i->id, $remitosYaFacturados, true))
             ->map(fn (Invoice $i) => [
                 'date' => $i->issue_date->toDateString(),
                 'label' => $i->number,
+                'description' => null,
                 'amount' => $i->signoDeuda() * ((float) $i->total - (float) $i->payments->sum('amount')),
                 'invoice' => $i,
             ])
             ->values();
+
+        return $this->conLineaDeApertura($lineas);
+    }
+
+    /**
+     * Si el cliente tiene saldo de apertura (migración desde otro sistema,
+     * ver opening_balance), lo agrega como una línea más del extracto —
+     * así aparece en la pantalla de cuenta corriente y en el PDF, no solo
+     * como un ajuste invisible al total.
+     */
+    private function conLineaDeApertura(Collection $lineas): Collection
+    {
+        if ($this->opening_balance === null || (float) $this->opening_balance === 0.0) {
+            return $lineas;
+        }
+
+        return $lineas->push([
+            'date' => ($this->opening_balance_date ?? now())->toDateString(),
+            'label' => 'Saldo inicial (migración)',
+            'description' => 'Saldo inicial (migración)',
+            'amount' => (float) $this->opening_balance,
+            'invoice' => null,
+        ]);
     }
 
     /**
      * Saldo actual de cuenta corriente (lo que nos debe): débitos de
-     * debitLines() menos los cobros a cuenta.
+     * debitLines() —incluye el saldo de apertura si lo hay— menos los
+     * cobros a cuenta.
      */
     public function saldoCuentaCorriente(): float
     {

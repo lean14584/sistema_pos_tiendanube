@@ -5,118 +5,34 @@ namespace App\Livewire\Products;
 use App\Enums\AlicuotaIva;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductImportMapping;
 use App\Models\ProductStock;
 use App\Support\CurrentSucursal;
+use App\Support\Import\ImportsExcelWithMapping;
 use App\Support\ProductImport\ProductImportFields;
 use App\Support\StockAdjuster;
 use App\Support\TiendanubeSyncGuard;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Livewire\WithFileUploads;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 #[Layout('layouts.app')]
 class Import extends Component
 {
-    use WithFileUploads;
+    use ImportsExcelWithMapping;
 
-    public string $step = 'subir';
-
-    public $archivo = null;
-
-    /** Ruta temporal del archivo ya subido (para no tener que resubirlo entre pasos). */
-    public string $rutaTemporal = '';
-
-    /** @var array<int, string> cabeceras del Excel, índice = número de columna */
-    public array $cabeceras = [];
-
-    /** @var array<int, array<int, mixed>> primeras filas, para la vista previa */
-    public array $filasPreview = [];
-
-    public int $totalFilas = 0;
-
-    /** @var array<string, int|null> campo del sistema => índice de columna del Excel */
-    public array $mapeo = [];
-
-    /** @var array{creados: int, actualizados: int, omitidos: array<int, string>}|null */
-    public ?array $resultado = null;
-
-    public function updatedArchivo(): void
+    protected function camposImport(): string
     {
-        $this->validate(['archivo' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240']]);
-
-        $this->rutaTemporal = $this->archivo->store('imports', 'local');
-        $rutaCompleta = Storage::disk('local')->path($this->rutaTemporal);
-
-        $spreadsheet = IOFactory::load($rutaCompleta);
-        $hoja = $spreadsheet->getActiveSheet();
-        $filas = $hoja->toArray(null, true, true, false);
-
-        if (empty($filas)) {
-            $this->addError('archivo', 'El archivo está vacío.');
-
-            return;
-        }
-
-        $this->cabeceras = array_map(fn ($h) => trim((string) $h), array_shift($filas));
-        $this->totalFilas = count($filas);
-        $this->filasPreview = array_slice($filas, 0, 5);
-
-        $recordado = ProductImportMapping::recordarPara($this->cabeceras);
-
-        $this->mapeo = $recordado
-            ? $this->resolverMapeoRecordado($recordado->mapping)
-            : ProductImportFields::sugerir($this->cabeceras);
-
-        $this->step = 'mapear';
+        return ProductImportFields::class;
     }
 
-    /** Traduce un mapeo guardado (campo => nombre de columna) al índice real en ESTE archivo. */
-    private function resolverMapeoRecordado(array $mapeoGuardado): array
+    protected function contextoImport(): string
     {
-        $normalizadas = array_map(fn ($h) => mb_strtolower(trim((string) $h)), $this->cabeceras);
-
-        return collect(ProductImportFields::FIELDS)->keys()->mapWithKeys(function ($campo) use ($mapeoGuardado, $normalizadas) {
-            $nombreGuardado = $mapeoGuardado[$campo] ?? null;
-            $indice = $nombreGuardado !== null
-                ? array_search(mb_strtolower(trim($nombreGuardado)), $normalizadas, true)
-                : false;
-
-            return [$campo => $indice !== false ? $indice : null];
-        })->all();
+        return 'products';
     }
 
-    public function volverAMapeo(): void
+    /** @return array{creados: int, actualizados: int, omitidos: array<int, string>} */
+    protected function procesarFilas(array $filas): array
     {
-        $this->step = 'mapear';
-        $this->resultado = null;
-    }
-
-    public function cancelar(): void
-    {
-        if ($this->rutaTemporal) {
-            Storage::disk('local')->delete($this->rutaTemporal);
-        }
-
-        $this->reset(['step', 'archivo', 'rutaTemporal', 'cabeceras', 'filasPreview', 'totalFilas', 'mapeo', 'resultado']);
-        $this->step = 'subir';
-    }
-
-    public function confirmarImportacion(): void
-    {
-        $this->validate([
-            'mapeo.name' => ['required'],
-            'mapeo.price' => ['required'],
-        ], [], ['mapeo.name' => 'Nombre', 'mapeo.price' => 'Precio de venta']);
-
-        $rutaCompleta = Storage::disk('local')->path($this->rutaTemporal);
-        $spreadsheet = IOFactory::load($rutaCompleta);
-        $filas = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
-        array_shift($filas); // cabecera
-
         $creados = 0;
         $actualizados = 0;
         $omitidos = [];
@@ -229,48 +145,14 @@ class Import extends Component
             });
         });
 
-        // Recordar el mapeo para la próxima vez que suban un Excel con estas mismas cabeceras.
-        $mapeoPorNombre = collect($this->mapeo)
-            ->map(fn ($indice) => $indice !== null && $indice !== '' ? $this->cabeceras[$indice] : null)
-            ->all();
-        ProductImportMapping::guardarPara($this->cabeceras, $mapeoPorNombre);
-
-        Storage::disk('local')->delete($this->rutaTemporal);
-
-        $this->resultado = ['creados' => $creados, 'actualizados' => $actualizados, 'omitidos' => $omitidos];
-        $this->step = 'resultado';
-    }
-
-    /** Valor de una fila para un campo del sistema, según el mapeo actual (o null si no está mapeado). */
-    private function valor(array $fila, string $campo): mixed
-    {
-        $indice = $this->mapeo[$campo] ?? null;
-
-        return $indice !== null && $indice !== '' ? ($fila[$indice] ?? null) : null;
-    }
-
-    /** Acepta "1.234,56" o "1234.56" y devuelve un string numérico con punto decimal. */
-    private function normalizarNumero(mixed $valor): string
-    {
-        $texto = trim((string) $valor);
-
-        if (str_contains($texto, ',') && str_contains($texto, '.')) {
-            $texto = str_replace('.', '', $texto);
-        }
-
-        return str_replace(',', '.', $texto);
+        return ['creados' => $creados, 'actualizados' => $actualizados, 'omitidos' => $omitidos];
     }
 
     public function render()
     {
-        $previewMapeado = collect($this->filasPreview)->map(fn ($fila) => collect(ProductImportFields::FIELDS)
-            ->keys()
-            ->mapWithKeys(fn ($campo) => [$campo => $this->valor($fila, $campo)])
-            ->all());
-
         return view('livewire.products.import', [
-            'campos' => ProductImportFields::FIELDS,
-            'previewMapeado' => $previewMapeado,
+            'campos' => ProductImportFields::fields(),
+            'previewMapeado' => $this->previewMapeado(),
         ]);
     }
 }

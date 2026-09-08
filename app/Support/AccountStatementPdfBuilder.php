@@ -26,16 +26,9 @@ class AccountStatementPdfBuilder
 
     public function forProvider(Provider $provider): DomPDF
     {
-        $purchases = $provider->purchases()->whereNot('status', 'draft')->with('items', 'payments')->get();
         $payments = $provider->payments()->orderBy('date')->get();
 
-        $debits = $purchases->map(fn ($p) => [
-            'date' => $p->issue_date->toDateString(),
-            'label' => $p->number,
-            'amount' => (float) $p->total - (float) $p->payments->sum('amount'),
-        ]);
-
-        return $this->build('Proveedor', $provider->name, AccountLedger::build($debits, $payments, 'Compra', 'Pago'), 'Les debemos');
+        return $this->build('Proveedor', $provider->name, AccountLedger::build($provider->debitLines(), $payments, 'Compra', 'Pago'), 'Les debemos');
     }
 
     public function binaryForClient(Client $client): string

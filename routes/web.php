@@ -15,7 +15,9 @@ use App\Http\Controllers\ReportsExportController;
 use App\Http\Controllers\StockTransferPdfController;
 use App\Http\Controllers\TiendanubeWebhookController;
 use App\Livewire\Audit\Index as AuditIndex;
+use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
+use App\Livewire\Auth\ResetPassword;
 use App\Livewire\CashRegister\Index as CashRegisterIndex;
 use App\Livewire\Categories\Create as CategoryCreate;
 use App\Livewire\Categories\Edit as CategoryEdit;
@@ -23,9 +25,13 @@ use App\Livewire\Categories\Index as CategoryIndex;
 use App\Livewire\Clients\Account as ClientAccount;
 use App\Livewire\Clients\Create as ClientCreate;
 use App\Livewire\Clients\Edit as ClientEdit;
+use App\Livewire\Clients\Import as ClientImport;
+use App\Livewire\Clients\ImportSaldo as ClientImportSaldo;
 use App\Livewire\Clients\Index as ClientIndex;
 use App\Livewire\CompanySettings\Edit as CompanySettingsEdit;
 use App\Livewire\Dashboard;
+use App\Livewire\HistoricalSales\Import as HistoricalSaleImport;
+use App\Livewire\HistoricalSales\Index as HistoricalSaleIndex;
 use App\Livewire\Invoices\Create as InvoiceCreate;
 use App\Livewire\Invoices\Edit as InvoiceEdit;
 use App\Livewire\Invoices\FacturarRemito;
@@ -45,6 +51,8 @@ use App\Livewire\Products\Labels;
 use App\Livewire\Providers\Account as ProviderAccount;
 use App\Livewire\Providers\Create as ProviderCreate;
 use App\Livewire\Providers\Edit as ProviderEdit;
+use App\Livewire\Providers\Import as ProviderImport;
+use App\Livewire\Providers\ImportSaldo as ProviderImportSaldo;
 use App\Livewire\Providers\Index as ProviderIndex;
 use App\Livewire\Purchases\Create as PurchaseCreate;
 use App\Livewire\Purchases\Edit as PurchaseEdit;
@@ -60,8 +68,6 @@ use App\Livewire\StockTransfers\Show;
 use App\Livewire\Sucursales\Create as SucursalCreate;
 use App\Livewire\Sucursales\Edit as SucursalEdit;
 use App\Livewire\Sucursales\Index as SucursalIndex;
-use App\Livewire\Auth\ForgotPassword;
-use App\Livewire\Auth\ResetPassword;
 use App\Livewire\Tasks\Create as TaskCreate;
 use App\Livewire\Tasks\Index as TaskIndex;
 use App\Livewire\Users\Create as UserCreate;
@@ -118,6 +124,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/recibo/{payment}', ReciboPdfController::class)->name('recibo');
     });
 
+    Route::middleware('module:data-import')->prefix('clients')->name('clients.')->group(function () {
+        Route::get('/importar', ClientImport::class)->name('import');
+        Route::get('/importar-saldo', ClientImportSaldo::class)->name('import-saldo');
+    });
+
+    Route::middleware('module:data-import')->prefix('ventas-historicas')->name('historical-sales.')->group(function () {
+        Route::get('/', HistoricalSaleIndex::class)->name('index');
+        Route::get('/importar', HistoricalSaleImport::class)->name('import');
+    });
+
     Route::middleware('module:cobranzas')->get('cobranzas', App\Livewire\Cobranzas\Index::class)->name('cobranzas.index');
 
     Route::middleware('module:products')->prefix('products')->name('products.')->group(function () {
@@ -165,6 +181,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/{provider}/edit', ProviderEdit::class)->name('edit');
         Route::get('/{provider}/account', ProviderAccount::class)->name('account');
         Route::get('/{provider}/estado-cuenta', ProviderAccountStatementController::class)->name('statement');
+    });
+
+    Route::middleware('module:data-import')->prefix('providers')->name('providers.')->group(function () {
+        Route::get('/importar', ProviderImport::class)->name('import');
+        Route::get('/importar-saldo', ProviderImportSaldo::class)->name('import-saldo');
     });
 
     Route::middleware('module:purchases')->prefix('purchases')->name('purchases.')->group(function () {

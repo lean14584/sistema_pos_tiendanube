@@ -22,7 +22,7 @@
 
         return [
             'date' => $d['date'],
-            'description' => "{$debitLabel} {$d['label']}",
+            'description' => $d['description'] ?? "{$debitLabel} {$d['label']}",
             'debit' => max($amount, 0.0),
             'credit' => max(-$amount, 0.0),
             'href' => $d['href'] ?? null,

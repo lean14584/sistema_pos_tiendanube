@@ -11,7 +11,7 @@ class Permissions
         'admin' => [
             'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'products', 'products-manage', 'categories', 'price-lists', 'promotions',
             'stock-adjustments', 'stock-transfers', 'product-batches', 'providers', 'purchases', 'cash-register', 'vencimientos', 'reports', 'users', 'messages', 'tasks',
-            'company-settings', 'sucursales', 'audit', 'libro-iva', 'price-check', 'backups', 'health',
+            'company-settings', 'sucursales', 'audit', 'libro-iva', 'price-check', 'backups', 'health', 'data-import',
         ],
         // Encargado: manda en SU sucursal (usuarios de esa sucursal, compras,
         // caja, auditoría filtrada) pero no es global como Admin — no ve
