@@ -82,21 +82,20 @@ class Account extends Component
 
     public function render()
     {
-        $purchases = $this->provider->purchases()->whereNot('status', 'draft')->with('items', 'payments')->get();
         $payments = $this->provider->payments()->orderBy('date')->get();
 
-        // Se dejan cargadas para que saldoCuentaCorriente() reutilice estos
+        // Se deja cargado para que saldoCuentaCorriente() reutilice estos
         // mismos datos (loadMissing) en vez de volver a consultarlos.
-        $this->provider->setRelation('purchases', $purchases);
         $this->provider->setRelation('payments', $payments);
 
-        // El débito de cada compra es lo que realmente queda debiendo: total
-        // menos lo que se pagó en el momento (purchase_payments).
-        $debits = $purchases->map(fn ($purchase) => [
-            'date' => $purchase->issue_date->toDateString(),
-            'label' => $purchase->number,
-            'amount' => (float) $purchase->total - (float) $purchase->payments->sum('amount'),
-            'href' => route('purchases.show', $purchase),
+        // debitLines() ya trae el saldo de apertura (migración) como una
+        // línea más si el proveedor tiene uno cargado.
+        $debits = $this->provider->debitLines()->map(fn ($d) => [
+            'date' => $d['date'],
+            'label' => $d['label'],
+            'description' => $d['description'],
+            'amount' => $d['amount'],
+            'href' => $d['purchase'] ? route('purchases.show', $d['purchase']) : null,
         ]);
 
         return view('livewire.providers.account', [

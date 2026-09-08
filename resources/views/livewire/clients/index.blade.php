@@ -1,6 +1,14 @@
 <div class="p-8 max-w-5xl mx-auto">
     <x-page-header title="Clientes" subtitle="Gestioná los datos de tus clientes" icon="users">
         <x-slot:actions>
+            @if (\App\Support\Permissions::canAccess(auth()->user()->role, 'data-import'))
+                <a href="{{ route('clients.import-saldo') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-scale class="w-4 h-4" /> Saldo inicial
+                </a>
+                <a href="{{ route('clients.import') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-arrow-up-tray class="w-4 h-4" /> Importar Excel
+                </a>
+            @endif
             <a href="{{ route('clients.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
                 <x-heroicon-o-plus class="w-4 h-4" /> Nuevo cliente
             </a>

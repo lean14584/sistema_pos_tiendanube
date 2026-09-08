@@ -4,49 +4,24 @@ namespace Tests\Feature;
 
 use App\Enums\Role;
 use App\Models\Category;
+use App\Models\ImportMapping;
 use App\Models\Product;
-use App\Models\ProductImportMapping;
 use App\Models\ProductStock;
 use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Tests\Concerns\GeneratesExcelFixtures;
 use Tests\TestCase;
 
 class ProductImportTest extends TestCase
 {
+    use GeneratesExcelFixtures;
     use RefreshDatabase;
 
     private function admin(): User
     {
         return User::factory()->create(['role' => Role::Admin, 'active' => true]);
-    }
-
-    /** Genera un .xlsx real (no un fake genérico) para que IOFactory::load() lo pueda leer. */
-    private function excel(array $filas): UploadedFile
-    {
-        $spreadsheet = new Spreadsheet;
-        $hoja = $spreadsheet->getActiveSheet();
-
-        foreach ($filas as $numFila => $fila) {
-            foreach ($fila as $numCol => $valor) {
-                $hoja->setCellValue([$numCol + 1, $numFila + 1], $valor);
-            }
-        }
-
-        $ruta = tempnam(sys_get_temp_dir(), 'test_import_').'.xlsx';
-        (new Xlsx($spreadsheet))->save($ruta);
-
-        // UploadedFile::fake() es lo que Livewire sabe manejar en tests (trae
-        // metadata propia que su wiring interno necesita); le reemplazamos el
-        // contenido aleatorio por el .xlsx real que acabamos de generar.
-        $fake = UploadedFile::fake()->create('productos.xlsx', 1);
-        file_put_contents($fake->getRealPath(), file_get_contents($ruta));
-
-        return $fake;
     }
 
     public function test_subir_un_excel_sugiere_el_mapeo_de_columnas_automaticamente(): void
@@ -182,7 +157,7 @@ class ProductImportTest extends TestCase
             ->set('mapeo.price', 1)
             ->call('confirmarImportacion');
 
-        $this->assertNotNull(ProductImportMapping::recordarPara(['Nombre del producto', 'Valor']));
+        $this->assertNotNull(ImportMapping::recordarPara('products', ['Nombre del producto', 'Valor']));
 
         // Un segundo archivo con las mismas cabeceras ya viene mapeado solo,
         // sin necesidad de elegir manualmente de nuevo.

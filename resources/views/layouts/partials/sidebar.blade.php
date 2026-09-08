@@ -55,6 +55,7 @@
         ['module' => 'sucursales', 'group' => 'Configuración', 'pattern' => 'sucursales.*', 'href' => route('sucursales.index'), 'label' => 'Sucursales', 'icon' => 'building-storefront'],
         ['module' => 'company-settings', 'group' => 'Configuración', 'pattern' => 'tiendanube.*', 'href' => route('tiendanube.index'), 'label' => 'Tiendanube', 'icon' => 'shopping-bag'],
         ['module' => 'audit', 'group' => 'Configuración', 'pattern' => 'audit.*', 'href' => route('audit.index'), 'label' => 'Auditoría', 'icon' => 'clipboard-document-check'],
+        ['module' => 'data-import', 'group' => 'Configuración', 'pattern' => 'historical-sales.*', 'href' => route('historical-sales.index'), 'label' => 'Ventas históricas', 'icon' => 'clock'],
         ['module' => 'backups', 'group' => 'Configuración', 'pattern' => 'backups.*', 'href' => route('backups.index'), 'label' => 'Respaldo', 'icon' => 'circle-stack'],
         ['module' => 'health', 'group' => 'Configuración', 'pattern' => 'health.*', 'href' => route('health.index'), 'label' => 'Estado del sistema', 'icon' => 'heart'],
     ];
