@@ -51,6 +51,27 @@ class PromotionPosterTest extends TestCase
         $this->assertNotFalse($info);
     }
 
+    public function test_el_detalle_muestra_un_ejemplo_de_compra_con_el_total_ya_descontado(): void
+    {
+        $nxm = Product::create(['name' => 'Coca 1.5L', 'price' => 1800, 'stock' => 10]);
+        Promotion::create(['product_id' => $nxm->id, 'type' => 'nxm', 'buy_qty' => 3, 'pay_qty' => 2, 'active' => true]);
+
+        $segunda = Product::create(['name' => 'Fideos', 'price' => 2500, 'stock' => 10]);
+        Promotion::create(['product_id' => $segunda->id, 'type' => 'segunda', 'percent' => 30, 'active' => true]);
+
+        $cantidad = Product::create(['name' => 'Yerba', 'price' => 1000, 'stock' => 10]);
+        Promotion::create(['product_id' => $cantidad->id, 'type' => 'cantidad', 'percent' => 15, 'min_qty' => 10, 'active' => true]);
+
+        $detalles = collect(PromotionPoster::items())->pluck('detail', 'title');
+
+        // 3x2: paga 2 de las 3 unidades -> 2 * 1800.
+        $this->assertSame('Llevando 3: $3.600,00', $detalles['Coca 1.5L']);
+        // 2da unidad -30%: 2500 + 2500*0.7.
+        $this->assertSame('Llevando 2: $4.250,00', $detalles['Fideos']);
+        // -15% en toda la línea desde 10 unidades: 10*1000*0.85.
+        $this->assertSame('Llevando 10: $8.500,00', $detalles['Yerba']);
+    }
+
     public function test_cajero_no_puede_generar_el_cartel(): void
     {
         $cajero = User::factory()->create(['role' => Role::Cajero, 'active' => true]);

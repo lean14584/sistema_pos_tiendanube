@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\PromotionType;
 use App\Models\CompanySettings;
 use App\Models\Promotion;
 use App\Models\PromotionGroup;
@@ -68,7 +69,7 @@ class PromotionPoster
             ->map(fn (Promotion $p) => [
                 'title' => $p->product->name,
                 'badge' => $p->shortLabel(),
-                'detail' => '$'.money($p->product->price),
+                'detail' => self::exampleDetail($p, (float) $p->product->price),
                 'image_path' => self::resolveImagePath($p->product->image_path),
             ]);
 
@@ -96,6 +97,25 @@ class PromotionPoster
             });
 
         return $individuales->concat($grupos)->values()->all();
+    }
+
+    /**
+     * Ejemplo de compra ("Llevando N: $X") con el total ya con el
+     * descuento aplicado. Se muestra en vez del precio de lista, porque
+     * el badge por sí solo (ej. "2DA -30%") obliga al cliente a calcular
+     * en el local cuánto termina pagando.
+     */
+    private static function exampleDetail(Promotion $promo, float $price): string
+    {
+        $qty = match ($promo->type) {
+            PromotionType::Nxm => (int) $promo->buy_qty,
+            PromotionType::Segunda => 2,
+            PromotionType::Cantidad => max(2, (int) $promo->min_qty),
+        };
+
+        $total = $qty * $price - PromotionEngine::discount($promo, $qty, $price);
+
+        return "Llevando {$qty}: \$".money($total);
     }
 
     private static function resolveImagePath(?string $imagePath): ?string
