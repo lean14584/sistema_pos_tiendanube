@@ -40,7 +40,7 @@
         </div>
 
         <div class="flex gap-3 mt-5">
-            <button type="submit" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-700 hover:to-indigo-600">Registrar ajuste</button>
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50">Registrar ajuste</button>
         </div>
     </form>
 

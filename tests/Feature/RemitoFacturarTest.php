@@ -76,6 +76,25 @@ class RemitoFacturarTest extends TestCase
             ->assertStatus(403);
     }
 
+    public function test_doble_clic_en_generar_factura_no_duplica_la_factura_del_remito(): void
+    {
+        // A diferencia del test anterior (que remonta el componente y
+        // dispara el abort_if de mount()), esto llama a save() dos veces
+        // sobre la MISMA instancia ya montada — el escenario real de un
+        // doble clic, que ejercita el chequeo interno de save() y no el de
+        // mount(). Antes del lock, esto duplicaba la factura.
+        $product = Product::create(['name' => 'Caja', 'price' => 1000, 'iva_rate' => 21, 'stock' => 10]);
+        $remito = $this->remito($product);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('invoices.facturar-remito', ['invoice' => $remito]);
+
+        $component->call('save')->assertHasNoErrors();
+        $component->call('save')->assertHasErrors('tipo_comprobante_interno');
+
+        $this->assertSame(1, Invoice::where('remito_id', $remito->id)->count());
+    }
+
     public function test_no_se_puede_facturar_algo_que_no_es_remito(): void
     {
         $client = Client::create(['name' => 'X', 'email' => 'x@test.com']);

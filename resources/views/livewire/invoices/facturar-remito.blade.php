@@ -53,7 +53,7 @@
         </div>
 
         <div class="flex gap-3">
-            <button type="submit" @disabled(count($tiposDestino) === 0) class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" @disabled(count($tiposDestino) === 0) class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                 Generar factura
             </button>
             <a href="{{ route('invoices.show', $remito) }}" wire:navigate class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800">
