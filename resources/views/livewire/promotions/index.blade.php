@@ -88,7 +88,7 @@
         </div>
 
         <div class="flex gap-3 mt-5">
-            <button type="submit" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-700 hover:to-indigo-600">{{ $editingId ? 'Guardar cambios' : 'Crear promoción' }}</button>
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50">{{ $editingId ? 'Guardar cambios' : 'Crear promoción' }}</button>
             @if ($editingId)
                 <button type="button" wire:click="cancel" class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancelar</button>
             @endif

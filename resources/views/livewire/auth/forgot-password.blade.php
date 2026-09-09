@@ -35,7 +35,9 @@
 
                 <button
                     type="submit"
-                    class="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all"
+                    wire:loading.attr="disabled"
+                    wire:target="submit"
+                    class="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                     <span wire:loading.remove wire:target="submit">Enviar link de recuperación</span>
                     <span wire:loading wire:target="submit">Enviando...</span>
