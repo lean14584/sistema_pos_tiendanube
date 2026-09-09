@@ -84,7 +84,7 @@
 
         @if (count($items) > 0)
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mt-3">
-                <div class="overflow-x-auto">
+                <div class="hidden sm:block overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-800/50">
                         <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -131,6 +131,43 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
+
+                <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                    @foreach ($items as $index => $item)
+                        <div wire:key="item-card-{{ $index }}" class="p-3 space-y-2">
+                            <div class="flex items-start gap-2">
+                                <input type="text" wire:model="items.{{ $index }}.description" placeholder="Descripción" class="flex-1 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <button type="button" wire:click="removeItem({{ $index }})" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 shrink-0">
+                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Cantidad</label>
+                                    <input type="number" min="0.01" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Precio unit.</label>
+                                    <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                </div>
+                            </div>
+                            @if ($showBatchFields ?? false)
+                                <div class="pt-1 space-y-1">
+                                    <span class="block text-xs text-gray-400 dark:text-gray-500">Lote / vencimiento (opcional, para productos perecederos):</span>
+                                    <div class="flex gap-2">
+                                        <input type="text" wire:model="items.{{ $index }}.batch_number" placeholder="N° de lote" class="flex-1 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <input type="date" wire:model="items.{{ $index }}.expiration_date" class="rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    </div>
+                                    @error("items.{$index}.expiration_date") <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                                </div>
+                            @endif
+                            <div class="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 pt-1">
+                                <span>Total</span>
+                                <span>${{ money((float) $item['quantity'] * (float) $item['unit_price']) }}</span>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         @else

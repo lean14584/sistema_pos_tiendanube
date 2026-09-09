@@ -24,7 +24,7 @@
     </div>
 
     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-800/50">
                 <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -68,6 +68,36 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
+
+        <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+            @forelse ($batches as $batch)
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $batch->product->name ?? 'Producto eliminado' }}</p>
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset shrink-0 {{ $batch->status->colorClasses() }}">
+                            {{ $batch->status->label() }}
+                            @if ($batch->status->value !== 'ok')
+                                ({{ $batch->dias_para_vencer >= 0 ? $batch->dias_para_vencer.' d' : 'hace '.abs($batch->dias_para_vencer).' d' }})
+                            @endif
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        @if ($puedeVerTodasLasSucursales)
+                            {{ $batch->sucursal->name ?? '—' }} ·
+                        @endif
+                        Lote {{ $batch->batch_number ?: '—' }} · Vence {{ $batch->expiration_date->format('d/m/Y') }}
+                    </p>
+                    <div class="flex items-center justify-between mt-1.5">
+                        <p class="text-sm text-gray-700 dark:text-gray-300">Restante: {{ rtrim(rtrim(number_format((float) $batch->quantity_remaining, 2, ',', '.'), '0'), ',') }}</p>
+                        <button type="button" wire:click="abrirBaja({{ $batch->id }})" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium">
+                            Dar de baja
+                        </button>
+                    </div>
+                </div>
+            @empty
+                <div class="p-10 text-center text-gray-400 dark:text-gray-500">No hay lotes cargados con estos filtros.</div>
+            @endforelse
         </div>
 
         <div class="p-4 border-t border-gray-100 dark:border-gray-800">

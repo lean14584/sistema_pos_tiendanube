@@ -19,7 +19,7 @@
     </div>
 
     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-800/50">
                 <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -81,6 +81,58 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
+
+        <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+            @forelse ($deudores as $row)
+                @php $client = $row['client']; @endphp
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <a href="{{ route('clients.account', $client) }}" wire:navigate class="font-medium text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">{{ $client->name }}</a>
+                            @if ($client->phone)
+                                <span class="block text-xs text-gray-400 dark:text-gray-500">{{ $client->phone }}</span>
+                            @else
+                                <span class="block text-xs text-amber-500 dark:text-amber-400">Sin teléfono cargado</span>
+                            @endif
+                        </div>
+                        <p class="font-semibold text-gray-900 dark:text-gray-100 shrink-0">${{ money($row['saldo']) }}</p>
+                    </div>
+
+                    @if ($payingClientId === $client->id)
+                        <div class="flex flex-wrap items-center gap-1.5 mt-3">
+                            <input type="number" step="0.01" min="0.01" wire:model="payAmount" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <select wire:model="payMethod" class="rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                @foreach ($paymentMethods as $pm)
+                                    <option value="{{ $pm->value }}">{{ $pm->label() }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" wire:click="savePayment" class="rounded-md bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 text-white text-xs font-medium">Guardar</button>
+                            <button type="button" wire:click="cancelPayment" class="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5 text-gray-600 dark:text-gray-300 text-xs">✕</button>
+                        </div>
+                        @error('payAmount') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                    @else
+                        <div class="flex items-center gap-2 mt-3">
+                            <button type="button" wire:click="startPayment({{ $client->id }}, {{ $row['saldo'] }})" class="inline-flex items-center gap-1 rounded-md bg-indigo-600 hover:bg-indigo-700 px-2.5 py-1.5 text-white text-xs font-medium">
+                                <x-heroicon-o-banknotes class="w-3.5 h-3.5" /> Cobrar
+                            </button>
+                            @if ($row['whatsapp'])
+                                <a href="{{ $row['whatsapp'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-md bg-green-600 hover:bg-green-700 px-2.5 py-1.5 text-white text-xs font-medium">
+                                    <x-heroicon-o-chat-bubble-left-right class="w-3.5 h-3.5" /> WhatsApp
+                                </a>
+                            @else
+                                <span class="inline-flex items-center gap-1 rounded-md bg-gray-100 dark:bg-gray-800 px-2.5 py-1.5 text-gray-400 dark:text-gray-500 text-xs cursor-not-allowed" title="Cargá el teléfono del cliente">
+                                    <x-heroicon-o-chat-bubble-left-right class="w-3.5 h-3.5" /> WhatsApp
+                                </span>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <div class="p-10 text-center text-gray-400 dark:text-gray-500">
+                    {{ trim($search) !== '' ? 'Ningún cliente coincide con la búsqueda.' : '¡Sin deudores! Nadie tiene saldo pendiente.' }}
+                </div>
+            @endforelse
         </div>
     </div>
 </div>

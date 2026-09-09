@@ -18,7 +18,7 @@
                 <p class="text-sm">Todavía no importaste ventas históricas.</p>
             </div>
         @else
-            <div class="overflow-x-auto">
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -54,6 +54,30 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($ventas as $venta)
+                    <div wire:key="venta-card-{{ $venta->id }}" class="p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                @if ($venta->client)
+                                    <a href="{{ route('clients.account', $venta->client) }}" wire:navigate class="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 truncate">{{ $venta->client_name_raw }}</a>
+                                @else
+                                    <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $venta->client_name_raw }}</p>
+                                @endif
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $venta->sale_date->format('d/m/Y') }} · {{ trim(($venta->comprobante_type ?? '').' '.($venta->comprobante_number ?? '')) ?: '—' }}</p>
+                            </div>
+                            <button
+                                x-on:click="confirmThen('¿Eliminar este registro histórico?', () => $wire.delete({{ $venta->id }}))"
+                                class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 shrink-0"
+                            >
+                                <x-heroicon-o-trash class="w-4 h-4" />
+                            </button>
+                        </div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">${{ money($venta->total) }}</p>
+                    </div>
+                @endforeach
             </div>
 
             <div class="p-4 border-t border-gray-100 dark:border-gray-800">

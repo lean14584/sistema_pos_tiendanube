@@ -73,6 +73,7 @@
 
             @if (count($items) > 0)
                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-4">
+                    <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 dark:bg-gray-800/50">
                             <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -98,6 +99,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>
                 </div>
             @endif
 
@@ -113,7 +115,7 @@
     @endif
 
     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-800/50">
                 <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -150,6 +152,28 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
+
+        <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+            @forelse ($transfers as $transfer)
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <p class="font-medium text-gray-900 dark:text-gray-100">{{ $transfer->fromSucursal->name ?? '—' }} → {{ $transfer->toSucursal->name ?? '—' }}</p>
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset shrink-0 {{ $transfer->status->colorClasses() }}">
+                            {{ $transfer->status->label() }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ $transfer->created_at->format('d/m/Y H:i') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {{ $transfer->items->map(fn ($i) => ($i->product->name ?? 'Producto eliminado').' x'.$i->quantity)->implode(', ') }}
+                    </p>
+                    <a href="{{ route('stock-transfers.show', $transfer) }}" wire:navigate class="inline-block mt-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium">
+                        Ver
+                    </a>
+                </div>
+            @empty
+                <div class="p-10 text-center text-gray-400 dark:text-gray-500">Todavía no se registraron envíos entre sucursales.</div>
+            @endforelse
         </div>
 
         <div class="p-4 border-t border-gray-100 dark:border-gray-800">
