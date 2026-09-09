@@ -3,8 +3,10 @@
 namespace App\Livewire\Pos;
 
 use App\Enums\AlicuotaIva;
+use App\Enums\CashSessionStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
+use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
@@ -66,6 +68,16 @@ class Index extends Component
 
         $default = CurrentSucursal::get()?->puntoVentaPorDefecto();
         $this->punto_venta = $default ? (string) $default->numero : '';
+    }
+
+    /** Si el usuario actual no tiene una caja abierta en esta sucursal, no puede cobrar. */
+    #[Computed]
+    public function hasOpenCashSession(): bool
+    {
+        return CashSession::where('status', CashSessionStatus::Open)
+            ->where('sucursal_id', CurrentSucursal::id())
+            ->where('user_id', auth()->id())
+            ->exists();
     }
 
     /** Puntos de venta activos de la sucursal donde se está vendiendo. */
@@ -496,6 +508,12 @@ class Index extends Component
     {
         if ($this->cart === []) {
             $this->addError('cart', 'Agregá al menos un producto.');
+
+            return;
+        }
+
+        if (! $this->hasOpenCashSession()) {
+            $this->addError('cart', 'Tenés que abrir la caja antes de cobrar.');
 
             return;
         }

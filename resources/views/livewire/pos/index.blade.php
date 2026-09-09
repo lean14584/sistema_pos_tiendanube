@@ -8,6 +8,18 @@
         </h1>
     </div>
 
+    @if (! $this->hasOpenCashSession)
+        <div class="mb-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                <x-heroicon-o-exclamation-triangle class="w-5 h-5 shrink-0" />
+                <p class="text-sm">Todavía no abriste la caja. Podés armar el carrito, pero no vas a poder cobrar hasta abrirla.</p>
+            </div>
+            <a href="{{ route('cash-register.index') }}" wire:navigate class="shrink-0 rounded-lg bg-amber-600 hover:bg-amber-700 px-3 py-1.5 text-xs font-medium text-white">
+                Abrir caja
+            </a>
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {{-- Lector + productos agregados --}}
         <div class="lg:col-span-2 space-y-3">

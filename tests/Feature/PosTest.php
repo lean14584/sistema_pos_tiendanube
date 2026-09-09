@@ -166,6 +166,23 @@ class PosTest extends TestCase
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 1000, 'source' => 'venta']);
     }
 
+    public function test_cobrar_sin_caja_abierta_es_rechazado(): void
+    {
+        $admin = $this->admin();
+        $product = Product::create(['name' => 'Alfajor', 'price' => 500, 'iva_rate' => 0, 'stock' => 5]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment')
+            ->set('printOnSale', false)
+            ->call('cobrar')
+            ->assertHasErrors('cart');
+
+        $this->assertDatabaseCount('invoices', 0);
+        $this->assertEquals(5, $product->fresh()->stock);
+    }
+
     public function test_pago_parcial_deja_saldo_en_cuenta_del_cliente(): void
     {
         $admin = $this->admin();
@@ -194,6 +211,7 @@ class PosTest extends TestCase
     {
         $admin = $this->admin();
         $product = Product::create(['name' => 'Pan', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
         Livewire::actingAs($admin)
             ->test('pos.index') // client_id queda en Consumidor Final por defecto
