@@ -60,8 +60,8 @@
 
                 <div class="divide-y divide-gray-100 dark:divide-gray-800 min-h-[16rem] lg:min-h-[calc(100vh-16rem)]">
                     @forelse ($cart as $index => $item)
-                        <div wire:key="cart-{{ $index }}" class="flex items-center gap-3 px-4 py-3 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-colors">
-                            <div class="flex-1 min-w-0">
+                        <div wire:key="cart-{{ $index }}" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-colors">
+                            <div class="flex-1 min-w-[9rem]">
                                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                                     {{ $item['description'] }}
                                     @php $promo = $this->promoLabel($item); @endphp
@@ -71,7 +71,7 @@
                                         </span>
                                     @endif
                                 </p>
-                                <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                <div class="flex flex-wrap items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                                     <span>${{ money($item['unit_price']) }} c/u · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</span>
                                     <span class="text-gray-300 dark:text-gray-600">·</span>
                                     <span>Desc</span>
@@ -79,24 +79,26 @@
                                     <span>%</span>
                                 </div>
                             </div>
-                            @if ($item['by_weight'] ?? false)
-                                <div class="flex items-center gap-1 shrink-0 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5">
-                                    <x-heroicon-o-scale class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                                    <span class="text-sm font-bold text-amber-700 dark:text-amber-400">{{ number_format($item['quantity'], 3) }} kg</span>
-                                </div>
-                            @else
-                                <div class="flex items-center gap-1 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
-                                    <button wire:click="dec({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">−</button>
-                                    <span class="w-8 text-center text-sm font-bold text-gray-900 dark:text-gray-100">{{ $item['quantity'] }}</span>
-                                    <button wire:click="inc({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">+</button>
-                                </div>
-                            @endif
-                            <span class="w-24 text-right text-base font-bold text-gray-900 dark:text-gray-100 shrink-0">
-                                ${{ money($this->lineTotal($item)) }}
-                            </span>
-                            <button wire:click="removeItem({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
-                                <x-heroicon-o-x-mark class="w-5 h-5" />
-                            </button>
+                            <div class="flex items-center gap-3 ml-auto">
+                                @if ($item['by_weight'] ?? false)
+                                    <div class="flex items-center gap-1 shrink-0 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5">
+                                        <x-heroicon-o-scale class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                        <span class="text-sm font-bold text-amber-700 dark:text-amber-400">{{ number_format($item['quantity'], 3) }} kg</span>
+                                    </div>
+                                @else
+                                    <div class="flex items-center gap-1 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
+                                        <button wire:click="dec({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">−</button>
+                                        <span class="w-8 text-center text-sm font-bold text-gray-900 dark:text-gray-100">{{ $item['quantity'] }}</span>
+                                        <button wire:click="inc({{ $index }})" class="w-8 h-8 rounded-md bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm flex items-center justify-center text-lg font-medium">+</button>
+                                    </div>
+                                @endif
+                                <span class="w-24 text-right text-base font-bold text-gray-900 dark:text-gray-100 shrink-0">
+                                    ${{ money($this->lineTotal($item)) }}
+                                </span>
+                                <button wire:click="removeItem({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                    <x-heroicon-o-x-mark class="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                     @empty
                         <div class="flex flex-col items-center justify-center h-64 text-center text-gray-400 dark:text-gray-500 px-4">

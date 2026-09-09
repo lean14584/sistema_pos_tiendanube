@@ -70,9 +70,9 @@
         </section>
 
         <section class="lg:col-span-3 bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
-            <div class="flex items-center justify-between mb-4 gap-2">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100">Ventas por mes</h2>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                     @if ($puedeVerTodasLasSucursales)
                         <select wire:model.live="sucursal_id" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             <option value="">Todas las sucursales</option>
