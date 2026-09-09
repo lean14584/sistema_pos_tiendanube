@@ -1,10 +1,12 @@
 <div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Facturas" subtitle="Todas tus facturas emitidas" icon="document-text">
-        <x-slot:actions>
-            <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
-                <x-heroicon-o-plus class="w-4 h-4" /> Nueva factura
-            </a>
-        </x-slot:actions>
+        @if (config('features.invoices_manual_create'))
+            <x-slot:actions>
+                <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
+                    <x-heroicon-o-plus class="w-4 h-4" /> Nueva factura
+                </a>
+            </x-slot:actions>
+        @endif
     </x-page-header>
 
     <div class="flex flex-col sm:flex-row gap-3 mb-5">

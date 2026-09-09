@@ -19,6 +19,11 @@
             : $openTasksQuery->where('assigned_to', auth()->id())->count();
     }
 
+    // route() explota si la ruta no está registrada (módulo apagado por
+    // config/features.php): abajo el array se arma igual para todos los
+    // ítems, así que hay que resolver el href sin reventar en ese caso.
+    $safeRoute = fn (string $name, mixed $params = []) => \Illuminate\Support\Facades\Route::has($name) ? route($name, $params) : '#';
+
     // El Dashboard queda suelto arriba (group => null). El resto se agrupa en
     // secciones plegables para que el menú no sea una lista larguísima.
     $navItems = [
@@ -32,18 +37,18 @@
 
         ['module' => 'products', 'group' => 'Productos', 'pattern' => 'products.*', 'href' => route('products.index'), 'label' => 'Productos', 'icon' => 'cube', 'badge' => $lowStockCount],
         ['module' => 'categories', 'group' => 'Productos', 'pattern' => 'categories.*', 'href' => route('categories.index'), 'label' => 'Categorías', 'icon' => 'tag'],
-        ['module' => 'price-lists', 'group' => 'Productos', 'pattern' => 'price-lists.*', 'href' => route('price-lists.index'), 'label' => 'Listas de precios', 'icon' => 'currency-dollar'],
+        ['module' => 'price-lists', 'group' => 'Productos', 'pattern' => 'price-lists.*', 'href' => $safeRoute('price-lists.index'), 'label' => 'Listas de precios', 'icon' => 'currency-dollar'],
         ['module' => 'promotions', 'group' => 'Productos', 'pattern' => 'promotions.*', 'href' => route('promotions.index'), 'label' => 'Promociones', 'icon' => 'gift'],
         ['module' => 'stock-adjustments', 'group' => 'Productos', 'pattern' => 'stock-adjustments.*', 'href' => route('stock-adjustments.index'), 'label' => 'Ajustes de Stock', 'icon' => 'wrench'],
-        ['module' => 'stock-transfers', 'group' => 'Productos', 'pattern' => 'stock-transfers.*', 'href' => route('stock-transfers.index'), 'label' => 'Envío de Mercadería', 'icon' => 'arrows-right-left'],
-        ['module' => 'product-batches', 'group' => 'Productos', 'pattern' => 'product-batches.*', 'href' => route('product-batches.index'), 'label' => 'Lotes y Vencimientos', 'icon' => 'calendar-days', 'badge' => $expiringBatchesCount],
+        ['module' => 'stock-transfers', 'group' => 'Productos', 'pattern' => 'stock-transfers.*', 'href' => $safeRoute('stock-transfers.index'), 'label' => 'Envío de Mercadería', 'icon' => 'arrows-right-left'],
+        ['module' => 'product-batches', 'group' => 'Productos', 'pattern' => 'product-batches.*', 'href' => $safeRoute('product-batches.index'), 'label' => 'Lotes y Vencimientos', 'icon' => 'calendar-days', 'badge' => $expiringBatchesCount],
         ['module' => 'price-check', 'group' => 'Productos', 'pattern' => 'precios', 'href' => route('precios'), 'label' => 'Consultar precios', 'icon' => 'magnifying-glass', 'target' => '_blank'],
 
         ['module' => 'providers', 'group' => 'Compras', 'pattern' => 'providers.*', 'href' => route('providers.index'), 'label' => 'Proveedores', 'icon' => 'truck'],
         ['module' => 'purchases', 'group' => 'Compras', 'pattern' => 'purchases.*', 'href' => route('purchases.index'), 'label' => 'Compras', 'icon' => 'shopping-cart'],
 
         ['module' => 'cash-register', 'group' => 'Finanzas', 'pattern' => 'cash-register.*', 'href' => route('cash-register.index'), 'label' => 'Caja', 'icon' => 'banknotes'],
-        ['module' => 'vencimientos', 'group' => 'Finanzas', 'pattern' => 'vencimientos.*', 'href' => route('vencimientos.index'), 'label' => 'Vencimientos', 'icon' => 'calendar-days'],
+        ['module' => 'vencimientos', 'group' => 'Finanzas', 'pattern' => 'vencimientos.*', 'href' => $safeRoute('vencimientos.index'), 'label' => 'Vencimientos', 'icon' => 'calendar-days'],
         ['module' => 'reports', 'group' => 'Finanzas', 'pattern' => 'reports.*', 'href' => route('reports.index'), 'label' => 'Informes', 'icon' => 'chart-bar'],
         ['module' => 'libro-iva', 'group' => 'Finanzas', 'pattern' => 'libro-iva.*', 'href' => route('libro-iva.index'), 'label' => 'Libro IVA', 'icon' => 'receipt-percent'],
 
@@ -52,8 +57,8 @@
         ['module' => 'users', 'group' => 'Equipo', 'pattern' => 'users.*', 'href' => route('users.index'), 'label' => 'Usuarios', 'icon' => 'shield-check'],
 
         ['module' => 'company-settings', 'group' => 'Configuración', 'pattern' => 'company-settings.*', 'href' => route('company-settings.edit'), 'label' => 'Datos de la empresa', 'icon' => 'building-office'],
-        ['module' => 'sucursales', 'group' => 'Configuración', 'pattern' => 'sucursales.*', 'href' => route('sucursales.index'), 'label' => 'Sucursales', 'icon' => 'building-storefront'],
-        ['module' => 'company-settings', 'group' => 'Configuración', 'pattern' => 'tiendanube.*', 'href' => route('tiendanube.index'), 'label' => 'Tiendanube', 'icon' => 'shopping-bag'],
+        ['module' => 'sucursales', 'group' => 'Configuración', 'pattern' => 'sucursales.*', 'href' => $safeRoute('sucursales.index'), 'label' => 'Sucursales', 'icon' => 'building-storefront'],
+        ['module' => 'company-settings', 'group' => 'Configuración', 'pattern' => 'tiendanube.*', 'href' => $safeRoute('tiendanube.index'), 'label' => 'Tiendanube', 'icon' => 'shopping-bag'],
         ['module' => 'audit', 'group' => 'Configuración', 'pattern' => 'audit.*', 'href' => route('audit.index'), 'label' => 'Auditoría', 'icon' => 'clipboard-document-check'],
         ['module' => 'data-import', 'group' => 'Configuración', 'pattern' => 'historical-sales.*', 'href' => route('historical-sales.index'), 'label' => 'Ventas históricas', 'icon' => 'clock'],
         ['module' => 'backups', 'group' => 'Configuración', 'pattern' => 'backups.*', 'href' => route('backups.index'), 'label' => 'Respaldo', 'icon' => 'circle-stack'],
@@ -70,9 +75,22 @@
         'Configuración' => 'cog-6-tooth',
     ];
 
+    // Módulos que pueden estar apagados por instalación (ver config/features.php).
+    // Se resuelven por 'pattern' (no por 'module', que es el mismo para varios
+    // ítems distintos, ej. company-settings también cubre Tiendanube).
+    $featureGate = [
+        'sucursales.*' => 'multisucursal',
+        'tiendanube.*' => 'tiendanube',
+        'stock-transfers.*' => 'stock_transfers',
+        'product-batches.*' => 'product_batches',
+        'price-lists.*' => 'price_lists',
+        'vencimientos.*' => 'vencimientos_finanzas',
+    ];
+
     $user = auth()->user();
     $visibleItems = $user
-        ? array_filter($navItems, fn ($item) => Permissions::canAccess($user->role, $item['module']))
+        ? array_filter($navItems, fn ($item) => Permissions::canAccess($user->role, $item['module'])
+            && (! isset($featureGate[$item['pattern']]) || config('features.' . $featureGate[$item['pattern']])))
         : [];
 
     // Ítems sueltos (sin grupo) y agrupados, respetando el orden de definición.
@@ -198,7 +216,7 @@
                 </div>
             </div>
 
-            @if ($user->esAdminGlobal())
+            @if ($user->esAdminGlobal() && config('features.multisucursal'))
                 <div class="mb-3">
                     @livewire('sucursal-switcher')
                 </div>
