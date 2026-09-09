@@ -85,7 +85,7 @@
     </form>
 
     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-800/50">
                 <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -123,6 +123,31 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
+
+        <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+            @forelse ($groups as $group)
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $group->name }}</p>
+                        <div class="flex gap-1 shrink-0">
+                            <button wire:click="edit({{ $group->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400">
+                                <x-heroicon-o-pencil class="w-4 h-4" />
+                            </button>
+                            <button x-on:click="confirmThen('¿Eliminar esta familia?', () => $wire.delete({{ $group->id }}))" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400">
+                                <x-heroicon-o-trash class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 text-xs font-semibold mt-1">{{ $group->shortLabel() }}</span>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $group->products->pluck('name')->join(', ') }}</p>
+                    <button wire:click="toggle({{ $group->id }})" class="text-xs font-medium mt-1 {{ $group->active ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500' }}">
+                        {{ $group->active ? '● Activa' : '○ Inactiva' }}
+                    </button>
+                </div>
+            @empty
+                <div class="p-10 text-center text-gray-400 dark:text-gray-500">Todavía no cargaste familias.</div>
+            @endforelse
         </div>
     </div>
 </div>

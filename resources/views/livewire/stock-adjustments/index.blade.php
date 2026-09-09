@@ -85,7 +85,7 @@
     </div>
 
     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-800/50">
                 <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -117,6 +117,26 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
+
+        <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+            @forelse ($adjustments as $adj)
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $adj->product->name ?? 'Producto eliminado' }}</p>
+                        <p class="text-sm shrink-0 {{ $adj->delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">
+                            {{ $adj->previous_stock }} → {{ $adj->new_stock }} ({{ $adj->delta >= 0 ? '+' : '' }}{{ $adj->delta }})
+                        </p>
+                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ $adj->created_at->format('d/m/Y H:i') }} · {{ $adj->sucursal->name ?? '—' }} · {{ $adj->user->name ?? 'Sistema' }}</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ $adj->reason->label() }}</p>
+                    @if ($adj->notes)
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $adj->notes }}</p>
+                    @endif
+                </div>
+            @empty
+                <div class="p-10 text-center text-gray-400 dark:text-gray-500">Todavía no se registraron ajustes de stock.</div>
+            @endforelse
         </div>
 
         <div class="p-4 border-t border-gray-100 dark:border-gray-800">

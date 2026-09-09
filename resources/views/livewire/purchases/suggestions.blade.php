@@ -68,7 +68,7 @@
                                 <p class="font-semibold text-indigo-600 dark:text-indigo-400">{{ $row['suggestedQty'] }}</p>
                             </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 text-sm pl-7">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm pl-7">
                             <div>
                                 <p class="text-[11px] text-gray-400 dark:text-gray-500">Stock / mín.</p>
                                 <p class="{{ $product->stock < $product->min_stock ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300' }}">

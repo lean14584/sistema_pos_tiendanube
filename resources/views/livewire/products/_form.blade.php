@@ -19,7 +19,7 @@
         <input type="checkbox" wire:model.live="sold_by_weight" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
     </label>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $sold_by_weight ? 'Código PLU (balanza) *' : 'SKU / Código' }}</label>
             <input
@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alícuota de IVA *</label>
             <select
@@ -80,7 +80,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock en {{ $sucursalActiva?->name ?? 'tu sucursal' }}</label>
             @if ($sold_by_weight)

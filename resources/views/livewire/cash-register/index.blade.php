@@ -89,7 +89,7 @@
                 @if ($sessionMovements->isEmpty())
                     <div class="p-10 text-center text-sm text-gray-400 dark:text-gray-500">Sin movimientos todavía en esta caja.</div>
                 @else
-                    <div class="overflow-x-auto">
+                    <div class="hidden sm:block overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -120,6 +120,27 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>
+
+                    <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                        @foreach ($sessionMovements as $m)
+                            <div class="p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $m->concept }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $m->date->format('d/m/Y') }} · <span class="capitalize">{{ $m->source->value }}</span></p>
+                                    </div>
+                                    @if ($m->source->value === 'manual')
+                                        <button wire:click="deleteMovement({{ $m->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 shrink-0">
+                                            <x-heroicon-o-trash class="w-4 h-4" />
+                                        </button>
+                                    @endif
+                                </div>
+                                <p class="text-sm font-medium mt-1 {{ $m->type->value === 'ingreso' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">
+                                    {{ $m->type->value === 'ingreso' ? '+' : '-' }}${{ money($m->amount) }}
+                                </p>
+                            </div>
+                        @endforeach
                     </div>
                 @endif
             </div>
@@ -160,7 +181,7 @@
                     <p class="text-sm">Todavía no hay cajas cerradas.</p>
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="hidden sm:block overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -193,6 +214,32 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
+
+                <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                    @foreach ($closedSessions as $s)
+                        @php
+                            $ingresos = $s->movements->where('type', \App\Enums\CashMovementType::Ingreso)->sum('amount');
+                            $egresos = $s->movements->where('type', \App\Enums\CashMovementType::Egreso)->sum('amount');
+                            $expected = (float) $s->opening_amount + $ingresos - $egresos;
+                            $difference = (float) $s->closing_amount - $expected;
+                        @endphp
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="font-medium text-gray-900 dark:text-gray-100">{{ $s->user->name }}</p>
+                                <p class="text-sm font-medium shrink-0 {{ abs($difference) > 0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100' }}">
+                                    ${{ money($difference) }}
+                                </p>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Apertura: {{ $s->opened_at->format('d/m/Y H:i') }} · ${{ money($s->opening_amount) }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Cierre: {{ $s->closed_at?->format('d/m/Y H:i') }} · ${{ money($s->closing_amount) }}</p>
+                            <p class="text-xs mt-1">
+                                <span class="text-emerald-600 dark:text-emerald-400">+${{ money($ingresos) }}</span>
+                                <span class="text-gray-400 dark:text-gray-500"> / </span>
+                                <span class="text-red-600 dark:text-red-400">-${{ money($egresos) }}</span>
+                            </p>
+                        </div>
+                    @endforeach
                 </div>
             @endif
         </div>

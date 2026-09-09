@@ -68,7 +68,7 @@
                 <p class="text-sm">No hay comprobantes {{ $tab === 'compras' ? 'de compra' : 'fiscales' }} en el período seleccionado.</p>
             </div>
         @else
-            <div class="overflow-x-auto">
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800/50">
                     <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -98,6 +98,23 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($rows as $row)
+                    <div class="p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $row->denominacion }}</p>
+                            <p class="font-medium text-gray-900 dark:text-gray-100 shrink-0">${{ money($row->importeTotal) }}</p>
+                        </div>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {{ $row->fecha->format('d/m/Y') }} · {{ $row->tipoComprobante->label() }} {{ $numeroCompleto($row) }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Neto ${{ money($row->importeNetoGravado) }} · Exento ${{ money($row->importeExento) }} · IVA ${{ money($row->ivaLiquidado) }}
+                        </p>
+                    </div>
+                @endforeach
             </div>
         @endif
     </div>

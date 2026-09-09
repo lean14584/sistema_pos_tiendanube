@@ -64,7 +64,7 @@
                 <p class="text-sm">No hay actividad registrada con estos filtros.</p>
             </div>
         @else
-            <div class="overflow-x-auto">
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -114,6 +114,43 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($logs as $log)
+                    <div class="p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <p class="text-gray-700 dark:text-gray-300">
+                                @if ($rutaRegistro($log))
+                                    <a href="{{ $rutaRegistro($log) }}" wire:navigate class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                        {{ \App\Models\AuditLog::etiquetaModelo($log->auditable_type) }} #{{ $log->auditable_id }}
+                                    </a>
+                                @else
+                                    {{ \App\Models\AuditLog::etiquetaModelo($log->auditable_type) }} #{{ $log->auditable_id }}
+                                @endif
+                            </p>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium shrink-0 {{ $eventoColor[$log->event] }}">
+                                {{ $eventoLabel[$log->event] }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {{ $log->created_at->format('d/m/Y H:i') }} · {{ $log->user->name ?? 'Sistema' }}
+                            @if ($puedeVerTodasLasSucursales)
+                                · {{ $log->sucursal->name ?? '—' }}
+                            @endif
+                        </p>
+                        @if (count($log->changes) > 0)
+                            <div class="text-xs text-gray-600 dark:text-gray-400 mt-1.5 space-y-0.5">
+                                @foreach ($log->changes as $campo => $valores)
+                                    <div>
+                                        <span class="text-gray-400 dark:text-gray-500">{{ $campo }}:</span>
+                                        {{ $valores['old'] ?? '—' }} → {{ $valores['new'] ?? '—' }}
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
             </div>
 
             <div class="p-4 border-t border-gray-100 dark:border-gray-800">

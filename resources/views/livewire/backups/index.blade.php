@@ -62,6 +62,7 @@
 
         @if (count($respaldos) > 0)
             <div class="mt-4 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+                <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-800/50 text-left text-gray-500 dark:text-gray-400">
                         <tr>
@@ -80,6 +81,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
         @else
             <p class="text-sm text-gray-400 dark:text-gray-500 mt-3">Todavía no hay respaldos automáticos guardados.</p>
