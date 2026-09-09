@@ -2,7 +2,7 @@
     <x-page-header title="Mensajes" subtitle="Chat interno entre usuarios" icon="chat-bubble-left-right" />
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 flex h-[32rem] overflow-hidden">
-        <div class="w-60 shrink-0 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
+        <div class="{{ $with ? 'hidden sm:block' : 'block' }} w-full sm:w-60 shrink-0 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
             @forelse ($users as $user)
                 <a
                     href="{{ route('messages.index', $user) }}"
@@ -26,7 +26,7 @@
             @endforelse
         </div>
 
-        <div class="flex-1 flex flex-col min-w-0">
+        <div class="{{ $with ? 'flex' : 'hidden sm:flex' }} flex-1 flex-col min-w-0">
             @if (! $with)
                 <div class="flex-1 flex items-center justify-center text-center text-gray-400 dark:text-gray-500 p-8">
                     <div>
@@ -35,9 +35,14 @@
                     </div>
                 </div>
             @else
-                <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800">
-                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $with->name }}</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ $with->role->label() }}</p>
+                <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
+                    <a href="{{ route('messages.index') }}" wire:navigate class="sm:hidden shrink-0 p-1 -ml-1 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200">
+                        <x-heroicon-o-arrow-left class="w-5 h-5" />
+                    </a>
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $with->name }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">{{ $with->role->label() }}</p>
+                    </div>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-5 space-y-3" x-data x-init="$el.scrollTop = $el.scrollHeight" x-on:livewire:navigated.window="$el.scrollTop = $el.scrollHeight">
