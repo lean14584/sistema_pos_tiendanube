@@ -199,6 +199,17 @@ class Create extends Component
             return;
         }
 
+        // Si se va a registrar un pago, tiene que quedar anotado en una caja
+        // abierta — si no, la plata que sale queda invisible para el arqueo
+        // (CashLinker::linkPurchasePayment() no avisa, solo no hace nada).
+        $registraMovimientoDeCaja = collect($this->payments)->contains(fn ($p) => (float) $p['amount'] > 0);
+
+        if ($registraMovimientoDeCaja && ! CashLinker::hasOpenSession()) {
+            $this->addError('payments', 'Tenés que abrir la caja antes de registrar un pago.');
+
+            return;
+        }
+
         $purchase = Cache::lock('purchase-number', 10)->block(10, fn () => DB::transaction(function () {
             $purchase = Purchase::create([
                 'number' => $this->nextNumber(),

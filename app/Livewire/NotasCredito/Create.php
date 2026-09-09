@@ -151,6 +151,17 @@ class Create extends Component
             return;
         }
 
+        // El reintegro tiene que quedar anotado en la caja de la sucursal de
+        // la factura ORIGINAL — si no hay una abierta, la plata que sale
+        // queda invisible para el arqueo (CashLinker::linkX() no avisa).
+        $tieneReintegro = collect($this->payments)->contains(fn ($p) => (float) $p['amount'] > 0);
+
+        if ($tieneReintegro && ! CashLinker::hasOpenSession($this->invoice->sucursal_id)) {
+            $this->addError('payments', 'Tenés que abrir la caja de esa sucursal antes de registrar el reintegro.');
+
+            return;
+        }
+
         $tipoNC = $this->invoice->tipo_comprobante === TipoComprobante::FacturaA
             ? TipoComprobanteInterno::NotaCreditoA
             : TipoComprobanteInterno::NotaCreditoB;

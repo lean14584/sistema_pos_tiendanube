@@ -281,6 +281,7 @@
             Pagado: ${{ money($this->paidTotal()) }} de ${{ money($this->total()) }}
             @if ($this->remaining() > 0.005) · Resta ${{ money($this->remaining()) }} (queda en cuenta corriente) @endif
         </p>
+        @error('payments') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

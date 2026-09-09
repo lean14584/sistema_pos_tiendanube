@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\ClientPayment;
 use App\Models\Invoice;
@@ -10,6 +11,7 @@ use App\Models\Product;
 use App\Models\Provider;
 use App\Models\ProviderPayment;
 use App\Models\Purchase;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -50,8 +52,10 @@ class CurrentAccountTest extends TestCase
     public function test_can_register_client_payment_and_delete_it(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
-        $component = Livewire::actingAs($this->admin())
+        $component = Livewire::actingAs($admin)
             ->test('clients.account', ['client' => $client])
             ->set('amount', '150')
             ->set('method', 'efectivo')
@@ -63,6 +67,51 @@ class CurrentAccountTest extends TestCase
         $component->call('deletePayment', $payment->id);
 
         $this->assertDatabaseMissing('client_payments', ['id' => $payment->id]);
+    }
+
+    public function test_no_puede_registrar_cobro_de_cliente_sin_caja_abierta(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        Livewire::actingAs($this->admin())
+            ->test('clients.account', ['client' => $client])
+            ->set('amount', '150')
+            ->set('method', 'efectivo')
+            ->call('addPayment')
+            ->assertHasErrors('amount');
+
+        $this->assertDatabaseCount('client_payments', 0);
+    }
+
+    public function test_can_register_provider_payment_with_open_cash_session(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        Livewire::actingAs($admin)
+            ->test('providers.account', ['provider' => $provider])
+            ->set('amount', '300')
+            ->set('method', 'efectivo')
+            ->call('addPayment')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('provider_payments', ['provider_id' => $provider->id, 'amount' => 300]);
+        $this->assertDatabaseHas('cash_movements', ['type' => 'egreso', 'amount' => 300]);
+    }
+
+    public function test_no_puede_registrar_pago_a_proveedor_sin_caja_abierta(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+
+        Livewire::actingAs($this->admin())
+            ->test('providers.account', ['provider' => $provider])
+            ->set('amount', '300')
+            ->set('method', 'efectivo')
+            ->call('addPayment')
+            ->assertHasErrors('amount');
+
+        $this->assertDatabaseCount('provider_payments', 0);
     }
 
     public function test_provider_saldo_cuenta_corriente_resta_pagos_de_compra_y_a_cuenta(): void

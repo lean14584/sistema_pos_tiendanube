@@ -3,10 +3,8 @@
 namespace App\Livewire\Pos;
 
 use App\Enums\AlicuotaIva;
-use App\Enums\CashSessionStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
-use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
@@ -74,10 +72,7 @@ class Index extends Component
     #[Computed]
     public function hasOpenCashSession(): bool
     {
-        return CashSession::where('status', CashSessionStatus::Open)
-            ->where('sucursal_id', CurrentSucursal::id())
-            ->where('user_id', auth()->id())
-            ->exists();
+        return CashLinker::hasOpenSession();
     }
 
     /** Puntos de venta activos de la sucursal donde se está vendiendo. */

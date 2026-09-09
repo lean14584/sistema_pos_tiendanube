@@ -171,6 +171,24 @@ class NotaCreditoTest extends TestCase
         $this->assertSame('devolucion', $movimiento->source->value);
     }
 
+    public function test_no_puede_registrar_reintegro_sin_caja_abierta(): void
+    {
+        $fake = $this->fake();
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+        $factura = $this->facturaEmitida($fake, $product);
+
+        Livewire::actingAs($this->admin())
+            ->test('notas-credito.create', ['invoice' => $factura])
+            ->set('items.0.quantity', '1')
+            ->call('addPayment')
+            ->set('payments.0.amount', '1000')
+            ->call('save')
+            ->assertHasErrors('payments');
+
+        $this->assertNull(Invoice::where('related_invoice_id', $factura->id)->first());
+        $this->assertSame(0, CashMovement::count());
+    }
+
     public function test_no_se_puede_acreditar_mas_del_saldo_de_la_factura_original(): void
     {
         $fake = $this->fake();

@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -93,8 +95,10 @@ class InvoicesTest extends TestCase
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
         $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
 
-        Livewire::actingAs($this->admin())
+        Livewire::actingAs($admin)
             ->test('invoices.create')
             ->set('client_id', (string) $client->id)
             ->call('addProductItem', $product->id)
@@ -111,6 +115,25 @@ class InvoicesTest extends TestCase
         $this->assertEquals(1, $invoice->items->count());
         $this->assertEquals($product->id, $invoice->items->first()->product_id);
         $this->assertEqualsWithDelta(1210.0, (float) $invoice->total, 0.01);
+    }
+
+    public function test_no_puede_registrar_un_pago_al_crear_factura_sin_caja_abierta(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+
+        Livewire::actingAs($this->admin())
+            ->test('invoices.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id)
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('payments.0.amount', '1000')
+            ->call('save')
+            ->assertHasErrors('payments');
+
+        $this->assertDatabaseCount('invoices', 0);
+        $this->assertEquals(10, $product->fresh()->stock);
     }
 
     public function test_cannot_save_invoice_without_items(): void

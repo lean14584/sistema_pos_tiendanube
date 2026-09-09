@@ -124,6 +124,32 @@ class InvoiceStockAndCashTest extends TestCase
         $this->assertSame(13, $product->fresh()->stock);
     }
 
+    public function test_no_puede_agregar_un_pago_al_editar_factura_sin_caja_abierta(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+
+        $invoice = Invoice::create([
+            'number' => 'FAC-0001',
+            'client_id' => $client->id,
+            'tipo_comprobante_interno' => 'factura_b',
+            'issue_date' => now(),
+            'due_date' => now()->addDays(15),
+            'tax_rate' => 0,
+            'status' => 'draft',
+        ]);
+        $invoice->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 1, 'unit_price' => 1000]);
+
+        Livewire::actingAs($this->admin())
+            ->test('invoices.edit', ['invoice' => $invoice])
+            ->call('addPayment')
+            ->set('payments.0.amount', '1000')
+            ->call('save')
+            ->assertHasErrors('payments');
+
+        $this->assertSame(0, $invoice->fresh()->payments->count());
+    }
+
     public function test_borrar_una_devolucion_revierte_stock_y_borra_el_movimiento_de_caja(): void
     {
         $admin = $this->admin();

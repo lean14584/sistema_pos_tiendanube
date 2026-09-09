@@ -207,6 +207,18 @@ class Create extends Component
             }
         }
 
+        // Si se va a registrar un cobro/reintegro, tiene que quedar anotado
+        // en una caja abierta — si no, la plata queda invisible para el
+        // arqueo (CashLinker::linkX() no avisa, solo no hace nada).
+        $registraMovimientoDeCaja = $tipo !== TipoComprobanteInterno::RemitoX
+            && collect($this->payments)->contains(fn ($p) => (float) $p['amount'] > 0);
+
+        if ($registraMovimientoDeCaja && ! CashLinker::hasOpenSession()) {
+            $this->addError('payments', 'Tenés que abrir la caja antes de registrar un pago.');
+
+            return;
+        }
+
         $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($validItems, $tipo, $puntoVentaNumero) {
             $invoice = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),

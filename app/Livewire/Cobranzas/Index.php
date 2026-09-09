@@ -91,6 +91,14 @@ class Index extends Component
             'payMethod' => ['required', Rule::enum(PaymentMethod::class)],
         ]);
 
+        // Si no hay caja abierta, el cobro queda invisible para el arqueo
+        // (CashLinker::linkClientPayment() no avisa, solo no hace nada).
+        if (! CashLinker::hasOpenSession()) {
+            $this->addError('payAmount', 'Tenés que abrir la caja antes de registrar un cobro.');
+
+            return;
+        }
+
         $payment = ClientPayment::create([
             'client_id' => $this->payingClientId,
             'date' => $this->payDate,
