@@ -23,7 +23,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2 mt-3">
-            <button type="submit" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 active:scale-[0.98] transition-all">
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 active:scale-[0.98] transition-all disabled:opacity-50">
                 {{ $editingId ? 'Guardar cambios' : 'Agregar lista' }}
             </button>
             @if ($editingId)

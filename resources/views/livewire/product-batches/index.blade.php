@@ -120,7 +120,7 @@
                     <textarea wire:model="bajaNotes" rows="2" class="{{ $inputClass }}"></textarea>
 
                     <div class="flex gap-3 mt-5">
-                        <button type="submit" class="rounded-lg bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-red-700 hover:to-red-600">
+                        <button type="submit" wire:loading.attr="disabled" wire:target="confirmarBaja" class="rounded-lg bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-red-700 hover:to-red-600 disabled:opacity-50">
                             Confirmar baja
                         </button>
                         <button type="button" wire:click="cancelarBaja" class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
