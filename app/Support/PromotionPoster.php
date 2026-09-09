@@ -288,8 +288,9 @@ class PromotionPoster
             }
 
             $detailColor = self::paletteColor($im, $i);
-            $detail = self::fitTextToWidth(self::fontMono(), 19, $maxTextW, $item['detail']);
-            imagettftext($im, 19, 0, $textX, $y2 - 22, $detailColor, self::fontMono(), $detail);
+            $detailSize = self::fitSingleLineByWidth(self::fontMono(), $item['detail'], $maxTextW, 19, 13);
+            $detail = self::fitTextToWidth(self::fontMono(), $detailSize, $maxTextW, $item['detail']);
+            imagettftext($im, $detailSize, 0, $textX, $y2 - 22, $detailColor, self::fontMono(), $detail);
         }
     }
 
