@@ -106,7 +106,9 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('module:invoices')->prefix('invoices')->name('invoices.')->group(function () {
         Route::get('/', InvoiceIndex::class)->name('index');
-        Route::get('/new', InvoiceCreate::class)->name('create');
+        if (config('features.invoices_manual_create')) {
+            Route::get('/new', InvoiceCreate::class)->name('create');
+        }
         Route::get('/{invoice}', InvoiceShow::class)->name('show');
         Route::get('/{invoice}/edit', InvoiceEdit::class)->name('edit');
         Route::get('/{invoice}/pdf', InvoicePdfController::class)->name('pdf');
@@ -151,13 +153,17 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('module:stock-adjustments')->get('ajustes-stock', App\Livewire\StockAdjustments\Index::class)->name('stock-adjustments.index');
 
-    Route::middleware('module:stock-transfers')->prefix('envios-mercaderia')->name('stock-transfers.')->group(function () {
-        Route::get('/', App\Livewire\StockTransfers\Index::class)->name('index');
-        Route::get('/{transfer}', Show::class)->name('show');
-        Route::get('/{transfer}/pdf', StockTransferPdfController::class)->name('pdf');
-    });
+    if (config('features.stock_transfers')) {
+        Route::middleware('module:stock-transfers')->prefix('envios-mercaderia')->name('stock-transfers.')->group(function () {
+            Route::get('/', App\Livewire\StockTransfers\Index::class)->name('index');
+            Route::get('/{transfer}', Show::class)->name('show');
+            Route::get('/{transfer}/pdf', StockTransferPdfController::class)->name('pdf');
+        });
+    }
 
-    Route::middleware('module:product-batches')->get('lotes-vencimientos', App\Livewire\ProductBatches\Index::class)->name('product-batches.index');
+    if (config('features.product_batches')) {
+        Route::middleware('module:product-batches')->get('lotes-vencimientos', App\Livewire\ProductBatches\Index::class)->name('product-batches.index');
+    }
 
     Route::middleware('module:categories')->prefix('categories')->name('categories.')->group(function () {
         Route::get('/', CategoryIndex::class)->name('index');
@@ -165,9 +171,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/{category}/edit', CategoryEdit::class)->name('edit');
     });
 
-    Route::middleware('module:price-lists')->prefix('price-lists')->name('price-lists.')->group(function () {
-        Route::get('/', App\Livewire\PriceLists\Index::class)->name('index');
-    });
+    if (config('features.price_lists')) {
+        Route::middleware('module:price-lists')->prefix('price-lists')->name('price-lists.')->group(function () {
+            Route::get('/', App\Livewire\PriceLists\Index::class)->name('index');
+        });
+    }
 
     Route::middleware('module:promotions')->prefix('promociones')->name('promotions.')->group(function () {
         Route::get('/', App\Livewire\Promotions\Index::class)->name('index');
@@ -200,7 +208,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/', CashRegisterIndex::class)->name('index');
     });
 
-    Route::middleware('module:vencimientos')->get('vencimientos', App\Livewire\Vencimientos\Index::class)->name('vencimientos.index');
+    if (config('features.vencimientos_finanzas')) {
+        Route::middleware('module:vencimientos')->get('vencimientos', App\Livewire\Vencimientos\Index::class)->name('vencimientos.index');
+    }
 
     Route::middleware('module:reports')->prefix('reports')->name('reports.')->group(function () {
         Route::get('/', ReportsIndex::class)->name('index');
@@ -227,15 +237,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/', CompanySettingsEdit::class)->name('edit');
     });
 
-    Route::middleware('module:company-settings')->prefix('tiendanube')->name('tiendanube.')->group(function () {
-        Route::get('/', App\Livewire\Tiendanube\Index::class)->name('index');
-    });
+    if (config('features.tiendanube')) {
+        Route::middleware('module:company-settings')->prefix('tiendanube')->name('tiendanube.')->group(function () {
+            Route::get('/', App\Livewire\Tiendanube\Index::class)->name('index');
+        });
+    }
 
-    Route::middleware('module:sucursales')->prefix('sucursales')->name('sucursales.')->group(function () {
-        Route::get('/', SucursalIndex::class)->name('index');
-        Route::get('/new', SucursalCreate::class)->name('create');
-        Route::get('/{sucursal}/edit', SucursalEdit::class)->name('edit');
-    });
+    if (config('features.multisucursal')) {
+        Route::middleware('module:sucursales')->prefix('sucursales')->name('sucursales.')->group(function () {
+            Route::get('/', SucursalIndex::class)->name('index');
+            Route::get('/new', SucursalCreate::class)->name('create');
+            Route::get('/{sucursal}/edit', SucursalEdit::class)->name('edit');
+        });
+    }
 
     Route::middleware('module:audit')->get('auditoria', AuditIndex::class)->name('audit.index');
 
