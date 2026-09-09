@@ -30,6 +30,18 @@ class CashLinker
             ->first();
     }
 
+    /**
+     * Para chequear ANTES de registrar un cobro/pago si va a poder quedar
+     * anotado en caja — si no hay sesión abierta, linkX() no hace nada
+     * (return silencioso) y esa plata queda invisible para el arqueo. Los
+     * componentes que reciben plata en mano tienen que llamar a esto antes
+     * de confirmar la operación, no confiar en que linkX() avise.
+     */
+    public static function hasOpenSession(?int $sucursalId = null): bool
+    {
+        return self::openSession($sucursalId) !== null;
+    }
+
     public static function linkClientPayment(ClientPayment $payment): void
     {
         $session = self::openSession();

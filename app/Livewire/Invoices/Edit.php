@@ -199,6 +199,18 @@ class Edit extends Component
             return;
         }
 
+        // Si se va a registrar un cobro/reintegro, tiene que quedar anotado
+        // en una caja abierta — si no, la plata queda invisible para el
+        // arqueo (CashLinker::linkX() no avisa, solo no hace nada).
+        $registraMovimientoDeCaja = $tipoNuevo !== TipoComprobanteInterno::RemitoX
+            && collect($this->payments)->contains(fn ($p) => (float) $p['amount'] > 0);
+
+        if ($registraMovimientoDeCaja && ! CashLinker::hasOpenSession()) {
+            $this->addError('payments', 'Tenés que abrir la caja antes de registrar un pago.');
+
+            return;
+        }
+
         DB::transaction(function () use ($validItems, $tipoNuevo) {
             $tipoViejo = $this->invoice->tipo_comprobante_interno;
             // Nunca se cambia desde este formulario (las Notas de Crédito

@@ -124,6 +124,26 @@ class PurchasesTest extends TestCase
         $this->assertTrue(CashMovement::where('type', 'egreso')->where('source', 'compra')->exists());
     }
 
+    public function test_no_puede_registrar_un_pago_al_crear_compra_sin_caja_abierta(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '1')
+            ->set('items.0.unit_price', '1000')
+            ->call('addPayment')
+            ->set('payments.0.amount', '1000')
+            ->call('save')
+            ->assertHasErrors('payments');
+
+        $this->assertSame(0, Purchase::count());
+        $this->assertSame(5, $product->fresh()->stock);
+    }
+
     public function test_editar_compra_reemplaza_pagos_y_movimientos_de_caja(): void
     {
         $admin = $this->admin();
@@ -156,6 +176,27 @@ class PurchasesTest extends TestCase
         $this->assertSame('transferencia', PurchasePayment::first()->method->value);
         $this->assertSame(1, CashMovement::count());
         $this->assertEqualsWithDelta(1000.0, (float) CashMovement::first()->amount, 0.01);
+    }
+
+    public function test_no_puede_agregar_un_pago_al_editar_compra_sin_caja_abierta(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        $purchase = Purchase::create([
+            'number' => 'COM-0001', 'provider_id' => $provider->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'draft',
+        ]);
+        $purchase->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 1, 'unit_price' => 1000]);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.edit', ['purchase' => $purchase])
+            ->call('addPayment')
+            ->set('payments.0.amount', '1000')
+            ->call('save')
+            ->assertHasErrors('payments');
+
+        $this->assertSame(0, $purchase->fresh()->payments->count());
     }
 
     public function test_borrar_una_compra_revierte_los_movimientos_de_caja_de_sus_pagos(): void

@@ -219,6 +219,17 @@ class Edit extends Component
             return;
         }
 
+        // Si se va a registrar un pago, tiene que quedar anotado en una caja
+        // abierta — si no, la plata que sale queda invisible para el arqueo
+        // (CashLinker::linkPurchasePayment() no avisa, solo no hace nada).
+        $registraMovimientoDeCaja = collect($this->payments)->contains(fn ($p) => (float) $p['amount'] > 0);
+
+        if ($registraMovimientoDeCaja && ! CashLinker::hasOpenSession()) {
+            $this->addError('payments', 'Tenés que abrir la caja antes de registrar un pago.');
+
+            return;
+        }
+
         DB::transaction(function () {
             // Reverse the stock impact of the items as they were before this edit.
             $previousItems = $this->purchase->items->map(fn ($item) => [

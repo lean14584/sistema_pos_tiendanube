@@ -42,6 +42,14 @@ class Account extends Component
             'notes' => ['nullable', 'string'],
         ]);
 
+        // Si no hay caja abierta, el cobro queda invisible para el arqueo
+        // (CashLinker::linkClientPayment() no avisa, solo no hace nada).
+        if (! CashLinker::hasOpenSession()) {
+            $this->addError('amount', 'Tenés que abrir la caja antes de registrar un cobro.');
+
+            return;
+        }
+
         $payment = ClientPayment::create([
             'client_id' => $this->client->id,
             'date' => $this->date,

@@ -88,4 +88,19 @@ class CobranzasTest extends TestCase
         $this->assertDatabaseHas('client_payments', ['client_id' => $deudor->id, 'amount' => 3000]);
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 3000]);
     }
+
+    public function test_no_puede_cobrar_desde_cobranzas_sin_caja_abierta(): void
+    {
+        $deudor = Client::create(['name' => 'Deudor', 'email' => 'd@test.com', 'phone' => '3511234567']);
+        $this->facturaImpaga($deudor, 5000);
+
+        Livewire::actingAs($this->admin())
+            ->test('cobranzas.index')
+            ->call('startPayment', $deudor->id, 5000)
+            ->set('payAmount', '3000')
+            ->call('savePayment')
+            ->assertHasErrors('payAmount');
+
+        $this->assertDatabaseCount('client_payments', 0);
+    }
 }
