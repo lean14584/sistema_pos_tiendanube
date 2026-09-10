@@ -80,8 +80,8 @@ class TicketPrintTest extends TestCase
         $invoice = Invoice::sole();
         $xjs = $pos->effects['xjs'] ?? [];
 
-        $this->assertNotEmpty($xjs, 'Se esperaba que la venta dispare un window.open() para imprimir el ticket.');
-        $this->assertStringContainsString('window.open', $xjs[0]['expression']);
+        $this->assertNotEmpty($xjs, 'Se esperaba que la venta dispare printTicket() para imprimir el ticket.');
+        $this->assertStringContainsString('printTicket', $xjs[0]['expression']);
         $this->assertStringContainsString(json_encode(route('invoices.ticket-print', $invoice)), $xjs[0]['expression']);
     }
 
@@ -123,8 +123,8 @@ class TicketPrintTest extends TestCase
         $invoice = Invoice::sole();
         $xjs = $component->effects['xjs'] ?? [];
 
-        $this->assertNotEmpty($xjs, 'Se esperaba que guardar la factura dispare un window.open() para imprimir el ticket.');
-        $this->assertStringContainsString('window.open', $xjs[0]['expression']);
+        $this->assertNotEmpty($xjs, 'Se esperaba que guardar la factura dispare printTicket() para imprimir el ticket.');
+        $this->assertStringContainsString('printTicket', $xjs[0]['expression']);
         $this->assertStringContainsString(json_encode(route('invoices.ticket-print', $invoice)), $xjs[0]['expression']);
     }
 }
