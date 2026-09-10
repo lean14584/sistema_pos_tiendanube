@@ -37,25 +37,33 @@ class PromotionPoster
 
     /** @var array<int, array{r:int,g:int,b:int}> */
     private const PALETTE = [
-        ['r' => 236, 'g' => 40, 'b' => 116],  // frutilla
-        ['r' => 109, 'g' => 40, 'b' => 217],  // violeta
-        ['r' => 5, 'g' => 150, 'b' => 105],   // verde
-        ['r' => 234, 'g' => 88, 'b' => 12],   // naranja
+        ['r' => 51, 'g' => 51, 'b' => 54],    // grafito
+        ['r' => 92, 'g' => 86, 'b' => 78],    // taupe
+        ['r' => 68, 'g' => 73, 'b' => 79],    // pizarra
+        ['r' => 112, 'g' => 105, 'b' => 92],  // arena oscura
     ];
+
+    /** Dorado de acento: precios, sticker de descuento y detalles destacados. */
+    private const ACCENT = ['r' => 201, 'g' => 162, 'b' => 39];
 
     private static function fontBold(): string
     {
         return base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
     }
 
-    private static function fontItalic(): string
-    {
-        return base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Oblique.ttf');
-    }
-
     private static function fontMono(): string
     {
         return base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSansMono-Bold.ttf');
+    }
+
+    private static function fontSerifBold(): string
+    {
+        return base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSerif-Bold.ttf');
+    }
+
+    private static function fontSerifItalic(): string
+    {
+        return base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSerif-Italic.ttf');
     }
 
     /**
@@ -144,8 +152,8 @@ class PromotionPoster
 
     private static function drawBackground(GdImage $im, int $height): void
     {
-        $top = ['r' => 255, 'g' => 45, 'b' => 110];
-        $bottom = ['r' => 255, 'g' => 159, 'b' => 28];
+        $top = ['r' => 30, 'g' => 30, 'b' => 33];
+        $bottom = ['r' => 58, 'g' => 55, 'b' => 50];
 
         for ($y = 0; $y < $height; $y++) {
             $t = $y / $height;
@@ -159,12 +167,12 @@ class PromotionPoster
 
     private static function drawDecoration(GdImage $im, int $height): void
     {
-        $white = imagecolorallocatealpha($im, 255, 255, 255, 105);
-        $yellow = imagecolorallocatealpha($im, 255, 235, 59, 108);
+        $white = imagecolorallocatealpha($im, 255, 255, 255, 118);
+        $gold = imagecolorallocatealpha($im, self::ACCENT['r'], self::ACCENT['g'], self::ACCENT['b'], 112);
 
         imagefilledellipse($im, 930, 140, 460, 460, $white);
         imagefilledellipse($im, 60, $height - 90, 320, 320, $white);
-        imagefilledellipse($im, 120, (int) ($height * 0.65), 260, 260, $yellow);
+        imagefilledellipse($im, 120, (int) ($height * 0.65), 260, 260, $gold);
     }
 
     /**
@@ -187,29 +195,78 @@ class PromotionPoster
     private static function drawHeader(GdImage $im, CompanySettings $company): void
     {
         $white = imagecolorallocate($im, 255, 255, 255);
-        $dark = imagecolorallocate($im, 45, 20, 45);
-        $shadow = imagecolorallocatealpha($im, 0, 0, 0, 45);
+        $dark = imagecolorallocate($im, 40, 38, 35);
+        $shadow = imagecolorallocatealpha($im, 0, 0, 0, 55);
+        $gold = imagecolorallocate($im, self::ACCENT['r'], self::ACCENT['g'], self::ACCENT['b']);
 
         $nombre = self::headerName($company);
+        $logoPath = self::resolveLogoPath($company);
+        $logoBox = 63;
+        $logoGap = 18;
 
         if ($nombre) {
             $label = mb_strtoupper($nombre);
-            $maxWidth = self::WIDTH - 160;
-            $fontSize = self::fitSingleLineByWidth(self::fontBold(), $label, $maxWidth, 24, 16);
-            $label = self::fitTextToWidth(self::fontBold(), $fontSize, $maxWidth, $label);
-            $box = imagettfbbox($fontSize, 0, self::fontBold(), $label);
+            $maxWidth = self::WIDTH - 160 - ($logoPath ? $logoBox + $logoGap : 0);
+            $fontSize = self::fitSingleLineByWidth(self::fontSerifBold(), $label, $maxWidth, 24, 16);
+            $label = self::fitTextToWidth(self::fontSerifBold(), $fontSize, $maxWidth, $label);
+            $box = imagettfbbox($fontSize, 0, self::fontSerifBold(), $label);
             $textWidth = $box[2] - $box[0];
             $pillWidth = (int) max(320, min($maxWidth + 90, $textWidth + 90));
-            $pillX1 = (int) ((self::WIDTH - $pillWidth) / 2);
+            $groupWidth = $pillWidth + ($logoPath ? $logoBox + $logoGap : 0);
+            $groupX1 = (int) ((self::WIDTH - $groupWidth) / 2);
 
+            if ($logoPath) {
+                self::roundedRect($im, $groupX1, 55, $groupX1 + $logoBox, 118, 18, $white);
+                self::drawContainedImage($im, $logoPath, $groupX1, 55, $groupX1 + $logoBox, 118, 8);
+            }
+
+            $pillX1 = $groupX1 + ($logoPath ? $logoBox + $logoGap : 0);
             self::roundedRect($im, $pillX1, 55, $pillX1 + $pillWidth, 118, 31, $white);
-            self::centeredText($im, self::fontBold(), $fontSize, self::WIDTH / 2, 87, 0, $dark, $label);
+            self::centeredText($im, self::fontSerifBold(), $fontSize, $pillX1 + $pillWidth / 2, 87, 0, $dark, $label);
         }
 
-        self::centeredText($im, self::fontBold(), 100, 546, 264, -4, $shadow, '¡OFERTAS!');
-        self::centeredText($im, self::fontBold(), 100, 540, 258, -4, $white, '¡OFERTAS!');
+        self::centeredText($im, self::fontSerifBold(), 100, 546, 264, -4, $shadow, '¡OFERTAS!');
+        self::centeredText($im, self::fontSerifBold(), 100, 540, 258, -4, $gold, '¡OFERTAS!');
 
-        self::centeredText($im, self::fontItalic(), 26, 540, 330, 0, $white, 'Precios especiales por tiempo limitado');
+        self::centeredText($im, self::fontSerifItalic(), 26, 540, 330, 0, $white, 'Precios especiales por tiempo limitado');
+    }
+
+    private static function resolveLogoPath(CompanySettings $company): ?string
+    {
+        if (! $company->logo_path) {
+            return null;
+        }
+
+        $path = storage_path('app/public/'.$company->logo_path);
+
+        return file_exists($path) ? $path : null;
+    }
+
+    /** Dibuja una imagen "contain" (sin recortar) centrada dentro de un recuadro. */
+    private static function drawContainedImage(GdImage $canvas, string $absolutePath, int $boxX1, int $boxY1, int $boxX2, int $boxY2, int $padding): void
+    {
+        $data = @file_get_contents($absolutePath);
+        if ($data === false) {
+            return;
+        }
+
+        $src = @imagecreatefromstring($data);
+        if ($src === false) {
+            return;
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+        $maxW = ($boxX2 - $boxX1) - $padding * 2;
+        $maxH = ($boxY2 - $boxY1) - $padding * 2;
+        $scale = min($maxW / $srcW, $maxH / $srcH, 1);
+        $dstW = (int) round($srcW * $scale);
+        $dstH = (int) round($srcH * $scale);
+        $dstX = $boxX1 + (int) ((($boxX2 - $boxX1) - $dstW) / 2);
+        $dstY = $boxY1 + (int) ((($boxY2 - $boxY1) - $dstH) / 2);
+
+        imagecopyresampled($canvas, $src, $dstX, $dstY, 0, 0, $dstW, $dstH, $srcW, $srcH);
+        imagedestroy($src);
     }
 
     /**
@@ -219,8 +276,8 @@ class PromotionPoster
     {
         if ($items === []) {
             $white = imagecolorallocate($im, 255, 255, 255);
-            self::centeredText($im, self::fontBold(), 34, self::WIDTH / 2, 700, 0, $white, 'Todavía no hay');
-            self::centeredText($im, self::fontBold(), 34, self::WIDTH / 2, 750, 0, $white, 'promociones activas');
+            self::centeredText($im, self::fontSerifBold(), 34, self::WIDTH / 2, 700, 0, $white, 'Todavía no hay');
+            self::centeredText($im, self::fontSerifBold(), 34, self::WIDTH / 2, 750, 0, $white, 'promociones activas');
 
             return;
         }
@@ -228,8 +285,9 @@ class PromotionPoster
         $cardW = (int) ((self::WIDTH - 2 * self::MARGIN_X - self::CARD_GAP) / self::COLS);
 
         $white = imagecolorallocate($im, 255, 255, 255);
-        $dark = imagecolorallocate($im, 40, 25, 45);
+        $dark = imagecolorallocate($im, 40, 38, 35);
         $shadowColor = imagecolorallocatealpha($im, 0, 0, 0, 70);
+        $gold = imagecolorallocate($im, self::ACCENT['r'], self::ACCENT['g'], self::ACCENT['b']);
         $badgeDiameter = 148;
 
         foreach ($items as $i => $item) {
@@ -260,16 +318,15 @@ class PromotionPoster
 
             $textX = $x1 + 185;
             $maxTextW = $cardW - 205;
-            $lines = array_slice(self::wrapText(self::fontBold(), 29, $maxTextW, mb_strtoupper($item['title'])), 0, 2);
+            $lines = array_slice(self::wrapText(self::fontSerifBold(), 29, $maxTextW, mb_strtoupper($item['title'])), 0, 2);
             $lineY = $y1 + 62;
             foreach ($lines as $line) {
-                imagettftext($im, 29, 0, $textX, $lineY, $dark, self::fontBold(), $line);
+                imagettftext($im, 29, 0, $textX, $lineY, $dark, self::fontSerifBold(), $line);
                 $lineY += 36;
             }
 
-            $detailColor = self::paletteColor($im, $i);
             $detail = self::fitTextToWidth(self::fontMono(), 19, $maxTextW, $item['detail']);
-            imagettftext($im, 19, 0, $textX, $y2 - 22, $detailColor, self::fontMono(), $detail);
+            imagettftext($im, 19, 0, $textX, $y2 - 22, $gold, self::fontMono(), $detail);
         }
     }
 
@@ -291,14 +348,15 @@ class PromotionPoster
         imagecopy($im, $thumb, $fx1 + $margin, $fy1 + $margin, 0, 0, $photoSize, $photoSize);
 
         $white = imagecolorallocate($im, 255, 255, 255);
-        $stickerColor = imagecolorallocate($im, 220, 38, 38); // rojo "oferta", fijo para que se distinga de la foto
+        $dark = imagecolorallocate($im, 40, 38, 35);
+        $stickerColor = imagecolorallocate($im, self::ACCENT['r'], self::ACCENT['g'], self::ACCENT['b']); // dorado, fijo para que se distinga de la foto
         $stickerD = 76;
         $stickerCx = $fx1 + $frameSize - 12;
         $stickerCy = $fy1 + 4;
 
         imagefilledellipse($im, $stickerCx, $stickerCy, $stickerD + 8, $stickerD + 8, $white);
         imagefilledellipse($im, $stickerCx, $stickerCy, $stickerD, $stickerD, $stickerColor);
-        self::drawBadgeLabel($im, $badgeText, $stickerCx, $stickerCy, $angle, $stickerD, $white);
+        self::drawBadgeLabel($im, $badgeText, $stickerCx, $stickerCy, $angle, $stickerD, $dark);
     }
 
     /** Recorta al cuadrado (centrado) y reescala; null si el archivo no es una imagen válida. */
@@ -372,7 +430,7 @@ class PromotionPoster
     {
         for ($size = $max; $size >= $min; $size--) {
             $box = imagettfbbox($size, 0, $font, $text);
-            if ($box[2] - $box[0] <= $maxWidth) {
+            if ($maxWidth >= $box[2] - $box[0]) {
                 return $size;
             }
         }
@@ -400,7 +458,7 @@ class PromotionPoster
     private static function fitTextToWidth(string $font, float $size, int $maxWidth, string $text): string
     {
         $box = imagettfbbox($size, 0, $font, $text);
-        if ($box[2] - $box[0] <= $maxWidth) {
+        if ($maxWidth >= $box[2] - $box[0]) {
             return $text;
         }
 
@@ -410,7 +468,7 @@ class PromotionPoster
             $candidate = implode('', $chars).'…';
             $box = imagettfbbox($size, 0, $font, $candidate);
 
-            if ($box[2] - $box[0] <= $maxWidth) {
+            if ($maxWidth >= $box[2] - $box[0]) {
                 return $candidate;
             }
         }
@@ -422,13 +480,13 @@ class PromotionPoster
     {
         $white = imagecolorallocate($im, 255, 255, 255);
         $y = $height - self::FOOTER_H + 30;
-        self::centeredText($im, self::fontItalic(), 24, self::WIDTH / 2, $y, 0, $white, "+ {$count} oferta".($count === 1 ? '' : 's').' más en el local');
+        self::centeredText($im, self::fontSerifItalic(), 24, self::WIDTH / 2, $y, 0, $white, "+ {$count} oferta".($count === 1 ? '' : 's').' más en el local');
     }
 
     private static function drawFooter(GdImage $im, int $height): void
     {
         $white = imagecolorallocate($im, 255, 255, 255);
-        self::centeredText($im, self::fontItalic(), 20, self::WIDTH / 2, $height - 40, 0, $white, 'Válido mientras dure el stock. Precios sujetos a modificación.');
+        self::centeredText($im, self::fontSerifItalic(), 20, self::WIDTH / 2, $height - 40, 0, $white, 'Válido mientras dure el stock. Precios sujetos a modificación.');
     }
 
     private static function paletteColor(GdImage $im, int $index): int
