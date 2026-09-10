@@ -14,4 +14,5 @@ return [
     'price_lists' => env('FEATURE_PRICE_LISTS', true),
     'stock_transfers' => env('FEATURE_STOCK_TRANSFERS', true),
     'vencimientos_finanzas' => env('FEATURE_VENCIMIENTOS_FINANZAS', true),
+    'sell_by_weight' => env('FEATURE_SELL_BY_WEIGHT', true),
 ];

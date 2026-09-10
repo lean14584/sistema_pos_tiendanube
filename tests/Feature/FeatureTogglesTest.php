@@ -87,4 +87,30 @@ class FeatureTogglesTest extends TestCase
             ->test('invoices.index')
             ->assertSeeHtml('Nueva factura');
     }
+
+    public function test_checkbox_de_venta_por_peso_se_oculta_en_productos_y_config_empresa_cuando_esta_apagado(): void
+    {
+        config(['features.sell_by_weight' => false]);
+
+        Livewire::actingAs($this->admin())
+            ->test('products.create')
+            ->assertDontSeeHtml('Se vende por peso (kg)');
+
+        Livewire::actingAs($this->admin())
+            ->test('company-settings.edit')
+            ->assertDontSeeHtml('Código de barras de balanza');
+    }
+
+    public function test_checkbox_de_venta_por_peso_se_ve_cuando_esta_prendido(): void
+    {
+        config(['features.sell_by_weight' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test('products.create')
+            ->assertSeeHtml('Se vende por peso (kg)');
+
+        Livewire::actingAs($this->admin())
+            ->test('company-settings.edit')
+            ->assertSeeHtml('Código de barras de balanza');
+    }
 }
