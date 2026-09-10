@@ -13,7 +13,6 @@ use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\PuntoVenta;
-use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
@@ -262,11 +261,7 @@ class Create extends Component
         }), null, $puntoVentaNumero);
 
         if ($this->printOnSave) {
-            try {
-                app(TicketPrinterService::class)->imprimir($invoice);
-            } catch (\Throwable $e) {
-                session()->flash('error', 'La factura se guardó, pero no se pudo imprimir el ticket: '.$e->getMessage());
-            }
+            $this->js('window.open('.json_encode(route('invoices.ticket-print', $invoice)).', "_blank")');
         }
 
         $this->redirect(route('invoices.show', $invoice), navigate: true);

@@ -66,6 +66,8 @@ class InvoiceSucursalScopeTest extends TestCase
         $this->actingAs($cajero)->get(route('invoices.show', $invoice))->assertForbidden();
         $this->actingAs($cajero)->get(route('invoices.edit', $invoice))->assertForbidden();
         $this->actingAs($cajero)->get(route('invoices.pdf', $invoice))->assertForbidden();
+        $this->actingAs($cajero)->get(route('invoices.ticket-print', $invoice))->assertForbidden();
+        $this->actingAs($cajero)->get(route('invoices.ticket-image', $invoice))->assertForbidden();
     }
 
     public function test_admin_si_puede_ver_facturas_de_cualquier_sucursal(): void
@@ -77,5 +79,7 @@ class InvoiceSucursalScopeTest extends TestCase
 
         $this->actingAs($admin)->get(route('invoices.show', $invoice))->assertOk();
         $this->actingAs($admin)->get(route('invoices.pdf', $invoice))->assertOk();
+        $this->actingAs($admin)->get(route('invoices.ticket-print', $invoice))->assertOk();
+        $this->actingAs($admin)->get(route('invoices.ticket-image', $invoice))->assertOk();
     }
 }
