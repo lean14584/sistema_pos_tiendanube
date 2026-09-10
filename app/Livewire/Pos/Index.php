@@ -13,7 +13,6 @@ use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\PromotionGroup;
 use App\Models\PuntoVenta;
-use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
@@ -679,11 +678,7 @@ class Index extends Component
         }), null, $puntoVentaNumero);
 
         if ($this->printOnSale) {
-            try {
-                app(TicketPrinterService::class)->imprimir($invoice);
-            } catch (\Throwable $e) {
-                session()->flash('error', 'La venta se guardó, pero no se pudo imprimir el ticket: '.$e->getMessage());
-            }
+            $this->js('window.open('.json_encode(route('invoices.ticket-print', $invoice)).', "_blank")');
         }
 
         $saldo = round((float) $invoice->total - $pagado, 2);

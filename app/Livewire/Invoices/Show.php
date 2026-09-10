@@ -11,7 +11,6 @@ use App\Mail\InvoiceMail;
 use App\Models\Invoice;
 use App\Services\Afip\InvoiceCaeEmitter;
 use App\Services\MercadoPago\MercadoPagoQrService;
-use App\Services\TicketPrinterService;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\MercadoPagoPaymentApplier;
@@ -209,16 +208,6 @@ class Show extends Component
         $mensaje = "Hola {$this->invoice->client->name}, te paso tu factura {$this->invoice->number} por un total de $".money((float) $this->invoice->total).'. ¡Gracias!';
 
         return 'https://wa.me/'.$telefono.'?text='.rawurlencode($mensaje);
-    }
-
-    public function printTicket(): void
-    {
-        try {
-            app(TicketPrinterService::class)->imprimir($this->invoice);
-            session()->flash('status', 'Ticket enviado a la impresora.');
-        } catch (\Throwable $e) {
-            session()->flash('error', 'No se pudo imprimir el ticket: '.$e->getMessage());
-        }
     }
 
     public function delete(): void

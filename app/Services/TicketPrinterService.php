@@ -8,21 +8,23 @@ use App\Services\Afip\QrPayloadBuilder;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use GdImage;
-use Mike42\Escpos\EscposImage;
-use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
-use Mike42\Escpos\Printer;
 
 /**
- * Renderiza el ticket entero como una imagen (GD + fuente TTF) y lo manda a
- * la impresora como bitmap, en vez de depender de los code pages ESC/POS de
- * la impresora. Se probaron dos perfiles de code page (POS-5890 y CP437) y
- * en ambos la impresora clon rendía mal los acentos/ñ — como bitmap el
- * resultado no depende del firmware de la impresora.
+ * Renderiza el ticket entero como una imagen (GD + fuente TTF), en vez de
+ * depender de los code pages ESC/POS de la impresora. Se probaron dos
+ * perfiles de code page (POS-5890 y CP437) y en ambos la impresora clon
+ * rendía mal los acentos/ñ — como bitmap el resultado no depende del
+ * firmware de la impresora.
+ *
+ * La impresión en sí la dispara el navegador del cajero (ver
+ * TicketImageController + resources/views/ticket/print.blade.php), no el
+ * servidor: la app corre en hosting remoto, sin ninguna ruta de red hacia la
+ * impresora que está en el local del cliente, así que mandar el bitmap por
+ * red desde PHP (como se hacía antes con WindowsPrintConnector) no es viable
+ * fuera de una PC local con la impresora conectada.
  */
 class TicketPrinterService
 {
-    private const PRINTER_NAME = 'POS-58';
-
     // 58mm de papel a 203dpi (resolución típica de estas impresoras).
     private const CANVAS_WIDTH = 384;
 
@@ -41,7 +43,8 @@ class TicketPrinterService
     /** @var array<int, array{type: string, text?: string, left?: string, right?: string, bold?: bool, size?: int}> */
     private array $blocks = [];
 
-    public function imprimir(Invoice $invoice): void
+    /** PNG crudo del ticket completo, listo para servir con Content-Type: image/png. */
+    public function renderPng(Invoice $invoice): string
     {
         $invoice->loadMissing('client', 'items', 'payments');
         $company = CompanySettings::current();
@@ -70,15 +73,7 @@ class TicketPrinterService
         try {
             $this->renderizar($tempFile);
 
-            $printer = new Printer(new WindowsPrintConnector(self::PRINTER_NAME));
-
-            try {
-                $printer->bitImage(EscposImage::load($tempFile));
-                $printer->feed(3);
-                $printer->cut();
-            } finally {
-                $printer->close();
-            }
+            return (string) file_get_contents($tempFile);
         } finally {
             @unlink($tempFile);
         }
