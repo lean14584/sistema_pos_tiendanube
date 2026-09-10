@@ -33,7 +33,6 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
             'throw' => false,
             'report' => false,
         ],
@@ -43,6 +42,13 @@ return [
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
+            // Fallback para hostings donde el symlink public/storage no lo
+            // resuelve el webserver (pasó en DECO-HOGAR: LiteSpeed/CageFS de
+            // esa cuenta ignora el symlink y devuelve 404 hasta en archivos
+            // públicos como logos y fotos de productos). Cuando el symlink sí
+            // funciona (pos-tiendanube), el webserver sirve el archivo
+            // estático directo y esta ruta de Laravel ni se llega a usar.
+            'serve' => true,
             'throw' => false,
             'report' => false,
         ],
