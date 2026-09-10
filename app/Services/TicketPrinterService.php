@@ -36,6 +36,8 @@ class TicketPrinterService
 
     private const LINE_HEIGHT_BRAND = 32;
 
+    private const MAX_LOGO_HEIGHT = 90;
+
     /** @var array<int, array{type: string, text?: string, left?: string, right?: string, bold?: bool, size?: int}> */
     private array $blocks = [];
 
@@ -84,6 +86,12 @@ class TicketPrinterService
 
     private function armarEncabezado(CompanySettings $company): void
     {
+        $logoPath = $company->logo_path ? storage_path('app/public/'.$company->logo_path) : null;
+        if ($logoPath && file_exists($logoPath)) {
+            $this->blocks[] = ['type' => 'image', 'path' => $logoPath, 'maxHeight' => self::MAX_LOGO_HEIGHT];
+            $this->addSpacer(6);
+        }
+
         $this->addCenter($company->display_name, bold: true, size: self::FONT_SIZE_BRAND);
 
         if ($company->domicilio) {
@@ -317,7 +325,7 @@ class TicketPrinterService
                 'columns' => array_push($lines, ...$this->expandColumns($block, $usableWidth)),
                 'rule' => $lines[] = ['draw' => 'rule'],
                 'spacer' => $lines[] = ['draw' => 'spacer', 'height' => $block['height']],
-                'image' => $lines[] = ['draw' => 'image', 'path' => $block['path'], 'height' => $this->imageHeightFor($block['path'], $usableWidth)],
+                'image' => $lines[] = ['draw' => 'image', 'path' => $block['path'], 'maxHeight' => $block['maxHeight'] ?? null, 'height' => $this->imageHeightFor($block['path'], $usableWidth, $block['maxHeight'] ?? null)],
                 default => null,
             };
         }
@@ -351,7 +359,7 @@ class TicketPrinterService
                 'columns' => $this->drawColumns($image, $black, $line['left'], $line['right'], $y + $h - 6, $line['size'], $line['bold'], $usableWidth),
                 'right' => $this->drawRight($image, $black, $line['text'], $y + $h - 6, $line['size'], $line['bold'], $usableWidth),
                 'rule' => $this->drawRule($image, $y + (int) ($h / 2)),
-                'image' => $this->drawImage($image, $line['path'], $y, $usableWidth),
+                'image' => $this->drawImage($image, $line['path'], $y, $usableWidth, $line['maxHeight']),
                 default => null,
             };
 
@@ -427,19 +435,35 @@ class TicketPrinterService
         }
     }
 
-    private function imageHeightFor(string $path, int $maxWidth): int
+    private function imageHeightFor(string $path, int $maxWidth, ?int $maxHeight = null): int
     {
         [$w, $h] = getimagesize($path);
+        $scale = min(1, $maxWidth / $w);
+        if ($maxHeight !== null) {
+            $scale = min($scale, $maxHeight / $h);
+        }
 
-        return (int) round($h * min(1, $maxWidth / $w));
+        return (int) round($h * $scale);
     }
 
-    private function drawImage(GdImage $canvas, string $path, int $y, int $maxWidth): void
+    /**
+     * El QR se genera siempre como PNG, pero el logo lo sube el cliente en
+     * cualquier formato raster (así lo valida la regla 'image' de Laravel),
+     * por eso se detecta el formato en vez de asumir PNG.
+     */
+    private function drawImage(GdImage $canvas, string $path, int $y, int $maxWidth, ?int $maxHeight = null): void
     {
-        $src = imagecreatefrompng($path);
+        $src = imagecreatefromstring((string) file_get_contents($path));
+        if ($src === false) {
+            return;
+        }
+
         $srcW = imagesx($src);
         $srcH = imagesy($src);
         $scale = min(1, $maxWidth / $srcW);
+        if ($maxHeight !== null) {
+            $scale = min($scale, $maxHeight / $srcH);
+        }
         $dstW = (int) round($srcW * $scale);
         $dstH = (int) round($srcH * $scale);
         $x = (int) ((self::CANVAS_WIDTH - $dstW) / 2);
