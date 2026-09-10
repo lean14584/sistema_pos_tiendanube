@@ -33,6 +33,7 @@ class PosTipoComprobanteTest extends TestCase
             ->call('addProduct', $product->id)
             ->set('tipo_comprobante_interno', TipoComprobanteInterno::RemitoX->value)
             ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();
@@ -52,6 +53,7 @@ class PosTipoComprobanteTest extends TestCase
         Livewire::actingAs($admin)->test('pos.index')
             ->call('addProduct', $product->id)
             ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();

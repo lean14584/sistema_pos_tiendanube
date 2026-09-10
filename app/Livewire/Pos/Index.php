@@ -533,15 +533,18 @@ class Index extends Component
     }
 
     /**
-     * Agrega un medio de pago prellenado con el saldo que falta cubrir, para
-     * que en el caso típico (pago completo en efectivo) sea un solo toque.
+     * Agrega una línea de pago con el saldo que falta cubrir prellenado (así
+     * el caso típico de pago completo es un solo toque de método + cobrar),
+     * pero SIN medio de pago elegido — si hay descuento configurado por
+     * medio, no queremos aplicarlo solo porque "efectivo" venía por defecto
+     * sin que el cajero lo haya tocado.
      */
     public function addPayment(): void
     {
         $faltante = round($this->total() - $this->paymentsTotal(), 2);
 
         $this->payments[] = [
-            'method' => 'efectivo',
+            'method' => '',
             'amount' => $faltante > 0 ? (string) $faltante : '0',
         ];
     }
@@ -564,6 +567,14 @@ class Index extends Component
             $this->addError('cart', 'Tenés que abrir la caja antes de cobrar.');
 
             return;
+        }
+
+        foreach ($this->payments as $payment) {
+            if ((float) ($payment['amount'] ?? 0) > 0 && PaymentMethod::tryFrom($payment['method'] ?? '') === null) {
+                $this->addError('payments', 'Elegí un medio de pago para cada monto cargado.');
+
+                return;
+            }
         }
 
         $total = round($this->total(), 2);

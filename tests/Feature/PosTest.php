@@ -119,6 +119,7 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->set('barcode', '2000023003505')->call('addByBarcode')
             ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar');
 
@@ -157,7 +158,8 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->call('addProduct', $product->id)
             ->call('addProduct', $product->id) // cantidad 2
-            ->call('addPayment') // prellena efectivo con el total (1000)
+            ->call('addPayment') // prellena el monto con el total (1000), sin medio elegido
+            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar');
 
@@ -195,7 +197,8 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->set('client_id', $cliente->id)
             ->call('addProduct', $product->id) // total 1000
-            ->call('addPayment') // efectivo 1000
+            ->call('addPayment') // prellena 1000, sin medio elegido
+            ->set('payments.0.method', 'efectivo')
             ->set('payments.0.amount', '600') // paga solo 600
             ->set('printOnSale', false)
             ->call('cobrar')
@@ -233,10 +236,11 @@ class PosTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id) // total 10000
-            ->call('addPayment') // prellena efectivo con 10000
+            ->call('addPayment') // prellena el monto con 10000, sin medio elegido
             ->set('payments.0.method', 'tarjeta')
             ->set('payments.0.amount', '5000')
-            ->call('addPayment') // prellena el segundo con el saldo: efectivo 5000
+            ->call('addPayment') // prellena el segundo con el saldo (5000), sin medio elegido
+            ->set('payments.1.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();
@@ -263,7 +267,8 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->set('client_id', $cliente->id)
             ->call('addProduct', $product->id) // total 1000
-            ->call('addPayment') // efectivo prellenado con 1000
+            ->call('addPayment') // prellena 1000, sin medio elegido
+            ->set('payments.0.method', 'efectivo')
             ->set('payments.0.amount', '600') // paga solo 600, quedan 400 en cta cte
             ->set('printOnSale', false)
             ->call('cobrar')
@@ -297,5 +302,46 @@ class PosTest extends TestCase
         $this->assertSame('paid', $invoice->status->value);
         $this->assertEqualsWithDelta(10000, (float) $invoice->total, 0.01);
         $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 10000]);
+    }
+
+    public function test_agregar_medio_de_pago_no_precarga_ninguno_y_el_descuento_se_ve_al_elegirlo(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        \App\Models\CompanySettings::current()->update(['descuento_efectivo_pct' => 10]);
+
+        $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment');
+
+        // Sin medio elegido todavía: no hay descuento que mostrar.
+        $this->assertSame('', $pos->get('payments.0.method'));
+        $this->assertSame(0.0, $pos->instance()->paymentDiscountPct($pos->get('payments.0')));
+
+        // Al elegir un medio con descuento configurado, se ve al toque (sin
+        // tener que tocar el monto ni cobrar).
+        $pos->set('payments.0.method', 'efectivo');
+        $this->assertEquals(10.0, $pos->instance()->paymentDiscountPct($pos->get('payments.0')));
+        $this->assertEqualsWithDelta(900.0, $pos->instance()->montoRealPago($pos->get('payments.0')), 0.01);
+    }
+
+    public function test_cobrar_con_monto_cargado_y_sin_medio_de_pago_elegido_es_rechazado(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment') // queda con method '' y amount prellenado
+            ->set('printOnSale', false)
+            ->call('cobrar')
+            ->assertHasErrors('payments');
+
+        $this->assertDatabaseCount('invoices', 0);
     }
 }
