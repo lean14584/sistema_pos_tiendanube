@@ -141,6 +141,7 @@
             </p>
         </div>
 
+        @if (config('features.sell_by_weight'))
         <div class="pt-6 mt-2 border-t border-gray-200 dark:border-gray-800">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Código de barras de balanza</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
@@ -181,6 +182,7 @@
                 </p>
             @endif
         </div>
+        @endif
 
         <div class="flex gap-3 pt-2">
             <button

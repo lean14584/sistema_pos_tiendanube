@@ -11,6 +11,7 @@
         @error('name') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
     </div>
 
+    @if (config('features.sell_by_weight'))
     <label class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 cursor-pointer">
         <span>
             <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Se vende por peso (kg)</span>
@@ -18,6 +19,7 @@
         </span>
         <input type="checkbox" wire:model.live="sold_by_weight" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
     </label>
+    @endif
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
