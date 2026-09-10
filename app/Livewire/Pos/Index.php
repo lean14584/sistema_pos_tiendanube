@@ -406,6 +406,15 @@ class Index extends Component
         return round($descuento / $gross * 100, 4);
     }
 
+    /**
+     * Combina dos descuentos porcentuales aplicados en cadena (no se suman
+     * directo: 20% + 20% no es 40%, es 1-(0.8*0.8) = 36%).
+     */
+    private function componerDescuentos(float $a, float $b): float
+    {
+        return round((1 - (1 - $a / 100) * (1 - $b / 100)) * 100, 4);
+    }
+
     /** Total de una línea (con descuentos y IVA). */
     public function lineTotal(array $line): float
     {
@@ -418,6 +427,50 @@ class Index extends Component
     public function total(): float
     {
         return collect($this->cart)->sum(fn ($i) => $this->lineTotal($i));
+    }
+
+    /**
+     * % de descuento por pago de contado para un medio de pago cargado en el
+     * array $payments (según la configuración de la empresa).
+     *
+     * @param  array{method: string, amount: string}  $payment
+     */
+    public function paymentDiscountPct(array $payment): float
+    {
+        $method = PaymentMethod::tryFrom($payment['method'] ?? '');
+
+        return $method ? CompanySettings::current()->descuentoPctParaMedioDePago($method) : 0.0;
+    }
+
+    /**
+     * Monto real a cobrar en ese medio de pago, ya con su descuento aplicado.
+     * Lo que se tipea en "amount" es la porción del precio de lista que cubre
+     * ese medio — esto es lo que efectivamente hay que recibir en mano.
+     *
+     * @param  array{method: string, amount: string}  $payment
+     */
+    public function montoRealPago(array $payment): float
+    {
+        return round((float) ($payment['amount'] ?? 0) * (1 - $this->paymentDiscountPct($payment) / 100), 2);
+    }
+
+    /**
+     * Total que termina cobrándose (y facturándose) una vez aplicado el
+     * descuento por medio de pago, cuando la venta se paga completa en el
+     * momento. Si queda saldo en cuenta corriente no se aplica ningún
+     * descuento (ver comentario de cobrar()), y esto devuelve null.
+     */
+    public function totalConDescuentoPorMedioDePago(): ?float
+    {
+        $total = round($this->total(), 2);
+
+        if ($total <= 0 || round($this->paymentsTotal(), 2) + 0.001 < $total) {
+            return null;
+        }
+
+        $totalReal = round(collect($this->payments)->sum(fn ($p) => $this->montoRealPago($p)), 2);
+
+        return $totalReal < $total ? $totalReal : null;
     }
 
     /** Subtotal sin ningún descuento (con IVA), para mostrar el ahorro. */
@@ -558,7 +611,18 @@ class Index extends Component
             return;
         }
 
-        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo, $clientId, $status, $puntoVentaNumero) {
+        // Descuento por medio de pago, expresado como % único que se combina
+        // con el descuento propio de cada línea (manual + promo). Solo existe
+        // cuando la venta queda pagada por completo en el momento (ver
+        // totalConDescuentoPorMedioDePago()) — si queda saldo en cuenta
+        // corriente, esa parte se factura siempre a precio de lista.
+        $totalConDescuento = $this->totalConDescuentoPorMedioDePago();
+        $aplicaDescuentoPorMedioDePago = $totalConDescuento !== null;
+        $descuentoPctPagoGlobal = $aplicaDescuentoPorMedioDePago && $total > 0
+            ? round((1 - $totalConDescuento / $total) * 100, 4)
+            : 0.0;
+
+        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo, $clientId, $status, $puntoVentaNumero, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago) {
             $invoice = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
                 'client_id' => $clientId,
@@ -576,8 +640,9 @@ class Index extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    // Descuento manual + promoción, expresado como % de la línea.
-                    'discount_percent' => $this->lineDiscountPct($item),
+                    // Descuento manual + promoción de la línea, combinado con
+                    // el descuento por medio de pago (si corresponde).
+                    'discount_percent' => $this->componerDescuentos($this->lineDiscountPct($item), $descuentoPctPagoGlobal),
                     'iva_rate' => $item['iva_rate'],
                 ]);
             }
@@ -586,7 +651,15 @@ class Index extends Component
 
             foreach ($this->payments as $payment) {
                 if ((float) $payment['amount'] > 0) {
-                    $created = $invoice->payments()->create($payment);
+                    // Se guarda el monto REAL cobrado (con el descuento del
+                    // medio de pago ya aplicado) solo cuando ese descuento
+                    // efectivamente corresponde (venta pagada por completo);
+                    // si queda saldo en cuenta corriente, el pago se registra
+                    // tal cual se tipeó, a precio de lista.
+                    $created = $invoice->payments()->create([
+                        'method' => $payment['method'],
+                        'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
+                    ]);
                     CashLinker::linkInvoicePayment($invoice, $created);
                 }
             }

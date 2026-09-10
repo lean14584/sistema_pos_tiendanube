@@ -40,6 +40,11 @@ class Edit extends Component
 
     public string $barcode_scale_weight_digits = '5';
 
+    /** % de descuento por pago de contado en efectivo/transferencia (0 = sin descuento). */
+    public string $descuento_efectivo_pct = '0';
+
+    public string $descuento_transferencia_pct = '0';
+
     /** Archivo recién seleccionado, pendiente de guardar (null = no tocar el logo actual). */
     public $logo = null;
 
@@ -62,6 +67,8 @@ class Edit extends Component
         $this->barcode_scale_prefix = (string) ($this->company->barcode_scale_prefix ?? '20');
         $this->barcode_scale_code_digits = (string) $this->company->barcode_scale_code_digits;
         $this->barcode_scale_weight_digits = (string) $this->company->barcode_scale_weight_digits;
+        $this->descuento_efectivo_pct = (string) $this->company->descuento_efectivo_pct;
+        $this->descuento_transferencia_pct = (string) $this->company->descuento_transferencia_pct;
     }
 
     /** ¿Ya hay un certificado AFIP cargado en el servidor? */
@@ -94,6 +101,8 @@ class Edit extends Component
             'barcode_scale_prefix' => ['required_if:barcode_scale_enabled,true', 'nullable', 'digits_between:1,4'],
             'barcode_scale_code_digits' => ['required_if:barcode_scale_enabled,true', 'nullable', 'integer', 'min:1', 'max:9'],
             'barcode_scale_weight_digits' => ['required_if:barcode_scale_enabled,true', 'nullable', 'integer', 'min:1', 'max:9'],
+            'descuento_efectivo_pct' => ['required', 'numeric', 'min:0', 'max:100'],
+            'descuento_transferencia_pct' => ['required', 'numeric', 'min:0', 'max:100'],
             'logo' => ['nullable', 'image', 'max:2048'],
             // El certificado y la clave son texto (PEM); se validan por
             // extensión más abajo porque su mime no es confiable.

@@ -102,6 +102,35 @@ class CompanySettingsTest extends TestCase
         $this->assertFalse(CompanySettings::current()->barcode_scale_enabled);
     }
 
+    public function test_admin_puede_configurar_descuentos_por_medio_de_pago(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('descuento_efectivo_pct', '15')
+            ->set('descuento_transferencia_pct', '10')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $company = CompanySettings::current();
+        $this->assertEquals(15, $company->descuento_efectivo_pct);
+        $this->assertEquals(10, $company->descuento_transferencia_pct);
+    }
+
+    public function test_descuento_por_medio_de_pago_fuera_de_rango_es_rechazado(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('descuento_efectivo_pct', '150')
+            ->call('save')
+            ->assertHasErrors('descuento_efectivo_pct');
+    }
+
     public function test_vendedor_cannot_access_company_settings(): void
     {
         $vendedor = User::factory()->create(['role' => Role::Vendedor, 'active' => true]);

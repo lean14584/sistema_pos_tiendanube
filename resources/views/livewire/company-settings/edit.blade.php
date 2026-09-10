@@ -184,6 +184,29 @@
         </div>
         @endif
 
+        <div class="pt-6 mt-2 border-t border-gray-200 dark:border-gray-800">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Descuentos por medio de pago</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
+                El precio de lista de los productos es el que se factura con tarjeta (equivale a "crédito"). Acá podés definir un descuento adicional para el cliente que paga de contado en efectivo o transferencia. Dejá en 0 el que no uses.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descuento en efectivo (%)</label>
+                    <input type="number" min="0" max="100" step="0.01" wire:model="descuento_efectivo_pct" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="15">
+                    @error('descuento_efectivo_pct') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descuento en transferencia (%)</label>
+                    <input type="number" min="0" max="100" step="0.01" wire:model="descuento_transferencia_pct" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="10">
+                    @error('descuento_transferencia_pct') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                Si en el POS se cobra con varios medios de pago a la vez, el descuento se aplica solo a la parte cubierta por efectivo/transferencia, y solo cuando la venta queda pagada por completo en el momento (no aplica si queda saldo en cuenta corriente).
+            </p>
+        </div>
+
         <div class="flex gap-3 pt-2">
             <button
                 type="submit"
