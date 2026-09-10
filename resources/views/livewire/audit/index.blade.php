@@ -16,7 +16,7 @@
             \App\Models\Quote::class => route('quotes.show', $log->auditable_id),
             \App\Models\Product::class => route('products.edit', $log->auditable_id),
             \App\Models\Category::class => route('categories.edit', $log->auditable_id),
-            \App\Models\PriceList::class => route('price-lists.index'),
+            \App\Models\PriceList::class => \Illuminate\Support\Facades\Route::has('price-lists.index') ? route('price-lists.index') : null,
             \App\Models\Promotion::class => route('promotions.index'),
             \App\Models\PromotionGroup::class => route('promotions.groups.index'),
             \App\Models\Client::class => route('clients.edit', $log->auditable_id),
