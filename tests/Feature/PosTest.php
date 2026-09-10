@@ -221,4 +221,81 @@ class PosTest extends TestCase
 
         $this->assertDatabaseCount('invoices', 0);
     }
+
+    public function test_descuento_por_medio_de_pago_se_aplica_prorrateado_cuando_la_venta_queda_pagada_por_completo(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        \App\Models\CompanySettings::current()->update(['descuento_efectivo_pct' => 15, 'descuento_transferencia_pct' => 10]);
+
+        $product = Product::create(['name' => 'Producto', 'price' => 10000, 'iva_rate' => 0, 'stock' => 5]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id) // total 10000
+            ->call('addPayment') // prellena efectivo con 10000
+            ->set('payments.0.method', 'tarjeta')
+            ->set('payments.0.amount', '5000')
+            ->call('addPayment') // prellena el segundo con el saldo: efectivo 5000
+            ->set('printOnSale', false)
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        // 5000 sin descuento (tarjeta) + 5000*0.85 (efectivo, 15% off) = 9250.
+        $invoice = \App\Models\Invoice::latest('id')->firstOrFail();
+        $this->assertSame('paid', $invoice->status->value);
+        $this->assertEqualsWithDelta(9250, (float) $invoice->total, 0.01);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'tarjeta', 'amount' => 5000]);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 4250]);
+        $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 4250, 'source' => 'venta']);
+    }
+
+    public function test_descuento_por_medio_de_pago_no_se_aplica_si_queda_saldo_en_cuenta_corriente(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        \App\Models\CompanySettings::current()->update(['descuento_efectivo_pct' => 15]);
+
+        $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
+        $cliente = Client::create(['name' => 'Juan Perez', 'email' => 'juan@test.com', 'condicion_iva' => 'consumidor_final', 'tipo_documento' => 'sin_identificar']);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('client_id', $cliente->id)
+            ->call('addProduct', $product->id) // total 1000
+            ->call('addPayment') // efectivo prellenado con 1000
+            ->set('payments.0.amount', '600') // paga solo 600, quedan 400 en cta cte
+            ->set('printOnSale', false)
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        // Sin descuento: si queda saldo pendiente, se factura a precio de lista.
+        $invoice = \App\Models\Invoice::latest('id')->firstOrFail();
+        $this->assertSame('pending', $invoice->status->value);
+        $this->assertEqualsWithDelta(1000, (float) $invoice->total, 0.01);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 600]);
+    }
+
+    public function test_sin_configurar_descuentos_por_medio_de_pago_el_comportamiento_no_cambia(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        // Config por defecto: 0% en ambos medios.
+
+        $product = Product::create(['name' => 'Producto', 'price' => 10000, 'iva_rate' => 0, 'stock' => 5]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('printOnSale', false)
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        $invoice = \App\Models\Invoice::latest('id')->firstOrFail();
+        $this->assertSame('paid', $invoice->status->value);
+        $this->assertEqualsWithDelta(10000, (float) $invoice->total, 0.01);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 10000]);
+    }
 }

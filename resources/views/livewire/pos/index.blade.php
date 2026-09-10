@@ -218,16 +218,23 @@
                     </div>
 
                     @forelse ($payments as $index => $payment)
-                        <div wire:key="pay-{{ $index }}" class="flex items-center gap-2">
-                            <select wire:model="payments.{{ $index }}.method" class="flex-1 {{ $posSelect }}">
-                                @foreach ($paymentMethods as $method)
-                                    <option value="{{ $method->value }}">{{ $method->label() }}</option>
-                                @endforeach
-                            </select>
-                            <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-28 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5 text-sm text-right text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-gray-800 transition">
-                            <button type="button" wire:click="removePayment({{ $index }})" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 shrink-0">
-                                <x-heroicon-o-x-mark class="w-5 h-5" />
-                            </button>
+                        <div wire:key="pay-{{ $index }}">
+                            <div class="flex items-center gap-2">
+                                <select wire:model.live="payments.{{ $index }}.method" class="flex-1 {{ $posSelect }}">
+                                    @foreach ($paymentMethods as $method)
+                                        <option value="{{ $method->value }}">{{ $method->label() }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-28 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5 text-sm text-right text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-gray-800 transition">
+                                <button type="button" wire:click="removePayment({{ $index }})" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 shrink-0">
+                                    <x-heroicon-o-x-mark class="w-5 h-5" />
+                                </button>
+                            </div>
+                            @if ($this->paymentDiscountPct($payment) > 0 && (float) ($payment['amount'] ?? 0) > 0)
+                                <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-1 text-right">
+                                    -{{ rtrim(rtrim(number_format($this->paymentDiscountPct($payment), 2), '0'), '.') }}% → cobrás ${{ money($this->montoRealPago($payment)) }}
+                                </p>
+                            @endif
                         </div>
                     @empty
                         <p class="text-xs text-gray-400 dark:text-gray-500">Sin pago cargado: la venta queda como saldo en la cuenta corriente del cliente.</p>
@@ -236,8 +243,14 @@
 
                     @if (count($payments) > 0)
                         <div class="flex items-center justify-between text-sm pt-1">
-                            <span class="text-gray-500 dark:text-gray-400">Pagado</span>
+                            <span class="text-gray-500 dark:text-gray-400">Pagado (precio de lista)</span>
                             <span class="font-medium text-gray-900 dark:text-gray-100">${{ money($this->paymentsTotal()) }}</span>
+                        </div>
+                    @endif
+                    @if ($this->totalConDescuentoPorMedioDePago() !== null)
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-emerald-600 dark:text-emerald-400 font-medium">Total a cobrar con descuento</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">${{ money($this->totalConDescuentoPorMedioDePago()) }}</span>
                         </div>
                     @endif
                     @if ($this->saldoPendiente() > 0)
@@ -261,7 +274,7 @@
                     class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-600/30 hover:from-emerald-700 hover:to-emerald-600 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     <x-heroicon-o-banknotes class="w-5 h-5" />
-                    <span wire:loading.remove wire:target="cobrar">Cobrar ${{ money($this->total()) }}</span>
+                    <span wire:loading.remove wire:target="cobrar">Cobrar ${{ money($this->totalConDescuentoPorMedioDePago() ?? $this->total()) }}</span>
                     <span wire:loading wire:target="cobrar">Cobrando...</span>
                 </button>
             </div>

@@ -4,13 +4,14 @@ namespace App\Models;
 
 use App\Concerns\Auditable;
 use App\Enums\CondicionIva;
+use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'tiendanube_sucursal_id', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits'])]
+#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'tiendanube_sucursal_id', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits', 'descuento_efectivo_pct', 'descuento_transferencia_pct'])]
 class CompanySettings extends Model
 {
     use Auditable;
@@ -29,7 +30,22 @@ class CompanySettings extends Model
             'barcode_scale_enabled' => 'boolean',
             'barcode_scale_code_digits' => 'integer',
             'barcode_scale_weight_digits' => 'integer',
+            'descuento_efectivo_pct' => 'decimal:2',
+            'descuento_transferencia_pct' => 'decimal:2',
         ];
+    }
+
+    /**
+     * % de descuento por pago de contado según el medio elegido. Tarjeta y el
+     * resto de los medios cobran el precio de lista (0%, equivale a "crédito").
+     */
+    public function descuentoPctParaMedioDePago(PaymentMethod $method): float
+    {
+        return match ($method) {
+            PaymentMethod::Efectivo => (float) $this->descuento_efectivo_pct,
+            PaymentMethod::Transferencia => (float) $this->descuento_transferencia_pct,
+            default => 0.0,
+        };
     }
 
     /**
