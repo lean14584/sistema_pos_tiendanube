@@ -221,6 +221,7 @@
                         <div wire:key="pay-{{ $index }}">
                             <div class="flex items-center gap-2">
                                 <select wire:model.live="payments.{{ $index }}.method" class="flex-1 {{ $posSelect }}">
+                                    <option value="">Elegí un medio</option>
                                     @foreach ($paymentMethods as $method)
                                         <option value="{{ $method->value }}">{{ $method->label() }}</option>
                                     @endforeach

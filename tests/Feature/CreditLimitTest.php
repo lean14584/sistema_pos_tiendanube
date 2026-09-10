@@ -54,6 +54,7 @@ class CreditLimitTest extends TestCase
             ->call('addProduct', $product->id)
             ->set('client_id', $client->id)
             ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
             ->set('cart.0.discount', 0)
             ->set('payments.0.amount', '4000')
             ->set('printOnSale', false)

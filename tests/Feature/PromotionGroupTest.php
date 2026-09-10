@@ -70,7 +70,7 @@ class PromotionGroupTest extends TestCase
         // 1000 + 900 + 800 = 2700, menos la más barata (800) = 1900.
         $this->assertEqualsWithDelta(1900.0, $pos->instance()->total(), 0.01);
 
-        $pos->call('addPayment')->set('printOnSale', false)->call('cobrar')->assertHasNoErrors();
+        $pos->call('addPayment')->set('payments.0.method', 'efectivo')->set('printOnSale', false)->call('cobrar')->assertHasNoErrors();
 
         // Sprite quedó 100% off (gratis); Coca y Fanta sin descuento.
         $this->assertDatabaseHas('invoice_items', ['description' => 'Sprite', 'discount_percent' => 100]);

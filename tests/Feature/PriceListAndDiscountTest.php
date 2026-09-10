@@ -104,7 +104,8 @@ class PriceListAndDiscountTest extends TestCase
             ->test('pos.index')
             ->call('addProduct', $product->id)
             ->set('cart.0.discount', 25) // 25% off => 750
-            ->call('addPayment')          // prellena efectivo con el total con descuento
+            ->call('addPayment')          // prellena el monto con el total con descuento
+            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();
