@@ -20,7 +20,12 @@
         }
 
         img {
-            width: 58mm;
+            /* El PNG se renderiza a 384px @ 203dpi (≈48mm reales, ver
+               TicketPrinterService::CANVAS_WIDTH) — no a los 58mm del ancho
+               de papel. Forzarlo a 58mm lo estira ~20%: el negro sólido se
+               vuelve gris (se ve "floja") y el contenido de la derecha se
+               corre fuera del área imprimible. */
+            width: 48mm;
             display: block;
         }
 
