@@ -45,3 +45,26 @@ window.showToast = function (type, message) {
         },
     });
 };
+
+/**
+ * Imprime el ticket térmico sin abrir pestaña ni ventana visible: carga la
+ * página del ticket (que ya dispara window.print() sola al cargar la
+ * imagen) en un iframe oculto de la misma pantalla. El diálogo de impresión
+ * del sistema es lo único que se ve, igual que al imprimir cualquier PDF.
+ */
+window.printTicket = function (url) {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = url;
+
+    // Se saca sola del DOM pasado un rato: tiempo de sobra para que el
+    // cajero vea y responda el diálogo de impresión.
+    setTimeout(() => iframe.remove(), 60000);
+
+    document.body.appendChild(iframe);
+};

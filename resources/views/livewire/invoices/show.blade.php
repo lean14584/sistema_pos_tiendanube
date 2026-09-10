@@ -51,14 +51,14 @@
                     PDF
                 </a>
             @endif
-            <a
-                href="{{ route('invoices.ticket-print', $invoice) }}"
-                target="_blank"
+            <button
+                type="button"
+                onclick="printTicket('{{ route('invoices.ticket-print', $invoice) }}')"
                 class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all"
             >
                 <x-heroicon-o-printer class="w-4 h-4" />
                 Imprimir Ticket
-            </a>
+            </button>
             <button
                 wire:click="enviarPorEmail"
                 wire:loading.attr="disabled"
