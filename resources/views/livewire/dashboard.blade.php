@@ -1,6 +1,6 @@
 <div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Dashboard" subtitle="Resumen de tu actividad de facturación" icon="home">
-        @if ($canManageInvoices)
+        @if ($canManageInvoices && config('features.invoices_manual_create'))
             <x-slot:actions>
                 <a href="{{ route('invoices.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-400 active:scale-[0.98] transition-all">
                     <x-heroicon-o-plus class="w-4 h-4" /> Nueva factura
@@ -185,7 +185,7 @@
         @if ($recentInvoices->isEmpty())
             <div class="p-10 text-center text-sm text-gray-400 dark:text-gray-500">
                 Todavía no creaste ninguna factura.
-                @if ($canManageInvoices)
+                @if ($canManageInvoices && config('features.invoices_manual_create'))
                     <a href="{{ route('invoices.create') }}" wire:navigate class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">Crear la primera</a>
                 @endif
             </div>
