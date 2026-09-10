@@ -46,25 +46,120 @@ window.showToast = function (type, message) {
     });
 };
 
+const PRINT_AGENT_STORAGE_KEY = 'posPrintAgentConfig';
+
+function getPrintAgentConfig() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(PRINT_AGENT_STORAGE_KEY));
+
+        return raw && raw.port ? raw : null;
+    } catch {
+        return null;
+    }
+}
+
 /**
- * Imprime el ticket térmico sin abrir pestaña ni ventana visible: carga la
- * página del ticket (que ya dispara window.print() sola al cargar la
- * imagen) en un iframe oculto de la misma pantalla. El diálogo de impresión
- * del sistema es lo único que se ve, igual que al imprimir cualquier PDF.
+ * Ventana para configurar el agente local (ver pos-print-agent/): puerto y
+ * token que ese programa genera en la PC del cajero. Se guarda en
+ * localStorage porque es una configuración de ESA PC/navegador, no del
+ * negocio — cada caja puede tener una impresora y un agente distintos.
  */
-window.printTicket = function (url) {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.src = url;
+window.configurarImpresoraLocal = function () {
+    const actual = getPrintAgentConfig() || { port: 9123, token: '' };
 
-    // Se saca sola del DOM pasado un rato: tiempo de sobra para que el
-    // cajero vea y responda el diálogo de impresión.
-    setTimeout(() => iframe.remove(), 60000);
+    Swal.fire({
+        title: 'Impresora local (agente)',
+        html:
+            '<input id="swal-agent-port" class="swal2-input" placeholder="Puerto (ej. 9123)" value="'
+            + actual.port + '">'
+            + '<input id="swal-agent-token" class="swal2-input" placeholder="Token del agente" value="'
+            + (actual.token || '') + '">',
+        confirmButtonText: 'Guardar',
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const port = document.getElementById('swal-agent-port').value.trim();
+            const token = document.getElementById('swal-agent-token').value.trim();
+            if (!port) {
+                Swal.showValidationMessage('El puerto es obligatorio');
 
-    document.body.appendChild(iframe);
+                return false;
+            }
+
+            return { port, token };
+        },
+    }).then((result) => {
+        if (result.isConfirmed) {
+            localStorage.setItem(PRINT_AGENT_STORAGE_KEY, JSON.stringify(result.value));
+            showToast('success', 'Impresora local configurada');
+        }
+    });
+};
+
+/**
+ * Manda el ticket al agente local instalado en la PC del cajero (ver
+ * pos-print-agent/): imprime directo, sin ningún diálogo. Devuelve false (en
+ * vez de tirar error) si el agente no está configurado, no está corriendo, o
+ * la impresora falla — así el llamador puede caer al método anterior.
+ */
+async function imprimirConAgenteLocal(escposUrl) {
+    const config = getPrintAgentConfig();
+    if (!config) {
+        return false;
+    }
+
+    try {
+        const ticket = await fetch(escposUrl, { credentials: 'same-origin' });
+        if (!ticket.ok) {
+            return false;
+        }
+        const bytes = await ticket.arrayBuffer();
+
+        const impresion = await fetch(`http://127.0.0.1:${config.port}/print`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/octet-stream',
+                'X-Print-Token': config.token || '',
+            },
+            body: bytes,
+        });
+        if (!impresion.ok) {
+            return false;
+        }
+        const data = await impresion.json();
+
+        return data.ok === true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Imprime el ticket térmico. Primero intenta el agente local (sin ningún
+ * diálogo del sistema); si no está instalado/configurado o falla, cae al
+ * método anterior: cargar la página del ticket (que dispara window.print()
+ * sola) en un iframe oculto, mostrando solo el diálogo de impresión del
+ * navegador.
+ */
+window.printTicket = function (fallbackUrl, escposUrl) {
+    imprimirConAgenteLocal(escposUrl).then((impresoOk) => {
+        if (impresoOk) {
+            return;
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        iframe.src = fallbackUrl;
+
+        // Se saca sola del DOM pasado un rato: tiempo de sobra para que el
+        // cajero vea y responda el diálogo de impresión.
+        setTimeout(() => iframe.remove(), 60000);
+
+        document.body.appendChild(iframe);
+    });
 };

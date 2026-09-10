@@ -53,11 +53,19 @@
             @endif
             <button
                 type="button"
-                onclick="printTicket('{{ route('invoices.ticket-print', $invoice) }}')"
+                onclick="printTicket('{{ route('invoices.ticket-print', $invoice) }}', '{{ route('invoices.ticket-escpos', $invoice) }}')"
                 class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all"
             >
                 <x-heroicon-o-printer class="w-4 h-4" />
                 Imprimir Ticket
+            </button>
+            <button
+                type="button"
+                onclick="configurarImpresoraLocal()"
+                title="Configurar el agente de impresión local de esta PC (opcional)"
+                class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 p-2 text-gray-500 dark:text-gray-400 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 transition-all"
+            >
+                <x-heroicon-o-cog-6-tooth class="w-4 h-4" />
             </button>
             <button
                 wire:click="enviarPorEmail"

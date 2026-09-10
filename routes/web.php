@@ -13,6 +13,7 @@ use App\Http\Controllers\ReciboPdfController;
 use App\Http\Controllers\RemitoPdfController;
 use App\Http\Controllers\ReportsExportController;
 use App\Http\Controllers\StockTransferPdfController;
+use App\Http\Controllers\TicketEscPosController;
 use App\Http\Controllers\TicketImageController;
 use App\Http\Controllers\TicketPrintController;
 use App\Http\Controllers\TiendanubeWebhookController;
@@ -116,6 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/pdf', InvoicePdfController::class)->name('pdf');
         Route::get('/{invoice}/ticket', TicketPrintController::class)->name('ticket-print');
         Route::get('/{invoice}/ticket.png', TicketImageController::class)->name('ticket-image');
+        Route::get('/{invoice}/ticket.escpos', TicketEscPosController::class)->name('ticket-escpos');
         Route::get('/{invoice}/remito-pdf', RemitoPdfController::class)->name('remito-pdf');
         Route::get('/{invoice}/facturar', FacturarRemito::class)->name('facturar-remito');
         Route::get('/{invoice}/nota-credito', NotaCreditoCreate::class)->name('nota-credito.create');

@@ -678,7 +678,10 @@ class Index extends Component
         }), null, $puntoVentaNumero);
 
         if ($this->printOnSale) {
-            $this->js('printTicket('.json_encode(route('invoices.ticket-print', $invoice)).')');
+            $this->js('printTicket('
+                .json_encode(route('invoices.ticket-print', $invoice)).','
+                .json_encode(route('invoices.ticket-escpos', $invoice))
+                .')');
         }
 
         $saldo = round((float) $invoice->total - $pagado, 2);

@@ -40,8 +40,67 @@ class TicketPrinterService
 
     private const MAX_LOGO_HEIGHT = 90;
 
+    private const ESC = "\x1b";
+
+    private const GS = "\x1d";
+
     /** @var array<int, array{type: string, text?: string, left?: string, right?: string, bold?: bool, size?: int}> */
     private array $blocks = [];
+
+    /**
+     * Comandos ESC/POS crudos para el agente local (ver pos-print-agent/),
+     * que los manda directo a la impresora via Windows Raw Printing sin
+     * ningún diálogo del sistema. En vez de reimplementar el layout del
+     * ticket en modo texto ESC/POS, se reusa el PNG ya renderizado
+     * (renderPng) y se empaqueta como imagen rasterizada (GS v 0): así el
+     * ticket impreso por esta vía es a nivel de píxel IDÉNTICO al que ya se
+     * ve en el navegador (mismo logo, mismo QR, y sin el problema de
+     * acentos/ñ mal renderizados que motivó pasar a bitmap en primer lugar,
+     * ver el comentario de la clase).
+     */
+    public function renderEscPos(Invoice $invoice): string
+    {
+        $png = $this->renderPng($invoice);
+
+        return self::ESC.'@'
+            .$this->rasterFromPng($png)
+            ."\n\n\n"
+            .self::GS.'V'."\x42\x00";
+    }
+
+    private function rasterFromPng(string $pngBytes): string
+    {
+        $image = imagecreatefromstring($pngBytes);
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $widthBytes = (int) ceil($width / 8);
+
+        $data = '';
+        for ($y = 0; $y < $height; $y++) {
+            for ($byteIndex = 0; $byteIndex < $widthBytes; $byteIndex++) {
+                $byte = 0;
+                for ($bit = 0; $bit < 8; $bit++) {
+                    $x = $byteIndex * 8 + $bit;
+                    if ($x >= $width) {
+                        continue;
+                    }
+                    $rgb = imagecolorat($image, $x, $y);
+                    $luminance = ((($rgb >> 16) & 0xFF) + (($rgb >> 8) & 0xFF) + ($rgb & 0xFF)) / 3;
+                    if ($luminance < 128) {
+                        $byte |= 1 << (7 - $bit);
+                    }
+                }
+                $data .= chr($byte);
+            }
+        }
+
+        imagedestroy($image);
+
+        return self::GS.'v0'.chr(0)
+            .chr($widthBytes & 0xFF).chr(($widthBytes >> 8) & 0xFF)
+            .chr($height & 0xFF).chr(($height >> 8) & 0xFF)
+            .$data;
+    }
 
     /** PNG crudo del ticket completo, listo para servir con Content-Type: image/png. */
     public function renderPng(Invoice $invoice): string

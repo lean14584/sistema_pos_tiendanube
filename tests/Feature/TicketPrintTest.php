@@ -53,6 +53,28 @@ class TicketPrintTest extends TestCase
         $this->assertNotFalse(getimagesizefromstring($response->getContent()));
     }
 
+    public function test_el_escpos_del_ticket_es_una_imagen_rasterizada_valida(): void
+    {
+        $invoice = $this->invoice();
+
+        $response = $this->actingAs($this->admin())->get(route('invoices.ticket-escpos', $invoice));
+
+        $response->assertOk();
+        $this->assertSame('application/octet-stream', $response->headers->get('Content-Type'));
+
+        $bytes = $response->getContent();
+
+        // ESC @ (init) + GS v 0 (imagen rasterizada) + m=0.
+        $this->assertStringStartsWith("\x1b\x40\x1d\x76\x30\x00", $bytes);
+
+        // Termina con el corte de papel (GS V 0x42 0x00).
+        $this->assertStringEndsWith("\x1d\x56\x42\x00", $bytes);
+
+        // xL/xH del ancho: 384px de ancho de ticket = 48 bytes exactos.
+        $widthBytes = ord($bytes[6]) | (ord($bytes[7]) << 8);
+        $this->assertSame(48, $widthBytes);
+    }
+
     public function test_la_pagina_de_impresion_muestra_la_imagen_del_ticket(): void
     {
         $invoice = $this->invoice();

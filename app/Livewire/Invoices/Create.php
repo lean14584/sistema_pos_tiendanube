@@ -261,7 +261,10 @@ class Create extends Component
         }), null, $puntoVentaNumero);
 
         if ($this->printOnSave) {
-            $this->js('printTicket('.json_encode(route('invoices.ticket-print', $invoice)).')');
+            $this->js('printTicket('
+                .json_encode(route('invoices.ticket-print', $invoice)).','
+                .json_encode(route('invoices.ticket-escpos', $invoice))
+                .')');
         }
 
         $this->redirect(route('invoices.show', $invoice), navigate: true);
