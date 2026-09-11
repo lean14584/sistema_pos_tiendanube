@@ -8,18 +8,30 @@
 
             @if ($modoEtiquetadora)
                 /* Etiquetadora dedicada (ej. HPRT LPQ80): una etiqueta
-                   autoadhesiva física por página, sin grilla. */
+                   autoadhesiva física por página, sin grilla. overflow:
+                   hidden es a propósito: si el contenido no entra, se
+                   recorta ahí mismo (se pierde el dato menos importante,
+                   el SKU, que va último) en vez de que el navegador siga
+                   el texto en una SEGUNDA etiqueta física — eso fue lo que
+                   pasó la primera vez que se ajustó el tamaño del driver:
+                   el precio/SKU salían en una etiqueta y el nombre en la
+                   siguiente, porque el contenido medía más que los 40mm
+                   disponibles con esas tipografías. */
                 @page { size: {{ $this::LABEL_WIDTH_MM }}mm {{ $this::LABEL_HEIGHT_MM }}mm; margin: 2mm; }
                 .labels-sheet { display: block !important; }
                 .label-cell {
                     width: 100%;
                     height: {{ $this::LABEL_HEIGHT_MM - 4 }}mm;
+                    overflow: hidden;
                     border: none !important;
                     page-break-after: always;
                     break-after: page;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
+                .label-cell > * { margin-top: 0 !important; line-height: 1.15 !important; }
+                .label-cell .text-sm { font-size: 11px !important; }
+                .label-cell .text-xl { font-size: 15px !important; }
             @else
                 .labels-sheet { display: grid !important; }
                 .label-cell {
@@ -146,7 +158,7 @@
             @unless ($modoEtiquetadora) style="grid-template-columns: repeat({{ $columns }}, minmax(0, 1fr));" @endunless
         >
             @foreach ($labels as $label)
-                <div class="label-cell flex flex-col items-center justify-center text-center rounded border border-gray-300 dark:border-gray-700 px-2 py-3 bg-white dark:bg-gray-900">
+                <div class="label-cell flex flex-col items-center text-center bg-white dark:bg-gray-900 {{ $modoEtiquetadora ? 'justify-start px-1 py-1' : 'justify-center rounded border border-gray-300 dark:border-gray-700 px-2 py-3' }}">
                     @if ($showCompany)
                         <span class="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 truncate w-full">{{ $companyName }}</span>
                     @endif
