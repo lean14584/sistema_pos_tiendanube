@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Reports;
 
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Sucursal;
 use App\Support\CurrentSucursal;
 use App\Support\SalesReport;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -13,6 +13,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ScopedToSucursal;
+
     #[Url]
     public string $fromDate;
 
@@ -39,11 +41,6 @@ class Index extends Component
         $this->toDate ??= now()->toDateString();
         $this->fromDateB = $this->fromDateB ?: now()->subYear()->subDays(30)->toDateString();
         $this->toDateB = $this->toDateB ?: now()->subYear()->toDateString();
-    }
-
-    public function puedeVerTodasLasSucursales(): bool
-    {
-        return (bool) Auth::user()?->esAdminGlobal();
     }
 
     public function render()

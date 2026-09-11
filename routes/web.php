@@ -144,10 +144,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/importar-saldo', ClientImportSaldo::class)->name('import-saldo');
     });
 
-    Route::middleware('module:data-import')->prefix('ventas-historicas')->name('historical-sales.')->group(function () {
-        Route::get('/', HistoricalSaleIndex::class)->name('index');
-        Route::get('/importar', HistoricalSaleImport::class)->name('import');
-    });
+    if (config('features.historical_sales')) {
+        Route::middleware('module:data-import')->prefix('ventas-historicas')->name('historical-sales.')->group(function () {
+            Route::get('/', HistoricalSaleIndex::class)->name('index');
+            Route::get('/importar', HistoricalSaleImport::class)->name('import');
+        });
+    }
 
     Route::middleware('module:cobranzas')->get('cobranzas', App\Livewire\Cobranzas\Index::class)->name('cobranzas.index');
 

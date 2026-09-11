@@ -3,12 +3,14 @@
 namespace App\Livewire;
 
 use App\Enums\InvoiceStatus;
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Sucursal;
 use App\Support\CurrentSucursal;
 use App\Support\Permissions;
 use App\Support\SalesReport;
+use App\Support\SystemHealth;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
@@ -18,6 +20,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Dashboard extends Component
 {
+    use ScopedToSucursal;
+
     #[Url]
     public int $year;
 
@@ -28,11 +32,6 @@ class Dashboard extends Component
     public function mount(): void
     {
         $this->year ??= (int) now()->year;
-    }
-
-    public function puedeVerTodasLasSucursales(): bool
-    {
-        return (bool) Auth::user()?->esAdminGlobal();
     }
 
     /**
@@ -77,7 +76,7 @@ class Dashboard extends Component
             'pendientesEmisionCount' => $agg['pendientesEmisionCount'],
             'canSeeHealth' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health'),
             'systemWarnings' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health')
-                ? app(\App\Support\SystemHealth::class)->avisos()
+                ? app(SystemHealth::class)->avisos()
                 : 0,
             'canManageInvoices' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'invoices'),
             'canManageProducts' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'products'),

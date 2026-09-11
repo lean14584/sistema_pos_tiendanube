@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Livewire\Dashboard;
+use App\Livewire\Reports\Index as ReportsIndex;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +41,7 @@ class FeatureTogglesTest extends TestCase
         $this->assertTrue(Route::has('price-lists.index'));
         $this->assertTrue(Route::has('vencimientos.index'));
         $this->assertTrue(Route::has('invoices.create'));
+        $this->assertTrue(Route::has('historical-sales.index'));
     }
 
     public function test_sidebar_no_revienta_si_una_ruta_de_modulo_opcional_no_existe(): void
@@ -56,6 +59,7 @@ class FeatureTogglesTest extends TestCase
             'features.product_batches' => false,
             'features.price_lists' => false,
             'features.vencimientos_finanzas' => false,
+            'features.historical_sales' => false,
         ]);
 
         $response = $this->actingAs($this->admin())->get(route('dashboard'));
@@ -66,8 +70,46 @@ class FeatureTogglesTest extends TestCase
         $response->assertDontSee('Envío de Mercadería');
         $response->assertDontSee('Lotes y Vencimientos');
         $response->assertDontSee('Listas de precios');
+        $response->assertDontSee('Ventas históricas');
         // "Vencimientos" es ambiguo (aparece en otros labels), así que no lo
         // busco como texto suelto acá — alcanza con que la página no reviente.
+    }
+
+    public function test_selector_de_todas_las_sucursales_se_oculta_para_admin_si_multisucursal_esta_apagado(): void
+    {
+        // Antes de este fix, puedeVerTodasLasSucursales() solo chequeaba el
+        // rol: un admin en una instalación con multisucursal apagado (ej.
+        // deco-hogar) seguía viendo el selector "Todas las sucursales" y los
+        // desgloses por sucursal en Dashboard/Informes/Auditoría/Facturas.
+        config(['features.multisucursal' => false]);
+
+        $admin = $this->admin();
+
+        $this->assertFalse(
+            Livewire::actingAs($admin)->test(Dashboard::class)->instance()->puedeVerTodasLasSucursales()
+        );
+        $this->assertFalse(
+            Livewire::actingAs($admin)->test(ReportsIndex::class)->instance()->puedeVerTodasLasSucursales()
+        );
+    }
+
+    public function test_selector_de_todas_las_sucursales_se_ve_para_admin_si_multisucursal_esta_prendido(): void
+    {
+        config(['features.multisucursal' => true]);
+
+        $this->assertTrue(
+            Livewire::actingAs($this->admin())->test(Dashboard::class)->instance()->puedeVerTodasLasSucursales()
+        );
+    }
+
+    public function test_ventas_historicas_se_oculta_del_sidebar_cuando_esta_apagado(): void
+    {
+        config(['features.historical_sales' => false]);
+
+        $response = $this->actingAs($this->admin())->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertDontSee('Ventas históricas');
     }
 
     public function test_boton_de_nueva_factura_se_oculta_cuando_la_creacion_manual_esta_apagada(): void

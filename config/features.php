@@ -15,4 +15,5 @@ return [
     'stock_transfers' => env('FEATURE_STOCK_TRANSFERS', true),
     'vencimientos_finanzas' => env('FEATURE_VENCIMIENTOS_FINANZAS', true),
     'sell_by_weight' => env('FEATURE_SELL_BY_WEIGHT', true),
+    'historical_sales' => env('FEATURE_HISTORICAL_SALES', true),
 ];

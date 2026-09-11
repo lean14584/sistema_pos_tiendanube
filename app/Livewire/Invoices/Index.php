@@ -3,10 +3,10 @@
 namespace App\Livewire\Invoices;
 
 use App\Enums\InvoiceStatus;
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Invoice;
 use App\Models\Sucursal;
 use App\Support\CurrentSucursal;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -15,6 +15,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ScopedToSucursal;
     use WithPagination;
 
     #[Url]
@@ -29,11 +30,6 @@ class Index extends Component
     public function updating(): void
     {
         $this->resetPage();
-    }
-
-    public function puedeVerTodasLasSucursales(): bool
-    {
-        return (bool) Auth::user()?->esAdminGlobal();
     }
 
     public function render()

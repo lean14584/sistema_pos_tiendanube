@@ -2,11 +2,11 @@
 
 namespace App\Livewire\Audit;
 
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\AuditLog;
 use App\Models\Sucursal;
 use App\Models\User;
 use App\Support\CurrentSucursal;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -15,6 +15,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ScopedToSucursal;
     use WithPagination;
 
     #[Url]
@@ -36,11 +37,6 @@ class Index extends Component
     public function updating(): void
     {
         $this->resetPage();
-    }
-
-    public function puedeVerTodasLasSucursales(): bool
-    {
-        return (bool) Auth::user()?->esAdminGlobal();
     }
 
     public function render()

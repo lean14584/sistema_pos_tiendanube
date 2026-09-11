@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductBatches;
 
 use App\Enums\StockAdjustmentReason;
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\ProductBatch;
 use App\Models\ProductStock;
@@ -10,7 +11,6 @@ use App\Models\StockAdjustment;
 use App\Models\Sucursal;
 use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -26,6 +26,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ScopedToSucursal;
     use ShowsToasts;
     use WithPagination;
 
@@ -41,11 +42,6 @@ class Index extends Component
     public string $bajaCantidad = '';
 
     public string $bajaNotes = '';
-
-    public function puedeVerTodasLasSucursales(): bool
-    {
-        return (bool) Auth::user()?->esAdminGlobal();
-    }
 
     public function abrirBaja(int $batchId): void
     {
