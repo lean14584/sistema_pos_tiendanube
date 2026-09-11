@@ -41,7 +41,7 @@
            que queda de página, lo manda entero a una segunda página). */
         .prices { width: 100%; margin-top: 0; padding: 0 2mm; line-height: 1; }
         .price-row { display: flex; justify-content: space-between; align-items: baseline; }
-        .price-row .pm { font-size: 6.5px; text-transform: uppercase; color: #6b7280; }
+        .price-row .pm { font-size: 6.5px; font-weight: bold; text-transform: uppercase; color: #111827; }
         .price-row .pv { font-size: 10.5px; font-weight: bold; }
     </style>
 </head>
