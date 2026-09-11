@@ -18,6 +18,7 @@ use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -261,9 +262,10 @@ class Create extends Component
         }), null, $puntoVentaNumero);
 
         if ($this->printOnSave) {
+            $escposUrl = URL::temporarySignedRoute('invoices.ticket-escpos', now()->addMinutes(2), ['invoice' => $invoice]);
             $this->js('printTicket('
                 .json_encode(route('invoices.ticket-print', $invoice)).','
-                .json_encode(route('invoices.ticket-escpos', $invoice))
+                .json_encode($escposUrl)
                 .')');
         }
 

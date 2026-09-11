@@ -68,7 +68,6 @@ class InvoiceSucursalScopeTest extends TestCase
         $this->actingAs($cajero)->get(route('invoices.pdf', $invoice))->assertForbidden();
         $this->actingAs($cajero)->get(route('invoices.ticket-print', $invoice))->assertForbidden();
         $this->actingAs($cajero)->get(route('invoices.ticket-image', $invoice))->assertForbidden();
-        $this->actingAs($cajero)->get(route('invoices.ticket-escpos', $invoice))->assertForbidden();
     }
 
     public function test_admin_si_puede_ver_facturas_de_cualquier_sucursal(): void

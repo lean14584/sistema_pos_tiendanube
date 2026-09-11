@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -53,11 +54,17 @@ class TicketPrintTest extends TestCase
         $this->assertNotFalse(getimagesizefromstring($response->getContent()));
     }
 
+    /**
+     * El agente local (ver pos-print-agent/) no tiene sesión de navegador,
+     * así que esta ruta no usa 'auth' sino 'signed': la URL firmada es la
+     * que autoriza el acceso (ver TicketEscPosController).
+     */
     public function test_el_escpos_del_ticket_es_una_imagen_rasterizada_valida(): void
     {
         $invoice = $this->invoice();
+        $url = URL::temporarySignedRoute('invoices.ticket-escpos', now()->addMinutes(2), ['invoice' => $invoice]);
 
-        $response = $this->actingAs($this->admin())->get(route('invoices.ticket-escpos', $invoice));
+        $response = $this->get($url);
 
         $response->assertOk();
         $this->assertSame('application/octet-stream', $response->headers->get('Content-Type'));
@@ -73,6 +80,17 @@ class TicketPrintTest extends TestCase
         // xL/xH del ancho: 384px de ancho de ticket = 48 bytes exactos.
         $widthBytes = ord($bytes[6]) | (ord($bytes[7]) << 8);
         $this->assertSame(48, $widthBytes);
+    }
+
+    public function test_no_se_puede_pedir_el_escpos_sin_firma_valida(): void
+    {
+        $invoice = $this->invoice();
+
+        // route() sin firmar: sin 'signature'/'expires' en la query.
+        $this->get(route('invoices.ticket-escpos', $invoice))->assertForbidden();
+
+        $vencida = URL::temporarySignedRoute('invoices.ticket-escpos', now()->subMinute(), ['invoice' => $invoice]);
+        $this->get($vencida)->assertForbidden();
     }
 
     public function test_la_pagina_de_impresion_muestra_la_imagen_del_ticket(): void
@@ -105,6 +123,7 @@ class TicketPrintTest extends TestCase
         $this->assertNotEmpty($xjs, 'Se esperaba que la venta dispare printTicket() para imprimir el ticket.');
         $this->assertStringContainsString('printTicket', $xjs[0]['expression']);
         $this->assertStringContainsString(json_encode(route('invoices.ticket-print', $invoice)), $xjs[0]['expression']);
+        $this->assertStringContainsString('signature=', $xjs[0]['expression'], 'La URL del ticket ESC/POS tiene que venir firmada, el agente local no tiene sesión.');
     }
 
     public function test_vender_con_imprimir_ticket_desactivado_no_abre_ninguna_ventana(): void
@@ -148,5 +167,6 @@ class TicketPrintTest extends TestCase
         $this->assertNotEmpty($xjs, 'Se esperaba que guardar la factura dispare printTicket() para imprimir el ticket.');
         $this->assertStringContainsString('printTicket', $xjs[0]['expression']);
         $this->assertStringContainsString(json_encode(route('invoices.ticket-print', $invoice)), $xjs[0]['expression']);
+        $this->assertStringContainsString('signature=', $xjs[0]['expression'], 'La URL del ticket ESC/POS tiene que venir firmada, el agente local no tiene sesión.');
     }
 }

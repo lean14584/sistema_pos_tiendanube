@@ -18,6 +18,7 @@ use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -49,6 +50,16 @@ class Show extends Component
         );
 
         $this->invoice = $invoice;
+    }
+
+    /**
+     * URL firmada (vence en minutos) del ticket ESC/POS, para que el agente
+     * de impresión local (ver pos-print-agent/) lo baje sin necesitar sesión
+     * de navegador. Ver TicketEscPosController.
+     */
+    public function ticketEscPosUrl(): string
+    {
+        return URL::temporarySignedRoute('invoices.ticket-escpos', now()->addMinutes(2), ['invoice' => $this->invoice]);
     }
 
     public function mpConfigured(): bool

@@ -95,6 +95,14 @@ Route::post('/tiendanube/webhook', TiendanubeWebhookController::class)->name('ti
 // Kiosco público de consulta de precios (para dejar fijo en el salón).
 Route::get('/precios', Kiosk::class)->name('precios');
 
+// Ticket ESC/POS para el agente de impresión local (ver pos-print-agent/):
+// sin auth porque el agente no tiene sesión de navegador. La URL firmada
+// (URL::temporarySignedRoute, vence en minutos) es la que autoriza el
+// acceso, generada server-side solo para el usuario que ya vio la factura.
+Route::get('/invoices/{invoice}/ticket.escpos', TicketEscPosController::class)
+    ->middleware('signed')
+    ->name('invoices.ticket-escpos');
+
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
 
@@ -117,7 +125,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/pdf', InvoicePdfController::class)->name('pdf');
         Route::get('/{invoice}/ticket', TicketPrintController::class)->name('ticket-print');
         Route::get('/{invoice}/ticket.png', TicketImageController::class)->name('ticket-image');
-        Route::get('/{invoice}/ticket.escpos', TicketEscPosController::class)->name('ticket-escpos');
         Route::get('/{invoice}/remito-pdf', RemitoPdfController::class)->name('remito-pdf');
         Route::get('/{invoice}/facturar', FacturarRemito::class)->name('facturar-remito');
         Route::get('/{invoice}/nota-credito', NotaCreditoCreate::class)->name('nota-credito.create');
