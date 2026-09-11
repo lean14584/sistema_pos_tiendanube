@@ -24,11 +24,11 @@
         }
         .label:last-child { page-break-after: auto; }
 
-        .company { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; }
+        .company { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; }
         .name { font-size: 11px; font-weight: bold; line-height: 1.15; margin-top: 1px; }
         .price { font-size: 17px; font-weight: bold; margin-top: 2px; }
         .sku { font-size: 10px; font-family: monospace; letter-spacing: 1px; color: #374151; margin-top: 2px; }
-        .barcode { width: 40mm; margin-top: 2px; }
+        .barcode { width: 46mm; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -38,7 +38,14 @@
                 <div class="company">{{ $companyName }}</div>
             @endif
             @if ($showName)
-                <div class="name">{{ $label['name'] }}</div>
+                {{-- Truncar el string, no solo recortarlo visualmente: dompdf
+                     no respeta overflow:hidden para decidir paginación, así
+                     que un nombre demasiado largo puede derramar esta
+                     etiqueta a una SEGUNDA página/etiqueta física en vez de
+                     solo recortarse — mismo problema, a nivel de página en
+                     vez de a nivel del div, que el comentario de .label de
+                     arriba. Truncar el texto elimina el riesgo de raíz. --}}
+                <div class="name">{{ \Illuminate\Support\Str::limit($label['name'], 38) }}</div>
             @endif
             <div class="price">${{ money($label['price']) }}</div>
             @if ($showSku)

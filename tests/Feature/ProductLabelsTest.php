@@ -114,6 +114,30 @@ class ProductLabelsTest extends TestCase
         $this->assertStringContainsString('YER-1', $html);
     }
 
+    public function test_la_etiqueta_pdf_trunca_nombres_muy_largos_en_vez_de_solo_recortarlos_visualmente(): void
+    {
+        // dompdf no respeta overflow:hidden para decidir paginación: un
+        // nombre demasiado largo puede derramar la etiqueta a una SEGUNDA
+        // página en vez de solo recortarse (esto rompió de verdad al
+        // agrandar la letra/código de barras — ver Str::limit en la vista).
+        $nombreLargo = 'Juego De Sabanas King Size Algodon Premium Con Funda Extra Grande';
+
+        $html = view('pdf.etiquetas-precio', [
+            'labels' => collect([
+                ['name' => $nombreLargo, 'sku' => '9876', 'price' => 2000, 'ean13' => Ean13::fromSku('9876')],
+            ]),
+            'barcodes' => collect(),
+            'companyName' => 'DECO-HOGAR',
+            'showSku' => false,
+            'showName' => true,
+            'showCompany' => true,
+            'heightMm' => 44,
+        ])->render();
+
+        $this->assertStringNotContainsString($nombreLargo, $html);
+        $this->assertStringContainsString('Juego De Sabanas King Size', $html);
+    }
+
     public function test_agregar_categoria_entera_suma_sus_productos(): void
     {
         $cat = Category::create(['name' => 'Bebidas']);
