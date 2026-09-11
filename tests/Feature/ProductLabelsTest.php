@@ -73,14 +73,35 @@ class ProductLabelsTest extends TestCase
             ->assertFileDownloaded('etiquetas.pdf');
     }
 
+    /**
+     * Los tests de esta clase que renderizan la vista PDF directamente (sin
+     * pasar por el componente Livewire) arman el array de la etiqueta a
+     * mano — este helper completa los campos de precio por medio de pago en
+     * 0 (feature apagada, mismo comportamiento que un cliente sin los
+     * descuentos configurados) salvo que el test los pise explícitamente.
+     *
+     * @return array{name:string,sku:?string,price:float,ean13:?string,priceTransferencia:float,priceEfectivo:float,pctTransferencia:float,pctEfectivo:float}
+     */
+    private function labelData(string $name, ?string $sku, float $price, array $overrides = []): array
+    {
+        return array_merge([
+            'name' => $name,
+            'sku' => $sku,
+            'price' => $price,
+            'ean13' => Ean13::fromSku($sku),
+            'priceTransferencia' => $price,
+            'priceEfectivo' => $price,
+            'pctTransferencia' => 0.0,
+            'pctEfectivo' => 0.0,
+        ], $overrides);
+    }
+
     public function test_la_etiqueta_pdf_incluye_el_codigo_de_barras_cuando_el_sku_es_numerico(): void
     {
         $ean13 = Ean13::fromSku('9876');
 
         $html = view('pdf.etiquetas-precio', [
-            'labels' => collect([
-                ['name' => 'Plato De Porcelana', 'sku' => '9876', 'price' => 2000, 'ean13' => $ean13],
-            ]),
+            'labels' => collect([$this->labelData('Plato De Porcelana', '9876', 2000)]),
             'barcodes' => collect([$ean13 => Ean13Barcode::dataUri($ean13)]),
             'companyName' => 'DECO-HOGAR',
             'showSku' => true,
@@ -99,9 +120,7 @@ class ProductLabelsTest extends TestCase
         // "YER-1" no se puede convertir a EAN13 (no es numérico): se sigue
         // viendo el sku como texto, igual que antes de tener código de barras.
         $html = view('pdf.etiquetas-precio', [
-            'labels' => collect([
-                ['name' => 'Yerba', 'sku' => 'YER-1', 'price' => 1500, 'ean13' => Ean13::fromSku('YER-1')],
-            ]),
+            'labels' => collect([$this->labelData('Yerba', 'YER-1', 1500)]),
             'barcodes' => collect(),
             'companyName' => 'DECO-HOGAR',
             'showSku' => true,
@@ -123,9 +142,7 @@ class ProductLabelsTest extends TestCase
         $nombreLargo = 'Juego De Sabanas King Size Algodon Premium Con Funda Extra Grande Y Almohadas De Regalo';
 
         $html = view('pdf.etiquetas-precio', [
-            'labels' => collect([
-                ['name' => $nombreLargo, 'sku' => '9876', 'price' => 2000, 'ean13' => Ean13::fromSku('9876')],
-            ]),
+            'labels' => collect([$this->labelData($nombreLargo, '9876', 2000)]),
             'barcodes' => collect(),
             'companyName' => 'DECO-HOGAR',
             'showSku' => false,
@@ -137,21 +154,18 @@ class ProductLabelsTest extends TestCase
         $this->assertStringNotContainsString($nombreLargo, $html);
         // preserveWords: corta en el último espacio antes del límite, nunca
         // a mitad de una palabra (ej. no "Prem..." ni "Gran...").
-        $this->assertStringContainsString('Juego De Sabanas King Size Algodon Premium Con Funda Extra Grande', $html);
+        $this->assertStringContainsString('Juego De Sabanas King Size Algodon Premium Con', $html);
         $this->assertStringNotContainsString('Almohadas', $html);
     }
 
     public function test_un_nombre_que_entra_justo_en_el_limite_no_se_trunca(): void
     {
-        // 65 caracteres exactos: el mismo nombre real que probó el usuario,
-        // que antes (límite de 38) se truncaba a mitad de "Premium".
-        $nombreExacto = 'Juego De Sabanas King Size Algodon Premium Con Funda Extra Grande';
-        $this->assertSame(65, strlen($nombreExacto));
+        // 47 caracteres: entra completo bajo el límite de 50.
+        $nombreExacto = 'Juego De Sabanas King Size Algodon Premium';
+        $this->assertLessThanOrEqual(50, strlen($nombreExacto));
 
         $html = view('pdf.etiquetas-precio', [
-            'labels' => collect([
-                ['name' => $nombreExacto, 'sku' => '9877', 'price' => 15000, 'ean13' => Ean13::fromSku('9877')],
-            ]),
+            'labels' => collect([$this->labelData($nombreExacto, '9877', 15000)]),
             'barcodes' => collect(),
             'companyName' => 'DECO-HOGAR',
             'showSku' => false,
@@ -161,6 +175,54 @@ class ProductLabelsTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString($nombreExacto, $html);
+    }
+
+    public function test_la_etiqueta_pdf_muestra_los_3_precios_por_medio_de_pago_cuando_estan_configurados(): void
+    {
+        // El cliente pidió ver los 3 precios en la etiqueta: Tarjeta al
+        // precio de lista, Transferencia y Efectivo con su descuento (ver
+        // CompanySettings::descuentoPctParaMedioDePago).
+        $html = view('pdf.etiquetas-precio', [
+            'labels' => collect([$this->labelData('Plato De Porcelana', '9876', 2000, [
+                'priceTransferencia' => 1800.0,
+                'priceEfectivo' => 1700.0,
+                'pctTransferencia' => 10.0,
+                'pctEfectivo' => 15.0,
+            ])]),
+            'barcodes' => collect(),
+            'companyName' => 'DECO-HOGAR',
+            'showSku' => false,
+            'showName' => true,
+            'showCompany' => true,
+            'heightMm' => 44,
+        ])->render();
+
+        $this->assertStringContainsString('Tarjeta', $html);
+        $this->assertStringContainsString('2.000,00', $html);
+        $this->assertStringContainsString('Transf -10%', $html);
+        $this->assertStringContainsString('1.800,00', $html);
+        $this->assertStringContainsString('Efectivo -15%', $html);
+        $this->assertStringContainsString('1.700,00', $html);
+    }
+
+    public function test_la_etiqueta_pdf_muestra_un_solo_precio_si_no_hay_descuentos_por_medio_de_pago(): void
+    {
+        // Cliente que no usa la feature (ej. pos-tiendanube hoy): sigue
+        // viendo el precio único de siempre, sin el bloque de 3 filas.
+        $html = view('pdf.etiquetas-precio', [
+            'labels' => collect([$this->labelData('Plato De Porcelana', '9876', 2000)]),
+            'barcodes' => collect(),
+            'companyName' => 'DECO-HOGAR',
+            'showSku' => false,
+            'showName' => true,
+            'showCompany' => true,
+            'heightMm' => 44,
+        ])->render();
+
+        // "Tarjeta" bare no sirve para este assert: aparece en el comentario
+        // de la hoja de estilos aunque el bloque de 3 precios esté apagado.
+        $this->assertStringNotContainsString('class="pm">Tarjeta', $html);
+        $this->assertStringContainsString('<div class="price">$2.000,00</div>', $html);
     }
 
     public function test_agregar_categoria_entera_suma_sus_productos(): void

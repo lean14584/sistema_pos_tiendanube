@@ -24,11 +24,25 @@
         }
         .label:last-child { page-break-after: auto; }
 
-        .company { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; }
-        .name { font-size: 11px; font-weight: bold; line-height: 1.15; margin-top: 1px; }
+        .company { font-size: 11px; font-weight: bold; line-height: 1; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; }
+        .name { font-size: 10px; font-weight: bold; line-height: 1.05; margin-top: 0; }
         .price { font-size: 17px; font-weight: bold; margin-top: 2px; }
         .sku { font-size: 10px; font-family: monospace; letter-spacing: 1px; color: #374151; margin-top: 2px; }
-        .barcode { width: 46mm; margin-top: 2px; }
+        .barcode { display: block; width: 42mm; margin: 0 auto; }
+
+        /* Tarjeta = precio de lista, Transferencia/Efectivo con su descuento
+           por medio de pago (ver CompanySettings::descuentoPctParaMedioDePago,
+           mismo cálculo que usa el POS al cobrar). Solo se arma este bloque
+           de 3 precios si el cliente tiene esos descuentos configurados; si
+           no, sigue mostrando el precio único de siempre (.price). line-height
+           chico a propósito: son 3 líneas en vez de 1, hay que compactarlas
+           para que siga entrando el código de barras debajo (ver el comentario
+           de .label: dompdf no parte ni recorta un <img> que no entra en lo
+           que queda de página, lo manda entero a una segunda página). */
+        .prices { width: 100%; margin-top: 0; padding: 0 2mm; line-height: 1; }
+        .price-row { display: flex; justify-content: space-between; align-items: baseline; }
+        .price-row .pm { font-size: 6.5px; text-transform: uppercase; color: #6b7280; }
+        .price-row .pv { font-size: 10.5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -45,9 +59,26 @@
                      solo recortarse — mismo problema, a nivel de página en
                      vez de a nivel del div, que el comentario de .label de
                      arriba. Truncar el texto elimina el riesgo de raíz. --}}
-                <div class="name">{{ \Illuminate\Support\Str::limit($label['name'], 65, '...', preserveWords: true) }}</div>
+                <div class="name">{{ \Illuminate\Support\Str::limit($label['name'], 50, '...', preserveWords: true) }}</div>
             @endif
-            <div class="price">${{ money($label['price']) }}</div>
+            @if ($label['pctTransferencia'] > 0 || $label['pctEfectivo'] > 0)
+                <div class="prices">
+                    <div class="price-row">
+                        <span class="pm">Tarjeta</span>
+                        <span class="pv">${{ money($label['price']) }}</span>
+                    </div>
+                    <div class="price-row">
+                        <span class="pm">Transf -{{ rtrim(rtrim(number_format($label['pctTransferencia'], 2), '0'), '.') }}%</span>
+                        <span class="pv">${{ money($label['priceTransferencia']) }}</span>
+                    </div>
+                    <div class="price-row">
+                        <span class="pm">Efectivo -{{ rtrim(rtrim(number_format($label['pctEfectivo'], 2), '0'), '.') }}%</span>
+                        <span class="pv">${{ money($label['priceEfectivo']) }}</span>
+                    </div>
+                </div>
+            @else
+                <div class="price">${{ money($label['price']) }}</div>
+            @endif
             @if ($showSku)
                 {{-- El código de barras ya incluye los dígitos legibles debajo,
                      así que reemplaza al texto plano del sku cuando se puede

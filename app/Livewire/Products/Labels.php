@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Products;
 
+use App\Enums\PaymentMethod;
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Category;
 use App\Models\CompanySettings;
@@ -122,13 +123,21 @@ class Labels extends Component
      * Expande la selección a una etiqueta por unidad, ya con el precio según
      * la lista elegida. Es lo que se dibuja en la hoja imprimible.
      *
-     * @return Collection<int, array{name:string,sku:?string,price:float,ean13:?string}>
+     * @return Collection<int, array{name:string,sku:?string,price:float,ean13:?string,priceTransferencia:float,priceEfectivo:float,pctTransferencia:float,pctEfectivo:float}>
      */
     private function labels()
     {
         $list = $this->price_list_id ? PriceList::find($this->price_list_id) : null;
         $ids = array_keys($this->selected);
         $products = Product::whereIn('id', $ids)->get()->keyBy('id');
+        $settings = CompanySettings::current();
+
+        // "Tarjeta" es el precio de lista (0% de descuento, ver
+        // CompanySettings::descuentoPctParaMedioDePago). Mismo cálculo que
+        // usa el POS al cobrar (Pos\Index::montoRealPago), para que el
+        // precio impreso coincida con lo que termina cobrándose.
+        $pctTransferencia = $settings->descuentoPctParaMedioDePago(PaymentMethod::Transferencia);
+        $pctEfectivo = $settings->descuentoPctParaMedioDePago(PaymentMethod::Efectivo);
 
         $labels = collect();
 
@@ -148,6 +157,10 @@ class Labels extends Component
                     'sku' => $product->sku,
                     'price' => $price,
                     'ean13' => $ean13,
+                    'priceTransferencia' => round($price * (1 - $pctTransferencia / 100), 2),
+                    'priceEfectivo' => round($price * (1 - $pctEfectivo / 100), 2),
+                    'pctTransferencia' => $pctTransferencia,
+                    'pctEfectivo' => $pctEfectivo,
                 ]);
             }
         }
