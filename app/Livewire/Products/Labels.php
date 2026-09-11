@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\CompanySettings;
 use App\Models\PriceList;
 use App\Models\Product;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -118,7 +120,7 @@ class Labels extends Component
      * Expande la selección a una etiqueta por unidad, ya con el precio según
      * la lista elegida. Es lo que se dibuja en la hoja imprimible.
      *
-     * @return \Illuminate\Support\Collection<int, array{name:string,sku:?string,price:float}>
+     * @return Collection<int, array{name:string,sku:?string,price:float}>
      */
     private function labels()
     {
@@ -147,6 +149,32 @@ class Labels extends Component
         }
 
         return $labels;
+    }
+
+    /**
+     * Genera el PDF de la etiquetadora con DOMPDF, en vez de dejar que el
+     * navegador imprima el HTML: el tamaño de página queda embebido en el
+     * PDF mismo (vía setPaper), así que no depende de que Chrome interprete
+     * bien el @page CSS ni de que el diálogo de impresión tenga
+     * "Tamaño de papel: Personalizado" bien elegido.
+     */
+    public function descargarEtiquetadoraPdf()
+    {
+        $mmToPt = fn (float $mm) => $mm * 72 / 25.4;
+
+        $pdf = Pdf::loadView('pdf.etiquetas-precio', [
+            'labels' => $this->labels(),
+            'companyName' => CompanySettings::current()->display_name,
+            'showSku' => $this->showSku,
+            'showName' => $this->showName,
+            'showCompany' => $this->showCompany,
+            'heightMm' => self::LABEL_HEIGHT_MM,
+        ])->setPaper([0, 0, $mmToPt(self::LABEL_WIDTH_MM), $mmToPt(self::LABEL_HEIGHT_MM)]);
+
+        return response()->streamDownload(
+            fn () => print $pdf->output(),
+            'etiquetas.pdf'
+        );
     }
 
     public function render()

@@ -46,7 +46,7 @@ class ProductLabelsTest extends TestCase
             ->assertSee('1.200,00'); // 1000 + 20%
     }
 
-    public function test_el_modo_etiquetadora_usa_el_tamano_fijo_de_la_hprt_lpq80(): void
+    public function test_el_modo_etiquetadora_muestra_boton_de_descargar_pdf_en_vez_de_imprimir(): void
     {
         $product = Product::create(['name' => 'Yerba', 'sku' => 'YER-1', 'price' => 1500, 'iva_rate' => 21, 'stock' => 10]);
 
@@ -55,8 +55,20 @@ class ProductLabelsTest extends TestCase
             ->call('addProduct', $product->id)
             ->set('modoEtiquetadora', true);
 
-        $component->assertSee('55mm 44mm', false);
+        $component->assertSee('Descargar PDF');
         $component->assertDontSee('Columnas por hoja');
+    }
+
+    public function test_el_modo_etiquetadora_descarga_un_pdf_con_el_tamano_fijo_de_la_hprt_lpq80(): void
+    {
+        $product = Product::create(['name' => 'Yerba', 'sku' => 'YER-1', 'price' => 1500, 'iva_rate' => 21, 'stock' => 10]);
+
+        Livewire::actingAs($this->admin())
+            ->test('products.labels')
+            ->call('addProduct', $product->id)
+            ->set('modoEtiquetadora', true)
+            ->call('descargarEtiquetadoraPdf')
+            ->assertFileDownloaded('etiquetas.pdf');
     }
 
     public function test_agregar_categoria_entera_suma_sus_productos(): void

@@ -1,47 +1,22 @@
 <div class="p-8 max-w-5xl mx-auto">
     <style>
         @media print {
-            /* Ocultá todo menos la hoja de etiquetas */
+            /* Modo hoja con grilla (impresora normal): el modo etiquetadora
+               ya no imprime por acá, genera un PDF con DOMPDF (tamaño de
+               página exacto embebido) en vez de depender de que el navegador
+               interprete bien @page — ver Labels::descargarEtiquetadoraPdf. */
             aside, header, .no-print { display: none !important; }
             body { background: #fff !important; }
             main { overflow: visible !important; }
 
-            @if ($modoEtiquetadora)
-                /* Etiquetadora dedicada (ej. HPRT LPQ80): una etiqueta
-                   autoadhesiva física por página, sin grilla. overflow:
-                   hidden es a propósito: si el contenido no entra, se
-                   recorta ahí mismo (se pierde el dato menos importante,
-                   el SKU, que va último) en vez de que el navegador siga
-                   el texto en una SEGUNDA etiqueta física — eso fue lo que
-                   pasó la primera vez que se ajustó el tamaño del driver:
-                   el precio/SKU salían en una etiqueta y el nombre en la
-                   siguiente, porque el contenido medía más que los 40mm
-                   disponibles con esas tipografías. */
-                @page { size: {{ $this::LABEL_WIDTH_MM }}mm {{ $this::LABEL_HEIGHT_MM }}mm; margin: 2mm; }
-                .labels-sheet { display: block !important; }
-                .label-cell {
-                    width: 100%;
-                    height: {{ $this::LABEL_HEIGHT_MM - 4 }}mm;
-                    overflow: hidden;
-                    border: none !important;
-                    page-break-after: always;
-                    break-after: page;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-                .label-cell > * { margin-top: 0 !important; line-height: 1.15 !important; }
-                .label-cell .text-sm { font-size: 11px !important; }
-                .label-cell .text-xl { font-size: 15px !important; }
-            @else
-                .labels-sheet { display: grid !important; }
-                .label-cell {
-                    border: 1px solid #000 !important;
-                    break-inside: avoid;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-                @page { margin: 8mm; }
-            @endif
+            .labels-sheet { display: grid !important; }
+            .label-cell {
+                border: 1px solid #000 !important;
+                break-inside: avoid;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            @page { margin: 8mm; }
         }
     </style>
 
@@ -141,9 +116,15 @@
             </div>
 
             <div class="flex items-center gap-3 mb-8">
-                <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600">
-                    <x-heroicon-o-printer class="w-4 h-4" /> Imprimir {{ $labels->count() }} etiqueta(s)
-                </button>
+                @if ($modoEtiquetadora)
+                    <button type="button" wire:click="descargarEtiquetadoraPdf" class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600">
+                        <x-heroicon-o-arrow-down-tray class="w-4 h-4" /> Descargar PDF ({{ $labels->count() }} etiqueta(s))
+                    </button>
+                @else
+                    <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600">
+                        <x-heroicon-o-printer class="w-4 h-4" /> Imprimir {{ $labels->count() }} etiqueta(s)
+                    </button>
+                @endif
                 <button type="button" wire:click="clear" class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Vaciar</button>
             </div>
         @else
