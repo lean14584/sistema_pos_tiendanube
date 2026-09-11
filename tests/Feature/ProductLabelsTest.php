@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\Ean13;
+use App\Support\Ean13Barcode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -69,6 +71,47 @@ class ProductLabelsTest extends TestCase
             ->set('modoEtiquetadora', true)
             ->call('descargarEtiquetadoraPdf')
             ->assertFileDownloaded('etiquetas.pdf');
+    }
+
+    public function test_la_etiqueta_pdf_incluye_el_codigo_de_barras_cuando_el_sku_es_numerico(): void
+    {
+        $ean13 = Ean13::fromSku('9876');
+
+        $html = view('pdf.etiquetas-precio', [
+            'labels' => collect([
+                ['name' => 'Plato De Porcelana', 'sku' => '9876', 'price' => 2000, 'ean13' => $ean13],
+            ]),
+            'barcodes' => collect([$ean13 => Ean13Barcode::dataUri($ean13)]),
+            'companyName' => 'DECO-HOGAR',
+            'showSku' => true,
+            'showName' => true,
+            'showCompany' => true,
+            'heightMm' => 44,
+        ])->render();
+
+        $this->assertStringContainsString('data:image/png;base64,', $html);
+        // El código de barras reemplaza al texto plano del sku, no conviven.
+        $this->assertStringNotContainsString('<div class="sku">9876</div>', $html);
+    }
+
+    public function test_la_etiqueta_pdf_usa_texto_plano_si_el_sku_no_es_numerico(): void
+    {
+        // "YER-1" no se puede convertir a EAN13 (no es numérico): se sigue
+        // viendo el sku como texto, igual que antes de tener código de barras.
+        $html = view('pdf.etiquetas-precio', [
+            'labels' => collect([
+                ['name' => 'Yerba', 'sku' => 'YER-1', 'price' => 1500, 'ean13' => Ean13::fromSku('YER-1')],
+            ]),
+            'barcodes' => collect(),
+            'companyName' => 'DECO-HOGAR',
+            'showSku' => true,
+            'showName' => true,
+            'showCompany' => true,
+            'heightMm' => 44,
+        ])->render();
+
+        $this->assertStringNotContainsString('data:image/png;base64,', $html);
+        $this->assertStringContainsString('YER-1', $html);
     }
 
     public function test_agregar_categoria_entera_suma_sus_productos(): void

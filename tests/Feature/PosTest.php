@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\CashSession;
 use App\Models\Client;
+use App\Models\CompanySettings;
+use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\Sucursal;
@@ -33,6 +35,24 @@ class PosTest extends TestCase
 
         $this->assertCount(1, $pos->get('cart'));
         $pos->assertSet('barcode', ''); // se limpia para el próximo escaneo
+    }
+
+    public function test_agrega_un_producto_escaneando_el_ean13_impreso_en_la_etiqueta(): void
+    {
+        // El sku es un código interno corto ("9876"), no un EAN13 real: la
+        // etiqueta imprime el código de Ean13::fromSku (con ceros a la
+        // izquierda + verificador), y el escaneo tiene que reconocerlo y
+        // recuperar el producto por su sku original, no por el código largo.
+        $product = Product::create(['name' => 'Plato De Porcelana', 'sku' => '9876', 'price' => 2000, 'iva_rate' => 21, 'stock' => 5]);
+
+        $pos = Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('barcode', '0000000098762')
+            ->call('addByBarcode');
+
+        $pos->assertHasNoErrors('barcode');
+        $this->assertCount(1, $pos->get('cart'));
+        $this->assertSame($product->id, $pos->get('cart')[0]['product_id']);
     }
 
     public function test_buscar_cliente_encuentra_por_nombre_y_seleccionarlo_lo_deja_como_cliente_actual(): void
@@ -68,7 +88,7 @@ class PosTest extends TestCase
 
     private function activarBalanza(): void
     {
-        \App\Models\CompanySettings::current()->update([
+        CompanySettings::current()->update([
             'barcode_scale_enabled' => true,
             'barcode_scale_prefix' => '20',
             'barcode_scale_code_digits' => 5,
@@ -229,7 +249,7 @@ class PosTest extends TestCase
     {
         $admin = $this->admin();
         CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
-        \App\Models\CompanySettings::current()->update(['descuento_efectivo_pct' => 15, 'descuento_transferencia_pct' => 10]);
+        CompanySettings::current()->update(['descuento_efectivo_pct' => 15, 'descuento_transferencia_pct' => 10]);
 
         $product = Product::create(['name' => 'Producto', 'price' => 10000, 'iva_rate' => 0, 'stock' => 5]);
 
@@ -246,7 +266,7 @@ class PosTest extends TestCase
             ->assertHasNoErrors();
 
         // 5000 sin descuento (tarjeta) + 5000*0.85 (efectivo, 15% off) = 9250.
-        $invoice = \App\Models\Invoice::latest('id')->firstOrFail();
+        $invoice = Invoice::latest('id')->firstOrFail();
         $this->assertSame('paid', $invoice->status->value);
         $this->assertEqualsWithDelta(9250, (float) $invoice->total, 0.01);
         $this->assertDatabaseHas('invoice_payments', ['method' => 'tarjeta', 'amount' => 5000]);
@@ -258,7 +278,7 @@ class PosTest extends TestCase
     {
         $admin = $this->admin();
         CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
-        \App\Models\CompanySettings::current()->update(['descuento_efectivo_pct' => 15]);
+        CompanySettings::current()->update(['descuento_efectivo_pct' => 15]);
 
         $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
         $cliente = Client::create(['name' => 'Juan Perez', 'email' => 'juan@test.com', 'condicion_iva' => 'consumidor_final', 'tipo_documento' => 'sin_identificar']);
@@ -275,7 +295,7 @@ class PosTest extends TestCase
             ->assertHasNoErrors();
 
         // Sin descuento: si queda saldo pendiente, se factura a precio de lista.
-        $invoice = \App\Models\Invoice::latest('id')->firstOrFail();
+        $invoice = Invoice::latest('id')->firstOrFail();
         $this->assertSame('pending', $invoice->status->value);
         $this->assertEqualsWithDelta(1000, (float) $invoice->total, 0.01);
         $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 600]);
@@ -298,7 +318,7 @@ class PosTest extends TestCase
             ->call('cobrar')
             ->assertHasNoErrors();
 
-        $invoice = \App\Models\Invoice::latest('id')->firstOrFail();
+        $invoice = Invoice::latest('id')->firstOrFail();
         $this->assertSame('paid', $invoice->status->value);
         $this->assertEqualsWithDelta(10000, (float) $invoice->total, 0.01);
         $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 10000]);
@@ -308,7 +328,7 @@ class PosTest extends TestCase
     {
         $admin = $this->admin();
         CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
-        \App\Models\CompanySettings::current()->update(['descuento_efectivo_pct' => 10]);
+        CompanySettings::current()->update(['descuento_efectivo_pct' => 10]);
 
         $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
 

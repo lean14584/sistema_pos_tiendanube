@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\CompanySettings;
 use App\Models\PriceList;
 use App\Models\Product;
+use App\Support\Ean13;
+use App\Support\Ean13Barcode;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
@@ -120,7 +122,7 @@ class Labels extends Component
      * Expande la selección a una etiqueta por unidad, ya con el precio según
      * la lista elegida. Es lo que se dibuja en la hoja imprimible.
      *
-     * @return Collection<int, array{name:string,sku:?string,price:float}>
+     * @return Collection<int, array{name:string,sku:?string,price:float,ean13:?string}>
      */
     private function labels()
     {
@@ -138,12 +140,14 @@ class Labels extends Component
             }
 
             $price = $product->priceForList($list);
+            $ean13 = Ean13::fromSku($product->sku);
 
             for ($i = 0; $i < max(1, (int) $row['qty']); $i++) {
                 $labels->push([
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'price' => $price,
+                    'ean13' => $ean13,
                 ]);
             }
         }
@@ -161,9 +165,17 @@ class Labels extends Component
     public function descargarEtiquetadoraPdf()
     {
         $mmToPt = fn (float $mm) => $mm * 72 / 25.4;
+        $labels = $this->labels();
+
+        // Una sola renderizada GD por código único: si hay varias copias del
+        // mismo producto (qty > 1), no tiene sentido dibujar el mismo PNG de
+        // barras muchas veces.
+        $barcodes = $labels->pluck('ean13')->filter()->unique()
+            ->mapWithKeys(fn (string $ean13) => [$ean13 => Ean13Barcode::dataUri($ean13)]);
 
         $pdf = Pdf::loadView('pdf.etiquetas-precio', [
-            'labels' => $this->labels(),
+            'labels' => $labels,
+            'barcodes' => $barcodes,
             'companyName' => CompanySettings::current()->display_name,
             'showSku' => $this->showSku,
             'showName' => $this->showName,

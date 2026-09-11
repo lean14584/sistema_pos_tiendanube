@@ -15,6 +15,7 @@ use App\Models\PromotionGroup;
 use App\Models\PuntoVenta;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
+use App\Support\Ean13;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\PromotionEngine;
 use App\Support\ScaleBarcodeParser;
@@ -226,6 +227,15 @@ class Index extends Component
 
         $product = Product::where('sku', $code)->first()
             ?? Product::where('name', $code)->first();
+
+        // El código de barras que imprime la etiqueta (ver Ean13::fromSku)
+        // completa un sku corto con ceros a la izquierda + dígito
+        // verificador: si no matcheó tal cual, probar recuperando el sku
+        // original antes de darlo por no encontrado.
+        if (! $product && strlen($code) === 13) {
+            $skuOriginal = Ean13::stripPadding($code);
+            $product = $skuOriginal ? Product::where('sku', $skuOriginal)->first() : null;
+        }
 
         if (! $product) {
             $this->addError('barcode', "No se encontró un producto con código «{$code}».");

@@ -28,6 +28,7 @@
         .name { font-size: 11px; font-weight: bold; line-height: 1.15; margin-top: 1px; }
         .price { font-size: 17px; font-weight: bold; margin-top: 2px; }
         .sku { font-size: 10px; font-family: monospace; letter-spacing: 1px; color: #374151; margin-top: 2px; }
+        .barcode { width: 32mm; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -40,8 +41,17 @@
                 <div class="name">{{ $label['name'] }}</div>
             @endif
             <div class="price">${{ money($label['price']) }}</div>
-            @if ($showSku && $label['sku'])
-                <div class="sku">{{ $label['sku'] }}</div>
+            @if ($showSku)
+                {{-- El código de barras ya incluye los dígitos legibles debajo,
+                     así que reemplaza al texto plano del sku cuando se puede
+                     armar un EAN13 válido (sku numérico de hasta 12 dígitos, o
+                     ya un EAN13 real de 13). Si no, se muestra el sku como
+                     texto simple, igual que antes de tener código de barras. --}}
+                @if ($label['ean13'] && isset($barcodes[$label['ean13']]))
+                    <img class="barcode" src="{{ $barcodes[$label['ean13']] }}" alt="{{ $label['ean13'] }}">
+                @elseif ($label['sku'])
+                    <div class="sku">{{ $label['sku'] }}</div>
+                @endif
             @endif
         </div>
     @endforeach

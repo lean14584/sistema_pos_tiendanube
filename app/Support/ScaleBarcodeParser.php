@@ -15,7 +15,7 @@ class ScaleBarcodeParser
 {
     /**
      * @return array{sku: string, weightKg: float}|null null si el código no
-     *                                                   tiene el formato/checksum esperado, o si la báscula está desactivada.
+     *                                                  tiene el formato/checksum esperado, o si la báscula está desactivada.
      */
     public static function parse(string $code, CompanySettings $settings): ?array
     {
@@ -36,7 +36,7 @@ class ScaleBarcodeParser
             return null;
         }
 
-        if (! self::checksumValido($code)) {
+        if (! Ean13::isValid($code)) {
             return null;
         }
 
@@ -46,25 +46,5 @@ class ScaleBarcodeParser
         $weightGrams = (int) substr($code, $offset, $weightDigits);
 
         return ['sku' => $sku, 'weightKg' => $weightGrams / 1000];
-    }
-
-    /**
-     * Checksum estándar EAN-13: dígitos impares (1ro, 3ro...) peso 1, pares
-     * peso 3, sobre los primeros 12 dígitos; el 13vo tiene que coincidir.
-     */
-    private static function checksumValido(string $code): bool
-    {
-        if (strlen($code) !== 13) {
-            return false;
-        }
-
-        $sum = 0;
-        for ($i = 0; $i < 12; $i++) {
-            $sum += (int) $code[$i] * ($i % 2 === 0 ? 1 : 3);
-        }
-
-        $checkDigit = (10 - ($sum % 10)) % 10;
-
-        return $checkDigit === (int) $code[12];
     }
 }
