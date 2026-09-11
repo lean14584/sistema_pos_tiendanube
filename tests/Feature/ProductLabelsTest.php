@@ -120,7 +120,7 @@ class ProductLabelsTest extends TestCase
         // nombre demasiado largo puede derramar la etiqueta a una SEGUNDA
         // página en vez de solo recortarse (esto rompió de verdad al
         // agrandar la letra/código de barras — ver Str::limit en la vista).
-        $nombreLargo = 'Juego De Sabanas King Size Algodon Premium Con Funda Extra Grande';
+        $nombreLargo = 'Juego De Sabanas King Size Algodon Premium Con Funda Extra Grande Y Almohadas De Regalo';
 
         $html = view('pdf.etiquetas-precio', [
             'labels' => collect([
@@ -135,7 +135,32 @@ class ProductLabelsTest extends TestCase
         ])->render();
 
         $this->assertStringNotContainsString($nombreLargo, $html);
-        $this->assertStringContainsString('Juego De Sabanas King Size', $html);
+        // preserveWords: corta en el último espacio antes del límite, nunca
+        // a mitad de una palabra (ej. no "Prem..." ni "Gran...").
+        $this->assertStringContainsString('Juego De Sabanas King Size Algodon Premium Con Funda Extra Grande', $html);
+        $this->assertStringNotContainsString('Almohadas', $html);
+    }
+
+    public function test_un_nombre_que_entra_justo_en_el_limite_no_se_trunca(): void
+    {
+        // 65 caracteres exactos: el mismo nombre real que probó el usuario,
+        // que antes (límite de 38) se truncaba a mitad de "Premium".
+        $nombreExacto = 'Juego De Sabanas King Size Algodon Premium Con Funda Extra Grande';
+        $this->assertSame(65, strlen($nombreExacto));
+
+        $html = view('pdf.etiquetas-precio', [
+            'labels' => collect([
+                ['name' => $nombreExacto, 'sku' => '9877', 'price' => 15000, 'ean13' => Ean13::fromSku('9877')],
+            ]),
+            'barcodes' => collect(),
+            'companyName' => 'DECO-HOGAR',
+            'showSku' => false,
+            'showName' => true,
+            'showCompany' => true,
+            'heightMm' => 44,
+        ])->render();
+
+        $this->assertStringContainsString($nombreExacto, $html);
     }
 
     public function test_agregar_categoria_entera_suma_sus_productos(): void

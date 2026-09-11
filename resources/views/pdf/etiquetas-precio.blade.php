@@ -45,7 +45,7 @@
                      solo recortarse — mismo problema, a nivel de página en
                      vez de a nivel del div, que el comentario de .label de
                      arriba. Truncar el texto elimina el riesgo de raíz. --}}
-                <div class="name">{{ \Illuminate\Support\Str::limit($label['name'], 38) }}</div>
+                <div class="name">{{ \Illuminate\Support\Str::limit($label['name'], 65, '...', preserveWords: true) }}</div>
             @endif
             <div class="price">${{ money($label['price']) }}</div>
             @if ($showSku)

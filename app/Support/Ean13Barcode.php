@@ -37,7 +37,7 @@ class Ean13Barcode
      * @param  string  $code  13 dígitos válidos (ver Ean13::fromSku/isValid).
      * @return string PNG binario (fondo blanco, sin transparencia).
      */
-    public static function render(string $code, int $moduleWidth = 4, int $barHeight = 140): string
+    public static function render(string $code, int $moduleWidth = 4, int $barHeight = 90): string
     {
         $bits = self::pattern($code);
         $textHeight = 30;
@@ -73,7 +73,7 @@ class Ean13Barcode
         return $png;
     }
 
-    public static function dataUri(string $code, int $moduleWidth = 4, int $barHeight = 140): string
+    public static function dataUri(string $code, int $moduleWidth = 4, int $barHeight = 90): string
     {
         return 'data:image/png;base64,'.base64_encode(self::render($code, $moduleWidth, $barHeight));
     }
