@@ -5,14 +5,31 @@
             aside, header, .no-print { display: none !important; }
             body { background: #fff !important; }
             main { overflow: visible !important; }
-            .labels-sheet { display: grid !important; }
-            .label-cell {
-                border: 1px solid #000 !important;
-                break-inside: avoid;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            @page { margin: 8mm; }
+
+            @if ($modoEtiquetadora)
+                /* Etiquetadora dedicada (ej. HPRT LPQ80): una etiqueta
+                   autoadhesiva física por página, sin grilla. */
+                @page { size: {{ $this::LABEL_WIDTH_MM }}mm {{ $this::LABEL_HEIGHT_MM }}mm; margin: 2mm; }
+                .labels-sheet { display: block !important; }
+                .label-cell {
+                    width: 100%;
+                    height: {{ $this::LABEL_HEIGHT_MM - 4 }}mm;
+                    border: none !important;
+                    page-break-after: always;
+                    break-after: page;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+            @else
+                .labels-sheet { display: grid !important; }
+                .label-cell {
+                    border: 1px solid #000 !important;
+                    break-inside: avoid;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                @page { margin: 8mm; }
+            @endif
         }
     </style>
 
@@ -71,13 +88,22 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Columnas por hoja</label>
-                    <select wire:model.live="columns" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de impresión</label>
+                    <select wire:model.live="modoEtiquetadora" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="0">Hoja con grilla (impresora normal)</option>
+                        <option value="1">Etiquetadora HPRT (una por etiqueta, {{ $this::LABEL_WIDTH_MM }}x{{ $this::LABEL_HEIGHT_MM }}mm)</option>
                     </select>
                 </div>
+                @unless ($modoEtiquetadora)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Columnas por hoja</label>
+                        <select wire:model.live="columns" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+                @endunless
                 <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <input type="checkbox" wire:model.live="showName" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"> Mostrar nombre
                 </label>
@@ -115,7 +141,10 @@
 
     {{-- Hoja imprimible --}}
     @if ($labels->count() > 0)
-        <div class="labels-sheet grid gap-2" style="grid-template-columns: repeat({{ $columns }}, minmax(0, 1fr));">
+        <div
+            class="labels-sheet gap-2 {{ $modoEtiquetadora ? 'flex flex-col' : 'grid' }}"
+            @unless ($modoEtiquetadora) style="grid-template-columns: repeat({{ $columns }}, minmax(0, 1fr));" @endunless
+        >
             @foreach ($labels as $label)
                 <div class="label-cell flex flex-col items-center justify-center text-center rounded border border-gray-300 dark:border-gray-700 px-2 py-3 bg-white dark:bg-gray-900">
                     @if ($showCompany)

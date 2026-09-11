@@ -23,6 +23,18 @@ class Labels extends Component
 
     public int $columns = 3;
 
+    /**
+     * false = hoja con grilla para impresora normal (A4/carta).
+     * true = una etiqueta por página, tamaño fijo, para una etiquetadora
+     * dedicada (ej. HPRT LPQ80 con etiquetas autoadhesivas de 55x44mm).
+     */
+    public bool $modoEtiquetadora = false;
+
+    /** Tamaño físico de la etiqueta HPRT LPQ80 (autoadhesiva, una por página). */
+    public const LABEL_WIDTH_MM = 55;
+
+    public const LABEL_HEIGHT_MM = 44;
+
     public bool $showSku = true;
 
     public bool $showName = true;
