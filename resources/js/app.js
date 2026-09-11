@@ -46,7 +46,13 @@ window.showToast = function (type, message) {
     });
 };
 
-function imprimirConIframeOculto(url) {
+/**
+ * Imprime con el método anterior: carga la página del ticket (que dispara
+ * window.print() sola) en un iframe oculto, mostrando el diálogo de
+ * impresión del sistema. Es el respaldo manual de printTicket(), y también
+ * el único método si no hay agente local instalado en esta PC.
+ */
+window.printTicketConDialogo = function (fallbackUrl) {
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -54,42 +60,37 @@ function imprimirConIframeOculto(url) {
     iframe.style.width = '0';
     iframe.style.height = '0';
     iframe.style.border = '0';
-    iframe.src = url;
+    iframe.src = fallbackUrl;
 
     // Se saca sola del DOM pasado un rato: tiempo de sobra para que el
     // cajero vea y responda el diálogo de impresión.
     setTimeout(() => iframe.remove(), 60000);
 
     document.body.appendChild(iframe);
-}
+};
+
+const POSPRINT_HINT_KEY = 'posprintHintShown';
 
 /**
  * Imprime el ticket térmico vía el protocolo posprint:// que registra el
  * agente local (ver pos-print-agent/) en el Registro de Windows: no hace
- * falta configurar puerto ni token en el navegador, ni repetirlo si el
- * agente se reinstala. La primera vez que se usa, el navegador pregunta si
- * confiar en el sitio para abrir la app (con opción de recordarlo); después
- * queda andando solo. Si el protocolo no está registrado (agente no
- * instalado en esa PC), la navegación es un no-op y no hay forma 100%
- * confiable de detectarlo — se usa la señal estándar para esto (si el
- * agente SÍ estaba instalado, el hand-off a la app externa le saca el foco
- * a la pestaña); si no se detecta ese blur en un plazo corto, se asume que
- * no está instalado y se cae al método anterior (iframe + window.print(),
- * que muestra el diálogo del sistema).
+ * falta configurar puerto ni token en el navegador. La primera vez, el
+ * navegador muestra un aviso cerca de la barra de direcciones preguntando
+ * si abrir la app — hay que confirmarlo (y tildar "recordar") para que las
+ * próximas veces imprima solo, sin ese aviso.
+ *
+ * A propósito NO hay detección automática de éxito/fallo acá: el agente no
+ * tiene ninguna ventana (para no mostrar nada en pantalla), así que nunca le
+ * saca el foco a la pestaña — cualquier heurística basada en eso (blur,
+ * visibilitychange) termina disparando siempre, imprimiendo dos veces sin
+ * avisar. Si esto no imprimió, está printTicketConDialogo() como respaldo
+ * manual explícito (botón aparte en la vista de la factura).
  */
 window.printTicket = function (fallbackUrl, escposUrl) {
-    let handled = false;
-    const onBlur = () => {
-        handled = true;
-    };
-    window.addEventListener('blur', onBlur, { once: true });
+    if (!localStorage.getItem(POSPRINT_HINT_KEY)) {
+        localStorage.setItem(POSPRINT_HINT_KEY, '1');
+        showToast('info', 'Si el navegador pregunta si abrir "PosPrintAgent", elegí Abrir y tildá "recordar" — así la próxima vez imprime solo.');
+    }
 
     window.location.href = 'posprint://print?url=' + encodeURIComponent(escposUrl);
-
-    setTimeout(() => {
-        window.removeEventListener('blur', onBlur);
-        if (!handled) {
-            imprimirConIframeOculto(fallbackUrl);
-        }
-    }, 1200);
 };

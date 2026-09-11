@@ -60,6 +60,14 @@
                 Imprimir Ticket
             </button>
             <button
+                type="button"
+                onclick="printTicketConDialogo('{{ route('invoices.ticket-print', $invoice) }}')"
+                title="¿No imprimió solo? Mostrar el diálogo de impresión del navegador"
+                class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 p-2 text-gray-500 dark:text-gray-400 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 transition-all"
+            >
+                <x-heroicon-o-ellipsis-horizontal class="w-4 h-4" />
+            </button>
+            <button
                 wire:click="enviarPorEmail"
                 wire:loading.attr="disabled"
                 wire:target="enviarPorEmail"
