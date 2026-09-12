@@ -40,6 +40,15 @@ class Ean13Test extends TestCase
         $this->assertNull(Ean13::fromSku(''));
     }
 
+    public function test_recalcula_un_sku_paddeado_a_mano_a_13_digitos_que_no_es_un_ean13_valido(): void
+    {
+        // Sku cargado a mano como "0000000000001" (12 ceros + un 1): no es
+        // un GTIN real (checksum no da), pero tampoco hay que dejarlo sin
+        // código de barras — se recorta a los dígitos significativos ("1")
+        // y se recalcula el dígito verificador, igual que con un sku corto.
+        $this->assertSame('0000000000017', Ean13::fromSku('0000000000001'));
+    }
+
     public function test_strip_padding_recupera_el_sku_original(): void
     {
         $this->assertSame('9876', Ean13::stripPadding('0000000098762'));

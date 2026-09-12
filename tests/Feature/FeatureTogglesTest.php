@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Enums\TipoComprobanteInterno;
 use App\Livewire\Dashboard;
 use App\Livewire\Reports\Index as ReportsIndex;
+use App\Models\CompanySettings;
 use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -129,6 +131,26 @@ class FeatureTogglesTest extends TestCase
         Livewire::actingAs($this->admin())
             ->test('invoices.index')
             ->assertSeeHtml('Nueva factura');
+    }
+
+    public function test_venta_rapida_arranca_en_remito_x_cuando_la_facturacion_manual_esta_apagada(): void
+    {
+        config(['features.invoices_manual_create' => false]);
+        CompanySettings::current()->update(['factura_b_habilitada' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->assertSet('tipo_comprobante_interno', TipoComprobanteInterno::RemitoX->value);
+    }
+
+    public function test_venta_rapida_arranca_en_factura_b_cuando_la_facturacion_manual_esta_prendida(): void
+    {
+        config(['features.invoices_manual_create' => true]);
+        CompanySettings::current()->update(['factura_b_habilitada' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->assertSet('tipo_comprobante_interno', TipoComprobanteInterno::FacturaB->value);
     }
 
     public function test_checkbox_de_venta_por_peso_se_oculta_en_productos_y_config_empresa_cuando_esta_apagado(): void

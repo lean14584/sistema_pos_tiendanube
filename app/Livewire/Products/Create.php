@@ -16,6 +16,7 @@ use Livewire\WithFileUploads;
 class Create extends Component
 {
     use WithFileUploads;
+
     public string $name = '';
 
     public string $sku = '';
@@ -38,6 +39,28 @@ class Create extends Component
 
     /** Foto recién seleccionada, pendiente de guardar. */
     public $image = null;
+
+    public function mount(): void
+    {
+        $this->sku = self::nextAutoSku();
+    }
+
+    /**
+     * Siguiente código numérico libre, en base al mayor sku puramente
+     * numérico ya cargado (ej. si el catálogo tiene "9876" y "9877", el
+     * próximo es "9878"). Es solo un valor por defecto para no tener que
+     * inventar un código a mano: el campo sigue editable.
+     */
+    public static function nextAutoSku(): string
+    {
+        $max = Product::query()
+            ->pluck('sku')
+            ->filter(fn (?string $sku) => $sku !== null && ctype_digit($sku))
+            ->map(fn (string $sku) => (int) $sku)
+            ->max();
+
+        return (string) (($max ?? 0) + 1);
+    }
 
     public function save(): void
     {

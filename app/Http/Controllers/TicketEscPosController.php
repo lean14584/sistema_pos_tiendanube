@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Services\TicketPrinterService;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 /**
@@ -15,9 +16,9 @@ use Illuminate\Http\Response;
  */
 class TicketEscPosController extends Controller
 {
-    public function __invoke(Invoice $invoice, TicketPrinterService $service): Response
+    public function __invoke(Invoice $invoice, Request $request, TicketPrinterService $service): Response
     {
-        return response($service->renderEscPos($invoice))
+        return response($service->renderEscPos($invoice, $request->boolean('cambio')))
             ->header('Content-Type', 'application/octet-stream');
     }
 }

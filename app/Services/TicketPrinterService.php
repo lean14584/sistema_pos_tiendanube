@@ -58,9 +58,9 @@ class TicketPrinterService
      * acentos/ñ mal renderizados que motivó pasar a bitmap en primer lugar,
      * ver el comentario de la clase).
      */
-    public function renderEscPos(Invoice $invoice): string
+    public function renderEscPos(Invoice $invoice, bool $exchangeSlip = false): string
     {
-        $png = $this->renderPng($invoice);
+        $png = $this->renderPng($invoice, $exchangeSlip);
 
         return self::ESC.'@'
             .$this->rasterFromPng($png)
@@ -103,7 +103,7 @@ class TicketPrinterService
     }
 
     /** PNG crudo del ticket completo, listo para servir con Content-Type: image/png. */
-    public function renderPng(Invoice $invoice): string
+    public function renderPng(Invoice $invoice, bool $exchangeSlip = false): string
     {
         $invoice->loadMissing('client', 'items', 'payments');
         $company = CompanySettings::current();
@@ -126,6 +126,10 @@ class TicketPrinterService
 
         $this->addRule();
         $this->addCenter('¡Gracias por su compra!');
+
+        if ($exchangeSlip) {
+            $this->armarCuponCambio($invoice);
+        }
 
         $tempFile = tempnam(sys_get_temp_dir(), 'ticket_').'.png';
 
@@ -248,6 +252,34 @@ class TicketPrinterService
         if ($vuelto > 0.004) {
             $this->addColumns('Vuelto', '$'.$this->money($vuelto), bold: true);
         }
+    }
+
+    /**
+     * Sección extra al final del ticket normal, pensada para que el cliente
+     * se la quede como comprobante de cambio: repite artículo + importe y
+     * medio(s) de pago, más la leyenda del plazo. Se activa con el tilde
+     * "Ticket de cambio" de venta rápida (ver Pos\Index).
+     */
+    private function armarCuponCambio(Invoice $invoice): void
+    {
+        $this->addSpacer();
+        $this->addRule();
+        $this->addCenter('CUPÓN DE CAMBIO', bold: true);
+        $this->addRule();
+
+        foreach ($invoice->items as $item) {
+            $this->addColumns($item->description, '$'.$this->money($item->line_total));
+        }
+
+        if ($invoice->payments->isNotEmpty()) {
+            $this->addRule();
+            foreach ($invoice->payments as $payment) {
+                $this->addColumns($payment->method->label(), '$'.$this->money($payment->amount));
+            }
+        }
+
+        $this->addSpacer();
+        $this->addCenter('7 días hábiles para el cambio', bold: true);
     }
 
     private function armarDatosFiscales(Invoice $invoice): void

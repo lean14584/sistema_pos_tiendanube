@@ -143,6 +143,70 @@ class TicketPrintTest extends TestCase
         $this->assertEmpty($pos->effects['xjs'] ?? []);
     }
 
+    public function test_ticket_de_cambio_agrega_una_seccion_extra_y_queda_mas_alto(): void
+    {
+        $invoice = $this->invoice();
+        $invoice->items()->create(['description' => 'Fideos', 'quantity' => 1, 'unit_price' => 1000, 'iva_rate' => '21']);
+
+        $normal = $this->actingAs($this->admin())->get(route('invoices.ticket-image', $invoice));
+        $conCambio = $this->actingAs($this->admin())->get(route('invoices.ticket-image', ['invoice' => $invoice, 'cambio' => 1]));
+
+        $normal->assertOk();
+        $conCambio->assertOk();
+
+        [, $alturaNormal] = getimagesizefromstring($normal->getContent());
+        [, $alturaConCambio] = getimagesizefromstring($conCambio->getContent());
+
+        $this->assertGreaterThan($alturaNormal, $alturaConCambio);
+    }
+
+    public function test_vender_con_ticket_de_cambio_propaga_el_parametro_a_las_urls_de_impresion(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $product = Product::create(['name' => 'Fideos', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('printOnSale', true)
+            ->set('printExchangeSlip', true)
+            ->call('cobrar');
+
+        $invoice = Invoice::sole();
+        $xjs = $pos->effects['xjs'] ?? [];
+
+        $this->assertNotEmpty($xjs);
+        $this->assertStringContainsString(
+            json_encode(route('invoices.ticket-print', ['invoice' => $invoice, 'cambio' => 1])),
+            $xjs[0]['expression']
+        );
+    }
+
+    public function test_vender_sin_ticket_de_cambio_no_agrega_el_parametro(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $product = Product::create(['name' => 'Fideos', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('printOnSale', true)
+            ->call('cobrar');
+
+        $invoice = Invoice::sole();
+        $xjs = $pos->effects['xjs'] ?? [];
+
+        $this->assertNotEmpty($xjs);
+        $this->assertStringContainsString(json_encode(route('invoices.ticket-print', $invoice)), $xjs[0]['expression']);
+        $this->assertStringNotContainsString('cambio', $xjs[0]['expression']);
+    }
+
     public function test_crear_factura_con_imprimir_al_guardar_activado_abre_la_ventana_de_impresion(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
