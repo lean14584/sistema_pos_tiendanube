@@ -127,8 +127,14 @@ class Dashboard extends Component
             fn (Invoice $i) => $i->tipo_comprobante_interno->esFiscal() && $i->cae === null
         );
 
+        // Ambos, Top 5 y ventas mensuales, son "del año elegido" — antes el
+        // Top 5 no filtraba por año (a diferencia del resto del dashboard) y
+        // terminaba mostrando el ranking histórico de siempre, sin importar
+        // qué año se seleccionara arriba.
+        $nonDraftDelAnio = $nonDraft->filter(fn (Invoice $i) => $i->issue_date->year === $this->year);
+
         $topProducts = collect();
-        foreach ($nonDraft as $invoice) {
+        foreach ($nonDraftDelAnio as $invoice) {
             foreach ($invoice->items as $item) {
                 $key = $item->product_id ?? "sin-producto-{$item->description}";
                 $current = $topProducts->get($key, ['label' => $item->product?->name ?? $item->description, 'total' => 0.0]);
@@ -143,10 +149,8 @@ class Dashboard extends Component
         $availableYears = collect($years)->unique()->sortDesc()->values();
 
         $monthlySales = array_fill(1, 12, 0.0);
-        foreach ($nonDraft as $invoice) {
-            if ($invoice->issue_date->year === $this->year) {
-                $monthlySales[$invoice->issue_date->month] += (float) $invoice->total;
-            }
+        foreach ($nonDraftDelAnio as $invoice) {
+            $monthlySales[$invoice->issue_date->month] += (float) $invoice->total;
         }
 
         // Consolidado del año elegido, por categoría y por medio de pago:

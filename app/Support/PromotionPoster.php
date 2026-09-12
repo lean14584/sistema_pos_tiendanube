@@ -120,8 +120,9 @@ class PromotionPoster
     /** PNG crudo, listo para servir con Content-Type: image/png. */
     public static function generate(): string
     {
-        $items = array_slice(self::items(), 0, self::MAX_ITEMS);
-        $totalItems = count(self::items());
+        $allItems = self::items();
+        $items = array_slice($allItems, 0, self::MAX_ITEMS);
+        $totalItems = count($allItems);
 
         $rows = max(1, (int) ceil(count($items) / self::COLS));
         $height = self::GRID_START_Y + $rows * self::CARD_H + max(0, $rows - 1) * self::CARD_GAP + self::FOOTER_H;

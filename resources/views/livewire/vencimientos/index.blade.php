@@ -1,6 +1,19 @@
 <div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Vencimientos" subtitle="Lo que te deben (por cobrar) y lo que debés a proveedores (por pagar), ordenado por fecha." icon="calendar-days" />
 
+    @if ($puedeVerTodasLasSucursales)
+        {{-- "Por pagar" no distingue sucursal (las compras son de toda la empresa): este selector solo filtra "por cobrar". --}}
+        <div class="mb-5 max-w-xs">
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sucursal (por cobrar)</label>
+            <select wire:model.live="sucursal_id" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <option value="">Todas (consolidado)</option>
+                @foreach ($sucursales as $s)
+                    <option value="{{ $s->id }}">{{ $s->name }}</option>
+                @endforeach
+            </select>
+        </div>
+    @endif
+
     @php
         $estadoChip = [
             'vencido' => 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',

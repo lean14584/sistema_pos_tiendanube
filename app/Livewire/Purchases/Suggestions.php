@@ -28,12 +28,19 @@ class Suggestions extends Component
 
         $products = Product::whereNotNull('min_stock')->with('category')->get();
 
-        $lastProviderByProduct = PurchaseItem::query()
+        // Último ítem de compra por producto sin traer el historial entero:
+        // se resuelve primero el id más reciente por product_id (agregado en
+        // SQL) y recién ahí se cargan esas filas puntuales con su relación.
+        $lastPurchaseItemIds = PurchaseItem::query()
             ->whereIn('product_id', $products->pluck('id'))
+            ->selectRaw('MAX(id) as id')
+            ->groupBy('product_id')
+            ->pluck('id');
+
+        $lastProviderByProduct = PurchaseItem::query()
+            ->whereIn('id', $lastPurchaseItemIds)
             ->with('purchase.provider')
-            ->latest('created_at')
             ->get()
-            ->unique('product_id')
             ->keyBy('product_id');
 
         $suggestions = $products

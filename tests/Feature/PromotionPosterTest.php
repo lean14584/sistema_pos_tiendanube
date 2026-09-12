@@ -11,6 +11,7 @@ use App\Models\Sucursal;
 use App\Models\User;
 use App\Support\PromotionPoster;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -49,6 +50,27 @@ class PromotionPosterTest extends TestCase
         $response->assertOk();
         $info = getimagesizefromstring($response->getContent());
         $this->assertNotFalse($info);
+    }
+
+    public function test_generate_calcula_la_lista_de_promociones_una_sola_vez(): void
+    {
+        // generate() llamaba a self::items() dos veces (una para recortar a
+        // MAX_ITEMS, otra para el total): cada llamada dispara 2 queries
+        // propias (promotions + promotion_groups). Con el fix, "promotions"
+        // aparece en el log una sola vez.
+        $product = Product::create(['name' => 'Coca 1.5L', 'price' => 1800, 'stock' => 10]);
+        Promotion::create(['product_id' => $product->id, 'type' => 'nxm', 'buy_qty' => 2, 'pay_qty' => 1, 'active' => true]);
+
+        DB::enableQueryLog();
+        PromotionPoster::generate();
+        // Sin comillas de motor específicas (backticks de MySQL vs. comillas
+        // dobles de SQLite en test): "promotions" como substring alcanza,
+        // sin matchear de rebote "promotion_groups" (no contiene "promotions").
+        $promotionQueries = collect(DB::getQueryLog())
+            ->filter(fn ($entry) => str_contains($entry['query'], 'promotions'));
+        DB::disableQueryLog();
+
+        $this->assertCount(1, $promotionQueries);
     }
 
     public function test_cajero_no_puede_generar_el_cartel(): void
