@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Livewire\Dashboard;
 use App\Livewire\Reports\Index as ReportsIndex;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -154,5 +155,51 @@ class FeatureTogglesTest extends TestCase
         Livewire::actingAs($this->admin())
             ->test('company-settings.edit')
             ->assertSeeHtml('Código de barras de balanza');
+    }
+
+    public function test_selector_de_sucursal_se_oculta_al_crear_y_editar_usuario_si_multisucursal_esta_apagado(): void
+    {
+        // Antes de este fix, Users\Create y Users\Edit pedían elegir sucursal
+        // (campo requerido) sin importar el flag — una instalación de una
+        // sola sucursal (ej. deco-hogar) igual tenía que elegir "la única
+        // sucursal que hay" para poder dar de alta un cajero/vendedor.
+        config(['features.multisucursal' => false]);
+
+        // No crear una sucursal nueva acá: las migraciones (ver
+        // create_product_stocks_table) ya dan de alta una "Principal" por
+        // defecto en cuanto no existe ninguna — igual que en una instalación
+        // real de un solo local.
+        $sucursal = Sucursal::sole();
+        $vendedor = User::factory()->create(['role' => Role::Vendedor, 'sucursal_id' => $sucursal->id]);
+
+        Livewire::actingAs($this->admin())
+            ->test('users.create')
+            ->assertDontSeeHtml('Elegir sucursal...')
+            ->set('name', 'Juana Pérez')
+            ->set('username', 'jperez')
+            ->set('password', 'password123')
+            ->set('role', Role::Vendedor->value)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame($sucursal->id, User::where('username', 'jperez')->value('sucursal_id'));
+
+        Livewire::actingAs($this->admin())
+            ->test('users.edit', ['user' => $vendedor])
+            ->assertDontSeeHtml('Elegir sucursal...')
+            ->set('name', 'Nuevo Nombre')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame($sucursal->id, $vendedor->fresh()->sucursal_id);
+    }
+
+    public function test_selector_de_sucursal_se_ve_al_crear_usuario_si_multisucursal_esta_prendido(): void
+    {
+        config(['features.multisucursal' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test('users.create')
+            ->assertSeeHtml('Elegir sucursal...');
     }
 }
