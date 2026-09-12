@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Support\CurrentSucursal;
+use App\Support\Ean13;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -46,20 +47,34 @@ class Create extends Component
     }
 
     /**
-     * Siguiente código numérico libre, en base al mayor sku puramente
-     * numérico ya cargado (ej. si el catálogo tiene "9876" y "9877", el
-     * próximo es "9878"). Es solo un valor por defecto para no tener que
-     * inventar un código a mano: el campo sigue editable.
+     * Siguiente código EAN13 completo (con ceros a la izquierda + dígito
+     * verificador ya calculados, ver Ean13::fromSku) para no depender de que
+     * alguien lo arme a mano — el campo queda listo para el lector desde el
+     * alta, igual que el que imprime la pantalla de Etiquetas. El número de
+     * secuencia interno sale del mayor sku ya cargado (corto o ya paddeado a
+     * 13 dígitos): si el catálogo tiene "9876"/"9877", el próximo es "9878".
      */
     public static function nextAutoSku(): string
     {
         $max = Product::query()
             ->pluck('sku')
             ->filter(fn (?string $sku) => $sku !== null && ctype_digit($sku))
-            ->map(fn (string $sku) => (int) $sku)
+            ->map(fn (string $sku) => self::significantNumber($sku))
             ->max();
 
-        return (string) (($max ?? 0) + 1);
+        $next = (string) (($max ?? 0) + 1);
+
+        return Ean13::fromSku($next) ?? $next;
+    }
+
+    /** Valor entero "de fondo" de un sku numérico, sin los ceros de relleno que le haya puesto Ean13::fromSku (o a mano). */
+    private static function significantNumber(string $sku): int
+    {
+        if (strlen($sku) === 13) {
+            return (int) (Ean13::stripPadding($sku) ?? (ltrim($sku, '0') ?: '0'));
+        }
+
+        return (int) $sku;
     }
 
     public function save(): void
