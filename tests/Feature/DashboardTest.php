@@ -65,6 +65,38 @@ class DashboardTest extends TestCase
             ->assertSee('Notebook Top');
     }
 
+    public function test_top_5_productos_respeta_el_anio_seleccionado(): void
+    {
+        // Antes de este fix, el Top 5 recorría TODA la historia sin filtrar
+        // por año, a diferencia del resto del dashboard (ventas mensuales,
+        // etc.) que sí respeta el selector.
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $lastYear = (int) now()->subYear()->year;
+
+        $productoActual = Product::create(['name' => 'Producto Actual', 'price' => 1000, 'stock' => 10]);
+        $invActual = Invoice::create([
+            'number' => 'FAC-A1', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'paid',
+        ]);
+        $invActual->items()->create(['product_id' => $productoActual->id, 'description' => 'Producto Actual', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $productoViejo = Product::create(['name' => 'Producto Viejo', 'price' => 1000, 'stock' => 10]);
+        $invViejo = Invoice::create([
+            'number' => 'FAC-A2', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now()->subYear(), 'due_date' => now()->subYear()->addDays(15), 'status' => 'paid',
+        ]);
+        $invViejo->items()->create(['product_id' => $productoViejo->id, 'description' => 'Producto Viejo', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $component = Livewire::actingAs($admin)->test('dashboard');
+
+        $component->assertSee('Producto Actual')->assertDontSee('Producto Viejo');
+
+        $component->set('year', $lastYear)
+            ->assertSee('Producto Viejo')
+            ->assertDontSee('Producto Actual');
+    }
+
     public function test_dashboard_filters_monthly_sales_by_selected_year(): void
     {
         $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);

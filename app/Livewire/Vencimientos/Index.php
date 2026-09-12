@@ -3,16 +3,26 @@
 namespace App\Livewire\Vencimientos;
 
 use App\Enums\InvoiceStatus;
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Client;
 use App\Models\Provider;
+use App\Models\Sucursal;
+use App\Support\CurrentSucursal;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ScopedToSucursal;
+
+    /** null (string vacío) = todas las sucursales consolidadas. Solo un admin global puede elegir esto. */
+    #[Url]
+    public string $sucursal_id = '';
+
     /**
      * Aging de una entidad (cliente o proveedor): toma sus comprobantes con
      * saldo (total menos lo pagado en el momento) ordenados por vencimiento,
@@ -57,13 +67,24 @@ class Index extends Component
 
     public function render()
     {
+        // Un cajero/vendedor solo ve la deuda de su propia sucursal, sin
+        // importar lo que traiga la URL — mismo criterio que Informes y
+        // Facturas (ver ScopedToSucursal). Antes esta pantalla no filtraba
+        // por sucursal en absoluto: un admin de una instalación
+        // multisucursal veía mezclada la deuda de todos los locales.
+        $sucursalId = $this->puedeVerTodasLasSucursales()
+            ? ($this->sucursal_id !== '' ? (int) $this->sucursal_id : null)
+            : CurrentSucursal::id();
+
         // Solo importan los comprobantes pendientes: un 'paid' siempre da
         // remaining = 0 y aging() lo descarta igual, así que ni vale la pena
         // traerlo (la mayoría de la historia de facturación termina pagada).
         // 'items' sigue haciendo falta: Invoice::total es un atributo
         // calculado a partir de items, no una columna — sin eager load acá
         // sería un N+1 lazy-load por factura.
-        $invoicesPendientes = fn ($q) => $q->where('status', InvoiceStatus::Pending)->with('items', 'payments');
+        $invoicesPendientes = fn ($q) => $q->where('status', InvoiceStatus::Pending)
+            ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
+            ->with('items', 'payments');
 
         // ---- POR COBRAR (clientes) ----
         $porCobrar = collect();
@@ -129,6 +150,8 @@ class Index extends Component
             'totalPagar' => $porPagar->sum('amount'),
             'vencidoCobrar' => $porCobrar->where('estado', 'vencido')->sum('amount'),
             'vencidoPagar' => $porPagar->where('estado', 'vencido')->sum('amount'),
+            'puedeVerTodasLasSucursales' => $this->puedeVerTodasLasSucursales(),
+            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::orderBy('name')->get() : collect(),
         ]);
     }
 }

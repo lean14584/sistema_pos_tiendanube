@@ -57,11 +57,19 @@ class Index extends Component
         $thread = collect();
 
         if ($this->with) {
+            // Se trae solo lo más reciente (recién en desc + limit, después
+            // se da vuelta): un chat interno entre dos usuarios que lleva
+            // años puede acumular miles de mensajes, y acá no hace falta
+            // paginar hacia atrás como en un historial — alcanza con lo
+            // último para dar contexto. El desempate por id es necesario:
+            // dos mensajes mandados dentro del mismo segundo tienen igual
+            // created_at, y sin un desempate determinístico el orden entre
+            // ellos queda a criterio del motor de base de datos.
             $thread = Message::where(function ($q) use ($userId) {
                 $q->where('sender_id', $userId)->where('recipient_id', $this->with->id);
             })->orWhere(function ($q) use ($userId) {
                 $q->where('sender_id', $this->with->id)->where('recipient_id', $userId);
-            })->orderBy('created_at')->get();
+            })->orderByDesc('created_at')->orderByDesc('id')->limit(200)->get()->reverse()->values();
 
             Message::where('sender_id', $this->with->id)
                 ->where('recipient_id', $userId)
