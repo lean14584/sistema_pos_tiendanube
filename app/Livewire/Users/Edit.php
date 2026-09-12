@@ -71,7 +71,9 @@ class Edit extends Component
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)],
             'password' => ['nullable', 'string', 'min:8'],
             'role' => ['required', Rule::enum(Role::class)],
-            'sucursal_id' => [Rule::requiredIf($this->role !== Role::Admin->value), 'nullable', 'exists:sucursales,id'],
+            // Solo se exige sucursal si el cliente usa multisucursal — con el
+            // flag apagado no hay selector que llenar (ver abajo).
+            'sucursal_id' => [Rule::requiredIf($this->role !== Role::Admin->value && config('features.multisucursal')), 'nullable', 'exists:sucursales,id'],
             'active' => ['boolean'],
         ]);
 
@@ -84,6 +86,12 @@ class Edit extends Component
         $data['email'] = $data['email'] !== '' ? $data['email'] : null;
 
         $data['sucursal_id'] = $data['role'] === Role::Admin->value ? null : $data['sucursal_id'];
+
+        // Instalación de una sola sucursal: no hay selector, se asigna la
+        // única sucursal existente sin preguntarle nada al usuario.
+        if (! config('features.multisucursal') && $data['role'] !== Role::Admin->value) {
+            $data['sucursal_id'] = Sucursal::orderBy('id')->value('id');
+        }
 
         $actor = Auth::user();
 

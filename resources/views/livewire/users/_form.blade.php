@@ -59,7 +59,7 @@
         </div>
     </div>
 
-    @if ($role !== 'admin')
+    @if ($role !== 'admin' && config('features.multisucursal'))
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sucursal *</label>
             <select wire:model="sucursal_id" class="{{ $inputClass }}">
@@ -71,7 +71,7 @@
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Cajero y vendedor operan en una sola sucursal.</p>
             @error('sucursal_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
         </div>
-    @else
+    @elseif ($role === 'admin' && config('features.multisucursal'))
         <p class="text-xs text-gray-400 dark:text-gray-500">Un administrador ve y opera en todas las sucursales.</p>
     @endif
 
