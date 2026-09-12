@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\Ean13;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -18,11 +19,13 @@ class ProductAutoSkuTest extends TestCase
         return User::factory()->create(['role' => Role::Admin, 'active' => true]);
     }
 
-    public function test_arranca_en_1_si_no_hay_ningun_sku_numerico_cargado(): void
+    public function test_arranca_en_el_ean13_completo_del_1_si_no_hay_ningun_sku_numerico_cargado(): void
     {
+        // El campo ya viene con los ceros + dígito verificador puestos (no
+        // solo "1"), para que quede listo para el lector sin pasos extra.
         Livewire::actingAs($this->admin())
             ->test('products.create')
-            ->assertSet('sku', '1');
+            ->assertSet('sku', Ean13::fromSku('1'));
     }
 
     public function test_continua_la_secuencia_del_mayor_sku_numerico_existente(): void
@@ -34,7 +37,19 @@ class ProductAutoSkuTest extends TestCase
 
         Livewire::actingAs($this->admin())
             ->test('products.create')
-            ->assertSet('sku', '9878');
+            ->assertSet('sku', Ean13::fromSku('9878'));
+    }
+
+    public function test_reconoce_la_secuencia_aunque_el_sku_existente_ya_este_paddeado_a_13_digitos(): void
+    {
+        // Un sku ya guardado como EAN13 completo (ej. generado por una
+        // sesión anterior) tiene que seguir contando para el próximo número,
+        // no arrancar de nuevo desde 1.
+        Product::create(['name' => 'Plato', 'sku' => Ean13::fromSku('9876'), 'price' => 100, 'iva_rate' => 21, 'stock' => 0]);
+
+        Livewire::actingAs($this->admin())
+            ->test('products.create')
+            ->assertSet('sku', Ean13::fromSku('9877'));
     }
 
     public function test_el_codigo_autogenerado_sigue_siendo_editable(): void
