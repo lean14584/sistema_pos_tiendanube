@@ -69,10 +69,18 @@ class CompanySettings extends Model
 
     /**
      * Tipo de comprobante por defecto para una factura nueva: prioriza B,
-     * después A, y si no hay ninguna fiscal habilitada cae a Remito X.
+     * después A, y si no hay ninguna fiscal habilitada cae a Remito X. Un
+     * cliente que tiene apagada la facturación fiscal manual (ver
+     * config('features.invoices_manual_create')) arranca siempre en Remito X
+     * aunque Factura A/B sigan tildadas en esta configuración — esos toggles
+     * quedan para cuando en algún momento se habilite facturar de verdad.
      */
     public function tipoComprobantePorDefecto(): TipoComprobanteInterno
     {
+        if (! config('features.invoices_manual_create')) {
+            return TipoComprobanteInterno::RemitoX;
+        }
+
         return match (true) {
             $this->factura_b_habilitada => TipoComprobanteInterno::FacturaB,
             $this->factura_a_habilitada => TipoComprobanteInterno::FacturaA,

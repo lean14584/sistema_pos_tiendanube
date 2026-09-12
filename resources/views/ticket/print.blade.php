@@ -56,7 +56,7 @@
         <button type="button" onclick="window.print()">Imprimir</button>
     </div>
 
-    <img id="ticket-img" src="{{ route('invoices.ticket-image', $invoice) }}" alt="Ticket {{ $invoice->number }}">
+    <img id="ticket-img" src="{{ route('invoices.ticket-image', ['invoice' => $invoice, 'cambio' => $exchangeSlip ? 1 : null]) }}" alt="Ticket {{ $invoice->number }}">
 
     <script>
         const img = document.getElementById('ticket-img');

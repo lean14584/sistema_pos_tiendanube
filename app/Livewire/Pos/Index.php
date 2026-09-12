@@ -52,6 +52,11 @@ class Index extends Component
 
     public bool $printOnSale = true;
 
+    /** Si está tildado, al final del ticket normal se agrega un cupón de
+     * cambio (artículo + importe + medio de pago + "7 días hábiles para el
+     * cambio"). No hace nada si printOnSale está destildado. */
+    public bool $printExchangeSlip = false;
+
     /** Tipo de comprobante a generar (Factura A/B, Remito X, etc.). */
     public string $tipo_comprobante_interno = '';
 
@@ -689,9 +694,10 @@ class Index extends Component
         }), null, $puntoVentaNumero);
 
         if ($this->printOnSale) {
-            $escposUrl = URL::temporarySignedRoute('invoices.ticket-escpos', now()->addMinutes(2), ['invoice' => $invoice]);
+            $cambio = $this->printExchangeSlip ? 1 : null;
+            $escposUrl = URL::temporarySignedRoute('invoices.ticket-escpos', now()->addMinutes(2), ['invoice' => $invoice, 'cambio' => $cambio]);
             $this->js('printTicket('
-                .json_encode(route('invoices.ticket-print', $invoice)).','
+                .json_encode(route('invoices.ticket-print', ['invoice' => $invoice, 'cambio' => $cambio])).','
                 .json_encode($escposUrl)
                 .')');
         }

@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Support\CurrentSucursal;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TicketPrintController extends Controller
 {
-    public function __invoke(Invoice $invoice): View
+    public function __invoke(Invoice $invoice, Request $request): View
     {
         abort_unless(
             Auth::user()?->esAdminGlobal() || $invoice->sucursal_id === CurrentSucursal::id(),
@@ -17,6 +18,6 @@ class TicketPrintController extends Controller
             'No podés imprimir el ticket de una factura de otra sucursal.'
         );
 
-        return view('ticket.print', ['invoice' => $invoice]);
+        return view('ticket.print', ['invoice' => $invoice, 'exchangeSlip' => $request->boolean('cambio')]);
     }
 }

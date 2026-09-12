@@ -267,6 +267,11 @@
                     Imprimir ticket
                 </label>
 
+                <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-1">
+                    <input type="checkbox" wire:model="printExchangeSlip" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                    Ticket de cambio
+                </label>
+
                 <button
                     wire:click="cobrar"
                     wire:loading.attr="disabled"

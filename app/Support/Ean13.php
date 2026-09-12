@@ -21,15 +21,28 @@ class Ean13
             return null;
         }
 
-        if (strlen($sku) === 13) {
-            return self::isValid($sku) ? $sku : null;
+        // Un código de 13 dígitos con checksum válido es un GTIN real de
+        // fábrica: se usa tal cual, sin tocarlo.
+        if (strlen($sku) === 13 && self::isValid($sku)) {
+            return $sku;
         }
 
-        if (strlen($sku) > 12) {
+        // Cualquier otro caso (corto, o "paddeado" a mano hasta 13 dígitos
+        // pero sin checksum válido) se trata como código interno: se toman
+        // los dígitos significativos (sin los ceros a la izquierda) y se
+        // vuelve a paddear + calcular el dígito verificador. Así un sku
+        // tipeado como "0000000000001" no queda sin código de barras solo
+        // por tener la pinta de un EAN13 sin serlo.
+        $significant = ltrim($sku, '0');
+        if ($significant === '') {
+            $significant = '0';
+        }
+
+        if (strlen($significant) > 12) {
             return null;
         }
 
-        $base = str_pad($sku, 12, '0', STR_PAD_LEFT);
+        $base = str_pad($significant, 12, '0', STR_PAD_LEFT);
 
         return $base.self::checkDigit($base);
     }
