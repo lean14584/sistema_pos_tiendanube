@@ -4,6 +4,7 @@ namespace App\Livewire\PriceLists;
 
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\PriceList;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -70,6 +71,8 @@ class Index extends Component
 
     public function delete(PriceList $priceList): void
     {
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para eliminar listas de precios.');
+
         if ($priceList->is_default) {
             $this->toastError('No se puede eliminar la lista predeterminada.');
 

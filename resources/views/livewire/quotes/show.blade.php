@@ -18,12 +18,14 @@
                 <x-heroicon-o-pencil class="w-4 h-4" />
                 Editar
             </a>
-            <button
-                x-on:click="confirmThen('¿Eliminar el presupuesto ' + @js($quote->number) + '?', () => $wire.delete())"
-                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-            >
-                <x-heroicon-o-trash class="w-4 h-4" />
-            </button>
+            @if (Auth::user()->puedeEliminar())
+                <button
+                    x-on:click="confirmThen('¿Eliminar el presupuesto ' + @js($quote->number) + '?', () => $wire.delete())"
+                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                >
+                    <x-heroicon-o-trash class="w-4 h-4" />
+                </button>
+            @endif
         </div>
     @endif
 

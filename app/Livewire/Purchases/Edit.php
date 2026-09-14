@@ -10,7 +10,9 @@ use App\Models\ProductBatch;
 use App\Models\Provider;
 use App\Models\Purchase;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -55,6 +57,12 @@ class Edit extends Component
 
     public function mount(Purchase $purchase): void
     {
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || $purchase->sucursal_id === CurrentSucursal::id(),
+            403,
+            'No tenés acceso a esta compra.'
+        );
+
         $this->purchase = $purchase;
         $this->provider_id = (string) $purchase->provider_id;
         $this->tipo_comprobante = (string) ($purchase->tipo_comprobante?->value ?? TipoComprobante::FacturaA->value);

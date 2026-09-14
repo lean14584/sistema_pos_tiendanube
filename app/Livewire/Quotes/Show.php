@@ -11,6 +11,7 @@ use App\Models\Quote;
 use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -53,6 +54,8 @@ class Show extends Component
 
     public function delete(): void
     {
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para eliminar presupuestos.');
+
         $this->quote->delete();
 
         session()->flash('status', 'Presupuesto eliminado.');

@@ -68,9 +68,9 @@
                                 <button wire:click="makeDefault({{ $list->id }})" class="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 mr-3">Hacer predeterminada</button>
                             @endunless
                             <button wire:click="edit({{ $list->id }})" class="text-xs text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 mr-3">Editar</button>
-                            @unless ($list->is_default)
+                            @if (! $list->is_default && Auth::user()->puedeEliminar())
                                 <button x-on:click="confirmThen('¿Eliminar esta lista de precios?', () => $wire.delete({{ $list->id }}))" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400">Eliminar</button>
-                            @endunless
+                            @endif
                         </td>
                     </tr>
                 @endforeach
