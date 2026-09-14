@@ -199,13 +199,18 @@
             <td style="width: 60%;"></td>
             <td style="width: 40%;">
                 <table class="totals-box">
-                    <tr><td>Neto gravado</td><td class="text-right">${{ money($invoice->neto_gravado) }}</td></tr>
-                    @if ($invoice->neto_exento > 0)
-                        <tr><td>Exento / no gravado</td><td class="text-right">${{ money($invoice->neto_exento) }}</td></tr>
-                    @endif
-                    @foreach ($invoice->ivaPorAlicuota() as $linea)
-                        <tr><td>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</td><td class="text-right">${{ money($linea['iva']) }}</td></tr>
-                    @endforeach
+                    {{-- Factura C (Monotributista/Exento) no discrimina IVA: mostrar
+                    "Neto gravado $0 / Exento $total" sería engañoso, ver
+                    TicketPrinterService::armarTotales() para el mismo criterio. --}}
+                    @unless ($invoice->tipo_comprobante_interno === \App\Enums\TipoComprobanteInterno::FacturaC)
+                        <tr><td>Neto gravado</td><td class="text-right">${{ money($invoice->neto_gravado) }}</td></tr>
+                        @if ($invoice->neto_exento > 0)
+                            <tr><td>Exento / no gravado</td><td class="text-right">${{ money($invoice->neto_exento) }}</td></tr>
+                        @endif
+                        @foreach ($invoice->ivaPorAlicuota() as $linea)
+                            <tr><td>IVA {{ rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.') }}%</td><td class="text-right">${{ money($linea['iva']) }}</td></tr>
+                        @endforeach
+                    @endunless
                     <tr class="total-row"><td>Total</td><td class="text-right">${{ money($invoice->total) }}</td></tr>
                 </table>
             </td>

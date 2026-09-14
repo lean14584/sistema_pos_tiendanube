@@ -284,6 +284,7 @@ class Edit extends Component
             'tipoComprobanteInternoOptions' => $opciones,
             'priceLists' => PriceList::active()->orderBy('name')->get(),
             'esNotaCredito' => $this->invoice->related_invoice_id !== null,
+            'ocultarIva' => CompanySettings::current()->debeOcultarIvaPorItem(),
         ]);
     }
 }

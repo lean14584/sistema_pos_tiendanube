@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'tiendanube_sucursal_id', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits', 'descuento_efectivo_pct', 'descuento_transferencia_pct'])]
+#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'factura_c_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'tiendanube_sucursal_id', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits', 'descuento_efectivo_pct', 'descuento_transferencia_pct'])]
 class CompanySettings extends Model
 {
     use Auditable;
@@ -27,6 +27,7 @@ class CompanySettings extends Model
             'condicion_iva' => CondicionIva::class,
             'factura_a_habilitada' => 'boolean',
             'factura_b_habilitada' => 'boolean',
+            'factura_c_habilitada' => 'boolean',
             'barcode_scale_enabled' => 'boolean',
             'barcode_scale_code_digits' => 'integer',
             'barcode_scale_weight_digits' => 'integer',
@@ -62,6 +63,7 @@ class CompanySettings extends Model
             fn (TipoComprobanteInterno $t) => match ($t) {
                 TipoComprobanteInterno::FacturaA => $this->factura_a_habilitada,
                 TipoComprobanteInterno::FacturaB => $this->factura_b_habilitada,
+                TipoComprobanteInterno::FacturaC => $this->factura_c_habilitada,
                 default => true,
             }
         ));
@@ -69,11 +71,12 @@ class CompanySettings extends Model
 
     /**
      * Tipo de comprobante por defecto para una factura nueva: prioriza B,
-     * después A, y si no hay ninguna fiscal habilitada cae a Remito X. Un
-     * cliente que tiene apagada la facturación fiscal manual (ver
-     * config('features.invoices_manual_create')) arranca siempre en Remito X
-     * aunque Factura A/B sigan tildadas en esta configuración — esos toggles
-     * quedan para cuando en algún momento se habilite facturar de verdad.
+     * después A, después C, y si no hay ninguna fiscal habilitada cae a
+     * Remito X. Un cliente que tiene apagada la facturación fiscal manual
+     * (ver config('features.invoices_manual_create')) arranca siempre en
+     * Remito X aunque Factura A/B/C sigan tildadas en esta configuración —
+     * esos toggles quedan para cuando en algún momento se habilite
+     * facturar de verdad.
      */
     public function tipoComprobantePorDefecto(): TipoComprobanteInterno
     {
@@ -84,8 +87,20 @@ class CompanySettings extends Model
         return match (true) {
             $this->factura_b_habilitada => TipoComprobanteInterno::FacturaB,
             $this->factura_a_habilitada => TipoComprobanteInterno::FacturaA,
+            $this->factura_c_habilitada => TipoComprobanteInterno::FacturaC,
             default => TipoComprobanteInterno::RemitoX,
         };
+    }
+
+    /**
+     * Un Monotributista o Exento no discrimina IVA en sus comprobantes
+     * (Factura C): el selector de alícuota por ítem no debería ni
+     * ofrecerse, para que no quede cargado un IVA que después haya que
+     * anular a mano al emitir (ver InvoiceCaeEmitter::emit()).
+     */
+    public function debeOcultarIvaPorItem(): bool
+    {
+        return in_array($this->condicion_iva, [CondicionIva::Monotributista, CondicionIva::Exento], true);
     }
 
     /**

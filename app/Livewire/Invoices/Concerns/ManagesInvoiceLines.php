@@ -3,6 +3,7 @@
 namespace App\Livewire\Invoices\Concerns;
 
 use App\Enums\AlicuotaIva;
+use App\Models\CompanySettings;
 use App\Models\Product;
 
 /**
@@ -33,7 +34,7 @@ trait ManagesInvoiceLines
             'quantity' => '1',
             'unit_price' => (string) $product->priceForList($this->currentPriceList()),
             'discount' => '0',
-            'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
+            'iva_rate' => CompanySettings::current()->debeOcultarIvaPorItem() ? '0' : AlicuotaIva::normalizar($product->iva_rate),
         ];
 
         $this->productQuery = '';
@@ -47,7 +48,7 @@ trait ManagesInvoiceLines
             'quantity' => '1',
             'unit_price' => '0',
             'discount' => '0',
-            'iva_rate' => '21',
+            'iva_rate' => CompanySettings::current()->debeOcultarIvaPorItem() ? '0' : '21',
         ];
     }
 

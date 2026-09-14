@@ -110,4 +110,84 @@ class FacturaTogglesTest extends TestCase
             ->call('save')
             ->assertHasErrors('cert');
     }
+
+    public function test_habilitar_factura_c_la_suma_a_las_opciones_de_la_factura(): void
+    {
+        CompanySettings::current()->update([
+            'condicion_iva' => 'monotributista',
+            'factura_a_habilitada' => false,
+            'factura_b_habilitada' => false,
+            'factura_c_habilitada' => true,
+        ]);
+
+        $options = Livewire::actingAs($this->admin())
+            ->test('invoices.create')
+            ->viewData('tipoComprobanteInternoOptions');
+
+        $this->assertContains(TipoComprobanteInterno::FacturaC, $options);
+    }
+
+    public function test_no_se_puede_guardar_empresa_monotributista_con_factura_a_habilitada(): void
+    {
+        Livewire::actingAs($this->admin())
+            ->test('company-settings.edit')
+            ->set('cuit', '20111111112')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('condicion_iva', 'monotributista')
+            ->set('factura_a_habilitada', true)
+            ->call('save')
+            ->assertHasErrors('condicion_iva');
+
+        $this->assertSame('responsable_inscripto', CompanySettings::current()->condicion_iva->value);
+    }
+
+    public function test_no_se_puede_guardar_empresa_responsable_inscripto_con_factura_c_habilitada(): void
+    {
+        Livewire::actingAs($this->admin())
+            ->test('company-settings.edit')
+            ->set('cuit', '20111111112')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('condicion_iva', 'responsable_inscripto')
+            ->set('factura_a_habilitada', false)
+            ->set('factura_b_habilitada', false)
+            ->set('factura_c_habilitada', true)
+            ->call('save')
+            ->assertHasErrors('condicion_iva');
+    }
+
+    public function test_se_puede_guardar_empresa_monotributista_con_solo_factura_c(): void
+    {
+        Livewire::actingAs($this->admin())
+            ->test('company-settings.edit')
+            ->set('cuit', '20111111112')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('condicion_iva', 'monotributista')
+            ->set('factura_a_habilitada', false)
+            ->set('factura_b_habilitada', false)
+            ->set('factura_c_habilitada', true)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame('monotributista', CompanySettings::current()->condicion_iva->value);
+        $this->assertTrue(CompanySettings::current()->factura_c_habilitada);
+    }
+
+    public function test_selector_de_iva_por_item_se_oculta_para_empresa_monotributista(): void
+    {
+        CompanySettings::current()->update([
+            'condicion_iva' => 'monotributista',
+            'factura_a_habilitada' => false,
+            'factura_b_habilitada' => false,
+            'factura_c_habilitada' => true,
+        ]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+
+        Livewire::actingAs($this->admin())
+            ->test('invoices.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id)
+            ->assertSet('items.0.iva_rate', '0')
+            ->assertSee('IVA incluido');
+    }
 }

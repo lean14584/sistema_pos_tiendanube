@@ -11,7 +11,11 @@
     <x-page-header title="Nueva Nota de Crédito" icon="receipt-refund" />
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
         Corresponde a la factura <strong>{{ $invoice->number }}</strong> ({{ $invoice->client->name }}). Se emitirá como
-        {{ $invoice->tipo_comprobante === \App\Enums\TipoComprobante::FacturaA ? 'Nota de Crédito A' : 'Nota de Crédito B' }}.
+        @switch($invoice->tipo_comprobante)
+            @case(\App\Enums\TipoComprobante::FacturaA) Nota de Crédito A @break
+            @case(\App\Enums\TipoComprobante::FacturaC) Nota de Crédito C @break
+            @default Nota de Crédito B
+        @endswitch.
     </p>
 
     <form wire:submit="save" class="space-y-6">

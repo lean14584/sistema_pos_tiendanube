@@ -162,9 +162,11 @@ class Create extends Component
             return;
         }
 
-        $tipoNC = $this->invoice->tipo_comprobante === TipoComprobante::FacturaA
-            ? TipoComprobanteInterno::NotaCreditoA
-            : TipoComprobanteInterno::NotaCreditoB;
+        $tipoNC = match ($this->invoice->tipo_comprobante) {
+            TipoComprobante::FacturaA => TipoComprobanteInterno::NotaCreditoA,
+            TipoComprobante::FacturaC => TipoComprobanteInterno::NotaCreditoC,
+            default => TipoComprobanteInterno::NotaCreditoB,
+        };
 
         // El chequeo de "cuánto queda por acreditar" y la creación de la NC
         // (que mueve stock y caja ya en borrador, antes de emitir a AFIP)

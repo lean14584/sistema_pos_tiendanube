@@ -101,6 +101,14 @@
                     </span>
                     <input type="checkbox" wire:model="factura_b_habilitada" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
                 </label>
+
+                <label class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 cursor-pointer">
+                    <span>
+                        <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Factura C</span>
+                        <span class="block text-xs text-gray-400 dark:text-gray-500">Solo para empresas Monotributistas o Exentas (no discrimina IVA).</span>
+                    </span>
+                    <input type="checkbox" wire:model="factura_c_habilitada" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                </label>
             </div>
 
             {{-- Certificado y clave --}}

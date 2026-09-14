@@ -98,7 +98,18 @@ class InvoiceCaeEmitter
             $cbteNro = $this->gateway->getLastVoucherNumber($puntoVenta, $tipoComprobante) + 1;
 
             // Desglose del IVA por alícuota (comprobante con alícuotas mezcladas).
-            $alicuotas = $invoice->ivaPorAlicuota()
+            // Una Factura C (emisor Monotributista/Exento) nunca discrimina
+            // IVA — más allá de que la UI ya no ofrece elegir alícuota por
+            // ítem para esos emisores (ver CompanySettings::
+            // debeOcultarIvaPorItem()), acá se fuerza en el punto de no
+            // retorno: ImpNeto = ImpTotal, ImpIVA = 0, sin desglose de
+            // alícuotas y sin ImpOpEx (ImpOpEx es para operaciones EXENTAS,
+            // un estatus impositivo distinto al de "no discrimino IVA por
+            // monotributo" — no hay que confundirlos aunque ambos terminen
+            // en Factura C).
+            $esFacturaC = $tipoComprobante->family() === 'C';
+
+            $alicuotas = $esFacturaC ? [] : $invoice->ivaPorAlicuota()
                 ->map(fn (array $a) => [
                     'tasa' => $a['tasa'],
                     'baseImp' => round($a['base'], 2),
@@ -112,11 +123,11 @@ class InvoiceCaeEmitter
                 cbteNro: $cbteNro,
                 docTipo: $invoice->client->tipo_documento->afipCode(),
                 docNro: $this->docNroPara($invoice->client->tipo_documento, $invoice->client->tax_id),
-                impNeto: round((float) $invoice->neto_gravado, 2),
-                impIva: round((float) $invoice->tax_amount, 2),
+                impNeto: $esFacturaC ? round((float) $invoice->total, 2) : round((float) $invoice->neto_gravado, 2),
+                impIva: $esFacturaC ? 0.0 : round((float) $invoice->tax_amount, 2),
                 impTotal: round((float) $invoice->total, 2),
                 condicionIvaReceptorId: $condicionIvaReceptorId,
-                impOpEx: round((float) $invoice->neto_exento, 2),
+                impOpEx: $esFacturaC ? 0.0 : round((float) $invoice->neto_exento, 2),
                 alicuotas: $alicuotas,
                 comprobanteAsociado: $comprobanteAsociado,
             );

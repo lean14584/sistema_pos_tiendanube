@@ -57,8 +57,16 @@ final class ComprobanteResolver
     public static function assertEmisorPuedeForzar(CondicionIva $emisor, TipoComprobante $tipo): void
     {
         $esAoB = in_array($tipo->family(), ['A', 'B'], true);
+        $esMonotributistaOExento = in_array($emisor, [CondicionIva::Monotributista, CondicionIva::Exento], true);
 
         if ($esAoB && $emisor !== CondicionIva::ResponsableInscripto) {
+            throw new AfipValidationException("Una empresa {$emisor->label()} no puede emitir {$tipo->label()}.");
+        }
+
+        // Simétrico al chequeo de arriba: un Responsable Inscripto tampoco
+        // puede emitir C — ese tipo es exclusivo de Monotributista/Exento
+        // (ver tipoComprobante() más arriba, que nunca lo devuelve para RI).
+        if ($tipo->family() === 'C' && ! $esMonotributistaOExento) {
             throw new AfipValidationException("Una empresa {$emisor->label()} no puede emitir {$tipo->label()}.");
         }
     }

@@ -128,11 +128,15 @@
                                     <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </td>
                                 <td class="px-3 py-1">
-                                    <select wire:model.live="items.{{ $index }}.iva_rate" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                        @foreach (App\Enums\AlicuotaIva::cases() as $alicuota)
-                                            <option value="{{ $alicuota->value }}">{{ $alicuota->label() }}</option>
-                                        @endforeach
-                                    </select>
+                                    @if($ocultarIva ?? false)
+                                        <span class="text-xs text-gray-400 dark:text-gray-500">IVA incluido</span>
+                                    @else
+                                        <select wire:model.live="items.{{ $index }}.iva_rate" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                            @foreach (App\Enums\AlicuotaIva::cases() as $alicuota)
+                                                <option value="{{ $alicuota->value }}">{{ $alicuota->label() }}</option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                 </td>
                                 <td class="px-3 py-1 text-right text-gray-700 dark:text-gray-300">
                                     ${{ money((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100)) }}
@@ -170,14 +174,16 @@
                                     <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Desc %</label>
                                     <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 </div>
-                                <div>
-                                    <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">IVA</label>
-                                    <select wire:model.live="items.{{ $index }}.iva_rate" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                        @foreach (App\Enums\AlicuotaIva::cases() as $alicuota)
-                                            <option value="{{ $alicuota->value }}">{{ $alicuota->label() }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                @unless($ocultarIva ?? false)
+                                    <div>
+                                        <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">IVA</label>
+                                        <select wire:model.live="items.{{ $index }}.iva_rate" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                            @foreach (App\Enums\AlicuotaIva::cases() as $alicuota)
+                                                <option value="{{ $alicuota->value }}">{{ $alicuota->label() }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endunless
                             </div>
                             <div class="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 pt-1">
                                 <span>Total</span>

@@ -281,6 +281,7 @@ class Create extends Component
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
             'priceLists' => PriceList::active()->orderBy('name')->get(),
             'esNotaCredito' => false,
+            'ocultarIva' => CompanySettings::current()->debeOcultarIvaPorItem(),
         ]);
     }
 }

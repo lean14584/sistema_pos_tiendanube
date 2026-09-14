@@ -32,6 +32,8 @@ class Edit extends Component
 
     public bool $factura_b_habilitada = true;
 
+    public bool $factura_c_habilitada = false;
+
     public bool $barcode_scale_enabled = false;
 
     public string $barcode_scale_prefix = '20';
@@ -63,6 +65,7 @@ class Edit extends Component
         $this->condicion_iva = $this->company->condicion_iva->value;
         $this->factura_a_habilitada = $this->company->factura_a_habilitada;
         $this->factura_b_habilitada = $this->company->factura_b_habilitada;
+        $this->factura_c_habilitada = $this->company->factura_c_habilitada;
         $this->barcode_scale_enabled = $this->company->barcode_scale_enabled;
         $this->barcode_scale_prefix = (string) ($this->company->barcode_scale_prefix ?? '20');
         $this->barcode_scale_code_digits = (string) $this->company->barcode_scale_code_digits;
@@ -97,6 +100,7 @@ class Edit extends Component
             'condicion_iva' => ['required', Rule::enum(CondicionIva::class)],
             'factura_a_habilitada' => ['boolean'],
             'factura_b_habilitada' => ['boolean'],
+            'factura_c_habilitada' => ['boolean'],
             'barcode_scale_enabled' => ['boolean'],
             'barcode_scale_prefix' => ['required_if:barcode_scale_enabled,true', 'nullable', 'digits_between:1,4'],
             'barcode_scale_code_digits' => ['required_if:barcode_scale_enabled,true', 'nullable', 'integer', 'min:1', 'max:9'],
@@ -115,6 +119,25 @@ class Edit extends Component
         $this->validarContenidoAfip();
 
         if ($this->getErrorBag()->hasAny(['cert', 'key'])) {
+            return;
+        }
+
+        // Regla dura de AFIP (ver ComprobanteResolver::assertEmisorPuedeForzar):
+        // Responsable Inscripto nunca emite C, Monotributista/Exento nunca
+        // emite A/B. Se corta acá para no descubrir la combinación inválida
+        // recién al intentar emitir una factura.
+        $condicionIva = CondicionIva::from($data['condicion_iva']);
+        $esMonotributistaOExento = in_array($condicionIva, [CondicionIva::Monotributista, CondicionIva::Exento], true);
+
+        if ($esMonotributistaOExento && ($data['factura_a_habilitada'] || $data['factura_b_habilitada'])) {
+            $this->addError('condicion_iva', "Una empresa {$condicionIva->label()} no puede emitir Factura A ni B — destildá esas opciones o cambiá la condición ante IVA.");
+
+            return;
+        }
+
+        if (! $esMonotributistaOExento && $data['factura_c_habilitada']) {
+            $this->addError('condicion_iva', "Una empresa {$condicionIva->label()} no puede emitir Factura C — destildá esa opción o cambiá la condición ante IVA.");
+
             return;
         }
 

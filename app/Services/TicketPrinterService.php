@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TipoComprobanteInterno;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Services\Afip\QrPayloadBuilder;
@@ -224,15 +225,22 @@ class TicketPrinterService
             $this->addColumns('Descuento', '-$'.$this->money($descuento));
         }
 
-        $this->addColumns('Neto gravado', '$'.$this->money($invoice->neto_gravado));
+        // Factura C (Monotributista/Exento) no discrimina IVA: mostrar
+        // "Neto gravado $0 / Exento $total" sería engañoso (Exento es un
+        // estatus impositivo distinto al de "no discrimino por monotributo",
+        // ver InvoiceCaeEmitter::emit()) — directo a TOTAL, como en el
+        // comprobante real.
+        if ($invoice->tipo_comprobante_interno !== TipoComprobanteInterno::FacturaC) {
+            $this->addColumns('Neto gravado', '$'.$this->money($invoice->neto_gravado));
 
-        if ($invoice->neto_exento > 0) {
-            $this->addColumns('Exento', '$'.$this->money($invoice->neto_exento));
-        }
+            if ($invoice->neto_exento > 0) {
+                $this->addColumns('Exento', '$'.$this->money($invoice->neto_exento));
+            }
 
-        foreach ($invoice->ivaPorAlicuota() as $linea) {
-            $tasa = rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.');
-            $this->addColumns("IVA {$tasa}%", '$'.$this->money($linea['iva']));
+            foreach ($invoice->ivaPorAlicuota() as $linea) {
+                $tasa = rtrim(rtrim(number_format($linea['tasa'], 2), '0'), '.');
+                $this->addColumns("IVA {$tasa}%", '$'.$this->money($linea['iva']));
+            }
         }
 
         $this->addColumns('TOTAL', '$'.$this->money($invoice->total), bold: true);

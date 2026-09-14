@@ -22,7 +22,10 @@ class CompanySettingsTest extends TestCase
             ->set('cuit', '20111111112')
             ->set('razon_social', 'Mi Empresa S.A.')
             ->set('condicion_iva', 'monotributista')
-            ->call('save');
+            ->set('factura_a_habilitada', false)
+            ->set('factura_b_habilitada', false)
+            ->call('save')
+            ->assertHasNoErrors();
 
         $company = CompanySettings::current();
         $this->assertSame('20111111112', $company->cuit);
@@ -39,6 +42,8 @@ class CompanySettingsTest extends TestCase
             ->set('cuit', '')
             ->set('razon_social', 'Almacén Don José')
             ->set('condicion_iva', 'monotributista')
+            ->set('factura_a_habilitada', false)
+            ->set('factura_b_habilitada', false)
             ->call('save')
             ->assertHasNoErrors();
 
@@ -69,6 +74,8 @@ class CompanySettingsTest extends TestCase
             ->set('cuit', '20111111112')
             ->set('razon_social', 'Mi Empresa S.A.')
             ->set('condicion_iva', 'monotributista')
+            ->set('factura_a_habilitada', false)
+            ->set('factura_b_habilitada', false)
             ->set('barcode_scale_enabled', true)
             ->set('barcode_scale_prefix', '20')
             ->set('barcode_scale_code_digits', '5')
@@ -92,6 +99,8 @@ class CompanySettingsTest extends TestCase
             ->set('cuit', '20111111112')
             ->set('razon_social', 'Mi Empresa S.A.')
             ->set('condicion_iva', 'monotributista')
+            ->set('factura_a_habilitada', false)
+            ->set('factura_b_habilitada', false)
             ->set('barcode_scale_enabled', true)
             ->set('barcode_scale_prefix', '20')
             ->set('barcode_scale_code_digits', '5')
