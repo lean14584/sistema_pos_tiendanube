@@ -183,4 +183,71 @@ class InvoiceStockAndCashTest extends TestCase
         $this->assertSame(5, $product->fresh()->stock);
         $this->assertSame(0, CashMovement::count());
     }
+
+    /**
+     * MEJORA: borrar un comprobante revierte stock y desvincula pagos de
+     * caja — antes cualquier rol con acceso al módulo 'invoices' (Cajero,
+     * Vendedor) podía hacerlo, sin ningún chequeo más fino que ese. Ahora
+     * queda reservado a Admin/Encargado; Cajero sigue pudiendo emitir a
+     * ARCA sin problema, solo se le saca borrar.
+     */
+    public function test_cajero_no_puede_eliminar_un_comprobante(): void
+    {
+        $cajero = User::factory()->create(['role' => Role::Cajero, 'active' => true]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        $invoice = Invoice::create([
+            'number' => 'REM-0001', 'client_id' => $client->id,
+            'tipo_comprobante_interno' => 'remito_x', 'sucursal_id' => Sucursal::sole()->id,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'tax_rate' => 0, 'status' => 'draft',
+        ]);
+        $invoice->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 2, 'unit_price' => 1000]);
+        $product->decrement('stock', 2);
+
+        Livewire::actingAs($cajero)
+            ->test('invoices.show', ['invoice' => $invoice])
+            ->call('delete')
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
+        $this->assertSame(3, $product->fresh()->stock, 'El stock no debería tocarse si el borrado se rechazó.');
+    }
+
+    public function test_vendedor_no_puede_eliminar_un_comprobante(): void
+    {
+        $vendedor = User::factory()->create(['role' => Role::Vendedor, 'active' => true]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $invoice = Invoice::create([
+            'number' => 'REM-0001', 'client_id' => $client->id,
+            'tipo_comprobante_interno' => 'remito_x', 'sucursal_id' => Sucursal::sole()->id,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'tax_rate' => 0, 'status' => 'draft',
+        ]);
+
+        Livewire::actingAs($vendedor)
+            ->test('invoices.show', ['invoice' => $invoice])
+            ->call('delete')
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
+    }
+
+    public function test_encargado_si_puede_eliminar_un_comprobante(): void
+    {
+        $encargado = User::factory()->create(['role' => Role::Encargado, 'active' => true]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $invoice = Invoice::create([
+            'number' => 'REM-0001', 'client_id' => $client->id,
+            'tipo_comprobante_interno' => 'remito_x', 'sucursal_id' => Sucursal::sole()->id,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'tax_rate' => 0, 'status' => 'draft',
+        ]);
+
+        Livewire::actingAs($encargado)
+            ->test('invoices.show', ['invoice' => $invoice])
+            ->call('delete');
+
+        $this->assertDatabaseMissing('invoices', ['id' => $invoice->id]);
+    }
 }

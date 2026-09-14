@@ -223,6 +223,16 @@ class Show extends Component
 
     public function delete(): void
     {
+        // Borrar revierte stock y desvincula pagos de caja — un impacto
+        // real en plata/stock que Cajero y Vendedor no deberían poder
+        // disparar solos (a diferencia de emitirAfip(), que sí les queda
+        // habilitado). Solo Admin/Encargado.
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || Auth::user()?->esEncargado(),
+            403,
+            'Tu rol no tiene permiso para eliminar comprobantes.'
+        );
+
         abort_if($this->invoice->isFiscal, 403, 'No se puede eliminar una factura con CAE. Emití una Nota de Crédito.');
         abort_if(
             $this->invoice->esRemito() && $this->invoice->facturaGenerada() !== null,

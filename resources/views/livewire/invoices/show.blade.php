@@ -127,12 +127,14 @@
                     <x-heroicon-o-pencil class="w-4 h-4" />
                     Editar
                 </a>
-                <button
-                    x-on:click="confirmThen('¿Eliminar la factura ' + @js($invoice->number) + '?', () => $wire.delete())"
-                    class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                >
-                    <x-heroicon-o-trash class="w-4 h-4" />
-                </button>
+                @if (Auth::user()->esAdminGlobal() || Auth::user()->esEncargado())
+                    <button
+                        x-on:click="confirmThen('¿Eliminar la factura ' + @js($invoice->number) + '?', () => $wire.delete())"
+                        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    >
+                        <x-heroicon-o-trash class="w-4 h-4" />
+                    </button>
+                @endif
             @endunless
             @if ($remitoYaFacturado)
                 <span class="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 px-2">
