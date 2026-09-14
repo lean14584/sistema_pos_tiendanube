@@ -172,6 +172,38 @@ class FacturaTogglesTest extends TestCase
         $this->assertTrue(CompanySettings::current()->factura_c_habilitada);
     }
 
+    public function test_elegir_monotributista_habilita_c_y_deshabilita_a_y_b_automaticamente(): void
+    {
+        CompanySettings::current()->update(['condicion_iva' => 'responsable_inscripto', 'factura_a_habilitada' => true, 'factura_b_habilitada' => true, 'factura_c_habilitada' => false]);
+
+        Livewire::actingAs($this->admin())
+            ->test('company-settings.edit')
+            ->set('condicion_iva', 'monotributista')
+            ->assertSet('factura_a_habilitada', false)
+            ->assertSet('factura_b_habilitada', false)
+            ->assertSet('factura_c_habilitada', true)
+            ->set('razon_social', 'Mi Empresa Monotributo')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $company = CompanySettings::current();
+        $this->assertFalse($company->factura_a_habilitada);
+        $this->assertFalse($company->factura_b_habilitada);
+        $this->assertTrue($company->factura_c_habilitada);
+    }
+
+    public function test_volver_a_responsable_inscripto_restaura_a_y_b_y_apaga_c_automaticamente(): void
+    {
+        CompanySettings::current()->update(['condicion_iva' => 'monotributista', 'factura_a_habilitada' => false, 'factura_b_habilitada' => false, 'factura_c_habilitada' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test('company-settings.edit')
+            ->set('condicion_iva', 'responsable_inscripto')
+            ->assertSet('factura_a_habilitada', true)
+            ->assertSet('factura_b_habilitada', true)
+            ->assertSet('factura_c_habilitada', false);
+    }
+
     public function test_selector_de_iva_por_item_se_oculta_para_empresa_monotributista(): void
     {
         CompanySettings::current()->update([

@@ -74,6 +74,24 @@ class Edit extends Component
         $this->descuento_transferencia_pct = (string) $this->company->descuento_transferencia_pct;
     }
 
+    /**
+     * Reacciona al cambio del select "Condición ante IVA": la condición
+     * determina de forma excluyente qué tipos de comprobante puede emitir
+     * la empresa (ver ComprobanteResolver) — no tiene sentido pedirle al
+     * usuario que además marque/desmarque los toggles a mano ni arriesgarse
+     * a que quede un estado inconsistente. Responsable Inscripto habilita
+     * A y B (elige entre las dos según a quién le vende); Monotributista y
+     * Exento habilitan únicamente C.
+     */
+    public function updatedCondicionIva(string $value): void
+    {
+        $esMonotributistaOExento = in_array($value, ['monotributista', 'exento'], true);
+
+        $this->factura_a_habilitada = ! $esMonotributistaOExento;
+        $this->factura_b_habilitada = ! $esMonotributistaOExento;
+        $this->factura_c_habilitada = $esMonotributistaOExento;
+    }
+
     /** ¿Ya hay un certificado AFIP cargado en el servidor? */
     public function certCargado(): bool
     {

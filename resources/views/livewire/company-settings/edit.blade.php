@@ -65,7 +65,7 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Condición frente al IVA *</label>
             <select
-                wire:model="condicion_iva"
+                wire:model.live="condicion_iva"
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             >
                 @foreach ($condicionIvaOptions as $option)
@@ -74,42 +74,45 @@
             </select>
             @error('condicion_iva') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                Determina si tus facturas salen como A, B o C. Cambiarla afecta a las próximas facturas que emitas, nunca a las ya emitidas.
+                Determina si tus facturas salen como A, B o C — se elige solo más abajo según esta condición. Cambiarla afecta a las próximas facturas que emitas, nunca a las ya emitidas.
             </p>
         </div>
 
         <div class="pt-6 mt-2 border-t border-gray-200 dark:border-gray-800">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Facturación electrónica (ARCA)</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-                Habilitá los tipos de comprobante que emitís y cargá el certificado y la clave privada que te da ARCA.
+                Cargá el certificado y la clave privada que te da ARCA. Los tipos de comprobante habilitados salen automáticamente de la condición ante IVA de arriba.
             </p>
 
-            {{-- Toggles A / B --}}
-            <div class="space-y-3">
-                <label class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 cursor-pointer">
+            @if(in_array($condicion_iva, ['monotributista', 'exento']))
+                {{-- Monotributista/Exento: único tipo posible es C, no hay nada para elegir. --}}
+                <div class="flex items-center gap-3 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-3">
+                    <x-heroicon-o-check-circle class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>
-                        <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Factura A</span>
-                        <span class="block text-xs text-gray-400 dark:text-gray-500">Para clientes responsables inscriptos (discrimina IVA).</span>
+                        <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Factura C habilitada</span>
+                        <span class="block text-xs text-gray-500 dark:text-gray-400">No discrimina IVA — es el único comprobante que puede emitir una empresa {{ \App\Enums\CondicionIva::from($condicion_iva)->label() }}.</span>
                     </span>
-                    <input type="checkbox" wire:model="factura_a_habilitada" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
-                </label>
+                </div>
+            @else
+                {{-- Responsable Inscripto: puede elegir entre A y B según a quién le vende. --}}
+                <div class="space-y-3">
+                    <label class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 cursor-pointer">
+                        <span>
+                            <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Factura A</span>
+                            <span class="block text-xs text-gray-400 dark:text-gray-500">Para clientes responsables inscriptos (discrimina IVA).</span>
+                        </span>
+                        <input type="checkbox" wire:model="factura_a_habilitada" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                    </label>
 
-                <label class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 cursor-pointer">
-                    <span>
-                        <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Factura B</span>
-                        <span class="block text-xs text-gray-400 dark:text-gray-500">Para consumidor final y monotributistas (IVA incluido).</span>
-                    </span>
-                    <input type="checkbox" wire:model="factura_b_habilitada" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
-                </label>
-
-                <label class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 cursor-pointer">
-                    <span>
-                        <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Factura C</span>
-                        <span class="block text-xs text-gray-400 dark:text-gray-500">Solo para empresas Monotributistas o Exentas (no discrimina IVA).</span>
-                    </span>
-                    <input type="checkbox" wire:model="factura_c_habilitada" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
-                </label>
-            </div>
+                    <label class="flex items-center justify-between gap-4 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 cursor-pointer">
+                        <span>
+                            <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Factura B</span>
+                            <span class="block text-xs text-gray-400 dark:text-gray-500">Para consumidor final y otros no responsables inscriptos (IVA incluido).</span>
+                        </span>
+                        <input type="checkbox" wire:model="factura_b_habilitada" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                    </label>
+                </div>
+            @endif
 
             {{-- Certificado y clave --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
