@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\Role;
 use App\Enums\TipoComprobanteInterno;
+use App\Models\Category;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Product;
@@ -221,5 +222,65 @@ class FacturaTogglesTest extends TestCase
             ->call('addProductItem', $product->id)
             ->assertSet('items.0.iva_rate', '0')
             ->assertSee('IVA incluido');
+    }
+
+    public function test_venta_rapida_no_ofrece_factura_a_ni_b_para_empresa_monotributista(): void
+    {
+        CompanySettings::current()->update([
+            'condicion_iva' => 'monotributista',
+            'factura_a_habilitada' => false,
+            'factura_b_habilitada' => false,
+            'factura_c_habilitada' => true,
+        ]);
+
+        $options = Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->viewData('tipoComprobanteInternoOptions');
+
+        $this->assertNotContains(TipoComprobanteInterno::FacturaA, $options);
+        $this->assertNotContains(TipoComprobanteInterno::FacturaB, $options);
+        $this->assertContains(TipoComprobanteInterno::FacturaC, $options);
+    }
+
+    public function test_selector_de_iva_se_oculta_al_crear_producto_para_empresa_monotributista(): void
+    {
+        CompanySettings::current()->update([
+            'condicion_iva' => 'monotributista',
+            'factura_a_habilitada' => false,
+            'factura_b_habilitada' => false,
+            'factura_c_habilitada' => true,
+        ]);
+        $category = Category::create(['name' => 'Bebidas']);
+
+        Livewire::actingAs($this->admin())
+            ->test('products.create')
+            ->assertDontSeeHtml('Alícuota de IVA')
+            ->set('name', 'Agua Mineral')
+            ->set('price', '500')
+            ->set('stock', '10')
+            ->set('category_id', (string) $category->id)
+            ->call('save')
+            ->assertRedirect(route('products.index'));
+
+        $this->assertEquals('0.00', Product::firstWhere('name', 'Agua Mineral')->iva_rate);
+    }
+
+    public function test_selector_de_iva_se_oculta_al_editar_producto_para_empresa_monotributista(): void
+    {
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'iva_rate' => 21, 'stock' => 5]);
+
+        CompanySettings::current()->update([
+            'condicion_iva' => 'monotributista',
+            'factura_a_habilitada' => false,
+            'factura_b_habilitada' => false,
+            'factura_c_habilitada' => true,
+        ]);
+
+        Livewire::actingAs($this->admin())
+            ->test('products.edit', ['product' => $product])
+            ->assertDontSeeHtml('Alícuota de IVA')
+            ->call('save');
+
+        $this->assertEquals('0.00', $product->fresh()->iva_rate);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Livewire\Products;
 
 use App\Enums\AlicuotaIva;
 use App\Models\Category;
+use App\Models\CompanySettings;
 use App\Models\Product;
 use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
@@ -63,6 +64,13 @@ class Edit extends Component
 
     public function save(): void
     {
+        // Empresa Monotributista/Exenta: el selector ni se muestra (ver
+        // debeOcultarIvaPorItem()), así que se fuerza acá también por si
+        // quedó un valor viejo en la propiedad — nunca se guarda con IVA.
+        if (CompanySettings::current()->debeOcultarIvaPorItem()) {
+            $this->iva_rate = '0';
+        }
+
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'max:255', Rule::requiredIf($this->sold_by_weight), Rule::unique('products', 'sku')->ignore($this->product->id)],
@@ -131,6 +139,7 @@ class Edit extends Component
         return view('livewire.products.edit', [
             'categories' => Category::orderBy('name')->get(),
             'sucursalActiva' => CurrentSucursal::get(),
+            'ocultarIva' => CompanySettings::current()->debeOcultarIvaPorItem(),
         ]);
     }
 }
