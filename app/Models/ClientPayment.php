@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['client_id', 'date', 'amount', 'method', 'notes'])]
+#[Fillable(['client_id', 'sucursal_id', 'date', 'amount', 'method', 'notes'])]
 class ClientPayment extends Model
 {
     protected function casts(): array
@@ -22,5 +22,10 @@ class ClientPayment extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function sucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class);
     }
 }

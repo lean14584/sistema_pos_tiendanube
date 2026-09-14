@@ -117,6 +117,31 @@ class InvoicesTest extends TestCase
         $this->assertEqualsWithDelta(1210.0, (float) $invoice->total, 0.01);
     }
 
+    /**
+     * MEJORA: a diferencia de Pos\Index (el carrito se vacía al vender) o de
+     * NotasCredito/FacturarRemito/Quotes (releen un registro existente), este
+     * formulario de alta no tenía ningún estado para detectar "esto ya se
+     * guardó" — el form sigue lleno después de guardar, así que dos submits
+     * casi simultáneos (doble clic) creaban dos facturas. Mismo patrón de
+     * test que RemitoFacturarTest: dos llamadas sobre la MISMA instancia.
+     */
+    public function test_doble_clic_en_guardar_no_duplica_la_factura(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('invoices.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id);
+
+        $component->call('save')->assertHasNoErrors();
+        $component->call('save')->assertHasNoErrors(); // el flag corta antes de crear nada, no un error de validación
+
+        $this->assertSame(1, Invoice::count(), 'No debería duplicarse la factura al guardar dos veces la misma pantalla.');
+        $this->assertEquals(9, $product->fresh()->stock, 'El stock no debería descontarse dos veces.');
+    }
+
     public function test_no_puede_registrar_un_pago_al_crear_factura_sin_caja_abierta(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);

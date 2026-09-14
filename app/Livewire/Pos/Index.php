@@ -21,6 +21,8 @@ use App\Support\PromotionEngine;
 use App\Support\ScaleBarcodeParser;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\Computed;
@@ -571,6 +573,21 @@ class Index extends Component
     }
 
     public function cobrar(): void
+    {
+        // MEJORA: sin este lock, un doble clic en "Cobrar" (o dos pestañas
+        // del mismo cajero) podía disparar dos requests casi simultáneas que
+        // pasaban los mismos chequeos y generaban dos facturas del mismo
+        // carrito — InvoiceNumberGenerator::withLock() más abajo solo
+        // serializa la numeración (evita números repetidos), no evita la
+        // duplicación en sí. El lock es por (sucursal, usuario), igual que
+        // CashRegister::openSession(): serializa las dos llamadas, y como
+        // $this->cart se vacía recién al final de una venta exitosa, la
+        // segunda llamada encuentra el carrito ya vacío y corta sola en el
+        // chequeo de abajo.
+        Cache::lock('pos:cobrar:'.CurrentSucursal::id().':'.Auth::id(), 10)->block(5, fn () => $this->cobrarInterno());
+    }
+
+    private function cobrarInterno(): void
     {
         if ($this->cart === []) {
             $this->addError('cart', 'Agregá al menos un producto.');

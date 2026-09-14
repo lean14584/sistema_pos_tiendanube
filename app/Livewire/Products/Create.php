@@ -57,9 +57,20 @@ class Create extends Component
      */
     public static function nextAutoSku(): string
     {
-        $max = Product::query()
-            ->pluck('sku')
-            ->filter(fn (?string $sku) => $sku !== null && ctype_digit($sku))
+        // MEJORA: antes traía la columna sku de TODO el catálogo a PHP solo
+        // para descartar en memoria los que no son numéricos. En MySQL (el
+        // driver real de producción) se filtra con REGEXP para que solo
+        // viajen los que `ctype_digit` iba a aceptar de todos modos, sin
+        // cambiar el resultado. REGEXP no es portable a SQLite (el driver de
+        // los tests), así que ahí se sigue filtrando en PHP como antes.
+        $query = Product::query()->whereNotNull('sku')->where('sku', '!=', '');
+
+        if (config('database.default') === 'mysql') {
+            $query->whereRaw("sku REGEXP '^[0-9]{1,13}$'");
+        }
+
+        $max = $query->pluck('sku')
+            ->filter(fn (string $sku) => ctype_digit($sku))
             ->map(fn (string $sku) => self::significantNumber($sku))
             ->max();
 

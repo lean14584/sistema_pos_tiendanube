@@ -30,7 +30,10 @@ class ReciboPdfController extends Controller
         $company = CompanySettings::current();
         $logoPath = $company->logo_path ? storage_path('app/public/'.$company->logo_path) : null;
 
-        $numero = InvoiceNumberGenerator::puntoVenta().'-'.str_pad((string) $payment->id, 8, '0', STR_PAD_LEFT);
+        // La sucursal donde se cobró, no la activa de quien reimprime el
+        // recibo — sin esto, el número cambiaba según quién lo mirara.
+        // Fallback solo para pagos viejos, creados antes de esta columna.
+        $numero = InvoiceNumberGenerator::puntoVenta($payment->sucursal_id).'-'.str_pad((string) $payment->id, 8, '0', STR_PAD_LEFT);
 
         $pdf = Pdf::loadView('pdf.recibo', [
             'payment' => $payment,

@@ -9,11 +9,12 @@ use App\Models\Promotion;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    use ShowsToasts;
+    use ShowsToasts, WithPagination;
 
     public ?int $editingId = null;
 
@@ -176,7 +177,11 @@ class Index extends Component
     public function render()
     {
         return view('livewire.promotions.index', [
-            'promotions' => Promotion::with('product')->latest()->get(),
+            // MEJORA: sin paginar, esta pantalla acumula sin límite (a
+            // diferencia de Users/Sucursales/Audit, que sí paginan) —
+            // con catálogos que juntan promociones estacionales sin
+            // borrarlas, esto degradaba con el tiempo.
+            'promotions' => Promotion::with('product')->latest()->paginate(20),
             'selectedProductName' => $this->product_id !== '' ? Product::find($this->product_id)?->name : null,
             'types' => PromotionType::cases(),
         ]);

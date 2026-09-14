@@ -130,22 +130,33 @@ class Index extends Component
 
     public function closeSession(): void
     {
-        $session = $this->openSessionModel();
-
-        if (! $session) {
-            return;
-        }
-
         $this->validate([
             'closingAmount' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $session->update([
-            'status' => CashSessionStatus::Closed,
-            'closed_at' => now(),
-            'closing_amount' => $this->closingAmount,
-            'notes' => $this->closingNotes ?: $session->notes,
-        ]);
+        // MEJORA: a diferencia de openSession(), este check-then-act no
+        // tenía lock — un doble clic en "Cerrar caja" podía disparar dos
+        // updates casi simultáneos sobre la misma sesión. Mismo mecanismo
+        // que openSession(): lock por (sucursal, usuario) + re-chequeo con
+        // fresh() adentro, para que la segunda llamada encuentre la sesión
+        // ya cerrada y no haga nada.
+        $sucursalId = CurrentSucursal::id();
+        $userId = Auth::id();
+
+        Cache::lock("caja:cerrar-sesion:{$sucursalId}:{$userId}", 10)->block(5, function () {
+            $session = $this->openSessionModel();
+
+            if (! $session) {
+                return;
+            }
+
+            $session->update([
+                'status' => CashSessionStatus::Closed,
+                'closed_at' => now(),
+                'closing_amount' => $this->closingAmount,
+                'notes' => $this->closingNotes ?: $session->notes,
+            ]);
+        });
 
         $this->closingAmount = '';
         $this->closingNotes = '';

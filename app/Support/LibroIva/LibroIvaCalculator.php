@@ -5,6 +5,7 @@ namespace App\Support\LibroIva;
 use App\Models\Invoice;
 use App\Models\Purchase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Arma las filas del Libro IVA Ventas/Compras para un período, a partir de
@@ -18,7 +19,10 @@ final class LibroIvaCalculator
      */
     public static function ventas(string $desde, string $hasta): Collection
     {
-        return Invoice::query()
+        // MEJORA: sin caché, cada render de la pantalla (y cada export) volvía
+        // a traer y recorrer todos los comprobantes fiscales del período con
+        // sus ítems eager-cargados. Mismo criterio que SalesReport::build().
+        return Cache::remember("libro-iva:ventas:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Invoice::query()
             ->whereNotNull('cae')
             ->whereDate('issue_date', '>=', $desde)
             ->whereDate('issue_date', '<=', $hasta)
@@ -28,7 +32,7 @@ final class LibroIvaCalculator
             ->orderBy('tipo_comprobante')
             ->orderBy('numero_comprobante_afip')
             ->get()
-            ->map(fn (Invoice $invoice) => self::fromInvoice($invoice));
+            ->map(fn (Invoice $invoice) => self::fromInvoice($invoice)));
     }
 
     /**
@@ -36,7 +40,7 @@ final class LibroIvaCalculator
      */
     public static function compras(string $desde, string $hasta): Collection
     {
-        return Purchase::query()
+        return Cache::remember("libro-iva:compras:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Purchase::query()
             ->whereNot('status', 'draft')
             ->whereNotNull('tipo_comprobante')
             ->whereDate('issue_date', '>=', $desde)
@@ -47,7 +51,7 @@ final class LibroIvaCalculator
             ->orderBy('tipo_comprobante')
             ->orderBy('numero_comprobante')
             ->get()
-            ->map(fn (Purchase $purchase) => self::fromPurchase($purchase));
+            ->map(fn (Purchase $purchase) => self::fromPurchase($purchase)));
     }
 
     /**

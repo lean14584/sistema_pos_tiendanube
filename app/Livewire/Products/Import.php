@@ -41,6 +41,21 @@ class Import extends Component
         // quien importa) — se resuelve una sola vez, no por fila.
         $sucursalId = CurrentSucursal::id();
 
+        // MEJORA: antes cada fila disparaba 1-2 queries (Product::where('sku',
+        // ...)->first() y, si no matcheaba, Product::where('name', ...)->first())
+        // — para un Excel de miles de filas eran miles de queries secuenciales.
+        // Se precarga todo el catálogo una sola vez y se mantiene en memoria
+        // (agregando cada alta nueva a los mismos mapas) para que una fila
+        // duplicada dentro del mismo Excel siga matcheando contra la que se
+        // acaba de crear, igual que antes.
+        // Se indexa en minúsculas porque el matching original dependía de la
+        // colación case-insensitive de la conexión (utf8mb4_unicode_ci) — un
+        // mapa de PHP no hereda eso solo, hay que normalizarlo a mano para no
+        // perder ese comportamiento (mismo criterio que $categoriasCache).
+        $todosLosProductos = Product::all();
+        $productosPorSku = $todosLosProductos->filter(fn (Product $p) => filled($p->sku))->keyBy(fn (Product $p) => mb_strtolower($p->sku));
+        $productosPorNombre = $todosLosProductos->keyBy(fn (Product $p) => mb_strtolower($p->name));
+
         // Cada alta/edición dispara ProductObserver → TiendanubeAutoSync::queue(),
         // que despacha un afterResponse() (llamada HTTP real a Tiendanube,
         // sin depender de un worker de colas). Con un Excel de cientos de
@@ -49,8 +64,8 @@ class Import extends Component
         // reflejar los productos importados en Tiendanube, usar "Enviar
         // productos" en el panel de Tiendanube (acción manual, ya pensada
         // para tardar).
-        TiendanubeSyncGuard::mute(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache, $sucursalId) {
-            DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache, $sucursalId) {
+        TiendanubeSyncGuard::mute(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache, $sucursalId, $productosPorSku, $productosPorNombre) {
+            DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, &$categoriasCache, $sucursalId, $productosPorSku, $productosPorNombre) {
                 foreach ($filas as $numero => $fila) {
                     $nombre = trim((string) $this->valor($fila, 'name'));
                     $precio = $this->valor($fila, 'price');
@@ -101,17 +116,12 @@ class Import extends Component
                         $datos['category_id'] = $categoriasCache[$clave];
                     }
 
-                    // La colación por defecto de la conexión (utf8mb4_unicode_ci,
-                    // ver config/database.php) ya compara sin distinguir
-                    // mayúsculas/minúsculas: el LOWER() de acá era redundante y,
-                    // de paso, evitaba que MySQL pudiera usar el índice de
-                    // sku/name (una función sobre la columna invalida el índice).
                     $existente = null;
                     if (! empty($datos['sku'])) {
-                        $existente = Product::where('sku', $datos['sku'])->first();
+                        $existente = $productosPorSku->get(mb_strtolower($datos['sku']));
                     }
                     if (! $existente) {
-                        $existente = Product::where('name', $nombre)->first();
+                        $existente = $productosPorNombre->get(mb_strtolower($nombre));
                     }
 
                     if ($existente) {
@@ -134,6 +144,14 @@ class Import extends Component
                         // evento de auditoría de alta) más su fila en la
                         // sucursal activa.
                         $nuevo = Product::create([...$datos, 'stock' => $stockImportado ?? 0]);
+
+                        // Una fila duplicada más adelante en el mismo Excel
+                        // (mismo sku o nombre nuevo) tiene que encontrar este
+                        // producto recién creado, no volver a crearlo.
+                        if (filled($nuevo->sku)) {
+                            $productosPorSku->put(mb_strtolower($nuevo->sku), $nuevo);
+                        }
+                        $productosPorNombre->put(mb_strtolower($nuevo->name), $nuevo);
 
                         if ($stockImportado !== null && $stockImportado > 0 && $sucursalId !== null) {
                             ProductStock::create(['product_id' => $nuevo->id, 'sucursal_id' => $sucursalId, 'stock' => $stockImportado]);

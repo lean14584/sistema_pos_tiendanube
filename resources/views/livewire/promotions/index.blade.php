@@ -168,5 +168,8 @@
                 <div class="p-10 text-center text-gray-400 dark:text-gray-500">Todavía no cargaste promociones.</div>
             @endforelse
         </div>
+        <div class="p-4">
+            {{ $promotions->links() }}
+        </div>
     </div>
 </div>
