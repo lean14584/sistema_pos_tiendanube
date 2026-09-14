@@ -81,7 +81,7 @@ class Create extends Component
     {
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['nullable', 'string', 'max:255', Rule::requiredIf($this->sold_by_weight)],
+            'sku' => ['nullable', 'string', 'max:255', Rule::requiredIf($this->sold_by_weight), 'unique:products,sku'],
             'sold_by_weight' => ['boolean'],
             'price' => ['required', 'numeric', 'min:0'],
             'iva_rate' => ['required', Rule::in(AlicuotaIva::valores())],

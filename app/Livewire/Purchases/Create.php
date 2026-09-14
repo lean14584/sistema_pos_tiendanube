@@ -210,10 +210,19 @@ class Create extends Component
             return;
         }
 
-        $purchase = Cache::lock('purchase-number', 10)->block(10, fn () => DB::transaction(function () {
+        // La sucursal de la compra queda fija a la que estaba activa en
+        // este momento (misma sucursal donde StockAdjuster::apply() suma el
+        // stock) — Purchases\Edit y Show::delete() la reusan tal cual al
+        // revertir/reaplicar, en vez de resolver la sucursal activa de
+        // quien esté editando/borrando más adelante (ver migración
+        // add_sucursal_id_to_purchases_table).
+        $sucursalId = CurrentSucursal::id();
+
+        $purchase = Cache::lock('purchase-number', 10)->block(10, fn () => DB::transaction(function () use ($sucursalId) {
             $purchase = Purchase::create([
                 'number' => $this->nextNumber(),
                 'provider_id' => $this->provider_id,
+                'sucursal_id' => $sucursalId,
                 'tipo_comprobante' => $this->tipo_comprobante,
                 'punto_venta' => $this->punto_venta,
                 'numero_comprobante' => $this->numero_comprobante,
@@ -237,9 +246,7 @@ class Create extends Component
                 }
             }
 
-            StockAdjuster::apply($this->items, 1);
-
-            $sucursalId = CurrentSucursal::id();
+            StockAdjuster::apply($this->items, 1, $sucursalId);
 
             foreach ($this->items as $item) {
                 if ($sucursalId !== null && ! empty($item['expiration_date'])) {

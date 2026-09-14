@@ -16,6 +16,11 @@ class CompanySettings extends Model
 {
     use Auditable;
 
+    // Igual que SucursalMercadoPagoConfig con access_token: son secretos,
+    // no algo para dejar en texto plano en audit_logs (visible además para
+    // el rol Encargado, no solo Admin).
+    protected array $auditExclude = ['tiendanube_token', 'tiendanube_webhook_secret'];
+
     public function tiendanubeSucursal(): BelongsTo
     {
         return $this->belongsTo(Sucursal::class, 'tiendanube_sucursal_id');

@@ -52,6 +52,23 @@ class SucursalesTest extends TestCase
         ]);
     }
 
+    public function test_el_listado_muestra_el_punto_de_venta_real(): void
+    {
+        // MEJORA: sucursales.punto_venta ya no existe como columna (migró a
+        // la tabla puntos_venta con la feature de cajas múltiples) - el
+        // listado seguía leyendo la columna vieja y mostraba "0000" siempre.
+        Livewire::actingAs($this->admin())
+            ->test('sucursales.create')
+            ->set('name', 'Sucursal Centro')
+            ->set('razon_social', 'Mi Empresa SRL')
+            ->set('punto_venta', '7')
+            ->call('save');
+
+        $this->actingAs($this->admin())
+            ->get(route('sucursales.index'))
+            ->assertSee('0007');
+    }
+
     public function test_name_razon_social_y_punto_venta_son_requeridos(): void
     {
         Livewire::actingAs($this->admin())

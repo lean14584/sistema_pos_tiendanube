@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Livewire\SucursalSwitcher;
 use App\Models\CashMovement;
 use App\Models\CashSession;
 use App\Models\Product;
+use App\Models\ProductBatch;
 use App\Models\Provider;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
@@ -92,6 +94,137 @@ class PurchasesTest extends TestCase
 
         $this->assertEquals(5, $product->fresh()->stock);
         $this->assertEquals(0, Purchase::count());
+    }
+
+    /**
+     * MEJORA: Purchases\Edit/Show revertían y reaplicaban el stock en la
+     * sucursal ACTIVA de quien editaba/borraba, no en la sucursal real
+     * donde se cargó la compra (purchases no guardaba sucursal_id). Un
+     * admin que cambia de sucursal activa entre medio terminaba moviendo
+     * stock en el local equivocado.
+     */
+    public function test_borrar_una_compra_revierte_el_stock_en_su_propia_sucursal_no_en_la_activa(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        $admin = $this->admin();
+
+        // La compra se carga con Principal como sucursal activa (default).
+        Livewire::actingAs($admin)
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '3')
+            ->call('save');
+
+        $purchase = Purchase::sole();
+        $this->assertEquals($principal->id, $purchase->sucursal_id);
+        $this->assertEquals(3, $product->stockEnSucursal($principal->id));
+
+        // El admin cambia de sucursal activa a Norte y recién ahí borra la compra.
+        Livewire::actingAs($admin)->test(SucursalSwitcher::class)->set('sucursalId', (string) $norte->id);
+
+        Livewire::actingAs($admin)
+            ->test('purchases.show', ['purchase' => $purchase->fresh()])
+            ->call('delete');
+
+        $this->assertEquals(0, $product->stockEnSucursal($principal->id), 'El stock revertido tiene que salir de Principal (donde se cargó), no de Norte.');
+        $this->assertEquals(0, $product->stockEnSucursal($norte->id), 'Norte nunca tuvo stock de este producto, no debería quedar en negativo ni tocado.');
+        $this->assertEquals(5, $product->fresh()->stock);
+    }
+
+    public function test_editar_una_compra_ajusta_el_stock_en_su_propia_sucursal_no_en_la_activa(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        $admin = $this->admin();
+
+        Livewire::actingAs($admin)
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '3')
+            ->call('save');
+
+        $purchase = Purchase::sole();
+        $this->assertEquals(3, $product->stockEnSucursal($principal->id));
+
+        Livewire::actingAs($admin)->test(SucursalSwitcher::class)->set('sucursalId', (string) $norte->id);
+
+        Livewire::actingAs($admin)
+            ->test('purchases.edit', ['purchase' => $purchase])
+            ->set('items.0.quantity', '5')
+            ->call('save');
+
+        $this->assertEquals(5, $product->stockEnSucursal($principal->id), 'El delta (+2) tiene que aplicarse en Principal, donde se cargó la compra.');
+        $this->assertEquals(0, $product->stockEnSucursal($norte->id));
+    }
+
+    /**
+     * MEJORA: editar la cantidad de un ítem que ya tiene un lote cargado
+     * (Purchases\Create con vencimiento) dejaba el lote desincronizado —
+     * esta pantalla ni siquiera muestra el campo de lote para corregirlo.
+     * Ahora se bloquea con un mensaje claro en vez de corromper el dato.
+     */
+    public function test_no_se_puede_cambiar_la_cantidad_de_un_item_con_lote_al_editar_una_compra(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Yogur', 'price' => 500, 'stock' => 0]);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '10')
+            ->set('items.0.expiration_date', now()->addDays(30)->toDateString())
+            ->call('save');
+
+        $purchase = Purchase::sole();
+        $this->assertEquals(1, ProductBatch::where('purchase_id', $purchase->id)->count());
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.edit', ['purchase' => $purchase])
+            ->set('items.0.quantity', '20')
+            ->call('save')
+            ->assertHasErrors('items');
+
+        $this->assertEquals(10, ProductBatch::where('purchase_id', $purchase->id)->value('quantity_remaining'), 'El lote no debería tocarse si la cantidad se bloqueó.');
+        $this->assertEquals(10, $product->fresh()->stock, 'El stock tampoco debería cambiar si el guardado se rechazó.');
+    }
+
+    /**
+     * MEJORA: borrar una compra revertía el stock pero dejaba sus
+     * ProductBatch vivos (purchase_id -> null por el nullOnDelete), con
+     * quantity_remaining intacta — quedaban lotes "fantasma" representando
+     * stock que ya no existía.
+     */
+    public function test_borrar_una_compra_borra_tambien_sus_lotes(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Yogur', 'price' => 500, 'stock' => 0]);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '10')
+            ->set('items.0.expiration_date', now()->addDays(30)->toDateString())
+            ->call('save');
+
+        $purchase = Purchase::sole();
+        $this->assertEquals(1, ProductBatch::count());
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.show', ['purchase' => $purchase])
+            ->call('delete');
+
+        $this->assertEquals(0, ProductBatch::count());
     }
 
     public function test_crear_compra_con_dos_metodos_de_pago_genera_un_movimiento_de_caja_por_cada_uno(): void

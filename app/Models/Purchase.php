@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'number', 'provider_id', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
+    'number', 'provider_id', 'sucursal_id', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
     'tipo_comprobante', 'punto_venta', 'numero_comprobante',
 ])]
 class Purchase extends Model
@@ -37,9 +37,19 @@ class Purchase extends Model
         return $this->belongsTo(Provider::class);
     }
 
+    public function sucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseItem::class);
+    }
+
+    public function batches(): HasMany
+    {
+        return $this->hasMany(ProductBatch::class);
     }
 
     public function payments(): HasMany

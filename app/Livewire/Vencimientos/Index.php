@@ -29,13 +29,13 @@ class Index extends Component
      * e imputa los pagos a cuenta corriente a los más viejos primero (FIFO).
      * Devuelve los renglones que todavía quedan debiendo, con su vencimiento.
      *
-     * @param  Collection  $comprobantes  cada uno: ['due'=>Carbon,'remaining'=>float,'label'=>string]
+     * @param  Collection  $comprobantes  cada uno: ['due'=>Carbon,'remaining'=>float,'label'=>string,'sucursal_id'=>?int]
      * @return array<int, array{label:string, due:Carbon, amount:float}>
      */
     private function aging($comprobantes, float $creditoACuenta): array
     {
         $rows = $comprobantes
-            ->map(fn ($c) => ['due' => $c['due'], 'remaining' => (float) $c['remaining'], 'label' => $c['label']])
+            ->map(fn ($c) => ['due' => $c['due'], 'remaining' => (float) $c['remaining'], 'label' => $c['label'], 'sucursal_id' => $c['sucursal_id'] ?? null])
             ->filter(fn ($r) => $r['remaining'] > 0.009)
             ->sortBy(fn ($r) => $r['due']->timestamp)
             ->values()
@@ -82,15 +82,26 @@ class Index extends Component
         // 'items' sigue haciendo falta: Invoice::total es un atributo
         // calculado a partir de items, no una columna — sin eager load acá
         // sería un N+1 lazy-load por factura.
-        $invoicesPendientes = fn ($q) => $q->where('status', InvoiceStatus::Pending)
-            ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
-            ->with('items', 'payments');
+        $invoicesPendientesTodas = fn ($q) => $q->where('status', InvoiceStatus::Pending)->with('items', 'payments');
+        $invoicesPendientesEnSucursal = fn ($q) => $invoicesPendientesTodas($q)
+            ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId));
 
         // ---- POR COBRAR (clientes) ----
+        // MEJORA: ClientPayment (el crédito a cuenta corriente) no tiene
+        // sucursal_id — es siempre a nivel de TODA la empresa. Antes se
+        // traían solo las facturas pendientes de la sucursal filtrada pero
+        // se les imputaba el crédito COMPLETO del cliente vía aging(): si
+        // el mismo cliente compraba en más de una sucursal, filtrar por
+        // Sucursal A y después por Sucursal B aplicaba el crédito entero
+        // dos veces, mostrando una deuda incorrecta en cada vista. Ahora se
+        // trae SIEMPRE la deuda completa del cliente (todas las sucursales)
+        // para que aging() reparta el crédito una sola vez de forma
+        // correcta, y recién después se filtran las filas resultantes a la
+        // sucursal que se está mirando.
         $porCobrar = collect();
         $clients = Client::query()
-            ->whereHas('invoices', $invoicesPendientes)
-            ->with(['invoices' => $invoicesPendientes, 'payments'])
+            ->whereHas('invoices', $invoicesPendientesEnSucursal)
+            ->with(['invoices' => $invoicesPendientesTodas, 'payments'])
             ->get();
 
         foreach ($clients as $client) {
@@ -98,10 +109,15 @@ class Index extends Component
                 'due' => $i->due_date,
                 'remaining' => (float) $i->total - (float) $i->payments->sum('amount'),
                 'label' => $i->number,
+                'sucursal_id' => $i->sucursal_id,
             ]);
             $credito = (float) $client->payments->sum('amount');
 
             foreach ($this->aging($comprobantes, $credito) as $row) {
+                if ($sucursalId !== null && $row['sucursal_id'] !== $sucursalId) {
+                    continue;
+                }
+
                 $porCobrar->push(array_merge([
                     'name' => $client->name,
                     'href' => route('clients.account', $client),

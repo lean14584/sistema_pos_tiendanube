@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobante;
 use App\Models\Product;
+use App\Models\ProductBatch;
 use App\Models\Provider;
 use App\Models\Purchase;
 use App\Support\CashLinker;
@@ -230,13 +231,47 @@ class Edit extends Component
             return;
         }
 
-        DB::transaction(function () {
+        // MEJORA: esta pantalla no muestra (ni deja tocar) lote/vencimiento
+        // de los ítems — cambiarle la cantidad a un producto que sí tiene un
+        // lote cargado (ver Purchases\Create) dejaba el lote desincronizado
+        // del stock real: ProductBatch::quantity_remaining seguía con el
+        // valor viejo, y darlo de baja después descontaba stock que ya no
+        // existía. Se bloquea el cambio de cantidad en esos ítems puntuales
+        // en vez de intentar recalcular el lote a ciegas acá.
+        $productosConLote = ProductBatch::where('purchase_id', $this->purchase->id)
+            ->pluck('quantity_received', 'product_id');
+
+        if ($productosConLote->isNotEmpty()) {
+            $cantidadNuevaPorProducto = collect($this->items)
+                ->groupBy('product_id')
+                ->map(fn ($grupo) => $grupo->sum(fn ($item) => (float) $item['quantity']));
+
+            foreach ($productosConLote as $productId => $cantidadOriginal) {
+                $cantidadNueva = (float) ($cantidadNuevaPorProducto[$productId] ?? 0);
+
+                if (abs($cantidadNueva - (float) $cantidadOriginal) > 0.009) {
+                    $nombre = Product::find($productId)?->name ?? "producto #{$productId}";
+                    $this->addError('items', "\"{$nombre}\" tiene un lote cargado — no se puede cambiar su cantidad desde acá. Corregilo desde Lotes y Vencimientos o Ajustes de Stock.");
+
+                    return;
+                }
+            }
+        }
+
+        // La sucursal de la compra no se re-deriva acá: es la que ya quedó
+        // guardada al crearla (ver Purchases\Create), no la sucursal activa
+        // de quien la esté editando ahora — si no, un admin que cambió de
+        // sucursal terminaría revirtiendo/reaplicando el stock en el local
+        // equivocado.
+        $sucursalId = $this->purchase->sucursal_id;
+
+        DB::transaction(function () use ($sucursalId) {
             // Reverse the stock impact of the items as they were before this edit.
             $previousItems = $this->purchase->items->map(fn ($item) => [
                 'product_id' => $item->product_id,
                 'quantity' => (float) $item->quantity,
             ])->all();
-            StockAdjuster::apply($previousItems, -1);
+            StockAdjuster::apply($previousItems, -1, $sucursalId);
 
             $this->purchase->update([
                 'provider_id' => $this->provider_id,
@@ -265,7 +300,7 @@ class Edit extends Component
                 }
             }
 
-            StockAdjuster::apply($this->items, 1);
+            StockAdjuster::apply($this->items, 1, $sucursalId);
 
             $this->purchase->payments->each(fn ($payment) => CashLinker::unlinkPurchasePayment($payment));
             $this->purchase->payments()->delete();

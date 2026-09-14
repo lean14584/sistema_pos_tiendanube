@@ -80,6 +80,36 @@ class QuotesTest extends TestCase
         $this->assertEquals($invoice->id, $quote->fresh()->converted_invoice_id);
     }
 
+    /**
+     * MEJORA: antes el chequeo "¿ya se convirtió?" no releía de la base ni
+     * tomaba ningún lock — dos submits casi simultáneos (doble clic) podían
+     * pasarlo los dos y duplicar la factura + el movimiento de stock. Mismo
+     * patrón de test que RemitoFacturarTest::test_doble_clic_...: dos
+     * llamadas sobre la MISMA instancia ya montada, que es el escenario real
+     * de un doble clic (ejercita el chequeo interno, no el de mount()).
+     */
+    public function test_convert_to_invoice_no_duplica_la_venta_con_doble_submit(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Servicio X', 'price' => 500, 'stock' => 10]);
+
+        $quote = Quote::create([
+            'number' => 'PRE-0001', 'client_id' => $client->id,
+            'issue_date' => now(), 'valid_until' => now()->addDays(15), 'status' => 'draft',
+        ]);
+        $quote->items()->create(['product_id' => $product->id, 'description' => 'Servicio X', 'quantity' => 1, 'unit_price' => 500]);
+
+        $component = Livewire::actingAs($this->admin())->test('quotes.show', ['quote' => $quote]);
+
+        $component->call('convertToInvoice')->assertHasNoErrors();
+        $component->call('convertToInvoice')->assertHasErrors('priceMode');
+
+        $this->assertSame(1, Invoice::count(), 'No debería duplicarse la factura al convertir dos veces el mismo presupuesto.');
+        $this->assertSame('converted', $quote->fresh()->status->value);
+        $product->refresh();
+        $this->assertEquals(9, $product->stock, 'El stock no debería descontarse dos veces.');
+    }
+
     public function test_convert_to_invoice_updates_price_when_update_mode(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);

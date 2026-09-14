@@ -45,7 +45,14 @@ class Index extends Component
     public function render()
     {
         return view('livewire.sucursales.index', [
-            'sucursales' => Sucursal::orderBy('name')->get(),
+            // MEJORA: la columna "Punto de venta" leía Sucursal::punto_venta,
+            // que ya no existe desde que una sucursal puede tener varios
+            // (ver migración create_puntos_venta_table / feature cajas
+            // múltiples) - la tabla mostraba siempre "0000". Se trae la
+            // relación real para listar los números activos.
+            'sucursales' => Sucursal::with(['puntosVenta' => fn ($q) => $q->where('active', true)->orderBy('id')])
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 }

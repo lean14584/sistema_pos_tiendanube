@@ -43,7 +43,7 @@
                             </td>
                             <td class="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{{ $sucursal->name }}</td>
                             <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ $sucursal->razon_social }}</td>
-                            <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ str_pad($sucursal->punto_venta, 4, '0', STR_PAD_LEFT) }}</td>
+                            <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $sucursal->puntosVenta->pluck('numero')->map(fn ($n) => str_pad($n, 4, '0', STR_PAD_LEFT))->implode(', ') ?: '—' }}</td>
                             <td class="px-5 py-3">
                                 @if ($sucursal->active)
                                     <span class="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20 px-2 py-0.5 text-xs font-medium">Activa</span>
@@ -89,7 +89,7 @@
                                 <div class="min-w-0">
                                     <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $sucursal->name }}</p>
                                     <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ $sucursal->razon_social }}</p>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">PV {{ str_pad($sucursal->punto_venta, 4, '0', STR_PAD_LEFT) }} · {{ $sucursal->active ? 'Activa' : 'Inactiva' }}</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">PV {{ $sucursal->puntosVenta->pluck('numero')->map(fn ($n) => str_pad($n, 4, '0', STR_PAD_LEFT))->implode(', ') ?: '—' }} · {{ $sucursal->active ? 'Activa' : 'Inactiva' }}</p>
                                 </div>
                             </div>
                             <div class="flex gap-1 shrink-0">

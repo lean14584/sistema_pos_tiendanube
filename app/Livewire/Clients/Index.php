@@ -21,6 +21,28 @@ class Index extends Component
             return;
         }
 
+        // MEJORA: quotes.client_id también tiene restrictOnDelete() (igual
+        // que invoices) - sin este chequeo, un cliente con presupuestos
+        // (pero sin facturas) tiraba una violación de FK sin capturar (500)
+        // en vez de este mismo toast.
+        if ($client->quotes()->exists()) {
+            $this->toastError("No se puede eliminar al cliente \"{$client->name}\" porque tiene presupuestos asociados.");
+
+            return;
+        }
+
+        // MEJORA: client_payments.client_id es cascadeOnDelete - borrar el
+        // cliente directamente borraba sus ClientPayment a nivel de base
+        // sin pasar por CashLinker::unlinkClientPayment() (la única forma
+        // correcta de sacar un cobro del arqueo, ver Account::deletePayment()),
+        // dejando cash_movements huérfanos apuntando a un pago que ya no
+        // existe. Se bloquea en vez de intentar des-vincular en cascada acá.
+        if ($client->payments()->exists()) {
+            $this->toastError("No se puede eliminar al cliente \"{$client->name}\" porque tiene cobros registrados.");
+
+            return;
+        }
+
         $client->delete();
 
         $this->toastSuccess('Cliente eliminado.');

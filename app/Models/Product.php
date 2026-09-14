@@ -32,9 +32,27 @@ class Product extends Model
         ];
     }
 
-    public function scopeLowStock(Builder $query): Builder
+    /**
+     * MEJORA: comparaba siempre contra products.stock (la suma de TODAS las
+     * sucursales) — en una instalación multisucursal eso da falsos negativos
+     * (una sucursal crítica no se marca porque otra tiene de sobra) y falsos
+     * positivos (se marca en rojo aunque la sucursal activa esté bien). Por
+     * defecto compara contra el stock de la sucursal activa (CurrentSucursal
+     * nunca es null en un sistema migrado); con un solo local (o sin sesión,
+     * ej. un comando de consola) da exactamente el mismo resultado que antes.
+     */
+    public function scopeLowStock(Builder $query, ?int $sucursalId = null): Builder
     {
-        return $query->whereNotNull('min_stock')->whereColumn('stock', '<', 'min_stock');
+        $sucursalId ??= CurrentSucursal::id();
+
+        if ($sucursalId === null) {
+            return $query->whereNotNull('min_stock')->whereColumn('stock', '<', 'min_stock');
+        }
+
+        return $query->whereNotNull('min_stock')->whereRaw(
+            '(select coalesce(sum(ps.stock), 0) from product_stocks ps where ps.product_id = products.id and ps.sucursal_id = ?) < products.min_stock',
+            [$sucursalId]
+        );
     }
 
     /**
@@ -121,8 +139,9 @@ class Product extends Model
         return Attribute::get(fn () => $this->cost_price !== null && $this->price < $this->cost_price);
     }
 
+    /** Mismo criterio que scopeLowStock(): compara contra el stock de la sucursal activa, no el total de la empresa. */
     protected function stockAlert(): Attribute
     {
-        return Attribute::get(fn () => $this->min_stock !== null && $this->stock < $this->min_stock);
+        return Attribute::get(fn () => $this->min_stock !== null && $this->stockEnSucursal() < $this->min_stock);
     }
 }

@@ -11,6 +11,7 @@ use App\Models\Quote;
 use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -60,11 +61,6 @@ class Show extends Component
 
     public function convertToInvoice(): void
     {
-        // Evita duplicar la venta si se llega a hacer doble clic.
-        if ($this->quote->status === QuoteStatus::Converted) {
-            return;
-        }
-
         $updatePrices = $this->priceMode === 'update';
 
         // Mismo criterio que FacturarRemito: la fiscal habilitada preferida,
@@ -80,51 +76,71 @@ class Show extends Component
             return;
         }
 
-        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($updatePrices, $tipo, $puntoVentaNumero) {
-            $invoice = Invoice::create([
-                'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
-                'client_id' => $this->quote->client_id,
-                'punto_venta' => $puntoVentaNumero,
-                'tipo_comprobante_interno' => $tipo,
-                'issue_date' => now()->toDateString(),
-                'due_date' => now()->addDays(15)->toDateString(),
-                'tax_rate' => $this->quote->tax_rate,
-                'notes' => $this->quote->notes,
-                'status' => 'draft',
-            ]);
+        // MEJORA: antes el chequeo "¿ya se convirtió?" no tenía lock ni
+        // releía de la base, así que dos submits casi simultáneos (doble
+        // clic, dos pestañas) pasaban el chequeo los dos y generaban dos
+        // facturas del mismo presupuesto, duplicando venta y stock. Mismo
+        // mecanismo que ya usan NotasCredito\Create y FacturarRemito: todo
+        // el check-then-act adentro del lock, releyendo con fresh().
+        try {
+            $invoice = Cache::lock("quote:convert:{$this->quote->id}", 10)->block(5, function () use ($updatePrices, $tipo, $puntoVentaNumero) {
+                $quote = $this->quote->fresh();
 
-            $stockItems = [];
+                if ($quote->status === QuoteStatus::Converted) {
+                    throw new \RuntimeException('Este presupuesto ya fue convertido a factura.');
+                }
 
-            foreach ($this->quote->items as $item) {
-                $product = $item->product_id ? $item->product : null;
+                return InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($updatePrices, $tipo, $puntoVentaNumero, $quote) {
+                    $invoice = Invoice::create([
+                        'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
+                        'client_id' => $quote->client_id,
+                        'punto_venta' => $puntoVentaNumero,
+                        'tipo_comprobante_interno' => $tipo,
+                        'issue_date' => now()->toDateString(),
+                        'due_date' => now()->addDays(15)->toDateString(),
+                        'tax_rate' => $quote->tax_rate,
+                        'notes' => $quote->notes,
+                        'status' => 'draft',
+                    ]);
 
-                $data = ($updatePrices && $product)
-                    ? [
-                        'product_id' => $product->id,
-                        'description' => $product->name,
-                        'quantity' => $item->quantity,
-                        'unit_price' => $product->price,
-                    ]
-                    : [
-                        'product_id' => $item->product_id,
-                        'description' => $item->description,
-                        'quantity' => $item->quantity,
-                        'unit_price' => $item->unit_price,
-                    ];
+                    $stockItems = [];
 
-                $invoice->items()->create($data);
-                $stockItems[] = $data;
-            }
+                    foreach ($quote->items as $item) {
+                        $product = $item->product_id ? $item->product : null;
 
-            StockAdjuster::apply($stockItems, $tipo->stockSign());
+                        $data = ($updatePrices && $product)
+                            ? [
+                                'product_id' => $product->id,
+                                'description' => $product->name,
+                                'quantity' => $item->quantity,
+                                'unit_price' => $product->price,
+                            ]
+                            : [
+                                'product_id' => $item->product_id,
+                                'description' => $item->description,
+                                'quantity' => $item->quantity,
+                                'unit_price' => $item->unit_price,
+                            ];
 
-            $this->quote->update([
-                'status' => QuoteStatus::Converted,
-                'converted_invoice_id' => $invoice->id,
-            ]);
+                        $invoice->items()->create($data);
+                        $stockItems[] = $data;
+                    }
 
-            return $invoice;
-        }), null, $puntoVentaNumero);
+                    StockAdjuster::apply($stockItems, $tipo->stockSign());
+
+                    $quote->update([
+                        'status' => QuoteStatus::Converted,
+                        'converted_invoice_id' => $invoice->id,
+                    ]);
+
+                    return $invoice;
+                }), null, $puntoVentaNumero);
+            });
+        } catch (\RuntimeException $e) {
+            $this->addError('priceMode', $e->getMessage());
+
+            return;
+        }
 
         $this->redirect(route('invoices.show', $invoice), navigate: true);
     }

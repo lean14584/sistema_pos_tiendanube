@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Invoice;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Arma todos los agregados del informe de ventas para un rango de fechas.
@@ -20,6 +21,23 @@ class SalesReport
      * @return array<string, mixed>
      */
     public static function build(string $fromDate, string $toDate, ?int $sucursalId = null): array
+    {
+        // MEJORA: sin caché, esta pantalla (y sus exports PDF/CSV) recorría
+        // TODA la historia de facturas con items/payments/client/sucursal
+        // eager-cargados en cada render — hasta 3 veces en el mismo request
+        // si además se pide comparación con el período anterior. TTL corto
+        // (mismo criterio que Dashboard) porque el informe tiene que
+        // reflejar ventas recién hechas, solo evita repetir el escaneo
+        // completo en renders/exports consecutivos del mismo rango.
+        $cacheKey = "sales-report:{$fromDate}:{$toDate}:".($sucursalId ?? 'todas');
+
+        return Cache::remember($cacheKey, now()->addSeconds(60), fn () => self::buildUncached($fromDate, $toDate, $sucursalId));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function buildUncached(string $fromDate, string $toDate, ?int $sucursalId): array
     {
         $invoices = Invoice::whereNot('status', 'draft')
             ->whereDate('issue_date', '>=', $fromDate)

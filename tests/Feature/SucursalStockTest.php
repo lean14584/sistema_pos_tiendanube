@@ -94,4 +94,32 @@ class SucursalStockTest extends TestCase
         $this->assertSame(8, $product->stockEnSucursal($principal->id));
         $this->assertSame(5, $product->stockEnSucursal($norte->id));
     }
+
+    /**
+     * MEJORA: Product::scopeLowStock()/stockAlert comparaban contra
+     * products.stock (la suma de TODAS las sucursales), no contra la
+     * sucursal donde efectivamente se está parado. Con min_stock=5: Norte
+     * tiene 1 unidad (bajo) pero Principal tiene 9 (bien) — el total (10)
+     * escondía la alerta real de Norte, y viceversa si se mira desde
+     * Principal con Norte en 1.
+     */
+    public function test_alerta_de_stock_bajo_usa_el_stock_de_la_sucursal_activa_no_el_total(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+
+        $product = Product::create(['name' => 'Yerba', 'price' => 3000, 'stock' => 10, 'min_stock' => 5]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $principal->id, 'stock' => 9]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $norte->id, 'stock' => 1]);
+
+        $cajeroPrincipal = User::factory()->create(['role' => Role::Cajero, 'active' => true, 'sucursal_id' => $principal->id]);
+        $this->actingAs($cajeroPrincipal);
+        $this->assertFalse($product->fresh()->stock_alert, 'Principal tiene 9 (bien), no debería alertar aunque el total (10) diga lo contrario si se mirase mal.');
+        $this->assertFalse(Product::lowStock()->whereKey($product->id)->exists());
+
+        $cajeroNorte = User::factory()->create(['role' => Role::Cajero, 'active' => true, 'sucursal_id' => $norte->id]);
+        $this->actingAs($cajeroNorte);
+        $this->assertTrue($product->fresh()->stock_alert, 'Norte tiene 1 (bajo), tiene que alertar aunque el total de la empresa (10) esté bien.');
+        $this->assertTrue(Product::lowStock()->whereKey($product->id)->exists());
+    }
 }

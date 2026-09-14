@@ -33,7 +33,16 @@ class Show extends Component
                 'quantity' => (float) $item->quantity,
             ])->all();
 
-            StockAdjuster::apply($items, -1);
+            // La sucursal de la compra, no la activa de quien la borra
+            // ahora (ver migración add_sucursal_id_to_purchases_table).
+            StockAdjuster::apply($items, -1, $this->purchase->sucursal_id);
+
+            // MEJORA: los lotes de esta compra sobrevivían con purchase_id
+            // en null (nullOnDelete) y su quantity_remaining intacta, pese a
+            // que el stock que representaban ya se revirtió arriba — quedaban
+            // como lotes "fantasma" en Lotes y Vencimientos, y darlos de baja
+            // después descontaba stock que ya no existía.
+            $this->purchase->batches()->delete();
 
             $this->purchase->payments->each(fn ($payment) => CashLinker::unlinkPurchasePayment($payment));
 

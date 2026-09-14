@@ -85,6 +85,44 @@ class VencimientosTest extends TestCase
             ->assertSee('Cliente Norte');
     }
 
+    /**
+     * MEJORA: ClientPayment no tiene sucursal_id (el crédito a cuenta
+     * corriente es de toda la empresa). Antes, cada vista filtrada por
+     * sucursal le imputaba al cliente el crédito COMPLETO de nuevo — un
+     * cliente que compra en dos sucursales terminaba con el crédito
+     * "duplicado" (aplicado íntegro en cada filtro), mostrando menos deuda
+     * de la real en cada sucursal vista por separado.
+     */
+    public function test_el_credito_del_cliente_no_se_duplica_al_filtrar_por_sucursal(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+
+        $client = Client::create(['name' => 'Cliente Multi', 'email' => 'cm@test.com']);
+
+        $invP = Invoice::create(['number' => 'FAC-P', 'client_id' => $client->id, 'sucursal_id' => $principal->id, 'tax_rate' => 0, 'issue_date' => now()->subDays(10), 'due_date' => now()->subDays(5), 'status' => 'pending']);
+        $invP->items()->create(['description' => 'x', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $invN = Invoice::create(['number' => 'FAC-N', 'client_id' => $client->id, 'sucursal_id' => $norte->id, 'tax_rate' => 0, 'issue_date' => now()->subDays(5), 'due_date' => now()->subDays(1), 'status' => 'pending']);
+        $invN->items()->create(['description' => 'x', 'quantity' => 1, 'unit_price' => 1000]);
+
+        // Crédito a cuenta que alcanza para cancelar SOLO la más vieja (FAC-P).
+        $client->payments()->create(['date' => now(), 'amount' => 1000, 'method' => 'efectivo']);
+
+        // Filtrado por Principal: FAC-P ya está saldada por el crédito, no debería aparecer.
+        Livewire::actingAs($this->admin())->test('vencimientos.index')
+            ->set('sucursal_id', (string) $principal->id)
+            ->assertDontSee('Cliente Multi');
+
+        // Filtrado por Norte: el crédito ya se usó en FAC-P (la más vieja),
+        // así que FAC-N sigue debiendo sus $1.000 completos — si el crédito
+        // se duplicara, esta vista también la mostraría saldada.
+        Livewire::actingAs($this->admin())->test('vencimientos.index')
+            ->set('sucursal_id', (string) $norte->id)
+            ->assertSee('Cliente Multi')
+            ->assertSee('1.000,00');
+    }
+
     public function test_vendedor_solo_ve_por_cobrar_de_su_propia_sucursal(): void
     {
         $principal = Sucursal::sole();
