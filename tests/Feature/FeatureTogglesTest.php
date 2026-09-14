@@ -224,4 +224,41 @@ class FeatureTogglesTest extends TestCase
             ->test('users.create')
             ->assertSeeHtml('Elegir sucursal...');
     }
+
+    public function test_alta_de_cliente_pide_email_por_defecto_y_celular_es_opcional(): void
+    {
+        config(['features.client_phone_required' => false]);
+
+        Livewire::actingAs($this->admin())
+            ->test('clients.create')
+            ->set('name', 'Juan Perez')
+            ->set('email', '')
+            ->call('save')
+            ->assertHasErrors(['email' => 'required'])
+            ->assertHasNoErrors(['phone']);
+    }
+
+    public function test_alta_de_cliente_pide_celular_y_email_es_opcional_si_el_flag_esta_prendido(): void
+    {
+        // DECO-HOGAR prende este flag porque sus clientes no siempre tienen
+        // email pero sí celular (el contacto real es por WhatsApp).
+        config(['features.client_phone_required' => true]);
+
+        Livewire::actingAs($this->admin())
+            ->test('clients.create')
+            ->set('name', 'Juan Perez')
+            ->set('phone', '')
+            ->call('save')
+            ->assertHasErrors(['phone' => 'required'])
+            ->assertHasNoErrors(['email']);
+
+        Livewire::actingAs($this->admin())
+            ->test('clients.create')
+            ->set('name', 'Ana Gomez')
+            ->set('phone', '1122334455')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('clients', ['name' => 'Ana Gomez', 'phone' => '1122334455', 'email' => '']);
+    }
 }

@@ -160,6 +160,41 @@ class TicketPrintTest extends TestCase
         $this->assertGreaterThan($alturaNormal, $alturaConCambio);
     }
 
+    public function test_ticket_de_cambio_agrega_el_codigo_de_barras_del_producto(): void
+    {
+        $invoice = $this->invoice();
+        $product = Product::create(['name' => 'Fideos', 'sku' => '1234', 'price' => 1000, 'stock' => 10]);
+        $invoice->items()->create([
+            'description' => 'Fideos',
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'unit_price' => 1000,
+            'iva_rate' => '21',
+        ]);
+
+        $clienteSinProducto = Client::create(['name' => 'Cliente 2', 'email' => 'cliente2@test.com']);
+        $sinProducto = Invoice::create([
+            'number' => 'FAC-0002',
+            'client_id' => $clienteSinProducto->id,
+            'sucursal_id' => Sucursal::sole()->id,
+            'issue_date' => now(),
+            'due_date' => now()->addDays(15),
+            'status' => 'draft',
+        ]);
+        $sinProducto->items()->create(['description' => 'Item sin producto', 'quantity' => 1, 'unit_price' => 1000, 'iva_rate' => '21']);
+
+        $conBarcode = $this->actingAs($this->admin())->get(route('invoices.ticket-image', ['invoice' => $invoice, 'cambio' => 1]));
+        $sinBarcode = $this->actingAs($this->admin())->get(route('invoices.ticket-image', ['invoice' => $sinProducto, 'cambio' => 1]));
+
+        $conBarcode->assertOk();
+        $sinBarcode->assertOk();
+
+        [, $alturaConBarcode] = getimagesizefromstring($conBarcode->getContent());
+        [, $alturaSinBarcode] = getimagesizefromstring($sinBarcode->getContent());
+
+        $this->assertGreaterThan($alturaSinBarcode, $alturaConBarcode, 'El código de barras debería agregar alto extra al cupón de cambio.');
+    }
+
     public function test_vender_con_ticket_de_cambio_propaga_el_parametro_a_las_urls_de_impresion(): void
     {
         $admin = $this->admin();

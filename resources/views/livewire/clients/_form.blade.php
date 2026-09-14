@@ -12,11 +12,11 @@
     </div>
 
     <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email{{ $phoneRequired ? '' : ' *' }}</label>
         <input
             type="email"
             wire:model="email"
-            required
+            @if(! $phoneRequired) required @endif
             class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             placeholder="contacto@acme.com"
         >
@@ -25,12 +25,14 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Celular{{ $phoneRequired ? ' *' : '' }}</label>
             <input
                 type="text"
                 wire:model="phone"
+                @if($phoneRequired) required @endif
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             >
+            @error('phone') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CUIT / ID fiscal</label>

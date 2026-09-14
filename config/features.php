@@ -16,4 +16,10 @@ return [
     'vencimientos_finanzas' => env('FEATURE_VENCIMIENTOS_FINANZAS', true),
     'sell_by_weight' => env('FEATURE_SELL_BY_WEIGHT', true),
     'historical_sales' => env('FEATURE_HISTORICAL_SALES', true),
+
+    // Al revés que las anteriores: default false para no cambiarle a nadie
+    // la validación de clientes que ya tiene (email obligatorio, celular
+    // opcional). DECO-HOGAR la prende porque sus clientes no siempre tienen
+    // email pero sí celular (contacto real es por WhatsApp).
+    'client_phone_required' => env('FEATURE_CLIENT_PHONE_REQUIRED', false),
 ];

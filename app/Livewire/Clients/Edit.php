@@ -36,7 +36,7 @@ class Edit extends Component
     {
         $this->client = $client;
         $this->name = $client->name;
-        $this->email = $client->email;
+        $this->email = (string) $client->email;
         $this->phone = (string) $client->phone;
         $this->address = (string) $client->address;
         $this->tax_id = (string) $client->tax_id;
@@ -48,10 +48,12 @@ class Edit extends Component
 
     public function save(): void
     {
+        $phoneRequired = config('features.client_phone_required');
+
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:255'],
+            'email' => $phoneRequired ? ['nullable', 'email', 'max:255'] : ['required', 'email', 'max:255'],
+            'phone' => $phoneRequired ? ['required', 'string', 'max:255'] : ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'tax_id' => ['nullable', 'string', 'max:255'],
             'condicion_iva' => ['required', Rule::enum(CondicionIva::class)],
@@ -74,6 +76,7 @@ class Edit extends Component
             'condicionIvaOptions' => CondicionIva::cases(),
             'tipoDocumentoOptions' => TipoDocumento::cases(),
             'priceLists' => \App\Models\PriceList::active()->orderBy('name')->get(),
+            'phoneRequired' => config('features.client_phone_required'),
         ]);
     }
 }

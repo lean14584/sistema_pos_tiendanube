@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Services\Afip\QrPayloadBuilder;
+use App\Support\Ean13;
+use App\Support\Ean13Barcode;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use GdImage;
@@ -105,7 +107,7 @@ class TicketPrinterService
     /** PNG crudo del ticket completo, listo para servir con Content-Type: image/png. */
     public function renderPng(Invoice $invoice, bool $exchangeSlip = false): string
     {
-        $invoice->loadMissing('client', 'items', 'payments');
+        $invoice->loadMissing('client', 'items.product', 'payments');
         $company = CompanySettings::current();
 
         $this->blocks = [];
@@ -256,9 +258,11 @@ class TicketPrinterService
 
     /**
      * Sección extra al final del ticket normal, pensada para que el cliente
-     * se la quede como comprobante de cambio: repite artículo + importe y
-     * medio(s) de pago, más la leyenda del plazo. Se activa con el tilde
-     * "Ticket de cambio" de venta rápida (ver Pos\Index).
+     * se la quede como comprobante de cambio: repite artículo + importe,
+     * el código de barras de cada producto (para poder escanearlo contra el
+     * cupón al momento del cambio) y medio(s) de pago, más la leyenda del
+     * plazo. Se activa con el tilde "Ticket de cambio" de venta rápida (ver
+     * Pos\Index).
      */
     private function armarCuponCambio(Invoice $invoice): void
     {
@@ -269,6 +273,13 @@ class TicketPrinterService
 
         foreach ($invoice->items as $item) {
             $this->addColumns($item->description, '$'.$this->money($item->line_total));
+
+            $ean13 = Ean13::fromSku($item->product?->sku);
+            if ($ean13 !== null) {
+                $tempFile = tempnam(sys_get_temp_dir(), 'ticket_barcode_').'.png';
+                file_put_contents($tempFile, Ean13Barcode::render($ean13, moduleWidth: 2, barHeight: 50));
+                $this->blocks[] = ['type' => 'image', 'path' => $tempFile];
+            }
         }
 
         if ($invoice->payments->isNotEmpty()) {
@@ -557,7 +568,7 @@ class TicketPrinterService
         imagecopyresampled($canvas, $src, $x, $y, 0, 0, $dstW, $dstH, $srcW, $srcH);
         imagedestroy($src);
 
-        if (str_contains($path, 'ticket_qr_')) {
+        if (str_contains($path, 'ticket_qr_') || str_contains($path, 'ticket_barcode_')) {
             @unlink($path);
         }
     }
