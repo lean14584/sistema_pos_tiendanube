@@ -32,7 +32,11 @@ class Index extends Component
 
     public function delete(Product $product): void
     {
-        abort_unless(Permissions::canAccess(Auth::user()->role, 'products-manage'), 403, 'Tu rol no tiene permiso para eliminar productos.');
+        abort_unless(
+            Permissions::canAccess(Auth::user()->role, 'products-manage') && Auth::user()->puedeEliminar(),
+            403,
+            'Tu rol no tiene permiso para eliminar productos.'
+        );
 
         $inUse = $product->invoiceItems()->exists() || $product->purchaseItems()->exists() || $product->quoteItems()->exists();
 
@@ -67,6 +71,7 @@ class Index extends Component
             'hasAnyProducts' => Product::query()->exists(),
             'sucursalActiva' => CurrentSucursal::get(),
             'canManageProducts' => Permissions::canAccess(Auth::user()->role, 'products-manage'),
+            'canDeleteProducts' => Permissions::canAccess(Auth::user()->role, 'products-manage') && Auth::user()->puedeEliminar(),
         ]);
     }
 }

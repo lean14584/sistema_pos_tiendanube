@@ -5,7 +5,9 @@ namespace App\Livewire\Purchases;
 use App\Enums\InvoiceStatus;
 use App\Models\Purchase;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -17,6 +19,15 @@ class Show extends Component
 
     public function mount(Purchase $purchase): void
     {
+        // El listado ya filtra por sucursal, pero antes de esto el acceso
+        // directo a una compra puntual (cambiando el id en la URL) no
+        // chequeaba nada — mismo hueco que tenía Invoices\Show.
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || $purchase->sucursal_id === CurrentSucursal::id(),
+            403,
+            'No tenés acceso a esta compra.'
+        );
+
         $this->purchase = $purchase;
     }
 

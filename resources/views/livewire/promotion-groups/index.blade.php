@@ -113,9 +113,11 @@
                             <button wire:click="edit({{ $group->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
-                            <button x-on:click="confirmThen('¿Eliminar esta familia?', () => $wire.delete({{ $group->id }}))" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400">
-                                <x-heroicon-o-trash class="w-4 h-4" />
-                            </button>
+                            @if (Auth::user()->puedeEliminar())
+                                <button x-on:click="confirmThen('¿Eliminar esta familia?', () => $wire.delete({{ $group->id }}))" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400">
+                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                </button>
+                            @endif
                         </td>
                     </tr>
                 @empty
@@ -134,9 +136,11 @@
                             <button wire:click="edit({{ $group->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
-                            <button x-on:click="confirmThen('¿Eliminar esta familia?', () => $wire.delete({{ $group->id }}))" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400">
-                                <x-heroicon-o-trash class="w-4 h-4" />
-                            </button>
+                            @if (Auth::user()->puedeEliminar())
+                                <button x-on:click="confirmThen('¿Eliminar esta familia?', () => $wire.delete({{ $group->id }}))" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400">
+                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                </button>
+                            @endif
                         </div>
                     </div>
                     <span class="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 text-xs font-semibold mt-1">{{ $group->shortLabel() }}</span>

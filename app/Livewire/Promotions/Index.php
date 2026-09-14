@@ -6,6 +6,7 @@ use App\Enums\PromotionType;
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Product;
 use App\Models\Promotion;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -169,6 +170,8 @@ class Index extends Component
 
     public function delete(Promotion $promotion): void
     {
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para eliminar promociones.');
+
         $promotion->delete();
 
         $this->toastSuccess('Promoción eliminada.');

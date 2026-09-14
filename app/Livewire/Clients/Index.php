@@ -4,6 +4,7 @@ namespace App\Livewire\Clients;
 
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Client;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -15,6 +16,10 @@ class Index extends Component
 
     public function delete(Client $client): void
     {
+        // Cajero tiene acceso al módulo 'clients' (para cobrar/consultar
+        // cuenta corriente) pero no debería poder borrar un cliente.
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para eliminar clientes.');
+
         if ($client->invoices()->exists()) {
             $this->toastError("No se puede eliminar al cliente \"{$client->name}\" porque tiene facturas asociadas.");
 

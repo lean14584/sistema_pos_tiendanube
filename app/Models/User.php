@@ -65,4 +65,15 @@ class User extends Authenticatable
     {
         return $this->role === Role::Encargado;
     }
+
+    /**
+     * Borrar (productos, categorías, clientes, comprobantes, etc.) queda
+     * reservado a Admin/Encargado — Vendedor y Cajero pueden crear/editar
+     * en los módulos que tengan habilitados, pero no eliminar. Mismo
+     * criterio ya usado en Invoices\Show::delete().
+     */
+    public function puedeEliminar(): bool
+    {
+        return $this->esAdminGlobal() || $this->esEncargado();
+    }
 }
