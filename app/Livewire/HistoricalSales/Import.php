@@ -39,7 +39,14 @@ class Import extends Component
         $creados = 0;
         $omitidos = [];
 
-        DB::transaction(function () use ($filas, &$creados, &$omitidos) {
+        // MEJORA: cada fila hacía 1-2 queries para resolver el cliente por
+        // tax_id/nombre — precargado una sola vez (este import nunca crea
+        // clientes nuevos, solo los busca para linkear client_id).
+        $todosLosClientes = Client::all();
+        $clientesPorTaxId = $todosLosClientes->filter(fn (Client $c) => filled($c->tax_id))->keyBy(fn (Client $c) => mb_strtolower($c->tax_id));
+        $clientesPorNombre = $todosLosClientes->keyBy(fn (Client $c) => mb_strtolower($c->name));
+
+        DB::transaction(function () use ($filas, &$creados, &$omitidos, $clientesPorTaxId, $clientesPorNombre) {
             foreach ($filas as $numero => $fila) {
                 $nombre = trim((string) $this->valor($fila, 'client_name'));
                 $total = $this->valor($fila, 'total');
@@ -66,10 +73,10 @@ class Import extends Component
                 $taxId = trim((string) ($this->valor($fila, 'tax_id') ?? ''));
                 $cliente = null;
                 if ($taxId !== '') {
-                    $cliente = Client::where('tax_id', $taxId)->first();
+                    $cliente = $clientesPorTaxId->get(mb_strtolower($taxId));
                 }
                 if (! $cliente) {
-                    $cliente = Client::where('name', $nombre)->first();
+                    $cliente = $clientesPorNombre->get(mb_strtolower($nombre));
                 }
 
                 HistoricalSale::create([

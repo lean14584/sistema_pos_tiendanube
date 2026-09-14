@@ -17,6 +17,8 @@ use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
@@ -49,6 +51,16 @@ class Create extends Component
     public string $status = 'draft';
 
     public bool $printOnSave = true;
+
+    /**
+     * Guarda contra doble-submit: esta pantalla, a diferencia de Pos\Index
+     * (donde el carrito se vacía solo al vender), no tiene ningún estado
+     * persistente natural para releer y detectar "esto ya se guardó" — el
+     * form sigue lleno después de un submit exitoso, así que se necesita
+     * este flag explícito. Se serializa igual en el snapshot de Livewire
+     * entre requests, a diferencia de una propiedad privada.
+     */
+    public bool $submitted = false;
 
     /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string, discount: string}> */
     public array $items = [];
@@ -158,6 +170,23 @@ class Create extends Component
 
     public function save(): void
     {
+        // MEJORA: a diferencia de Pos\Index (el carrito se vacía solo al
+        // vender) o de NotasCredito/FacturarRemito/Quotes (releen un
+        // registro existente con fresh()), este formulario de alta no tiene
+        // ningún estado persistente para detectar "esto ya se guardó" — dos
+        // submits casi simultáneos (doble clic) pasaban las mismas
+        // validaciones y creaban dos facturas. El lock serializa las dos
+        // llamadas (mismo criterio que CashRegister::openSession()) y el
+        // flag $submitted, chequeado/seteado adentro, corta la segunda.
+        Cache::lock('invoices:create:'.CurrentSucursal::id().':'.Auth::id(), 10)->block(5, fn () => $this->saveInterno());
+    }
+
+    private function saveInterno(): void
+    {
+        if ($this->submitted) {
+            return;
+        }
+
         $this->validate([
             'client_id' => ['required', 'exists:clients,id'],
             'tipo_comprobante_interno' => ['required', Rule::enum(TipoComprobanteInterno::class)],
@@ -218,6 +247,10 @@ class Create extends Component
 
             return;
         }
+
+        // Recién acá, pasadas todas las validaciones: una falla de
+        // validación legítima no debe dejar al usuario sin poder reintentar.
+        $this->submitted = true;
 
         $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($validItems, $tipo, $puntoVentaNumero) {
             $invoice = Invoice::create([

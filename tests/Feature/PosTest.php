@@ -188,6 +188,35 @@ class PosTest extends TestCase
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 1000, 'source' => 'venta']);
     }
 
+    /**
+     * MEJORA: el único lock que tenía cobrar() (InvoiceNumberGenerator::
+     * withLock) solo serializa la numeración, no evita duplicar la venta —
+     * dos submits sobre el mismo carrito generaban dos facturas. Mismo
+     * patrón de test que RemitoFacturarTest::test_doble_clic_...: dos
+     * llamadas sobre la MISMA instancia ya montada (el escenario real de un
+     * doble clic). Como el carrito se vacía al final de una venta exitosa,
+     * la segunda llamada lo encuentra vacío y corta sola.
+     */
+    public function test_doble_clic_en_cobrar_no_duplica_la_venta(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $product = Product::create(['name' => 'Alfajor', 'price' => 500, 'iva_rate' => 0, 'stock' => 5]);
+
+        $component = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('printOnSale', false);
+
+        $component->call('cobrar')->assertHasNoErrors();
+        $component->call('cobrar')->assertHasErrors('cart');
+
+        $this->assertSame(1, Invoice::count(), 'No debería duplicarse la venta al cobrar dos veces el mismo carrito.');
+        $this->assertEquals(4, $product->fresh()->stock, 'El stock no debería descontarse dos veces.');
+    }
+
     public function test_cobrar_sin_caja_abierta_es_rechazado(): void
     {
         $admin = $this->admin();

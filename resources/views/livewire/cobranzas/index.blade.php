@@ -50,7 +50,7 @@
                                             <option value="{{ $pm->value }}">{{ $pm->label() }}</option>
                                         @endforeach
                                     </select>
-                                    <button type="button" wire:click="savePayment" class="rounded-md bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 text-white text-xs font-medium">Guardar</button>
+                                    <button type="button" wire:click="savePayment" wire:loading.attr="disabled" wire:target="savePayment" class="rounded-md bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 text-white text-xs font-medium disabled:opacity-60">Guardar</button>
                                     <button type="button" wire:click="cancelPayment" class="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5 text-gray-600 dark:text-gray-300 text-xs">✕</button>
                                 </div>
                                 @error('payAmount') <p class="text-xs text-red-600 dark:text-red-400 mt-1 text-right">{{ $message }}</p> @enderror
@@ -107,7 +107,7 @@
                                     <option value="{{ $pm->value }}">{{ $pm->label() }}</option>
                                 @endforeach
                             </select>
-                            <button type="button" wire:click="savePayment" class="rounded-md bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 text-white text-xs font-medium">Guardar</button>
+                            <button type="button" wire:click="savePayment" wire:loading.attr="disabled" wire:target="savePayment" class="rounded-md bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 text-white text-xs font-medium disabled:opacity-60">Guardar</button>
                             <button type="button" wire:click="cancelPayment" class="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5 text-gray-600 dark:text-gray-300 text-xs">✕</button>
                         </div>
                         @error('payAmount') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror

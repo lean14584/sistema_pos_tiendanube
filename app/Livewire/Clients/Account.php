@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\ClientPayment;
 use App\Models\CompanySettings;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\Whatsapp;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -52,6 +53,7 @@ class Account extends Component
 
         $payment = ClientPayment::create([
             'client_id' => $this->client->id,
+            'sucursal_id' => CurrentSucursal::id(),
             'date' => $this->date,
             'amount' => $this->amount,
             'method' => $this->method,

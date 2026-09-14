@@ -35,11 +35,19 @@ class Import extends Component
         $actualizados = 0;
         $omitidos = [];
 
+        // MEJORA: cada fila disparaba 1-2 queries (Client::where('tax_id',...)
+        // y, si no matcheaba, Client::where('name',...)) — precargado una sola
+        // vez en memoria (normalizado a minúsculas, misma razón que
+        // Products\Import) para no repetirlo por fila.
+        $todosLosClientes = Client::all();
+        $clientesPorTaxId = $todosLosClientes->filter(fn (Client $c) => filled($c->tax_id))->keyBy(fn (Client $c) => mb_strtolower($c->tax_id));
+        $clientesPorNombre = $todosLosClientes->keyBy(fn (Client $c) => mb_strtolower($c->name));
+
         // Igual que Products\Import: sin esto, cada alta/edición dispara un
         // POST a Tiendanube por fila (afterResponse), cientos de llamadas
         // HTTP colgando el request con un Excel grande.
-        TiendanubeSyncGuard::mute(function () use ($filas, &$creados, &$actualizados, &$omitidos) {
-            DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos) {
+        TiendanubeSyncGuard::mute(function () use ($filas, &$creados, &$actualizados, &$omitidos, $clientesPorTaxId, $clientesPorNombre) {
+            DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, $clientesPorTaxId, $clientesPorNombre) {
                 foreach ($filas as $numero => $fila) {
                     $nombre = trim((string) $this->valor($fila, 'name'));
 
@@ -79,22 +87,30 @@ class Import extends Component
 
                     $existente = null;
                     if (! empty($datos['tax_id'])) {
-                        $existente = Client::where('tax_id', $datos['tax_id'])->first();
+                        $existente = $clientesPorTaxId->get(mb_strtolower($datos['tax_id']));
                     }
                     if (! $existente) {
-                        $existente = Client::where('name', $nombre)->first();
+                        $existente = $clientesPorNombre->get(mb_strtolower($nombre));
                     }
 
                     if ($existente) {
                         $existente->update($datos);
                         $actualizados++;
                     } else {
-                        Client::create([
+                        $nuevo = Client::create([
                             'email' => '',
                             'condicion_iva' => CondicionIva::ConsumidorFinal->value,
                             'tipo_documento' => TaxIdResolver::tipoDocumentoPara($taxId)->value,
                             ...$datos,
                         ]);
+
+                        // Una fila duplicada más adelante en el mismo Excel
+                        // tiene que encontrar este cliente recién creado.
+                        if (filled($nuevo->tax_id)) {
+                            $clientesPorTaxId->put(mb_strtolower($nuevo->tax_id), $nuevo);
+                        }
+                        $clientesPorNombre->put(mb_strtolower($nuevo->name), $nuevo);
+
                         $creados++;
                     }
                 }

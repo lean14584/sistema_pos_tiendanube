@@ -8,8 +8,11 @@ use App\Models\Client;
 use App\Models\ClientPayment;
 use App\Models\CompanySettings;
 use App\Support\CashLinker;
+use App\Support\CurrentSucursal;
 use App\Support\Whatsapp;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -84,6 +87,18 @@ class Index extends Component
 
     public function savePayment(): void
     {
+        // MEJORA: sin lock, un doble clic en "Registrar cobro" podía crear
+        // dos ClientPayment (y dos movimientos de caja) del mismo cobro. El
+        // lock serializa las dos llamadas (mismo criterio que
+        // CashRegister::openSession()); cancelPayment() ya vacía
+        // payingClientId/payAmount al final de un cobro exitoso, así que una
+        // segunda llamada encuentra el form vacío y corta sola en la
+        // validación de abajo (payingClientId ya no pasa 'required').
+        Cache::lock('cobranzas:pagar:'.CurrentSucursal::id().':'.Auth::id(), 10)->block(5, fn () => $this->savePaymentInterno());
+    }
+
+    private function savePaymentInterno(): void
+    {
         $this->validate([
             'payingClientId' => ['required', 'exists:clients,id'],
             'payDate' => ['required', 'date'],
@@ -101,6 +116,7 @@ class Index extends Component
 
         $payment = ClientPayment::create([
             'client_id' => $this->payingClientId,
+            'sucursal_id' => CurrentSucursal::id(),
             'date' => $this->payDate,
             'amount' => $this->payAmount,
             'method' => $this->payMethod,

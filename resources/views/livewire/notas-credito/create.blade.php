@@ -42,10 +42,10 @@
                                 <tr wire:key="item-{{ $index }}" class="border-t border-gray-100 dark:border-gray-800">
                                     <td class="px-4 py-2 text-gray-700 dark:text-gray-300">{{ $item['description'] }}</td>
                                     <td class="px-4 py-2">
-                                        <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <input type="number" min="0" step="1" wire:model.live="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                     </td>
                                     <td class="px-4 py-2">
-                                        <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <input type="number" min="0" step="0.01" wire:model.live="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                     </td>
                                     <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">
                                         ${{ money((float) $item['quantity'] * (float) $item['unit_price']) }}
@@ -73,11 +73,11 @@
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Cantidad</label>
-                                        <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <input type="number" min="0" step="1" wire:model.live="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                     </div>
                                     <div>
                                         <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Precio unit.</label>
-                                        <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <input type="number" min="0" step="0.01" wire:model.live="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                     </div>
                                 </div>
                                 <div class="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 pt-1">

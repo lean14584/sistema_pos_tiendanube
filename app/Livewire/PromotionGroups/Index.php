@@ -8,11 +8,12 @@ use App\Models\PromotionGroup;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    use ShowsToasts;
+    use ShowsToasts, WithPagination;
 
     public ?int $editingId = null;
 
@@ -140,7 +141,7 @@ class Index extends Component
     public function render()
     {
         return view('livewire.promotion-groups.index', [
-            'groups' => PromotionGroup::with('products')->latest()->get(),
+            'groups' => PromotionGroup::with('products')->latest()->paginate(20),
         ]);
     }
 }

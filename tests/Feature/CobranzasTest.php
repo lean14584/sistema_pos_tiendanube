@@ -89,6 +89,34 @@ class CobranzasTest extends TestCase
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 3000]);
     }
 
+    /**
+     * MEJORA: savePayment() no tenía ningún lock — dos submits casi
+     * simultáneos (doble clic) creaban dos ClientPayment del mismo cobro.
+     * cancelPayment() ya vacía payingClientId/payAmount al final de un cobro
+     * exitoso, así que una segunda llamada sobre la misma instancia
+     * encuentra el form vacío y falla la validación (mismo patrón de test
+     * que RemitoFacturarTest).
+     */
+    public function test_doble_clic_en_registrar_cobro_no_lo_duplica(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $deudor = Client::create(['name' => 'Deudor', 'email' => 'd@test.com', 'phone' => '3511234567']);
+        $this->facturaImpaga($deudor, 5000);
+
+        $component = Livewire::actingAs($admin)
+            ->test('cobranzas.index')
+            ->call('startPayment', $deudor->id, 5000)
+            ->set('payAmount', '3000');
+
+        $component->call('savePayment')->assertHasNoErrors();
+        $component->call('savePayment')->assertHasErrors('payingClientId');
+
+        $this->assertSame(1, \App\Models\ClientPayment::count(), 'No debería duplicarse el cobro al registrarlo dos veces.');
+        $this->assertDatabaseHas('client_payments', ['client_id' => $deudor->id, 'amount' => 3000]);
+    }
+
     public function test_no_puede_cobrar_desde_cobranzas_sin_caja_abierta(): void
     {
         $deudor = Client::create(['name' => 'Deudor', 'email' => 'd@test.com', 'phone' => '3511234567']);
