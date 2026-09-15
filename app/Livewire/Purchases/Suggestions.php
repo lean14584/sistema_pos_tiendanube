@@ -5,6 +5,7 @@ namespace App\Livewire\Purchases;
 use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\PurchaseItem;
+use App\Support\CurrentSucursal;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -18,15 +19,22 @@ class Suggestions extends Component
     public function render()
     {
         $since = now()->subDays(self::LOOKBACK_DAYS);
+        $sucursalId = CurrentSucursal::id();
 
+        // MEJORA: antes comparaba contra ventas/stock de TODA la empresa —
+        // en multisucursal eso sugería "no comprar" un producto porque OTRA
+        // sucursal tenía de sobra, aunque la activa estuviera en cero
+        // (mismo bug de fondo que ya se corrigió en Product::scopeLowStock).
         $soldQuantities = InvoiceItem::query()
             ->whereNotNull('product_id')
-            ->whereHas('invoice', fn ($q) => $q->whereNot('status', 'draft')->whereDate('issue_date', '>=', $since))
+            ->whereHas('invoice', fn ($q) => $q->whereNot('status', 'draft')
+                ->whereDate('issue_date', '>=', $since)
+                ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId)))
             ->selectRaw('product_id, SUM(quantity) as total_qty')
             ->groupBy('product_id')
             ->pluck('total_qty', 'product_id');
 
-        $products = Product::whereNotNull('min_stock')->with('category')->get();
+        $products = Product::whereNotNull('min_stock')->with(['category', 'stocks'])->get();
 
         // Último ítem de compra por producto sin traer el historial entero:
         // se resuelve primero el id más reciente por product_id (agregado en
@@ -44,17 +52,19 @@ class Suggestions extends Component
             ->keyBy('product_id');
 
         $suggestions = $products
-            ->map(function (Product $product) use ($soldQuantities, $lastProviderByProduct) {
+            ->map(function (Product $product) use ($soldQuantities, $lastProviderByProduct, $sucursalId) {
+                $stock = $product->stockEnSucursal($sucursalId);
                 $sold = (float) ($soldQuantities[$product->id] ?? 0);
                 $dailyAvg = $sold / self::LOOKBACK_DAYS;
-                $suggestedQty = max(0, (int) ceil($dailyAvg * self::COVERAGE_DAYS - $product->stock));
+                $suggestedQty = max(0, (int) ceil($dailyAvg * self::COVERAGE_DAYS - $stock));
 
-                if ($product->stock < $product->min_stock) {
-                    $suggestedQty = max($suggestedQty, $product->min_stock - $product->stock);
+                if ($stock < $product->min_stock) {
+                    $suggestedQty = max($suggestedQty, $product->min_stock - $stock);
                 }
 
                 return [
                     'product' => $product,
+                    'stock' => $stock,
                     'soldQty' => $sold,
                     'dailyAvg' => $dailyAvg,
                     'suggestedQty' => $suggestedQty,

@@ -195,20 +195,14 @@
                     </thead>
                     <tbody>
                         @foreach ($closedSessions as $s)
-                            @php
-                                $ingresos = $s->movements->where('type', \App\Enums\CashMovementType::Ingreso)->sum('amount');
-                                $egresos = $s->movements->where('type', \App\Enums\CashMovementType::Egreso)->sum('amount');
-                                $expected = (float) $s->opening_amount + $ingresos - $egresos;
-                                $difference = (float) $s->closing_amount - $expected;
-                            @endphp
                             <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <td class="px-5 py-3 text-gray-700 dark:text-gray-300">{{ $s->user->name }}</td>
                                 <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $s->opened_at->format('d/m/Y H:i') }} · ${{ money($s->opening_amount) }}</td>
                                 <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $s->closed_at?->format('d/m/Y H:i') }} · ${{ money($s->closing_amount) }}</td>
-                                <td class="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400">${{ money($ingresos) }}</td>
-                                <td class="px-5 py-3 text-right text-red-600 dark:text-red-400">${{ money($egresos) }}</td>
-                                <td class="px-5 py-3 text-right font-medium {{ abs($difference) > 0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100' }}">
-                                    ${{ money($difference) }}
+                                <td class="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400">${{ money($s->ingresos) }}</td>
+                                <td class="px-5 py-3 text-right text-red-600 dark:text-red-400">${{ money($s->egresos) }}</td>
+                                <td class="px-5 py-3 text-right font-medium {{ abs($s->difference) > 0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100' }}">
+                                    ${{ money($s->difference) }}
                                 </td>
                             </tr>
                         @endforeach
@@ -218,25 +212,19 @@
 
                 <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
                     @foreach ($closedSessions as $s)
-                        @php
-                            $ingresos = $s->movements->where('type', \App\Enums\CashMovementType::Ingreso)->sum('amount');
-                            $egresos = $s->movements->where('type', \App\Enums\CashMovementType::Egreso)->sum('amount');
-                            $expected = (float) $s->opening_amount + $ingresos - $egresos;
-                            $difference = (float) $s->closing_amount - $expected;
-                        @endphp
                         <div class="p-4">
                             <div class="flex items-start justify-between gap-3">
                                 <p class="font-medium text-gray-900 dark:text-gray-100">{{ $s->user->name }}</p>
-                                <p class="text-sm font-medium shrink-0 {{ abs($difference) > 0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100' }}">
-                                    ${{ money($difference) }}
+                                <p class="text-sm font-medium shrink-0 {{ abs($s->difference) > 0.01 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100' }}">
+                                    ${{ money($s->difference) }}
                                 </p>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Apertura: {{ $s->opened_at->format('d/m/Y H:i') }} · ${{ money($s->opening_amount) }}</p>
                             <p class="text-xs text-gray-500 dark:text-gray-400">Cierre: {{ $s->closed_at?->format('d/m/Y H:i') }} · ${{ money($s->closing_amount) }}</p>
                             <p class="text-xs mt-1">
-                                <span class="text-emerald-600 dark:text-emerald-400">+${{ money($ingresos) }}</span>
+                                <span class="text-emerald-600 dark:text-emerald-400">+${{ money($s->ingresos) }}</span>
                                 <span class="text-gray-400 dark:text-gray-500"> / </span>
-                                <span class="text-red-600 dark:text-red-400">-${{ money($egresos) }}</span>
+                                <span class="text-red-600 dark:text-red-400">-${{ money($s->egresos) }}</span>
                             </p>
                         </div>
                     @endforeach

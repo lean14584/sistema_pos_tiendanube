@@ -39,6 +39,14 @@
                 @error('barcode') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
 
                 @if (trim($barcode) !== '')
+                    @php
+                        // Resuelto una sola vez para los hasta 8 resultados
+                        // de abajo: CurrentSucursal::id() no está memoizado
+                        // (puede volver a hacer falta si algún día cambia
+                        // dentro del mismo request), así que se evita
+                        // llamarlo una vez por producto.
+                        $sucursalActivaId = \App\Support\CurrentSucursal::id();
+                    @endphp
                     <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg max-h-72 overflow-y-auto">
                         @forelse ($this->barcodeResults as $product)
                             <button
@@ -49,7 +57,7 @@
                                 <span class="min-w-0">
                                     <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                     <span class="block text-xs text-gray-500 dark:text-gray-400">
-                                        Stock: {{ $product->stockEnSucursal() }}{{ $product->sku ? " · SKU: {$product->sku}" : '' }} · ${{ money($product->priceForList($this->currentPriceList())) }}
+                                        Stock: {{ $product->stockEnSucursal($sucursalActivaId) }}{{ $product->sku ? " · SKU: {$product->sku}" : '' }} · ${{ money($product->priceForList($this->currentPriceList())) }}
                                     </span>
                                 </span>
                             </button>

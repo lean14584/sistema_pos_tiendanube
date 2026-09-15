@@ -6,8 +6,10 @@ use App\Enums\Role;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\Provider;
 use App\Models\Purchase;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -20,6 +22,16 @@ class PurchaseSuggestionsTest extends TestCase
     private function admin(): User
     {
         return User::factory()->create(['role' => Role::Admin, 'active' => true]);
+    }
+
+    /**
+     * Suggestions.php ahora compara contra el stock de la sucursal activa
+     * (product_stocks), no products.stock — hay que sembrar el mismo valor
+     * ahí para que estos tests sigan reflejando lo que setean en el producto.
+     */
+    private function stockearEnSucursalPrincipal(Product $product, int $stock): void
+    {
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => $stock]);
     }
 
     private function sell(Product $product, Client $client, int $quantity, string $status = 'paid'): void
@@ -47,6 +59,8 @@ class PurchaseSuggestionsTest extends TestCase
 
         $bestSeller = Product::create(['name' => 'Best seller', 'price' => 100, 'stock' => 1, 'min_stock' => 10]);
         $slowMover = Product::create(['name' => 'Slow mover', 'price' => 100, 'stock' => 1, 'min_stock' => 10]);
+        $this->stockearEnSucursalPrincipal($bestSeller, 1);
+        $this->stockearEnSucursalPrincipal($slowMover, 1);
 
         $this->sell($bestSeller, $client, 20);
         $this->sell($slowMover, $client, 2);
@@ -61,7 +75,8 @@ class PurchaseSuggestionsTest extends TestCase
 
     public function test_no_sugiere_productos_sin_stock_bajo(): void
     {
-        Product::create(['name' => 'Con stock de sobra', 'price' => 100, 'stock' => 100, 'min_stock' => 10]);
+        $product = Product::create(['name' => 'Con stock de sobra', 'price' => 100, 'stock' => 100, 'min_stock' => 10]);
+        $this->stockearEnSucursalPrincipal($product, 100);
 
         $component = Livewire::actingAs($this->admin())->test('purchases.suggestions');
 
@@ -75,6 +90,7 @@ class PurchaseSuggestionsTest extends TestCase
         // compras y deduplicar en PHP: tiene que seguir devolviendo el
         // proveedor de la compra más reciente, no cualquiera.
         $product = Product::create(['name' => 'Insumo', 'price' => 100, 'stock' => 1, 'min_stock' => 10]);
+        $this->stockearEnSucursalPrincipal($product, 1);
         $proveedorViejo = Provider::create(['name' => 'Proveedor Viejo']);
         $proveedorNuevo = Provider::create(['name' => 'Proveedor Nuevo']);
 
@@ -95,6 +111,7 @@ class PurchaseSuggestionsTest extends TestCase
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
 
         $product = Product::create(['name' => 'Producto', 'price' => 100, 'stock' => 1, 'min_stock' => 10]);
+        $this->stockearEnSucursalPrincipal($product, 1);
         $this->sell($product, $client, 50, 'draft');
 
         $component = Livewire::actingAs($this->admin())->test('purchases.suggestions');
@@ -102,5 +119,33 @@ class PurchaseSuggestionsTest extends TestCase
         $suggestions = $component->viewData('suggestions');
 
         $this->assertSame(0.0, $suggestions[0]['soldQty']);
+    }
+
+    public function test_no_considera_stock_ni_ventas_de_otra_sucursal(): void
+    {
+        // MEJORA: antes comparaba contra stock/ventas de TODA la empresa —
+        // acá la sucursal activa está en cero pero "Norte" tiene de sobra;
+        // tiene que sugerir comprar igual (no debe verse afectada por Norte).
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $vendedor = User::factory()->create(['role' => Role::Vendedor, 'active' => true, 'sucursal_id' => $principal->id]);
+
+        $product = Product::create(['name' => 'Insumo', 'price' => 100, 'stock' => 0, 'min_stock' => 5]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $principal->id, 'stock' => 0]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $norte->id, 'stock' => 50]);
+
+        $clienteNorte = Client::create(['name' => 'Cliente Norte', 'email' => 'norte@test.com']);
+        $invoiceNorte = Invoice::create([
+            'number' => 'FAC-'.uniqid(), 'client_id' => $clienteNorte->id, 'sucursal_id' => $norte->id,
+            'issue_date' => now()->subDays(5), 'due_date' => now()->addDays(10), 'tax_rate' => 0, 'status' => 'paid',
+        ]);
+        $invoiceNorte->items()->create(['product_id' => $product->id, 'description' => 'Insumo', 'quantity' => 30, 'unit_price' => 100]);
+
+        $component = Livewire::actingAs($vendedor)->test('purchases.suggestions');
+        $suggestions = $component->viewData('suggestions');
+
+        $this->assertCount(1, $suggestions);
+        $this->assertSame(0.0, $suggestions[0]['soldQty']);
+        $this->assertSame(5, $suggestions[0]['suggestedQty']);
     }
 }

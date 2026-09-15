@@ -118,7 +118,9 @@ class Index extends Component
     {
         $term = trim($this->clientQuery);
 
-        if ($term === '') {
+        // Con 1 solo caracter el LIKE '%x%' escanea toda la tabla en cada
+        // tecla sin acotar casi nada el resultado — se pide un mínimo.
+        if (mb_strlen($term) < 2) {
             return collect();
         }
 
@@ -160,12 +162,20 @@ class Index extends Component
     {
         $term = trim($this->barcode);
 
-        if ($term === '') {
+        // Con 1 solo caracter el LIKE '%x%' escanea toda la tabla en cada
+        // tecla (cada 200ms) sin acotar casi nada el resultado — se pide un
+        // mínimo, igual criterio que clientResults().
+        if (mb_strlen($term) < 2) {
             return collect();
         }
 
+        // ->with('stocks') evita 1 query de stock por cada uno de los hasta
+        // 8 resultados mostrados (ver stockEnSucursal() en la vista): con
+        // la relación ya cargada, resuelve el stock de la sucursal activa
+        // en memoria en vez de ir a la base por cada fila.
         return Product::where('name', 'like', "%{$term}%")
             ->orWhere('sku', 'like', "%{$term}%")
+            ->with('stocks')
             ->limit(8)
             ->get();
     }

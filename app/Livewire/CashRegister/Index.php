@@ -205,6 +205,16 @@ class Index extends Component
             ->limit(30)
             ->get();
 
+        // Se resuelve acá (una vez por sesión) en vez de en la vista, que lo
+        // recalculaba 2 veces por fila (tabla de escritorio + lista mobile)
+        // en cada render.
+        foreach ($closedSessions as $s) {
+            $s->ingresos = $s->movements->where('type', CashMovementType::Ingreso)->sum('amount');
+            $s->egresos = $s->movements->where('type', CashMovementType::Egreso)->sum('amount');
+            $s->expected = (float) $s->opening_amount + $s->ingresos - $s->egresos;
+            $s->difference = (float) $s->closing_amount - $s->expected;
+        }
+
         // Otras cajas que ahora mismo están abiertas en el mismo local (de
         // otros cajeros) — solo para que se vea quién más está trabajando;
         // no se puede operar sobre ellas desde acá, cada quien maneja la suya.

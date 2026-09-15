@@ -117,7 +117,9 @@ class Edit extends Component
     {
         $term = trim($this->clientQuery);
 
-        if ($term === '') {
+        // Con 1 solo caracter el LIKE '%x%' escanea toda la tabla en cada
+        // tecla sin acotar casi nada el resultado — se pide un mínimo.
+        if (mb_strlen($term) < 2) {
             return collect();
         }
 
@@ -152,7 +154,9 @@ class Edit extends Component
     {
         $term = trim($this->productQuery);
 
-        if ($term === '') {
+        // Con 1 solo caracter el LIKE '%x%' escanea toda la tabla en cada
+        // tecla sin acotar casi nada el resultado — se pide un mínimo.
+        if (mb_strlen($term) < 2) {
             return collect();
         }
 

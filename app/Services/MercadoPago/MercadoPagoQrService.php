@@ -27,6 +27,16 @@ use RuntimeException;
  */
 class MercadoPagoQrService
 {
+    /**
+     * Caché por instancia (esta clase está bindeada singleton, ver
+     * AppServiceProvider): sin esto, un solo cobro con QR llama a
+     * configFor() 3-6 veces (createOrder, collectorId, http,
+     * ensureStoreAndPos) releyendo siempre la misma fila.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private array $configCache = [];
+
     public function isConfigured(?int $sucursalId = null): bool
     {
         return ! empty($this->configFor($sucursalId)['access_token']);
@@ -36,6 +46,14 @@ class MercadoPagoQrService
      * @return array<string, mixed>
      */
     private function configFor(?int $sucursalId): array
+    {
+        return $this->configCache[$sucursalId ?? 'null'] ??= $this->resolveConfigFor($sucursalId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveConfigFor(?int $sucursalId): array
     {
         $config = [
             'access_token' => config('mercadopago.access_token'),

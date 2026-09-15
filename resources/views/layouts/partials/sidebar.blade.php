@@ -1,5 +1,4 @@
 @php
-    use App\Enums\Role;
     use App\Models\Invoice;
     use App\Models\Message;
     use App\Models\Product;
@@ -10,14 +9,8 @@
     $lowStockCount = Product::lowStockCountCached();
     $expiringBatchesCount = ProductBatch::alertCountCached();
     $pendientesEmision = Invoice::pendientesDeEmisionCountCached();
-    $unreadMessagesCount = auth()->check() ? Message::unreadFor(auth()->id())->count() : 0;
-    $openTasksCount = 0;
-    if (auth()->check()) {
-        $openTasksQuery = Task::whereIn('status', ['pendiente', 'en_progreso']);
-        $openTasksCount = auth()->user()->role === Role::Admin
-            ? $openTasksQuery->count()
-            : $openTasksQuery->where('assigned_to', auth()->id())->count();
-    }
+    $unreadMessagesCount = auth()->check() ? Message::unreadCountCached(auth()->id()) : 0;
+    $openTasksCount = auth()->check() ? Task::openCountCached(auth()->user()) : 0;
 
     // route() explota si la ruta no está registrada (módulo apagado por
     // config/features.php): abajo el array se arma igual para todos los

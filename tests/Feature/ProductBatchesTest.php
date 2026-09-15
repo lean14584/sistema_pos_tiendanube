@@ -208,4 +208,25 @@ class ProductBatchesTest extends TestCase
 
         $this->assertSame(2, ProductBatch::active()->expiringWithin(ProductBatch::DIAS_ALERTA)->count());
     }
+
+    public function test_alert_count_cached_usa_la_sucursal_activa_no_toda_la_empresa(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $product = Product::create(['name' => 'Yogur', 'price' => 500, 'stock' => 0]);
+
+        ProductBatch::create([
+            'product_id' => $product->id, 'sucursal_id' => $principal->id,
+            'quantity_received' => 5, 'quantity_remaining' => 5,
+            'expiration_date' => now()->addDays(2)->toDateString(),
+        ]);
+        ProductBatch::create([
+            'product_id' => $product->id, 'sucursal_id' => $norte->id,
+            'quantity_received' => 5, 'quantity_remaining' => 5,
+            'expiration_date' => now()->addDays(2)->toDateString(),
+        ]);
+
+        $this->assertSame(1, ProductBatch::alertCountCached($principal->id));
+        $this->assertSame(1, ProductBatch::alertCountCached($norte->id));
+    }
 }
