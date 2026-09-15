@@ -39,9 +39,17 @@ class SalesReport
      */
     private static function buildUncached(string $fromDate, string $toDate, ?int $sucursalId): array
     {
+        // MEJORA: whereDate() envuelve la columna en DATE(...), lo que
+        // impide usar el índice de issue_date. Ojo: aunque la columna es
+        // `date`, el cast 'date' de Eloquent solo trunca la HORA al leer
+        // — al guardar usa el formato genérico del modelo (con hora), así
+        // que en SQLite (tests) queda con parte de hora real; MySQL sí la
+        // trunca solo porque el tipo de columna lo fuerza. Por eso el corte
+        // superior usa "< día siguiente" (no ">= igual a $toDate") — así
+        // funciona para los dos casos sin dejar de ser un rango sargable.
         $invoices = Invoice::whereNot('status', 'draft')
-            ->whereDate('issue_date', '>=', $fromDate)
-            ->whereDate('issue_date', '<=', $toDate)
+            ->where('issue_date', '>=', $fromDate)
+            ->where('issue_date', '<', Carbon::parse($toDate)->addDay()->toDateString())
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->with('items.product.category', 'payments', 'client', 'sucursal')
             ->get();
@@ -137,8 +145,8 @@ class SalesReport
         $prevTo = Carbon::parse($fromDate)->subDay();
         $prevFrom = $prevTo->copy()->subDays($days - 1);
         $prevTotal = Invoice::whereNot('status', 'draft')
-            ->whereDate('issue_date', '>=', $prevFrom)
-            ->whereDate('issue_date', '<=', $prevTo)
+            ->where('issue_date', '>=', $prevFrom->toDateString())
+            ->where('issue_date', '<', $prevTo->copy()->addDay()->toDateString())
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->with('items')
             ->get()

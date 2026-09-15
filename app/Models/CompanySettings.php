@@ -121,6 +121,14 @@ class CompanySettings extends Model
     /**
      * Fila única de configuración de la empresa (sembrada por la migración
      * con id=1), para no repetir firstOrCreate en cada lugar que la usa.
+     *
+     * MEJORA intentada y descartada: memoizar con once() ahorraría varias
+     * consultas idénticas por acción (se llama decenas de veces en todo el
+     * sistema), pero rompe cualquier flujo que actualice esta fila y la
+     * vuelva a leer dentro del mismo proceso — confirmado por 7 tests que
+     * empezaron a fallar (guardar Configuración de Empresa y releer el
+     * modelo actualizado, tests de Livewire que hacen mount+set+call+assert
+     * en un solo proceso PHP). No vale el riesgo para el ahorro que da.
      */
     public static function current(): self
     {

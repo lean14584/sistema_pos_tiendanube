@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -392,5 +393,53 @@ class PosTest extends TestCase
             ->assertHasErrors('payments');
 
         $this->assertDatabaseCount('invoices', 0);
+    }
+
+    public function test_buscador_de_productos_no_dispara_una_query_de_stock_por_resultado(): void
+    {
+        $admin = $this->admin();
+        foreach (range(1, 5) as $i) {
+            $product = Product::create(['name' => "Gaseosa Cola {$i}", 'price' => 500, 'stock' => 10]);
+            \App\Models\ProductStock::create(['product_id' => $product->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 10]);
+        }
+
+        $pos = Livewire::actingAs($admin)->test('pos.index');
+        // Se pisa la propiedad directo (sin ->set(), que dispara un render
+        // completo y contaminaría el conteo con queries de otras partes de
+        // la pantalla) para medir SOLO el costo de barcodeResults() + lo que
+        // hace la vista con cada resultado (stockEnSucursal()).
+        $pos->instance()->barcode = 'Gaseosa';
+
+        DB::enableQueryLog();
+        $results = $pos->instance()->barcodeResults();
+        // La vista resuelve la sucursal activa UNA sola vez y se la pasa a
+        // stockEnSucursal($id) explícito (ver pos/index.blade.php) — así
+        // no hace falta memoizar CurrentSucursal::id() en sí (riesgoso:
+        // cambia entre usuarios dentro del mismo proceso, ver tests que
+        // switchean de sucursal).
+        $sucursalActivaId = \App\Support\CurrentSucursal::id();
+        foreach ($results as $product) {
+            $product->stockEnSucursal($sucursalActivaId);
+        }
+        $queryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertCount(5, $results);
+        // Sin el ->with('stocks'), esto sería 1 query por el listado + 1 más
+        // por cada uno de los 5 resultados (ver stockEnSucursal() en la
+        // vista). Con eager-load + sucursal resuelta una sola vez, son 3 en
+        // total (productos + sus stocks + CurrentSucursal::id()), sin
+        // ninguna extra al recorrer los resultados.
+        $this->assertLessThanOrEqual(3, $queryCount, 'El buscador del POS no debería hacer una query de stock por resultado.');
+    }
+
+    public function test_buscador_de_productos_del_pos_pide_al_menos_2_caracteres(): void
+    {
+        $admin = $this->admin();
+        Product::create(['name' => 'Gaseosa Cola', 'price' => 500, 'stock' => 10]);
+
+        $pos = Livewire::actingAs($admin)->test('pos.index')->set('barcode', 'G');
+
+        $this->assertCount(0, $pos->instance()->barcodeResults());
     }
 }

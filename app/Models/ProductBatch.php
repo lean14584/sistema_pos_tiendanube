@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProductBatchStatus;
+use App\Support\CurrentSucursal;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -70,11 +71,20 @@ class ProductBatch extends Model
 
     /**
      * Cuántos lotes activos están vencidos o por vencer (para el badge del
-     * sidebar) — global, sin recortar por sucursal, igual criterio que
-     * Product::lowStockCountCached().
+     * sidebar). MEJORA: antes contaba TODA la empresa sin recortar por
+     * sucursal (comentario viejo decía "igual criterio que
+     * Product::lowStockCountCached()", pero ese scope sí filtra por
+     * sucursal activa desde hace rato) — un encargado veía el badge de
+     * otras sucursales. Por defecto usa la sucursal activa, igual patrón
+     * que scopeLowStock().
      */
-    public static function alertCountCached(): int
+    public static function alertCountCached(?int $sucursalId = null): int
     {
-        return once(fn () => self::active()->expiringWithin(self::DIAS_ALERTA)->count());
+        $sucursalId ??= CurrentSucursal::id();
+
+        return once(fn () => self::active()
+            ->expiringWithin(self::DIAS_ALERTA)
+            ->when($sucursalId !== null, fn (Builder $q) => $q->where('sucursal_id', $sucursalId))
+            ->count());
     }
 }

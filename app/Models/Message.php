@@ -31,4 +31,10 @@ class Message extends Model
     {
         return $query->where('recipient_id', $userId)->whereNull('read_at');
     }
+
+    /** Se pide en el sidebar en TODAS las páginas: memoizado por request. */
+    public static function unreadCountCached(int $userId): int
+    {
+        return once(fn () => self::unreadFor($userId)->count());
+    }
 }
