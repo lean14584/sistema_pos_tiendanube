@@ -280,7 +280,8 @@ class TicketPrinterService
         $this->addRule();
 
         foreach ($invoice->items as $item) {
-            $this->addColumns($item->description, '$'.$this->money($item->line_total));
+            // A pedido: sin precio en el cupón de cambio, solo qué producto es.
+            $this->addLeft($item->description);
 
             $ean13 = Ean13::fromSku($item->product?->sku);
             if ($ean13 !== null) {
@@ -293,7 +294,8 @@ class TicketPrinterService
         if ($invoice->payments->isNotEmpty()) {
             $this->addRule();
             foreach ($invoice->payments as $payment) {
-                $this->addColumns($payment->method->label(), '$'.$this->money($payment->amount));
+                // A pedido: sin monto, solo el medio de pago usado.
+                $this->addLeft($payment->method->label());
             }
         }
 
