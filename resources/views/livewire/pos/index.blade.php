@@ -84,11 +84,7 @@
                                     @endif
                                 </p>
                                 <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                                    <span>${{ money($item['unit_price']) }} c/u · IVA {{ rtrim(rtrim($item['iva_rate'],'0'),'.') ?: '0' }}%</span>
-                                    <span class="text-gray-300 dark:text-gray-600">·</span>
-                                    <span>Desc</span>
-                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="cart.{{ $index }}.discount" class="w-11 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-1 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                    <span>%</span>
+                                    <span>${{ money($item['unit_price']) }} c/u</span>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between gap-3 sm:contents">
