@@ -283,4 +283,24 @@ class FacturaTogglesTest extends TestCase
 
         $this->assertEquals('0.00', $product->fresh()->iva_rate);
     }
+
+    public function test_venta_rapida_no_cobra_iva_para_empresa_monotributista_aunque_el_producto_tenga_alicuota_vieja_cargada(): void
+    {
+        // Producto cargado ANTES de que la empresa pasara a Monotributista
+        // (o antes del fix de Products\Create/Edit): todavía tiene un iva_rate
+        // real guardado. La venta rápida no debe cobrarlo igual.
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'iva_rate' => 21, 'stock' => 5]);
+
+        CompanySettings::current()->update([
+            'condicion_iva' => 'monotributista',
+            'factura_a_habilitada' => false,
+            'factura_b_habilitada' => false,
+            'factura_c_habilitada' => true,
+        ]);
+
+        Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->assertSet('cart.0.iva_rate', '0');
+    }
 }
