@@ -10,6 +10,7 @@ use App\Models\CompanySettings;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\Whatsapp;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -84,6 +85,8 @@ class Account extends Component
 
     public function deletePayment(int $paymentId): void
     {
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para eliminar cobros.');
+
         $payment = ClientPayment::where('client_id', $this->client->id)->whereKey($paymentId)->first();
 
         if ($payment) {

@@ -7,6 +7,7 @@ use App\Mail\ProviderAccountStatementMail;
 use App\Models\Provider;
 use App\Models\ProviderPayment;
 use App\Support\CashLinker;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -80,6 +81,8 @@ class Account extends Component
 
     public function deletePayment(int $paymentId): void
     {
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para eliminar pagos.');
+
         $payment = ProviderPayment::where('provider_id', $this->provider->id)->whereKey($paymentId)->first();
 
         if ($payment) {

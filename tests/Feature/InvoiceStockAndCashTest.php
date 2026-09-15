@@ -8,8 +8,10 @@ use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\Sucursal;
 use App\Models\User;
+use App\Support\CashLinker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -171,7 +173,7 @@ class InvoiceStockAndCashTest extends TestCase
         $product->increment('stock', 2);
         $payment = $invoice->payments()->create(['method' => 'efectivo', 'amount' => 2000]);
         $this->actingAs($admin);
-        \App\Support\CashLinker::linkInvoiceRefund($invoice, $payment);
+        CashLinker::linkInvoiceRefund($invoice, $payment);
 
         $this->assertSame(7, $product->fresh()->stock);
         $this->assertSame(1, CashMovement::count());
@@ -249,5 +251,74 @@ class InvoiceStockAndCashTest extends TestCase
             ->call('delete');
 
         $this->assertDatabaseMissing('invoices', ['id' => $invoice->id]);
+    }
+
+    public function test_editar_una_factura_de_otra_sucursal_ajusta_el_stock_ahi_no_en_la_activa_del_admin(): void
+    {
+        // Centro queda como sucursal "activa" del admin por default (la
+        // primera creada, ver CurrentSucursal::id()); la factura es de
+        // Norte. Antes del fix, StockAdjuster::apply() no recibía la
+        // sucursal de la factura y usaba la activa del admin (Centro).
+        $centro = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa', 'punto_venta' => 1]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 200]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $centro->id, 'stock' => 100]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $norte->id, 'stock' => 100]);
+
+        $invoice = Invoice::create([
+            'number' => 'FAC-0001', 'client_id' => $client->id, 'sucursal_id' => $norte->id,
+            'tipo_comprobante_interno' => 'factura_b',
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'tax_rate' => 0, 'status' => 'draft',
+        ]);
+        $invoice->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 3, 'unit_price' => 1000]);
+
+        Livewire::actingAs($this->admin())
+            ->test('invoices.edit', ['invoice' => $invoice])
+            ->set('items.0.quantity', '5') // de 3 a 5: -2 de stock netos
+            ->call('save');
+
+        $stockNorte = ProductStock::where('product_id', $product->id)->where('sucursal_id', $norte->id)->value('stock');
+        $stockCentro = ProductStock::where('product_id', $product->id)->where('sucursal_id', $centro->id)->value('stock');
+
+        $this->assertSame(98, $stockNorte); // 100 - 2, la sucursal de la factura
+        $this->assertSame(100, $stockCentro); // sin cambios, no es la sucursal del admin
+    }
+
+    public function test_editar_una_factura_de_otra_sucursal_usa_la_caja_de_esa_sucursal_no_la_activa_del_admin(): void
+    {
+        // El admin tiene la caja abierta en Norte (la sucursal DE LA
+        // FACTURA), no en Centro (su sucursal "activa" por default). Antes
+        // del fix, CashLinker buscaba la caja abierta del admin en Centro
+        // (vía CurrentSucursal::id()), no la encontraba, y bloqueaba el
+        // guardado con "Tenés que abrir la caja" pese a que sí había una
+        // caja abierta válida en la sucursal correcta.
+        $centro = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa', 'punto_venta' => 1]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => $norte->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+
+        $invoice = Invoice::create([
+            'number' => 'FAC-0001', 'client_id' => $client->id, 'sucursal_id' => $norte->id,
+            'tipo_comprobante_interno' => 'factura_b',
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'tax_rate' => 0, 'status' => 'draft',
+        ]);
+        $invoice->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $component = Livewire::actingAs($admin)
+            ->test('invoices.edit', ['invoice' => $invoice])
+            ->call('addPayment')
+            ->set('payments.0.amount', '1000')
+            ->set('payments.0.method', 'efectivo')
+            ->call('save');
+
+        $component->assertHasNoErrors('payments');
+        $movimiento = CashMovement::first();
+        $this->assertNotNull($movimiento);
+        $this->assertSame($norte->id, $movimiento->session->sucursal_id);
     }
 }

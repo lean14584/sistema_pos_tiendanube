@@ -9,8 +9,8 @@ use App\Models\CashSession;
 use App\Models\ClientPayment;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
-use App\Models\Purchase;
 use App\Models\ProviderPayment;
+use App\Models\Purchase;
 use App\Models\PurchasePayment;
 
 class CashLinker
@@ -90,9 +90,16 @@ class CashLinker
         CashMovement::where('source_id', "provider_payment_{$payment->id}")->delete();
     }
 
-    public static function linkInvoicePayment(Invoice $invoice, InvoicePayment $payment): void
+    /**
+     * $sucursalId explícito (Invoices\Edit/Show lo pasan al editar/eliminar
+     * una factura de otra sucursal) porque el cobro tiene que quedar
+     * anotado en la caja de la sucursal DE LA FACTURA, no en la sesión
+     * activa de quien esté operando ahora — mismo criterio que
+     * linkInvoiceRefund().
+     */
+    public static function linkInvoicePayment(Invoice $invoice, InvoicePayment $payment, ?int $sucursalId = null): void
     {
-        $session = self::openSession();
+        $session = self::openSession($sucursalId);
 
         if (! $session) {
             return;

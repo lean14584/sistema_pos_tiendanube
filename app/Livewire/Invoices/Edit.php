@@ -209,13 +209,20 @@ class Edit extends Component
         $registraMovimientoDeCaja = $tipoNuevo !== TipoComprobanteInterno::RemitoX
             && collect($this->payments)->contains(fn ($p) => (float) $p['amount'] > 0);
 
-        if ($registraMovimientoDeCaja && ! CashLinker::hasOpenSession()) {
+        // La sucursal de la factura, NO la sesión activa de quien está
+        // editando ahora: un admin global puede editar una factura de
+        // cualquier sucursal (ver mount()), y el stock/caja tienen que
+        // moverse en la de la factura — mismo criterio que Purchases\Edit
+        // y NotasCredito\Create.
+        $sucursalId = $this->invoice->sucursal_id;
+
+        if ($registraMovimientoDeCaja && ! CashLinker::hasOpenSession($sucursalId)) {
             $this->addError('payments', 'Tenés que abrir la caja antes de registrar un pago.');
 
             return;
         }
 
-        DB::transaction(function () use ($validItems, $tipoNuevo) {
+        DB::transaction(function () use ($validItems, $tipoNuevo, $sucursalId) {
             $tipoViejo = $this->invoice->tipo_comprobante_interno;
             // Nunca se cambia desde este formulario (las Notas de Crédito
             // ni siquiera muestran el switch), pero sí hay que respetarlo al
@@ -225,7 +232,7 @@ class Edit extends Component
                 'product_id' => $item->product_id,
                 'quantity' => (float) $item->quantity,
             ])->all();
-            StockAdjuster::apply($itemsViejos, $afectaStock ? -$tipoViejo->stockSign() : 0);
+            StockAdjuster::apply($itemsViejos, $afectaStock ? -$tipoViejo->stockSign() : 0, $sucursalId);
 
             $this->invoice->update([
                 'client_id' => $this->client_id,
@@ -249,7 +256,7 @@ class Edit extends Component
                 ]);
             }
 
-            StockAdjuster::apply($validItems, $afectaStock ? $tipoNuevo->stockSign() : 0);
+            StockAdjuster::apply($validItems, $afectaStock ? $tipoNuevo->stockSign() : 0, $sucursalId);
 
             $this->invoice->payments->each(fn ($payment) => CashLinker::unlinkInvoicePayment($payment));
             $this->invoice->payments()->delete();
@@ -260,8 +267,8 @@ class Edit extends Component
                         $created = $this->invoice->payments()->create($payment);
 
                         $tipoNuevo === TipoComprobanteInterno::Devolucion || $tipoNuevo->esNotaCredito()
-                            ? CashLinker::linkInvoiceRefund($this->invoice, $created)
-                            : CashLinker::linkInvoicePayment($this->invoice, $created);
+                            ? CashLinker::linkInvoiceRefund($this->invoice, $created, $sucursalId)
+                            : CashLinker::linkInvoicePayment($this->invoice, $created, $sucursalId);
                     }
                 }
             }

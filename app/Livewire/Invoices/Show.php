@@ -246,7 +246,10 @@ class Show extends Component
                 'quantity' => (float) $item->quantity,
             ])->all();
             $sign = $this->invoice->afecta_stock ? $this->invoice->tipo_comprobante_interno->stockSign() : 0;
-            StockAdjuster::apply($items, -$sign);
+            // La sucursal de la factura, no la activa de quien la borra (un
+            // admin global puede borrar la de cualquier sucursal, ver
+            // mount()) — mismo criterio que Invoices\Edit::save().
+            StockAdjuster::apply($items, -$sign, $this->invoice->sucursal_id);
 
             $this->invoice->payments->each(fn ($payment) => CashLinker::unlinkInvoicePayment($payment));
 
