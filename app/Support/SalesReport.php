@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Invoice;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -54,8 +55,15 @@ class SalesReport
             ->with('items.product.category', 'payments', 'client', 'sucursal')
             ->get();
 
+        $invoices = self::sinRemitosYaFacturados($invoices);
+
+        // Nota de Crédito y Devolución restan de la venta neta (mismo
+        // criterio que Client::debitLines()/Invoice::signoDeuda()); sin
+        // esto, este informe y el Dashboard duplicaban una venta cuando el
+        // remito se facturaba después, y sumaban (en vez de restar) cada
+        // NC/Devolución, inflando el total y el ranking de productos.
         $summary = [
-            'total' => $invoices->sum(fn (Invoice $i) => $i->total),
+            'total' => $invoices->sum(fn (Invoice $i) => $i->signoDeuda() * (float) $i->total),
             'count' => $invoices->count(),
         ];
 
@@ -69,7 +77,12 @@ class SalesReport
         $totalCost = 0.0;
 
         foreach ($invoices as $invoice) {
-            $total = (float) $invoice->total;
+            // +1 factura/remito, -1 Nota de Crédito/Devolución — se aplica a
+            // cada dimensión (plata Y cantidad) para que una NC reste del
+            // ranking de productos/categorías tal como restó de la venta
+            // total, en vez de sumarle a lo devuelto.
+            $signo = $invoice->signoDeuda();
+            $total = $signo * (float) $invoice->total;
 
             $dayKey = $invoice->issue_date->toDateString();
             $day = $byDay->get($dayKey, ['label' => $invoice->issue_date->format('d/m'), 'total' => 0.0, 'count' => 0]);
@@ -92,13 +105,13 @@ class SalesReport
             $bySucursal->put($sucursalKey, $suc);
 
             foreach ($invoice->items as $item) {
-                $lineTotal = (float) $item->line_total;
-                $totalCost += (float) $item->quantity * (float) ($item->product?->cost_price ?? 0);
+                $lineTotal = $signo * (float) $item->line_total;
+                $totalCost += $signo * (float) $item->quantity * (float) ($item->product?->cost_price ?? 0);
 
                 $articleKey = $item->product_id ?? 'sin-producto';
                 $articleLabel = $item->product?->name ?? 'Sin producto vinculado';
                 $article = $byArticle->get($articleKey, ['label' => $articleLabel, 'quantity' => 0, 'total' => 0.0]);
-                $article['quantity'] += (float) $item->quantity;
+                $article['quantity'] += $signo * (float) $item->quantity;
                 $article['total'] += $lineTotal;
                 $byArticle->put($articleKey, $article);
 
@@ -106,7 +119,7 @@ class SalesReport
                 $categoryKey = $categoryId ?? 'sin-categoria';
                 $categoryLabel = $item->product?->category?->name ?? 'Sin categoría';
                 $category = $byCategory->get($categoryKey, ['label' => $categoryLabel, 'quantity' => 0, 'total' => 0.0]);
-                $category['quantity'] += (float) $item->quantity;
+                $category['quantity'] += $signo * (float) $item->quantity;
                 $category['total'] += $lineTotal;
                 $byCategory->put($categoryKey, $category);
             }
@@ -114,13 +127,13 @@ class SalesReport
             foreach ($invoice->payments as $payment) {
                 $methodKey = $payment->method->value;
                 $method = $byMethod->get($methodKey, ['label' => $payment->method->label(), 'total' => 0.0]);
-                $method['total'] += (float) $payment->amount;
+                $method['total'] += $signo * (float) $payment->amount;
                 $byMethod->put($methodKey, $method);
             }
 
             $hour = (int) $invoice->created_at->format('G');
             $byHourBuckets[$hour]['count']++;
-            $byHourBuckets[$hour]['total'] += (float) $invoice->total;
+            $byHourBuckets[$hour]['total'] += $total;
         }
 
         $byArticle = $byArticle->sortByDesc('total')->values();
@@ -144,13 +157,14 @@ class SalesReport
         $days = Carbon::parse($fromDate)->diffInDays(Carbon::parse($toDate)) + 1;
         $prevTo = Carbon::parse($fromDate)->subDay();
         $prevFrom = $prevTo->copy()->subDays($days - 1);
-        $prevTotal = Invoice::whereNot('status', 'draft')
+        $prevInvoices = Invoice::whereNot('status', 'draft')
             ->where('issue_date', '>=', $prevFrom->toDateString())
             ->where('issue_date', '<', $prevTo->copy()->addDay()->toDateString())
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->with('items')
-            ->get()
-            ->sum(fn (Invoice $i) => $i->total);
+            ->get();
+        $prevTotal = self::sinRemitosYaFacturados($prevInvoices)
+            ->sum(fn (Invoice $i) => $i->signoDeuda() * (float) $i->total);
         $variationPct = $prevTotal > 0 ? (($summary['total'] - $prevTotal) / $prevTotal) * 100 : null;
 
         return [
@@ -174,5 +188,30 @@ class SalesReport
             'profitability' => $profitability,
             'variationPct' => $variationPct,
         ];
+    }
+
+    /**
+     * Saca los Remitos X que ya se facturaron (ver Invoices\FacturarRemito):
+     * la factura resultante y el remito original quedan los dos como
+     * `Invoice` con `status != draft`, así que sin este filtro la misma
+     * venta física se contaba dos veces. Se busca el `remito_id` en TODA la
+     * tabla (no solo dentro de $invoices) porque la factura pudo emitirse
+     * en una fecha fuera del rango de este informe.
+     *
+     * Público porque Dashboard también arma sus propios agregados (Top 5,
+     * ventas mensuales) sobre el mismo problema, sin pasar por build().
+     *
+     * @param  Collection<int, Invoice>  $invoices
+     * @return Collection<int, Invoice>
+     */
+    public static function sinRemitosYaFacturados(Collection $invoices): Collection
+    {
+        $remitosYaFacturados = Invoice::whereIn('remito_id', $invoices->pluck('id'))
+            ->pluck('remito_id')
+            ->all();
+
+        return $invoices
+            ->reject(fn (Invoice $i) => $i->esRemito() && in_array($i->id, $remitosYaFacturados, true))
+            ->values();
     }
 }

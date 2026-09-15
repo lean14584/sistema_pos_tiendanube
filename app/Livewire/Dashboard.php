@@ -109,14 +109,22 @@ class Dashboard extends Component
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->get();
 
+        // Un Remito X ya facturado (ver Invoices\FacturarRemito) y el
+        // signo de Nota de Crédito/Devolución (ver
+        // Invoice::signoDeuda()) tienen el mismo tratamiento que en
+        // SalesReport — sin esto, "Ingresos totales" duplicaba ventas
+        // con remito facturado y sumaba las NC/Devoluciones en vez de
+        // restarlas.
+        $invoices = SalesReport::sinRemitosYaFacturados($invoices);
+
         $paid = $invoices->where('status', InvoiceStatus::Paid);
         $pending = $invoices->filter(fn (Invoice $i) => $i->status === InvoiceStatus::Pending && ! $i->is_overdue);
         $overdue = $invoices->filter(fn (Invoice $i) => $i->is_overdue);
         $nonDraft = $invoices->reject(fn (Invoice $i) => $i->status === InvoiceStatus::Draft);
 
         $stats = [
-            'totalRevenue' => $paid->sum(fn (Invoice $i) => $i->total),
-            'pendingAmount' => $pending->sum(fn (Invoice $i) => $i->total),
+            'totalRevenue' => $paid->sum(fn (Invoice $i) => $i->signoDeuda() * (float) $i->total),
+            'pendingAmount' => $pending->sum(fn (Invoice $i) => $i->signoDeuda() * (float) $i->total),
             'overdueCount' => $overdue->count(),
             'totalInvoices' => $invoices->count(),
         ];
@@ -135,10 +143,11 @@ class Dashboard extends Component
 
         $topProducts = collect();
         foreach ($nonDraftDelAnio as $invoice) {
+            $signo = $invoice->signoDeuda();
             foreach ($invoice->items as $item) {
                 $key = $item->product_id ?? "sin-producto-{$item->description}";
                 $current = $topProducts->get($key, ['label' => $item->product?->name ?? $item->description, 'total' => 0.0]);
-                $current['total'] += (float) $item->line_total;
+                $current['total'] += $signo * (float) $item->line_total;
                 $topProducts->put($key, $current);
             }
         }
@@ -150,7 +159,7 @@ class Dashboard extends Component
 
         $monthlySales = array_fill(1, 12, 0.0);
         foreach ($nonDraftDelAnio as $invoice) {
-            $monthlySales[$invoice->issue_date->month] += (float) $invoice->total;
+            $monthlySales[$invoice->issue_date->month] += $invoice->signoDeuda() * (float) $invoice->total;
         }
 
         // Consolidado del año elegido, por categoría y por medio de pago:

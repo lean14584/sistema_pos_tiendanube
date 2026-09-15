@@ -713,7 +713,13 @@ class Index extends Component
                         'method' => $payment['method'],
                         'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
                     ]);
-                    CashLinker::linkInvoicePayment($invoice, $created);
+
+                    // Una Devolución es plata que SALE de la caja, no que
+                    // entra — a diferencia de una venta normal. Mismo
+                    // criterio que Invoices\Create::save().
+                    $tipo === TipoComprobanteInterno::Devolucion
+                        ? CashLinker::linkInvoiceRefund($invoice, $created)
+                        : CashLinker::linkInvoicePayment($invoice, $created);
                 }
             }
 

@@ -9,8 +9,10 @@ use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\Sucursal;
 use App\Models\User;
+use App\Support\CurrentSucursal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -187,6 +189,30 @@ class PosTest extends TestCase
         $this->assertDatabaseHas('invoices', ['status' => 'paid']);
         $this->assertEquals(3, $product->fresh()->stock); // 5 - 2
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 1000, 'source' => 'venta']);
+    }
+
+    public function test_cobrar_una_devolucion_registra_egreso_no_ingreso_en_caja(): void
+    {
+        // La plata de una devolución SALE de la caja — antes se registraba
+        // igual que una venta normal (ingreso), generando un sobrante falso
+        // en el arqueo. Mismo criterio que Invoices\Create::save().
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $product = Product::create(['name' => 'Alfajor', 'price' => 500, 'iva_rate' => 0, 'stock' => 5]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        $this->assertDatabaseHas('invoices', ['status' => 'paid', 'tipo_comprobante_interno' => 'devolucion']);
+        $this->assertDatabaseHas('cash_movements', ['type' => 'egreso', 'source' => 'devolucion', 'amount' => 500]);
+        $this->assertDatabaseMissing('cash_movements', ['type' => 'ingreso', 'amount' => 500]);
     }
 
     /**
@@ -400,7 +426,7 @@ class PosTest extends TestCase
         $admin = $this->admin();
         foreach (range(1, 5) as $i) {
             $product = Product::create(['name' => "Gaseosa Cola {$i}", 'price' => 500, 'stock' => 10]);
-            \App\Models\ProductStock::create(['product_id' => $product->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 10]);
+            ProductStock::create(['product_id' => $product->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 10]);
         }
 
         $pos = Livewire::actingAs($admin)->test('pos.index');
@@ -417,7 +443,7 @@ class PosTest extends TestCase
         // no hace falta memoizar CurrentSucursal::id() en sí (riesgoso:
         // cambia entre usuarios dentro del mismo proceso, ver tests que
         // switchean de sucursal).
-        $sucursalActivaId = \App\Support\CurrentSucursal::id();
+        $sucursalActivaId = CurrentSucursal::id();
         foreach ($results as $product) {
             $product->stockEnSucursal($sucursalActivaId);
         }

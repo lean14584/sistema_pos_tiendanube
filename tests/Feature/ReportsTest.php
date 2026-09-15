@@ -54,6 +54,58 @@ class ReportsTest extends TestCase
             ->assertDontSee('600.00'); // sum if draft/out-of-range were wrongly included
     }
 
+    public function test_no_duplica_una_venta_cuyo_remito_ya_fue_facturado(): void
+    {
+        // Invoices\FacturarRemito crea la factura con remito_id apuntando al
+        // remito original; ambos quedan como Invoice con status != draft —
+        // sin excluir el remito ya facturado, la misma venta física se
+        // contaba dos veces (una como remito, otra como factura).
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $remito = Invoice::create([
+            'number' => 'REM-0001', 'client_id' => $client->id, 'tax_rate' => 0,
+            'tipo_comprobante_interno' => 'remito_x',
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+        $remito->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $factura = Invoice::create([
+            'number' => 'FAC-0001', 'client_id' => $client->id, 'tax_rate' => 0,
+            'tipo_comprobante_interno' => 'factura_b', 'remito_id' => $remito->id,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+        $factura->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $component = Livewire::actingAs($this->admin())->test('reports.index');
+
+        $this->assertSame(1, $component->viewData('summary')['count']);
+        $this->assertEqualsWithDelta(1000.0, $component->viewData('summary')['total'], 0.01);
+    }
+
+    public function test_una_devolucion_resta_del_total_en_vez_de_sumar(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $venta = Invoice::create([
+            'number' => 'FAC-0001', 'client_id' => $client->id, 'tax_rate' => 0,
+            'tipo_comprobante_interno' => 'factura_b',
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+        $venta->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $devolucion = Invoice::create([
+            'number' => 'DEV-0001', 'client_id' => $client->id, 'tax_rate' => 0,
+            'tipo_comprobante_interno' => 'devolucion',
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+        $devolucion->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 300]);
+
+        $component = Livewire::actingAs($this->admin())->test('reports.index');
+
+        // $1000 de venta - $300 de devolución = $700, no $1300.
+        $this->assertEqualsWithDelta(700.0, $component->viewData('summary')['total'], 0.01);
+    }
+
     public function test_reports_incluye_top_clientes_y_ventas_por_dia(): void
     {
         $c1 = Client::create(['name' => 'Distribuidora Norte', 'email' => 'n@test.com']);
