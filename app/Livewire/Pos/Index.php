@@ -199,7 +199,7 @@ class Index extends Component
             'sku' => $product->sku,
             'unit_price' => $product->priceForList($this->currentPriceList()),
             'discount' => 0,
-            'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
+            'iva_rate' => CompanySettings::current()->debeOcultarIvaPorItem() ? '0' : AlicuotaIva::normalizar($product->iva_rate),
             'quantity' => 1,
         ];
     }
@@ -268,7 +268,7 @@ class Index extends Component
             'sku' => $product->sku,
             'unit_price' => $product->priceForList($this->currentPriceList()),
             'discount' => 0,
-            'iva_rate' => AlicuotaIva::normalizar($product->iva_rate),
+            'iva_rate' => CompanySettings::current()->debeOcultarIvaPorItem() ? '0' : AlicuotaIva::normalizar($product->iva_rate),
             'quantity' => $weightKg,
             'by_weight' => true,
         ];
