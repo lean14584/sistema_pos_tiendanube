@@ -22,7 +22,18 @@ final class LibroIvaCalculator
         // MEJORA: sin caché, cada render de la pantalla (y cada export) volvía
         // a traer y recorrer todos los comprobantes fiscales del período con
         // sus ítems eager-cargados. Mismo criterio que SalesReport::build().
-        return Cache::remember("libro-iva:ventas:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Invoice::query()
+        //
+        // MEJORA: se cachea el array plano (LibroIvaRow::toArray()), no los
+        // objetos LibroIvaRow directamente - Cache::remember() serializa el
+        // valor con serialize() nativo de PHP, y estos objetos tienen
+        // propiedades readonly + Carbon + enum anidados; si un deploy cae
+        // justo dentro de la ventana de 60s entre el write y el read de la
+        // cache, unserialize() puede devolver algo que ya no matchea la
+        // clase esperada (visto en producción: quedó un
+        // Illuminate\Database\Eloquent\Collection vacío cacheado bajo esta
+        // key en vez del array de LibroIvaRow). Un array de escalares no
+        // tiene ese riesgo.
+        $rows = Cache::remember("libro-iva:ventas:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Invoice::query()
             ->whereNotNull('cae')
             ->whereDate('issue_date', '>=', $desde)
             ->whereDate('issue_date', '<=', $hasta)
@@ -32,7 +43,10 @@ final class LibroIvaCalculator
             ->orderBy('tipo_comprobante')
             ->orderBy('numero_comprobante_afip')
             ->get()
-            ->map(fn (Invoice $invoice) => self::fromInvoice($invoice)));
+            ->map(fn (Invoice $invoice) => self::fromInvoice($invoice)->toArray())
+            ->all());
+
+        return collect($rows)->map(fn (array $row) => LibroIvaRow::fromArray($row));
     }
 
     /**
@@ -40,7 +54,8 @@ final class LibroIvaCalculator
      */
     public static function compras(string $desde, string $hasta): Collection
     {
-        return Cache::remember("libro-iva:compras:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Purchase::query()
+        // MEJORA: mismo criterio que ventas() de acá arriba, ver ese comentario.
+        $rows = Cache::remember("libro-iva:compras:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Purchase::query()
             ->whereNot('status', 'draft')
             ->whereNotNull('tipo_comprobante')
             ->whereDate('issue_date', '>=', $desde)
@@ -51,7 +66,10 @@ final class LibroIvaCalculator
             ->orderBy('tipo_comprobante')
             ->orderBy('numero_comprobante')
             ->get()
-            ->map(fn (Purchase $purchase) => self::fromPurchase($purchase)));
+            ->map(fn (Purchase $purchase) => self::fromPurchase($purchase)->toArray())
+            ->all());
+
+        return collect($rows)->map(fn (array $row) => LibroIvaRow::fromArray($row));
     }
 
     /**

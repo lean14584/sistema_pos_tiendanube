@@ -37,4 +37,51 @@ final class LibroIvaRow
         $this->importeNetoGravado = array_sum(array_map(fn (LibroIvaAlicuota $a) => $a->netoGravado, $alicuotas));
         $this->ivaLiquidado = array_sum(array_map(fn (LibroIvaAlicuota $a) => $a->ivaLiquidado, $alicuotas));
     }
+
+    /**
+     * Representación en array plano (fecha/enum a primitivos) para poder
+     * guardar esto en cache sin depender de que serialize()/unserialize()
+     * de objetos PHP (con propiedades readonly, Carbon, enums anidados)
+     * sobreviva intacto entre el request que escribe la cache y el que la
+     * lee — un blob cacheado así puede quedar corrupto si en el medio hay
+     * un deploy (ver MEJORA en LibroIvaCalculator).
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'fecha' => $this->fecha->toDateString(),
+            'tipoComprobante' => $this->tipoComprobante->value,
+            'puntoVenta' => $this->puntoVenta,
+            'numeroComprobante' => $this->numeroComprobante,
+            'codigoDocumento' => $this->codigoDocumento,
+            'numeroDocumento' => $this->numeroDocumento,
+            'denominacion' => $this->denominacion,
+            'importeTotal' => $this->importeTotal,
+            'importeExento' => $this->importeExento,
+            'alicuotas' => array_map(fn (LibroIvaAlicuota $a) => $a->toArray(), $this->alicuotas),
+            'codigoOperacion' => $this->codigoOperacion,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            fecha: Carbon::parse($data['fecha']),
+            tipoComprobante: TipoComprobante::from($data['tipoComprobante']),
+            puntoVenta: $data['puntoVenta'],
+            numeroComprobante: $data['numeroComprobante'],
+            codigoDocumento: $data['codigoDocumento'],
+            numeroDocumento: $data['numeroDocumento'],
+            denominacion: $data['denominacion'],
+            importeTotal: $data['importeTotal'],
+            importeExento: $data['importeExento'],
+            alicuotas: array_map(fn (array $a) => LibroIvaAlicuota::fromArray($a), $data['alicuotas']),
+            codigoOperacion: $data['codigoOperacion'],
+        );
+    }
 }

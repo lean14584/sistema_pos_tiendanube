@@ -14,4 +14,24 @@ final class LibroIvaAlicuota
         public readonly float $netoGravado,
         public readonly float $ivaLiquidado,
     ) {}
+
+    /**
+     * @return array{tasa: float, netoGravado: float, ivaLiquidado: float}
+     */
+    public function toArray(): array
+    {
+        return [
+            'tasa' => $this->tasa,
+            'netoGravado' => $this->netoGravado,
+            'ivaLiquidado' => $this->ivaLiquidado,
+        ];
+    }
+
+    /**
+     * @param  array{tasa: float, netoGravado: float, ivaLiquidado: float}  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self($data['tasa'], $data['netoGravado'], $data['ivaLiquidado']);
+    }
 }
