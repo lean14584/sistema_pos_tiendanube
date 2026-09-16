@@ -127,6 +127,40 @@ class InvoiceStockAndCashTest extends TestCase
         $this->assertSame(13, $product->fresh()->stock);
     }
 
+    /**
+     * MEJORA: este save() de edición no tenía ninguna protección contra
+     * doble-submit - dos submits casi simultáneos revertían/reaplicaban el
+     * stock y desvinculaban/vinculaban pagos por su cuenta cada uno.
+     */
+    public function test_doble_clic_en_guardar_edicion_no_duplica_el_ajuste_de_stock(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+
+        $invoice = Invoice::create([
+            'number' => 'FAC-0001',
+            'client_id' => $client->id,
+            'tipo_comprobante_interno' => 'factura_b',
+            'issue_date' => now(),
+            'due_date' => now()->addDays(15),
+            'tax_rate' => 0,
+            'status' => 'draft',
+        ]);
+        $invoice->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 3, 'unit_price' => 1000]);
+        $product->decrement('stock', 3);
+        $this->assertSame(7, $product->fresh()->stock);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('invoices.edit', ['invoice' => $invoice])
+            ->set('items.0.quantity', '5');
+
+        $component->call('save')->assertHasNoErrors();
+        $component->call('save')->assertHasNoErrors(); // el flag corta antes de tocar nada, no un error de validación
+
+        // Reversa -3 y aplica -5 UNA sola vez: 10 - 5 = 5 (no 0 ni -2).
+        $this->assertSame(5, $product->fresh()->stock);
+    }
+
     public function test_no_puede_agregar_un_pago_al_editar_factura_sin_caja_abierta(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);

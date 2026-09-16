@@ -3,6 +3,7 @@
 namespace App\Livewire\StockAdjustments;
 
 use App\Enums\StockAdjustmentReason;
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\StockAdjustment;
@@ -19,6 +20,7 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use WithPagination;
+    use ScopedToSucursal;
 
     public string $product_id = '';
 
@@ -175,7 +177,16 @@ class Index extends Component
 
     public function render()
     {
+        // MEJORA: esta query no filtraba por sucursal (a diferencia de todas
+        // sus pantallas hermanas - ProductBatches\Index, Purchases\Index,
+        // Invoices\Index, etc.), así que un vendedor/encargado veía los
+        // ajustes de stock de TODAS las sucursales, no solo la suya. save()
+        // sí escribía scoped a CurrentSucursal::id() - el hueco era solo de
+        // lectura acá.
+        $sucursalId = $this->puedeVerTodasLasSucursales() ? null : CurrentSucursal::id();
+
         $adjustments = StockAdjustment::with(['product', 'user', 'sucursal'])
+            ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->when($this->filterProduct !== '', fn ($q) => $q->where('product_id', $this->filterProduct))
             ->when($this->desde !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->desde))
             ->when($this->hasta !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->hasta))

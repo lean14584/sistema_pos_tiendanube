@@ -16,6 +16,7 @@ use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -54,6 +55,8 @@ class Edit extends Component
     public string $productQuery = '';
 
     public string $clientQuery = '';
+
+    public bool $submitted = false;
 
     public function mount(Invoice $invoice): void
     {
@@ -166,8 +169,25 @@ class Edit extends Component
             ->get();
     }
 
+    // MEJORA: a diferencia de Purchases\Create (que usa Cache::lock +
+    // $submitted), este save() no tenía ninguna protección contra
+    // doble-submit - dos requests casi simultáneas (doble click, dos
+    // pestañas) podían correr el mismo DB::transaction en paralelo, cada
+    // una revirtiendo/reaplicando stock y desvinculando/vinculando pagos
+    // por su cuenta, duplicando ajustes de stock y movimientos de caja. El
+    // abort_if(cae !== null) de más abajo protege un caso distinto (se
+    // facturó a AFIP desde otra pestaña), no este.
     public function save(): void
     {
+        Cache::lock('invoices:edit:'.$this->invoice->id, 10)->block(5, fn () => $this->saveInterno());
+    }
+
+    private function saveInterno(): void
+    {
+        if ($this->submitted) {
+            return;
+        }
+
         $this->validate([
             'client_id' => ['required', 'exists:clients,id'],
             'tipo_comprobante_interno' => ['required', Rule::enum(TipoComprobanteInterno::class)],
@@ -231,6 +251,10 @@ class Edit extends Component
         $descuentoPctPagoGlobal = $aplicaDescuentoPorMedioDePago && $totalFacturacion > 0
             ? round((1 - $totalConDescuento / $totalFacturacion) * 100, 4)
             : 0.0;
+
+        // Recién acá, pasadas todas las validaciones: una falla de
+        // validación legítima no debe dejar al usuario sin poder reintentar.
+        $this->submitted = true;
 
         DB::transaction(function () use ($validItems, $tipoNuevo, $sucursalId, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago) {
             $tipoViejo = $this->invoice->tipo_comprobante_interno;

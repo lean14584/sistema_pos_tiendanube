@@ -87,6 +87,43 @@ class StockTransferTest extends TestCase
         $this->assertSame($admin->id, $transfer->fresh()->received_by_user_id);
     }
 
+    /**
+     * MEJORA: confirmarRecepcion() validaba status=Pendiente y recién
+     * después la transacción marcaba Recibido, sin lock - un doble clic
+     * podía disparar dos requests casi simultáneas que ambas leyeran
+     * Pendiente y ambas acreditaran el stock, duplicando la cantidad
+     * sumada en destino.
+     */
+    public function test_doble_clic_en_confirmar_recepcion_no_duplica_el_stock_acreditado(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $admin = $this->admin();
+
+        $product = Product::create(['name' => 'Yerba', 'price' => 3000, 'stock' => 10]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $principal->id, 'stock' => 10]);
+
+        Livewire::actingAs($admin)
+            ->test('stock-transfers.index')
+            ->set('from_sucursal_id', (string) $principal->id)
+            ->set('to_sucursal_id', (string) $norte->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '4')
+            ->call('save');
+
+        $transfer = StockTransfer::first();
+
+        $component = Livewire::actingAs($admin)
+            ->test('stock-transfers.show', ['transfer' => $transfer])
+            ->set('received.0', '4');
+
+        $component->call('confirmarRecepcion')->assertHasNoErrors();
+        $component->call('confirmarRecepcion')->assertHasNoErrors(); // el re-chequeo de status corta antes de acreditar de nuevo
+
+        $this->assertSame(4, $product->stockEnSucursal($norte->id));
+        $this->assertSame(10, $product->fresh()->stock); // no 14
+    }
+
     public function test_confirmar_recepcion_parcial_por_rotura_no_acredita_la_diferencia(): void
     {
         $principal = Sucursal::sole();
