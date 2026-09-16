@@ -18,6 +18,16 @@ use Illuminate\Support\Facades\Auth;
  */
 class CurrentSucursal
 {
+    // MEJORA (intentado y revertido): se probó envolver esto en once() para
+    // no repetir la query en cada llamada dentro de un mismo render() (se
+    // llama ~70 veces en la app). Se descartó: a diferencia de
+    // Product::lowStockCountCached(), el resultado depende de Auth::user()
+    // y de session('sucursal_activa_id') - dentro del mismo proceso PHP de
+    // la suite de tests, cambiar de usuario logueado entre tests (o
+    // dentro de un mismo test) con once() ya memoizado devolvía la
+    // sucursal del usuario/sesión ANTERIOR. Rompió 12 tests reales (no
+    // solo síntesis de test, es la misma clase de bug que afectaría a
+    // producción bajo Octane, que sí reusa el proceso entre requests).
     public static function id(): ?int
     {
         $user = Auth::user();

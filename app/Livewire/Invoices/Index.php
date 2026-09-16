@@ -54,7 +54,7 @@ class Index extends Component
         return view('livewire.invoices.index', [
             'invoices' => $invoices,
             'statuses' => InvoiceStatus::cases(),
-            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::orderBy('name')->get() : null,
+            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::forSelectCached() : null,
         ]);
     }
 }

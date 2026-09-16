@@ -61,7 +61,7 @@ class Index extends Component
             'logs' => $logs,
             'tiposAuditados' => AuditLog::tiposAuditados(),
             'usuarios' => User::orderBy('name')->get(),
-            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::orderBy('name')->get() : collect(),
+            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::forSelectCached() : collect(),
             'puedeVerTodasLasSucursales' => $this->puedeVerTodasLasSucursales(),
         ]);
     }

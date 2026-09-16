@@ -137,7 +137,7 @@ class Edit extends Component
     public function render()
     {
         return view('livewire.products.edit', [
-            'categories' => Category::orderBy('name')->get(),
+            'categories' => Category::forSelectCached(),
             'sucursalActiva' => CurrentSucursal::get(),
             'ocultarIva' => CompanySettings::current()->debeOcultarIvaPorItem(),
         ]);

@@ -59,7 +59,7 @@ class Index extends Component
         }
 
         $data['puedeVerTodasLasSucursales'] = $this->puedeVerTodasLasSucursales();
-        $data['sucursales'] = $this->puedeVerTodasLasSucursales() ? Sucursal::orderBy('name')->get() : collect();
+        $data['sucursales'] = $this->puedeVerTodasLasSucursales() ? Sucursal::forSelectCached() : collect();
 
         return view('livewire.reports.index', $data);
     }
