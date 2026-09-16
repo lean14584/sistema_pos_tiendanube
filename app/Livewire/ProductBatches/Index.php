@@ -132,7 +132,7 @@ class Index extends Component
 
         return view('livewire.product-batches.index', [
             'batches' => $batches,
-            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::orderBy('name')->get() : collect(),
+            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::forSelectCached() : collect(),
             'puedeVerTodasLasSucursales' => $this->puedeVerTodasLasSucursales(),
         ]);
     }

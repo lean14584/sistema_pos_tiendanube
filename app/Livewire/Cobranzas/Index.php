@@ -143,10 +143,8 @@ class Index extends Component
         session()->flash('status', 'Cobro registrado.');
     }
 
-    private function mensajeRecordatorio(Client $client, float $saldo): string
+    private function mensajeRecordatorio(Client $client, float $saldo, string $empresa): string
     {
-        $empresa = CompanySettings::current()->display_name;
-
         return "Hola {$client->name}, te recordamos que tenes un saldo pendiente de $"
             .number_format($saldo, 2, ',', '.')
             ." con {$empresa}. Muchas gracias.";
@@ -154,10 +152,17 @@ class Index extends Component
 
     public function render()
     {
-        $deudores = $this->deudores()->map(function ($row) {
+        // MEJORA: mensajeRecordatorio() llamaba a CompanySettings::current()
+        // por cada deudor dentro de este map() - con 30-100 deudores
+        // listados son otras tantas queries idénticas repetidas en cada
+        // render (incluso en cada tecleo del buscador). Se resuelve una
+        // sola vez acá afuera.
+        $empresa = CompanySettings::current()->display_name;
+
+        $deudores = $this->deudores()->map(function ($row) use ($empresa) {
             /** @var Client $client */
             $client = $row['client'];
-            $row['whatsapp'] = Whatsapp::link($client->phone, $this->mensajeRecordatorio($client, $row['saldo']));
+            $row['whatsapp'] = Whatsapp::link($client->phone, $this->mensajeRecordatorio($client, $row['saldo'], $empresa));
 
             return $row;
         });

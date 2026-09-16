@@ -167,7 +167,7 @@ class Index extends Component
             'vencidoCobrar' => $porCobrar->where('estado', 'vencido')->sum('amount'),
             'vencidoPagar' => $porPagar->where('estado', 'vencido')->sum('amount'),
             'puedeVerTodasLasSucursales' => $this->puedeVerTodasLasSucursales(),
-            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::orderBy('name')->get() : collect(),
+            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::forSelectCached() : collect(),
         ]);
     }
 }

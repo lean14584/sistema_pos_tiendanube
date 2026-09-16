@@ -66,7 +66,11 @@ class Show extends Component
 
     public function render()
     {
-        $this->purchase->load('provider', 'items', 'payments');
+        // MEJORA: faltaba 'taxes' acá - la vista recorre $purchase->taxes en
+        // un @foreach, y Purchase::total() también las lee para calcular el
+        // total (percepcionesTotal()), disparando una query extra por cada
+        // apertura de esta pantalla.
+        $this->purchase->load('provider', 'items', 'payments', 'taxes');
 
         return view('livewire.purchases.show', [
             'statuses' => InvoiceStatus::cases(),

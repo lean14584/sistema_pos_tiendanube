@@ -61,8 +61,13 @@ class Index extends Component
             return collect();
         }
 
+        // MEJORA: la vista muestra el stock por sucursal de cada resultado
+        // ($product->stockEnSucursal()), que cae a una query individual si
+        // 'stocks' no está precargada - sin este with(), hasta 8 queries
+        // extra por cada tecleo (debounced) en el buscador.
         return Product::where('name', 'like', "%{$term}%")
             ->orWhere('sku', 'like', "%{$term}%")
+            ->with('stocks')
             ->limit(8)
             ->get();
     }

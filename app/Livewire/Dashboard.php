@@ -92,7 +92,7 @@ class Dashboard extends Component
             'bySucursal' => collect($agg['bySucursal']),
             'maxSucursal' => collect($agg['bySucursal'])->max('total') ?? 0,
             'puedeVerTodasLasSucursales' => $this->puedeVerTodasLasSucursales(),
-            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::orderBy('name')->get() : collect(),
+            'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::forSelectCached() : collect(),
         ]);
     }
 
