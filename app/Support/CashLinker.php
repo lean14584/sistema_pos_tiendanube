@@ -96,9 +96,20 @@ class CashLinker
      * anotado en la caja de la sucursal DE LA FACTURA, no en la sesión
      * activa de quien esté operando ahora — mismo criterio que
      * linkInvoiceRefund().
+     *
+     * Idempotente por diseño (chequea source_id antes de crear): a
+     * diferencia del resto de los callers, MercadoPagoPaymentApplier llama
+     * esto en cada reintento (webhook y polling pueden dispararse los dos
+     * para el mismo pago, y el webhook no tiene usuario autenticado — acá
+     * no hace nada — así que el polling necesita poder reintentar el link
+     * aunque el InvoicePayment ya exista de antes).
      */
     public static function linkInvoicePayment(Invoice $invoice, InvoicePayment $payment, ?int $sucursalId = null): void
     {
+        if (CashMovement::where('source_id', "invoice_payment_{$payment->id}")->exists()) {
+            return;
+        }
+
         $session = self::openSession($sucursalId);
 
         if (! $session) {

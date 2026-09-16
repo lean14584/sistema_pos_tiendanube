@@ -4,10 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\PaymentMethod;
 use App\Enums\Role;
+use App\Models\CashMovement;
+use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\Sucursal;
 use App\Models\User;
 use App\Services\MercadoPago\MercadoPagoQrService;
+use App\Support\MercadoPagoPaymentApplier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -114,5 +118,50 @@ class MercadoPagoQrTest extends TestCase
             ->call('pollQr');
 
         $this->assertSame(1, $invoice->payments()->where('method', PaymentMethod::MercadoPago->value)->count());
+    }
+
+    public function test_si_el_webhook_confirma_el_pago_sin_usuario_logueado_el_polling_completa_el_movimiento_de_caja(): void
+    {
+        // El webhook de MP (POST público, sin sesión de navegador) corre sin
+        // ningún usuario autenticado — antes, si ganaba la carrera contra el
+        // polling y creaba el InvoicePayment primero, el cobro quedaba
+        // invisible para el arqueo PARA SIEMPRE (el guard de "ya existe el
+        // pago" también saltaba el intento de linkear caja en la llamada
+        // siguiente). Acá se simula exactamente esa carrera: apply() se
+        // llama primero SIN actingAs (como el webhook), y recién después con
+        // un cajero logueado con caja abierta (como el polling).
+        $invoice = $this->invoice();
+
+        MercadoPagoPaymentApplier::apply($invoice);
+
+        $this->assertSame('paid', $invoice->fresh()->status->value);
+        $this->assertSame(1, $invoice->payments()->where('method', PaymentMethod::MercadoPago->value)->count());
+        $this->assertSame(0, CashMovement::count()); // sin usuario logueado, no hay caja que linkear
+
+        $cajero = $this->admin();
+        CashSession::create(['user_id' => $cajero->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $this->actingAs($cajero);
+
+        MercadoPagoPaymentApplier::apply($invoice);
+
+        // No duplica el InvoicePayment, pero ahora sí queda el movimiento de caja.
+        $this->assertSame(1, $invoice->payments()->where('method', PaymentMethod::MercadoPago->value)->count());
+        $movimiento = CashMovement::first();
+        $this->assertNotNull($movimiento);
+        $this->assertSame('ingreso', $movimiento->type->value);
+        $this->assertEqualsWithDelta((float) $invoice->total, (float) $movimiento->amount, 0.01);
+    }
+
+    public function test_llamar_apply_dos_veces_ya_autenticado_no_duplica_el_movimiento_de_caja(): void
+    {
+        $invoice = $this->invoice();
+        $cajero = $this->admin();
+        CashSession::create(['user_id' => $cajero->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        $this->actingAs($cajero);
+
+        MercadoPagoPaymentApplier::apply($invoice);
+        MercadoPagoPaymentApplier::apply($invoice);
+
+        $this->assertSame(1, CashMovement::count());
     }
 }
