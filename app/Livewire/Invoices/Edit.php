@@ -222,7 +222,17 @@ class Edit extends Component
             return;
         }
 
-        DB::transaction(function () use ($validItems, $tipoNuevo, $sucursalId) {
+        // Descuento por medio de pago, igual criterio que Pos\Index (ver
+        // ManagesInvoiceLines::totalConDescuentoPorMedioDePago) — antes esta
+        // pantalla nunca lo aplicaba, a diferencia de Venta Rápida.
+        $totalConDescuento = $this->totalConDescuentoPorMedioDePago();
+        $aplicaDescuentoPorMedioDePago = $totalConDescuento !== null;
+        $totalFacturacion = round($this->total(), 2);
+        $descuentoPctPagoGlobal = $aplicaDescuentoPorMedioDePago && $totalFacturacion > 0
+            ? round((1 - $totalConDescuento / $totalFacturacion) * 100, 4)
+            : 0.0;
+
+        DB::transaction(function () use ($validItems, $tipoNuevo, $sucursalId, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago) {
             $tipoViejo = $this->invoice->tipo_comprobante_interno;
             // Nunca se cambia desde este formulario (las Notas de Crédito
             // ni siquiera muestran el switch), pero sí hay que respetarlo al
@@ -251,7 +261,8 @@ class Edit extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'discount_percent' => $item['discount'] ?? 0,
+                    // Descuento manual, combinado con el de medio de pago (si corresponde).
+                    'discount_percent' => $this->componerDescuentos((float) ($item['discount'] ?? 0), $descuentoPctPagoGlobal),
                     'iva_rate' => $item['iva_rate'] ?? '21',
                 ]);
             }
@@ -264,7 +275,10 @@ class Edit extends Component
             if ($tipoNuevo !== TipoComprobanteInterno::RemitoX) {
                 foreach ($this->payments as $payment) {
                     if ((float) $payment['amount'] > 0) {
-                        $created = $this->invoice->payments()->create($payment);
+                        $created = $this->invoice->payments()->create([
+                            'method' => $payment['method'],
+                            'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
+                        ]);
 
                         $tipoNuevo === TipoComprobanteInterno::Devolucion || $tipoNuevo->esNotaCredito()
                             ? CashLinker::linkInvoiceRefund($this->invoice, $created, $sucursalId)

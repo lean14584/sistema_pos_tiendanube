@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\CashMovement;
 use App\Models\CashSession;
 use App\Models\Client;
+use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\ProductStock;
@@ -320,5 +321,93 @@ class InvoiceStockAndCashTest extends TestCase
         $movimiento = CashMovement::first();
         $this->assertNotNull($movimiento);
         $this->assertSame($norte->id, $movimiento->session->sucursal_id);
+    }
+
+    public function test_descuento_por_medio_de_pago_se_aplica_al_facturar_manualmente_igual_que_en_el_pos(): void
+    {
+        // Mismo escenario que PosTest::test_descuento_por_medio_de_pago_se_
+        // aplica_prorrateado... — antes Invoices\Create nunca aplicaba este
+        // descuento, así que la misma venta cotizaba distinto según se
+        // cargara desde acá o desde Venta Rápida.
+        $admin = $this->admin();
+        $this->openCashSession($admin);
+        CompanySettings::current()->update(['descuento_efectivo_pct' => 15, 'descuento_transferencia_pct' => 10]);
+
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Producto', 'price' => 10000, 'iva_rate' => 0, 'stock' => 5]);
+
+        Livewire::actingAs($admin)
+            ->test('invoices.create')
+            ->set('client_id', (string) $client->id)
+            ->set('tipo_comprobante_interno', 'factura_b')
+            ->set('status', 'paid')
+            ->call('addProductItem', $product->id) // total 10000
+            ->call('addPayment')
+            ->set('payments.0.method', 'tarjeta')
+            ->set('payments.0.amount', '5000')
+            ->call('addPayment')
+            ->set('payments.1.method', 'efectivo')
+            ->set('payments.1.amount', '5000')
+            ->call('save');
+
+        // 5000 sin descuento (tarjeta) + 5000*0.85 (efectivo, 15% off) = 9250.
+        $invoice = Invoice::latest('id')->firstOrFail();
+        $this->assertEqualsWithDelta(9250, (float) $invoice->total, 0.01);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'tarjeta', 'amount' => 5000]);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 4250]);
+        $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 4250, 'source' => 'venta']);
+    }
+
+    public function test_descuento_por_medio_de_pago_no_se_aplica_si_queda_saldo_pendiente_al_facturar_manualmente(): void
+    {
+        $admin = $this->admin();
+        $this->openCashSession($admin);
+        CompanySettings::current()->update(['descuento_efectivo_pct' => 15]);
+
+        $client = Client::create(['name' => 'Juan Perez', 'email' => 'juan@test.com']);
+        $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
+
+        Livewire::actingAs($admin)
+            ->test('invoices.create')
+            ->set('client_id', (string) $client->id)
+            ->set('tipo_comprobante_interno', 'factura_b')
+            ->set('status', 'pending')
+            ->call('addProductItem', $product->id) // total 1000
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('payments.0.amount', '600') // paga solo 600, queda saldo
+            ->call('save');
+
+        // Sin descuento: si queda saldo pendiente, se factura a precio de lista.
+        $invoice = Invoice::latest('id')->firstOrFail();
+        $this->assertEqualsWithDelta(1000, (float) $invoice->total, 0.01);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 600]);
+    }
+
+    public function test_descuento_por_medio_de_pago_tambien_se_aplica_al_editar_una_factura(): void
+    {
+        $admin = $this->admin();
+        $this->openCashSession($admin);
+        CompanySettings::current()->update(['descuento_efectivo_pct' => 15]);
+
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
+
+        $invoice = Invoice::create([
+            'number' => 'FAC-0001', 'client_id' => $client->id,
+            'tipo_comprobante_interno' => 'factura_b',
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'tax_rate' => 0, 'status' => 'draft',
+        ]);
+        $invoice->items()->create(['product_id' => $product->id, 'description' => 'Producto', 'quantity' => 1, 'unit_price' => 1000, 'iva_rate' => 0]);
+
+        Livewire::actingAs($admin)
+            ->test('invoices.edit', ['invoice' => $invoice])
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('payments.0.amount', '1000')
+            ->call('save');
+
+        $this->assertDatabaseHas('invoice_payments', ['invoice_id' => $invoice->id, 'method' => 'efectivo', 'amount' => 850]);
+        $this->assertEqualsWithDelta(850.0, (float) $invoice->fresh()->total, 0.01);
     }
 }

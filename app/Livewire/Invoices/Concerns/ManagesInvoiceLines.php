@@ -3,6 +3,7 @@
 namespace App\Livewire\Invoices\Concerns;
 
 use App\Enums\AlicuotaIva;
+use App\Enums\PaymentMethod;
 use App\Models\CompanySettings;
 use App\Models\Product;
 
@@ -130,5 +131,61 @@ trait ManagesInvoiceLines
     {
         unset($this->payments[$index]);
         $this->payments = array_values($this->payments);
+    }
+
+    /**
+     * % de descuento por pago de contado para un medio de pago cargado en
+     * $payments (según la configuración de la empresa). Mismo criterio que
+     * Pos\Index — antes esta pantalla nunca lo aplicaba, así que la misma
+     * venta cotizaba distinto según se cargara desde acá o desde Venta
+     * Rápida con el mismo medio de pago.
+     *
+     * @param  array{method: string, amount: string}  $payment
+     */
+    public function paymentDiscountPct(array $payment): float
+    {
+        $method = PaymentMethod::tryFrom($payment['method'] ?? '');
+
+        return $method ? CompanySettings::current()->descuentoPctParaMedioDePago($method) : 0.0;
+    }
+
+    /**
+     * Monto real a cobrar en ese medio de pago, ya con su descuento
+     * aplicado. Lo tipeado en "amount" es la porción del precio de lista
+     * que cubre ese medio.
+     *
+     * @param  array{method: string, amount: string}  $payment
+     */
+    public function montoRealPago(array $payment): float
+    {
+        return round((float) ($payment['amount'] ?? 0) * (1 - $this->paymentDiscountPct($payment) / 100), 2);
+    }
+
+    /**
+     * Total que termina cobrándose (y facturándose) una vez aplicado el
+     * descuento por medio de pago, cuando el comprobante queda pagado por
+     * completo en el momento. Si queda saldo pendiente no se aplica ningún
+     * descuento — esa parte se factura siempre a precio de lista.
+     */
+    public function totalConDescuentoPorMedioDePago(): ?float
+    {
+        $total = round($this->total(), 2);
+
+        if ($total <= 0 || round($this->paidTotal(), 2) + 0.001 < $total) {
+            return null;
+        }
+
+        $totalReal = round(collect($this->payments)->sum(fn ($p) => $this->montoRealPago($p)), 2);
+
+        return $totalReal < $total ? $totalReal : null;
+    }
+
+    /**
+     * Combina dos descuentos porcentuales aplicados en cadena (no se suman
+     * directo: 20% + 20% no es 40%, es 1-(0.8*0.8) = 36%).
+     */
+    public function componerDescuentos(float $a, float $b): float
+    {
+        return round((1 - (1 - $a / 100) * (1 - $b / 100)) * 100, 4);
     }
 }

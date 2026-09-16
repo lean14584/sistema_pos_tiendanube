@@ -252,11 +252,24 @@ class Create extends Component
             return;
         }
 
+        // Descuento por medio de pago, igual criterio que Pos\Index: solo
+        // existe cuando el comprobante queda pagado por completo en el
+        // momento, expresado como % único que se compone con el descuento
+        // propio de cada línea (manual). Antes esta pantalla nunca lo
+        // aplicaba — la misma venta cotizaba distinto según se cargara
+        // desde acá o desde Venta Rápida con el mismo medio de pago.
+        $totalConDescuento = $this->totalConDescuentoPorMedioDePago();
+        $aplicaDescuentoPorMedioDePago = $totalConDescuento !== null;
+        $totalFacturacion = round($this->total(), 2);
+        $descuentoPctPagoGlobal = $aplicaDescuentoPorMedioDePago && $totalFacturacion > 0
+            ? round((1 - $totalConDescuento / $totalFacturacion) * 100, 4)
+            : 0.0;
+
         // Recién acá, pasadas todas las validaciones: una falla de
         // validación legítima no debe dejar al usuario sin poder reintentar.
         $this->submitted = true;
 
-        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($validItems, $tipo, $puntoVentaNumero) {
+        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($validItems, $tipo, $puntoVentaNumero, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago) {
             $invoice = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
                 'client_id' => $this->client_id,
@@ -276,7 +289,8 @@ class Create extends Component
                     'description' => $item['description'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'discount_percent' => $item['discount'] ?? 0,
+                    // Descuento manual, combinado con el de medio de pago (si corresponde).
+                    'discount_percent' => $this->componerDescuentos((float) ($item['discount'] ?? 0), $descuentoPctPagoGlobal),
                     'iva_rate' => $item['iva_rate'] ?? '21',
                 ]);
             }
@@ -286,7 +300,10 @@ class Create extends Component
             if ($tipo !== TipoComprobanteInterno::RemitoX) {
                 foreach ($this->payments as $payment) {
                     if ((float) $payment['amount'] > 0) {
-                        $created = $invoice->payments()->create($payment);
+                        $created = $invoice->payments()->create([
+                            'method' => $payment['method'],
+                            'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
+                        ]);
 
                         $tipo === TipoComprobanteInterno::Devolucion
                             ? CashLinker::linkInvoiceRefund($invoice, $created)
