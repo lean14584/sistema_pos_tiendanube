@@ -6,16 +6,12 @@ use App\Models\Invoice;
 use App\Models\PuntoVenta;
 use App\Models\Sucursal;
 use App\Models\SucursalMercadoPagoConfig;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Livewire\WithFileUploads;
 
 #[Layout('layouts.app')]
 class Edit extends Component
 {
-    use WithFileUploads;
-
     public Sucursal $sucursal;
 
     public string $name = '';
@@ -27,9 +23,6 @@ class Edit extends Component
     public string $nuevoPuntoVentaNumero = '';
 
     public string $nuevoPuntoVentaNombre = '';
-
-    /** Archivo recién seleccionado, pendiente de guardar (null = no tocar el logo actual). */
-    public $logo = null;
 
     // --- Mercado Pago (ver SucursalMercadoPagoConfig) ---
     public string $mp_access_token = '';
@@ -146,7 +139,6 @@ class Edit extends Component
             'name' => ['required', 'string', 'max:255'],
             'razon_social' => ['required', 'string', 'max:255'],
             'active' => ['boolean'],
-            'logo' => ['nullable', 'image', 'max:2048'],
             'mp_access_token' => ['nullable', 'string', 'max:255'],
             'mp_webhook_secret' => ['nullable', 'string', 'max:500'],
             'mp_store_external_id' => ['nullable', 'string', 'max:100'],
@@ -154,15 +146,6 @@ class Edit extends Component
             'mp_store_name' => ['nullable', 'string', 'max:255'],
             'mp_pos_name' => ['nullable', 'string', 'max:255'],
         ]);
-
-        if ($this->logo) {
-            if ($this->sucursal->logo_path) {
-                Storage::disk('public')->delete($this->sucursal->logo_path);
-            }
-
-            $data['logo_path'] = $this->logo->store('sucursal-logos', 'public');
-        }
-        unset($data['logo']);
 
         $hayDatosDeMp = filled($data['mp_access_token']) || filled($data['mp_webhook_secret']) || filled($data['mp_store_external_id'])
             || filled($data['mp_pos_external_id']) || filled($data['mp_store_name']) || filled($data['mp_pos_name']);

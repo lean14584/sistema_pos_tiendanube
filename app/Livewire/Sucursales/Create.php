@@ -6,13 +6,10 @@ use App\Models\PuntoVenta;
 use App\Models\Sucursal;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Livewire\WithFileUploads;
 
 #[Layout('layouts.app')]
 class Create extends Component
 {
-    use WithFileUploads;
-
     public string $name = '';
 
     public string $razon_social = '';
@@ -20,8 +17,6 @@ class Create extends Component
     public string $punto_venta = '';
 
     public bool $active = true;
-
-    public $logo = null;
 
     public function save(): void
     {
@@ -33,16 +28,10 @@ class Create extends Component
             // puede tener varios.
             'punto_venta' => ['required', 'integer', 'min:1', 'max:9999', 'unique:puntos_venta,numero'],
             'active' => ['boolean'],
-            'logo' => ['nullable', 'image', 'max:2048'],
         ]);
 
         $puntoVentaNumero = (int) $data['punto_venta'];
         unset($data['punto_venta']);
-
-        if ($this->logo) {
-            $data['logo_path'] = $this->logo->store('sucursal-logos', 'public');
-        }
-        unset($data['logo']);
 
         $sucursal = Sucursal::create($data);
 
