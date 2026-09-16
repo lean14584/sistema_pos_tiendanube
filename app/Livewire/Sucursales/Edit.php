@@ -192,7 +192,14 @@ class Edit extends Component
         $this->sucursal->update($data);
 
         session()->flash('status', 'Sucursal actualizada.');
-        $this->redirect(route('sucursales.index'), navigate: true);
+
+        // sucursales.index no existe si multisucursal está apagado (ver
+        // routes/web.php) — en ese caso no hay a dónde "volver", así que se
+        // queda en esta misma pantalla de edición.
+        $this->redirect(
+            config('features.multisucursal') ? route('sucursales.index') : route('sucursales.edit', $this->sucursal),
+            navigate: true
+        );
     }
 
     public function render()

@@ -214,6 +214,44 @@ class SucursalesTest extends TestCase
         $this->assertDatabaseHas('sucursales', ['id' => $unica->id]);
     }
 
+    /**
+     * MEJORA: sucursales.edit era la ÚNICA pantalla para cargar credenciales
+     * de Mercado Pago (tabla sucursal_mercadopago_configs), pero toda la
+     * ruta /sucursales/* estaba gateada detrás de features.multisucursal —
+     * un cliente de una sola sucursal (ej. DECO-HOGAR) no tenía NINGUNA
+     * forma de cargarlas desde la UI. save() redirigía a sucursales.index,
+     * que ya no existe sin multisucursal — hay que quedarse en la misma
+     * pantalla de edición.
+     */
+    public function test_se_puede_cargar_el_token_de_mercado_pago_sin_multisucursal(): void
+    {
+        config(['features.multisucursal' => false]);
+        // La "Principal" que autocrea la migración de product_stocks no
+        // siempre trae razon_social (depende de si company_settings ya
+        // tenía una cargada en ese momento) — el form la exige, así que se
+        // completa acá para no confundir "razón social vacía" con el bug
+        // real que este test cubre (el acceso a la pantalla).
+        $unica = tap(Sucursal::sole())->update(['razon_social' => 'Mi Empresa SRL']);
+
+        Livewire::actingAs($this->admin())
+            ->test('sucursales.edit', ['sucursal' => $unica])
+            ->set('mp_access_token', 'APP_USR-secreto')
+            ->call('save')
+            ->assertRedirect(route('sucursales.edit', $unica));
+
+        $this->assertSame('APP_USR-secreto', $unica->fresh()->mercadoPagoConfig->access_token);
+    }
+
+    public function test_el_boton_cancelar_no_apunta_al_listado_si_multisucursal_esta_apagado(): void
+    {
+        config(['features.multisucursal' => false]);
+        $unica = Sucursal::sole();
+
+        Livewire::actingAs($this->admin())
+            ->test('sucursales.edit', ['sucursal' => $unica])
+            ->assertSeeHtml(route('sucursales.edit', $unica));
+    }
+
     public function test_guarda_el_webhook_secret_de_mercado_pago_de_la_sucursal(): void
     {
         $sucursal = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'active' => true]);
