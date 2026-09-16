@@ -114,6 +114,22 @@ class UsersTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $lastActiveAdmin->id]);
     }
 
+    /**
+     * MEJORA: el botón "Eliminar" aparecía también en la fila del propio
+     * usuario logueado, aunque delete() ya lo rechazaba sin efecto
+     * (test_cannot_delete_own_user) — quedaba un botón que no hacía nada.
+     */
+    public function test_no_se_ve_el_boton_eliminar_en_la_propia_fila(): void
+    {
+        $admin = $this->admin();
+        $otro = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('users.index')
+            ->assertDontSee('$wire.delete('.$admin->id.')', false)
+            ->assertSee('$wire.delete('.$otro->id.')', false);
+    }
+
     public function test_users_index_paginates_instead_of_loading_everything(): void
     {
         $admin = $this->admin();

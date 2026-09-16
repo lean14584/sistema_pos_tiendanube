@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\CompanySettings;
 use App\Models\Product;
+use App\Models\ProductStock;
+use App\Models\Sucursal;
 use App\Models\User;
 use App\Support\Permissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,9 +66,35 @@ class PriceCheckAndRolesTest extends TestCase
             ->assertSet('code', '');
     }
 
+    /**
+     * MEJORA: el kiosco mostraba products.stock (el agregado de TODAS las
+     * sucursales), no el stock real de la sucursal donde está esa pantalla
+     * física — /precios/{sucursal?} (route param opcional) permite pinnear
+     * cada pantalla a su local.
+     */
+    public function test_kiosco_pinneado_a_una_sucursal_muestra_su_propio_stock(): void
+    {
+        $centro = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa', 'punto_venta' => 92]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 93]);
+
+        $product = Product::create(['name' => 'Coca 1.5L', 'price' => 1800, 'stock' => 15, 'sku' => '7790001']);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $centro->id, 'stock' => 10]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $norte->id, 'stock' => 5]);
+
+        Livewire::test('price-check.kiosk', ['sucursal' => $centro])
+            ->set('code', '7790001')
+            ->call('search')
+            ->assertSet('product.stock', 10);
+
+        Livewire::test('price-check.kiosk', ['sucursal' => $norte])
+            ->set('code', '7790001')
+            ->call('search')
+            ->assertSet('product.stock', 5);
+    }
+
     public function test_muestra_el_logo_de_la_empresa_si_hay_uno(): void
     {
-        \App\Models\CompanySettings::current()->update(['logo_path' => 'company-logos/mi-logo.png']);
+        CompanySettings::current()->update(['logo_path' => 'company-logos/mi-logo.png']);
 
         $url = Livewire::test('price-check.kiosk')->viewData('logoUrl');
 

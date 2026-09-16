@@ -92,6 +92,38 @@ class MercadoPagoWebhookTest extends TestCase
         $this->assertSame(1, $invoice->payments()->where('method', PaymentMethod::MercadoPago->value)->count());
     }
 
+    /**
+     * MEJORA: si MP_ACCESS_TOKEN no está configurado, paymentPaidReference()
+     * tira una RuntimeException (MercadoPagoQrService::http()) que antes no
+     * se atrapaba en ningún lado — el webhook devolvía 500 en vez de un 200,
+     * y MP reintenta en loop una notificación que nunca va a poder
+     * procesarse hasta que alguien cargue el token. Mismo criterio que
+     * TiendanubeWebhookController: se atrapa, se loguea (report()) y se
+     * responde 200 igual.
+     */
+    public function test_devuelve_ok_aunque_la_api_de_mp_tire_una_excepcion(): void
+    {
+        config(['mercadopago.webhook_secret' => 'shhh']);
+
+        $ts = (string) time();
+        $requestId = 'req-1';
+        $dataId = '12345';
+        $manifest = "id:{$dataId};request-id:{$requestId};ts:{$ts};";
+        $hash = hash_hmac('sha256', $manifest, 'shhh');
+
+        $fake = $this->createMock(MercadoPagoQrService::class);
+        $fake->method('webhookSecretFor')->willReturn('shhh');
+        $fake->method('paymentPaidReference')->willThrowException(new \RuntimeException('Falta configurar MP_ACCESS_TOKEN en el .env'));
+        $this->app->instance(MercadoPagoQrService::class, $fake);
+
+        $response = $this->withHeaders([
+            'x-signature' => "ts={$ts},v1={$hash}",
+            'x-request-id' => $requestId,
+        ])->postJson("/mp/webhook?type=payment&data.id={$dataId}", ['type' => 'payment', 'data' => ['id' => $dataId]]);
+
+        $response->assertOk();
+    }
+
     public function test_no_llama_a_la_api_de_mp_si_la_firma_es_invalida(): void
     {
         config(['mercadopago.webhook_secret' => 'shhh']);

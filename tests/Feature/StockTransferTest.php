@@ -238,4 +238,20 @@ class StockTransferTest extends TestCase
 
         $this->actingAs($cajero)->get(route('stock-transfers.index'))->assertForbidden();
     }
+
+    /**
+     * MEJORA: puedeElegirOrigen() solo chequeaba el rol (Admin), no el flag
+     * features.multisucursal — mismo bug ya corregido en
+     * Dashboard/Reports/Audit/Invoices/ProductBatches. Con el flag apagado
+     * (instalación de una sola sucursal), ni un admin debería poder elegir
+     * origen.
+     */
+    public function test_admin_no_puede_elegir_origen_si_multisucursal_esta_apagado(): void
+    {
+        config(['features.multisucursal' => false]);
+
+        Livewire::actingAs($this->admin())
+            ->test('stock-transfers.index')
+            ->assertSet('puedeElegirOrigen', false);
+    }
 }

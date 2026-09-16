@@ -4,6 +4,7 @@ namespace App\Livewire\PriceCheck;
 
 use App\Models\CompanySettings;
 use App\Models\Product;
+use App\Models\Sucursal;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -22,6 +23,19 @@ class Kiosk extends Component
 
     /** true cuando se buscó y no se encontró nada. */
     public bool $notFound = false;
+
+    /**
+     * Sucursal a la que está pinneada ESTA pantalla física (route param
+     * opcional /precios/{sucursal}). null = sin pinnear: cae al mismo
+     * fallback de CurrentSucursal::id() (la primera sucursal), que en una
+     * instalación de una sola sucursal ya es la respuesta correcta.
+     */
+    public ?Sucursal $sucursal = null;
+
+    public function mount(?Sucursal $sucursal = null): void
+    {
+        $this->sucursal = $sucursal;
+    }
 
     public function search(): void
     {
@@ -44,7 +58,7 @@ class Kiosk extends Component
                 'name' => $producto->name,
                 'price' => (float) $producto->price,
                 'sku' => $producto->sku,
-                'stock' => (int) $producto->stock,
+                'stock' => $producto->stockEnSucursal($this->sucursal?->id),
                 'image' => $producto->imageUrl(),
             ];
         } else {

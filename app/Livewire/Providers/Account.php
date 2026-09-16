@@ -8,6 +8,7 @@ use App\Models\Provider;
 use App\Models\ProviderPayment;
 use App\Support\CashLinker;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -33,6 +34,14 @@ class Account extends Component
     }
 
     public function addPayment(): void
+    {
+        // MEJORA: sin lock, un doble clic en "Registrar pago" podía crear
+        // dos ProviderPayment (y dos movimientos de caja) del mismo pago.
+        // Mismo criterio que Clients\Account::addPayment().
+        Cache::lock('providers:pagar:'.$this->provider->id.':'.Auth::id(), 10)->block(5, fn () => $this->addPaymentInterno());
+    }
+
+    private function addPaymentInterno(): void
     {
         $this->validate([
             'date' => ['required', 'date'],

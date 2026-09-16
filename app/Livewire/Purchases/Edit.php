@@ -228,12 +228,19 @@ class Edit extends Component
             return;
         }
 
+        // La sucursal de la compra no se re-deriva acá: es la que ya quedó
+        // guardada al crearla (ver Purchases\Create), no la sucursal activa
+        // de quien la esté editando ahora — si no, un admin que cambió de
+        // sucursal terminaría revirtiendo/reaplicando el stock (y el pago)
+        // en el local equivocado.
+        $sucursalId = $this->purchase->sucursal_id;
+
         // Si se va a registrar un pago, tiene que quedar anotado en una caja
         // abierta — si no, la plata que sale queda invisible para el arqueo
         // (CashLinker::linkPurchasePayment() no avisa, solo no hace nada).
         $registraMovimientoDeCaja = collect($this->payments)->contains(fn ($p) => (float) $p['amount'] > 0);
 
-        if ($registraMovimientoDeCaja && ! CashLinker::hasOpenSession()) {
+        if ($registraMovimientoDeCaja && ! CashLinker::hasOpenSession($sucursalId)) {
             $this->addError('payments', 'Tenés que abrir la caja antes de registrar un pago.');
 
             return;
@@ -265,13 +272,6 @@ class Edit extends Component
                 }
             }
         }
-
-        // La sucursal de la compra no se re-deriva acá: es la que ya quedó
-        // guardada al crearla (ver Purchases\Create), no la sucursal activa
-        // de quien la esté editando ahora — si no, un admin que cambió de
-        // sucursal terminaría revirtiendo/reaplicando el stock en el local
-        // equivocado.
-        $sucursalId = $this->purchase->sucursal_id;
 
         DB::transaction(function () use ($sucursalId) {
             // Reverse the stock impact of the items as they were before this edit.
@@ -316,7 +316,7 @@ class Edit extends Component
             foreach ($this->payments as $payment) {
                 if ((float) $payment['amount'] > 0) {
                     $created = $this->purchase->payments()->create($payment);
-                    CashLinker::linkPurchasePayment($this->purchase, $created);
+                    CashLinker::linkPurchasePayment($this->purchase, $created, $sucursalId);
                 }
             }
         });

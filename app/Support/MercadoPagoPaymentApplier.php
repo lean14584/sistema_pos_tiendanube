@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Invoice;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,7 +30,14 @@ class MercadoPagoPaymentApplier
 {
     public static function apply(Invoice $invoice): void
     {
-        $payment = DB::transaction(function () use ($invoice) {
+        // El check-then-insert de abajo (leer si ya existe el pago, crear si
+        // no) es una carrera real bajo REPEATABLE READ: dos llamadas
+        // verdaderamente concurrentes (webhook + polling en el instante
+        // exacto) pueden pasar las dos el SELECT antes de que la primera
+        // haga commit, insertando dos InvoicePayment. El lock serializa las
+        // dos llamadas para esta factura puntual (mismo criterio que
+        // NotasCredito\Create con 'nota-credito:factura:{id}').
+        $payment = Cache::lock("mp-payment:{$invoice->id}", 10)->block(5, fn () => DB::transaction(function () use ($invoice) {
             $payment = $invoice->payments()
                 ->where('method', PaymentMethod::MercadoPago->value)
                 ->first();
@@ -46,7 +54,7 @@ class MercadoPagoPaymentApplier
             }
 
             return $payment;
-        });
+        }));
 
         CashLinker::linkInvoicePayment($invoice, $payment, $invoice->sucursal_id);
 

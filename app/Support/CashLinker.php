@@ -160,10 +160,13 @@ class CashLinker
     /**
      * Método de pago cargado al momento de registrar la compra (distinto de
      * ProviderPayment, que salda saldo pendiente de cuenta corriente después).
+     *
+     * $sucursalId explícito (Purchases\Edit lo pasa al editar una compra de
+     * otra sucursal) — mismo criterio que linkInvoicePayment/linkInvoiceRefund.
      */
-    public static function linkPurchasePayment(Purchase $purchase, PurchasePayment $payment): void
+    public static function linkPurchasePayment(Purchase $purchase, PurchasePayment $payment, ?int $sucursalId = null): void
     {
-        $session = self::openSession();
+        $session = self::openSession($sucursalId);
 
         if (! $session) {
             return;

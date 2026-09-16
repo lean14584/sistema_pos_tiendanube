@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\CashSession;
 use App\Models\Client;
+use App\Models\ClientPayment;
 use App\Models\Invoice;
 use App\Models\Sucursal;
 use App\Models\User;
@@ -22,11 +23,12 @@ class CobranzasTest extends TestCase
         return User::factory()->create(['role' => Role::Admin, 'active' => true]);
     }
 
-    private function facturaImpaga(Client $client, float $total): Invoice
+    private function facturaImpaga(Client $client, float $total, ?int $sucursalId = null): Invoice
     {
         $invoice = Invoice::create([
             'number' => 'FAC-'.uniqid(),
             'client_id' => $client->id,
+            'sucursal_id' => $sucursalId,
             'tax_rate' => 0,
             'issue_date' => now(),
             'due_date' => now(),
@@ -113,8 +115,47 @@ class CobranzasTest extends TestCase
         $component->call('savePayment')->assertHasNoErrors();
         $component->call('savePayment')->assertHasErrors('payingClientId');
 
-        $this->assertSame(1, \App\Models\ClientPayment::count(), 'No debería duplicarse el cobro al registrarlo dos veces.');
+        $this->assertSame(1, ClientPayment::count(), 'No debería duplicarse el cobro al registrarlo dos veces.');
         $this->assertDatabaseHas('client_payments', ['client_id' => $deudor->id, 'amount' => 3000]);
+    }
+
+    /**
+     * MEJORA: deudores() no filtraba por sucursal (mismo criterio que
+     * Reports/Vencimientos/Invoices/Purchases/Audit/ProductBatches) — un
+     * cajero/vendedor de una sucursal veía y podía cobrar la deuda de
+     * facturas de TODA la cadena, no solo la suya.
+     */
+    public function test_un_vendedor_solo_ve_deudores_de_su_propia_sucursal(): void
+    {
+        $centro = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa', 'punto_venta' => 88]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 89]);
+        $vendedor = User::factory()->create(['role' => Role::Vendedor, 'active' => true, 'sucursal_id' => $centro->id]);
+
+        $deudorCentro = Client::create(['name' => 'Deudor Centro', 'email' => 'dc@test.com']);
+        $deudorNorte = Client::create(['name' => 'Deudor Norte', 'email' => 'dn@test.com']);
+        $this->facturaImpaga($deudorCentro, 5000, $centro->id);
+        $this->facturaImpaga($deudorNorte, 7000, $norte->id);
+
+        Livewire::actingAs($vendedor)
+            ->test('cobranzas.index')
+            ->assertSee('Deudor Centro')
+            ->assertDontSee('Deudor Norte');
+    }
+
+    public function test_admin_ve_deudores_de_todas_las_sucursales(): void
+    {
+        $centro = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa', 'punto_venta' => 90]);
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 91]);
+
+        $deudorCentro = Client::create(['name' => 'Deudor Centro', 'email' => 'dc2@test.com']);
+        $deudorNorte = Client::create(['name' => 'Deudor Norte', 'email' => 'dn2@test.com']);
+        $this->facturaImpaga($deudorCentro, 5000, $centro->id);
+        $this->facturaImpaga($deudorNorte, 7000, $norte->id);
+
+        Livewire::actingAs($this->admin())
+            ->test('cobranzas.index')
+            ->assertSee('Deudor Centro')
+            ->assertSee('Deudor Norte');
     }
 
     public function test_no_puede_cobrar_desde_cobranzas_sin_caja_abierta(): void

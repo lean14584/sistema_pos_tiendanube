@@ -3,10 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\CashMovement;
+use App\Models\CashSession;
+use App\Models\Product;
 use App\Models\Provider;
 use App\Models\Purchase;
 use App\Models\Sucursal;
 use App\Models\User;
+use App\Support\CurrentSucursal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -77,5 +81,40 @@ class PurchaseSucursalScopeTest extends TestCase
 
         $this->actingAs($admin)->get(route('purchases.show', $purchase))->assertOk();
         $this->actingAs($admin)->get(route('purchases.edit', $purchase))->assertOk();
+    }
+
+    /**
+     * MEJORA: CashLinker::linkPurchasePayment() no recibía $sucursalId — al
+     * editar una compra de OTRA sucursal (distinta de la activa), el pago se
+     * intentaba anotar en la caja de la sucursal activa (donde el admin no
+     * tenía sesión abierta) en vez de en la caja de la sucursal DE LA
+     * COMPRA, y el movimiento de caja quedaba invisible para el arqueo. El
+     * chequeo previo (hasOpenSession) ya usaba el sucursalId correcto, así
+     * que la validación pasaba pero el link fallaba en silencio.
+     */
+    public function test_editar_compra_de_otra_sucursal_anota_el_pago_en_la_caja_de_la_compra(): void
+    {
+        $centro = $this->sucursal('Centro', 86);
+        $norte = $this->sucursal('Norte', 87);
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        $purchase = $this->purchaseEn($centro);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 0]);
+        $purchase->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 1, 'unit_price' => 1000]);
+
+        // El admin tiene su caja abierta en CENTRO (la sucursal de la
+        // compra), pero está parado con la sucursal activa en NORTE.
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => $centro->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+        CurrentSucursal::set($norte->id);
+
+        Livewire::actingAs($admin)
+            ->test('purchases.edit', ['purchase' => $purchase])
+            ->call('addPayment')
+            ->set('payments.0.amount', '1000')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, $purchase->fresh()->payments()->count());
+        $this->assertSame(1, CashMovement::count(), 'El pago debería quedar anotado en la caja de Centro (la de la compra), no perderse.');
     }
 }

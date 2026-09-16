@@ -11,6 +11,7 @@ use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\Whatsapp;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -36,6 +37,17 @@ class Account extends Component
     }
 
     public function addPayment(): void
+    {
+        // MEJORA: sin lock, un doble clic en "Registrar cobro" podía crear
+        // dos ClientPayment (y dos movimientos de caja) del mismo cobro.
+        // Mismo criterio que Cobranzas\Index::savePayment(): el lock
+        // serializa las dos llamadas, y como $amount se vacía al final de un
+        // cobro exitoso, una segunda llamada encuentra el form vacío y corta
+        // sola en la validación de abajo.
+        Cache::lock('clients:pagar:'.$this->client->id.':'.Auth::id(), 10)->block(5, fn () => $this->addPaymentInterno());
+    }
+
+    private function addPaymentInterno(): void
     {
         $this->validate([
             'date' => ['required', 'date'],

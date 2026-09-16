@@ -48,12 +48,14 @@
                                     <a href="{{ route('users.edit', $user) }}" wire:navigate class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all">
                                         <x-heroicon-o-pencil class="w-4 h-4" />
                                     </a>
-                                    <button
-                                        x-on:click="confirmThen('¿Eliminar al usuario ' + @js($user->name) + '?', () => $wire.delete({{ $user->id }}))"
-                                        class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
-                                    >
-                                        <x-heroicon-o-trash class="w-4 h-4" />
-                                    </button>
+                                    @unless ($user->id === auth()->id())
+                                        <button
+                                            x-on:click="confirmThen('¿Eliminar al usuario ' + @js($user->name) + '?', () => $wire.delete({{ $user->id }}))"
+                                            class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
+                                        >
+                                            <x-heroicon-o-trash class="w-4 h-4" />
+                                        </button>
+                                    @endunless
                                 </div>
                             </td>
                         </tr>
@@ -79,12 +81,14 @@
                                 <a href="{{ route('users.edit', $user) }}" wire:navigate class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
                                     <x-heroicon-o-pencil class="w-4 h-4" />
                                 </a>
-                                <button
-                                    x-on:click="confirmThen('¿Eliminar al usuario ' + @js($user->name) + '?', () => $wire.delete({{ $user->id }}))"
-                                    class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-                                >
-                                    <x-heroicon-o-trash class="w-4 h-4" />
-                                </button>
+                                @unless ($user->id === auth()->id())
+                                    <button
+                                        x-on:click="confirmThen('¿Eliminar al usuario ' + @js($user->name) + '?', () => $wire.delete({{ $user->id }}))"
+                                        class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                                    >
+                                        <x-heroicon-o-trash class="w-4 h-4" />
+                                    </button>
+                                @endunless
                             </div>
                         </div>
                         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {{ $user->active ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20' : 'bg-gray-100 text-gray-700 ring-gray-500/20 dark:bg-gray-500/10 dark:text-gray-400 dark:ring-gray-500/20' }}">

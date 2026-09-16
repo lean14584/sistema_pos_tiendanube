@@ -4,6 +4,7 @@ namespace App\Livewire\Cobranzas;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Client;
 use App\Models\ClientPayment;
 use App\Models\CompanySettings;
@@ -20,6 +21,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ScopedToSucursal;
+
     public string $search = '';
 
     // Alta rápida de cobro por cliente (inline).
@@ -52,7 +55,18 @@ class Index extends Component
         // debitLines() (llamado por saldoCuentaCorriente()) dispara un
         // lazy-load de items por factura — y esta pantalla se re-ejecuta
         // cada ~300ms mientras se escribe en el buscador.
-        $pendientes = fn ($q) => $q->where('status', InvoiceStatus::Pending)->with('items', 'payments');
+        //
+        // Scope por sucursal (mismo criterio que Reports/Vencimientos/
+        // Invoices/Purchases/Audit/ProductBatches, vía ScopedToSucursal): un
+        // cajero/vendedor solo ve/cobra la deuda de facturas de SU sucursal,
+        // no de toda la cadena.
+        $pendientes = function ($q) {
+            $q->where('status', InvoiceStatus::Pending)->with('items', 'payments');
+
+            if (! $this->puedeVerTodasLasSucursales()) {
+                $q->where('sucursal_id', CurrentSucursal::id());
+            }
+        };
 
         $clients = Client::query()
             ->when(trim($this->search) !== '', fn ($q) => $q->where('name', 'like', '%'.trim($this->search).'%'))

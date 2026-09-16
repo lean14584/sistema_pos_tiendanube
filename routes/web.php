@@ -93,7 +93,11 @@ Route::match(['get', 'post'], '/mp/webhook', MercadoPagoWebhookController::class
 Route::post('/tiendanube/webhook', TiendanubeWebhookController::class)->name('tiendanube.webhook');
 
 // Kiosco público de consulta de precios (para dejar fijo en el salón).
-Route::get('/precios', Kiosk::class)->name('precios');
+// {sucursal} opcional: en una instalación multisucursal, cada pantalla física
+// se puede pinnear a SU sucursal con /precios/{id} para mostrar el stock real
+// de ese local — sin esto, mostraba el stock agregado de TODAS las
+// sucursales (ver Kiosk::search()).
+Route::get('/precios/{sucursal?}', Kiosk::class)->name('precios');
 
 // Ticket ESC/POS para el agente de impresión local (ver pos-print-agent/):
 // sin auth porque el agente no tiene sesión de navegador. La URL firmada

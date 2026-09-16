@@ -2,6 +2,7 @@
 
 namespace App\Livewire\StockTransfers;
 
+use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Product;
 use App\Models\StockTransfer;
 use App\Models\Sucursal;
@@ -21,6 +22,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use ScopedToSucursal;
     use WithPagination;
 
     public string $from_sucursal_id = '';
@@ -39,10 +41,15 @@ class Index extends Component
         $this->from_sucursal_id = (string) CurrentSucursal::id();
     }
 
-    /** Un cajero/vendedor solo puede enviar DESDE su propia sucursal, no elegir otra. */
+    /**
+     * Un cajero/vendedor solo puede enviar DESDE su propia sucursal, no
+     * elegir otra. Delega en ScopedToSucursal (antes solo chequeaba el rol,
+     * sin el flag features.multisucursal — mismo bug ya corregido en
+     * Dashboard/Reports/Audit/Invoices/ProductBatches).
+     */
     public function puedeElegirOrigen(): bool
     {
-        return (bool) auth()->user()?->esAdminGlobal();
+        return $this->puedeVerTodasLasSucursales();
     }
 
     #[Computed]

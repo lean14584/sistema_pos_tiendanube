@@ -738,7 +738,6 @@ class Index extends Component
         $saldo = round((float) $invoice->total - $pagado, 2);
 
         $this->cart = [];
-        $this->search = '';
         $this->payments = [];
         $this->client_id = $consumidorFinal->id;
 

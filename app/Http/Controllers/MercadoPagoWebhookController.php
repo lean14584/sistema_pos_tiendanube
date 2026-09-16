@@ -52,18 +52,27 @@ class MercadoPagoWebhookController extends Controller
             return response('invalid signature', 401);
         }
 
-        $reference = match ($type) {
-            'payment' => $mp->paymentPaidReference((string) $id, $sucursalId),
-            'merchant_order' => $mp->merchantOrderPaidReference((string) $id, $sucursalId),
-            default => null,
-        };
+        try {
+            $reference = match ($type) {
+                'payment' => $mp->paymentPaidReference((string) $id, $sucursalId),
+                'merchant_order' => $mp->merchantOrderPaidReference((string) $id, $sucursalId),
+                default => null,
+            };
 
-        if ($reference) {
-            $invoice = Invoice::where('mp_external_reference', $reference)->first();
+            if ($reference) {
+                $invoice = Invoice::where('mp_external_reference', $reference)->first();
 
-            if ($invoice) {
-                MercadoPagoPaymentApplier::apply($invoice);
+                if ($invoice) {
+                    MercadoPagoPaymentApplier::apply($invoice);
+                }
             }
+        } catch (\Throwable $e) {
+            // Ej. MP_ACCESS_TOKEN sin configurar (RuntimeException de
+            // MercadoPagoQrService::http()) — no devolvemos 500 para no
+            // generar reintentos en loop de MP por una instalación que
+            // todavía no cargó el token; queda en el log. Mismo criterio que
+            // TiendanubeWebhookController.
+            report($e);
         }
 
         // MP espera un 200/201 para dar por entregada la notificación.
