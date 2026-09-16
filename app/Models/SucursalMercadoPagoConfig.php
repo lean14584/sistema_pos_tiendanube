@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * migración de creación).
  */
 #[Fillable([
-    'sucursal_id', 'access_token', 'collector_id', 'store_external_id', 'pos_external_id',
+    'sucursal_id', 'access_token', 'webhook_secret', 'collector_id', 'store_external_id', 'pos_external_id',
     'store_name', 'pos_name', 'store_street', 'store_number', 'store_city', 'store_state',
     'store_lat', 'store_lng', 'category', 'notification_url',
 ])]

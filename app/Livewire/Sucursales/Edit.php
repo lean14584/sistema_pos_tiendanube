@@ -34,6 +34,9 @@ class Edit extends Component
     // --- Mercado Pago (ver SucursalMercadoPagoConfig) ---
     public string $mp_access_token = '';
 
+    /** Secret Key de la suscripción al webhook (Panel de MP → Webhooks), para validar la firma de /mp/webhook. */
+    public string $mp_webhook_secret = '';
+
     public string $mp_store_external_id = '';
 
     public string $mp_pos_external_id = '';
@@ -63,6 +66,11 @@ class Edit extends Component
     public function mpTokenCargado(): bool
     {
         return filled($this->sucursal->mercadoPagoConfig?->access_token);
+    }
+
+    public function mpWebhookSecretCargado(): bool
+    {
+        return filled($this->sucursal->mercadoPagoConfig?->webhook_secret);
     }
 
     /** Puntos de venta de esta sucursal, más nuevos primero para ver rápido lo recién agregado. */
@@ -140,6 +148,7 @@ class Edit extends Component
             'active' => ['boolean'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'mp_access_token' => ['nullable', 'string', 'max:255'],
+            'mp_webhook_secret' => ['nullable', 'string', 'max:500'],
             'mp_store_external_id' => ['nullable', 'string', 'max:100'],
             'mp_pos_external_id' => ['nullable', 'string', 'max:100'],
             'mp_store_name' => ['nullable', 'string', 'max:255'],
@@ -155,7 +164,7 @@ class Edit extends Component
         }
         unset($data['logo']);
 
-        $hayDatosDeMp = filled($data['mp_access_token']) || filled($data['mp_store_external_id'])
+        $hayDatosDeMp = filled($data['mp_access_token']) || filled($data['mp_webhook_secret']) || filled($data['mp_store_external_id'])
             || filled($data['mp_pos_external_id']) || filled($data['mp_store_name']) || filled($data['mp_pos_name']);
 
         if ($hayDatosDeMp || $this->sucursal->mercadoPagoConfig) {
@@ -165,17 +174,20 @@ class Edit extends Component
                 'store_name' => $data['mp_store_name'] ?: null,
                 'pos_name' => $data['mp_pos_name'] ?: null,
             ];
-            // Campo vacío = "no cambiar" el token ya guardado (nunca se
+            // Campo vacío = "no cambiar" el token/secret ya guardado (nunca se
             // precarga el real, así que no hay forma de distinguir "lo vacié
             // a propósito" de "no lo toqué").
             if (filled($data['mp_access_token'])) {
                 $mpData['access_token'] = $data['mp_access_token'];
             }
+            if (filled($data['mp_webhook_secret'])) {
+                $mpData['webhook_secret'] = $data['mp_webhook_secret'];
+            }
 
             SucursalMercadoPagoConfig::updateOrCreate(['sucursal_id' => $this->sucursal->id], $mpData);
         }
 
-        unset($data['mp_access_token'], $data['mp_store_external_id'], $data['mp_pos_external_id'], $data['mp_store_name'], $data['mp_pos_name']);
+        unset($data['mp_access_token'], $data['mp_webhook_secret'], $data['mp_store_external_id'], $data['mp_pos_external_id'], $data['mp_store_name'], $data['mp_pos_name']);
 
         $this->sucursal->update($data);
 

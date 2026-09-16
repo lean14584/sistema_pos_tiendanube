@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Client;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Sucursal;
@@ -154,9 +156,9 @@ class SucursalesTest extends TestCase
         $pv = $sucursal->puntosVenta()->create(['numero' => 5, 'active' => true]);
         $sucursal->puntosVenta()->create(['numero' => 6, 'active' => true]);
 
-        \App\Models\Invoice::create([
+        Invoice::create([
             'number' => '0005-00000001',
-            'client_id' => \App\Models\Client::consumidorFinal()->id,
+            'client_id' => Client::consumidorFinal()->id,
             'sucursal_id' => $sucursal->id,
             'punto_venta' => 5,
             'issue_date' => now(),
@@ -210,5 +212,27 @@ class SucursalesTest extends TestCase
             ->call('delete', $unica->id);
 
         $this->assertDatabaseHas('sucursales', ['id' => $unica->id]);
+    }
+
+    public function test_guarda_el_webhook_secret_de_mercado_pago_de_la_sucursal(): void
+    {
+        $sucursal = Sucursal::create(['name' => 'Centro', 'razon_social' => 'Mi Empresa SRL', 'active' => true]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('sucursales.edit', ['sucursal' => $sucursal])
+            ->set('mp_webhook_secret', 'shhh-secreto')
+            ->call('save');
+
+        $component->assertHasNoErrors();
+        $this->assertSame('shhh-secreto', $sucursal->fresh()->mercadoPagoConfig->webhook_secret);
+
+        // Volver a guardar con el campo vacío no lo borra (mismo criterio
+        // que el access_token: no se precarga el valor real, así que vacío
+        // significa "no cambiar", no "borrar").
+        Livewire::actingAs($this->admin())
+            ->test('sucursales.edit', ['sucursal' => $sucursal->fresh()])
+            ->call('save');
+
+        $this->assertSame('shhh-secreto', $sucursal->fresh()->mercadoPagoConfig->webhook_secret);
     }
 }

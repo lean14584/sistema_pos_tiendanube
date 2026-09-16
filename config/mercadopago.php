@@ -46,6 +46,13 @@ return [
     // Opcional: si no la ponés, el sistema igual detecta el pago por polling.
     'notification_url' => env('MP_NOTIFICATION_URL'),
 
+    // Secret Key de la suscripción al webhook (Panel de MP → Tus integraciones
+    // → Webhooks), para validar la firma de cada notificación que llega a
+    // /mp/webhook (header x-signature). Sin esto configurado, el webhook
+    // rechaza todo (fail-closed) — el sistema sigue funcionando igual por
+    // polling, solo se pierde la detección instantánea del pago.
+    'webhook_secret' => env('MP_WEBHOOK_SECRET'),
+
     // Cada cuántos segundos la pantalla le pregunta a MP si ya pagaron.
     'poll_seconds' => (int) env('MP_POLL_SECONDS', 3),
 

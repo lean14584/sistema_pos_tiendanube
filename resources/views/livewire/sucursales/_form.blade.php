@@ -131,6 +131,18 @@
                         class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     @error('mp_access_token') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                 </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Webhook Secret
+                        @if ($this->mpWebhookSecretCargado())
+                            <span class="text-emerald-600 dark:text-emerald-400 font-normal">(cargado)</span>
+                        @endif
+                    </label>
+                    <input type="password" wire:model="mp_webhook_secret" placeholder="{{ $this->mpWebhookSecretCargado() ? 'Dejalo vacío para no cambiarlo' : 'Panel de MP → Tus integraciones → Webhooks' }}"
+                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Para que el sistema pueda validar que las notificaciones de pago realmente vienen de Mercado Pago. Sin esto, el cobro se sigue detectando igual, solo un poco más lento (por polling en vez de al instante).</p>
+                    @error('mp_webhook_secret') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">External store ID</label>
                     <input type="text" wire:model="mp_store_external_id" placeholder="SUC001"

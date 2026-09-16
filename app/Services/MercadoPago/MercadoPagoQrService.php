@@ -42,6 +42,12 @@ class MercadoPagoQrService
         return ! empty($this->configFor($sucursalId)['access_token']);
     }
 
+    /** Secret de la suscripción al webhook de esta sucursal (o el global si no tiene uno propio), para validar la firma. Ver MercadoPagoWebhookController. */
+    public function webhookSecretFor(?int $sucursalId): ?string
+    {
+        return $this->configFor($sucursalId)['webhook_secret'] ?: null;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -70,6 +76,7 @@ class MercadoPagoQrService
             'store_lng' => config('mercadopago.store_lng'),
             'category' => config('mercadopago.category'),
             'notification_url' => config('mercadopago.notification_url'),
+            'webhook_secret' => config('mercadopago.webhook_secret'),
         ];
 
         if ($sucursalId === null) {
