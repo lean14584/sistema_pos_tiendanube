@@ -262,13 +262,19 @@ Route::middleware('auth')->group(function () {
         });
     }
 
-    if (config('features.multisucursal')) {
-        Route::middleware('module:sucursales')->prefix('sucursales')->name('sucursales.')->group(function () {
+    // El ABM completo (listar/crear sucursales) solo tiene sentido con
+    // multisucursal prendido. La edición de UNA sucursal puntual —que
+    // incluye el ABM de Mercado Pago y puntos de venta, ver Sucursales\Edit—
+    // tiene que quedar accesible siempre: con este bloque entero gateado
+    // detrás de multisucursal, un cliente de una sola sucursal ("Principal")
+    // no tenía NINGUNA forma de cargar sus credenciales de MP desde la UI.
+    Route::middleware('module:sucursales')->prefix('sucursales')->name('sucursales.')->group(function () {
+        if (config('features.multisucursal')) {
             Route::get('/', SucursalIndex::class)->name('index');
             Route::get('/new', SucursalCreate::class)->name('create');
-            Route::get('/{sucursal}/edit', SucursalEdit::class)->name('edit');
-        });
-    }
+        }
+        Route::get('/{sucursal}/edit', SucursalEdit::class)->name('edit');
+    });
 
     Route::middleware('module:audit')->get('auditoria', AuditIndex::class)->name('audit.index');
 

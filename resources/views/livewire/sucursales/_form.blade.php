@@ -180,7 +180,11 @@
             {{ $submitLabel }}
         </button>
         <a
-            href="{{ route('sucursales.index') }}"
+            {{-- sucursales.index no existe si multisucursal está apagado: este
+                 partial también lo usa create.blade.php, pero esa pantalla solo
+                 es alcanzable CON multisucursal prendido, así que ahí el
+                 ternario nunca llega a evaluar $sucursal (no existe en ese contexto). --}}
+            href="{{ config('features.multisucursal') ? route('sucursales.index') : route('sucursales.edit', $sucursal) }}"
             wire:navigate
             class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md active:scale-[0.98] transition-all"
         >
