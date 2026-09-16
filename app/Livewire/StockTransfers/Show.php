@@ -6,6 +6,7 @@ use App\Enums\StockTransferStatus;
 use App\Models\StockTransfer;
 use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -54,22 +55,37 @@ class Show extends Component
 
         $this->validate($rules, [], collect($rules)->mapWithKeys(fn ($r, $key) => [$key => 'cantidad recibida'])->all());
 
-        DB::transaction(function () {
-            foreach ($this->transfer->items as $index => $item) {
-                $recibido = (int) $this->received[$index];
-
-                $item->update(['quantity_received' => $recibido]);
-
-                if ($recibido > 0) {
-                    StockAdjuster::applyManualDelta($item->product_id, $recibido, $this->transfer->to_sucursal_id);
-                }
+        // MEJORA: check-then-act (puedeConfirmar() valida status=Pendiente,
+        // recién después la transacción marca Recibido) sin lock - mismo
+        // problema que tenía CashRegister::closeSession() antes de
+        // arreglarse. Un doble click en "Confirmar recepción" podía disparar
+        // dos requests casi simultáneas que ambas leen status=Pendiente y
+        // ambas acreditan el stock recibido, duplicando la cantidad sumada
+        // en destino. Lock por transfer + re-chequeo de status con fresh()
+        // adentro, para que la segunda llamada encuentre el estado ya
+        // cambiado y no haga nada.
+        Cache::lock("stock-transfer:confirmar:{$this->transfer->id}", 10)->block(5, function () {
+            if ($this->transfer->fresh()->status !== StockTransferStatus::Pendiente) {
+                return;
             }
 
-            $this->transfer->update([
-                'status' => StockTransferStatus::Recibido,
-                'received_at' => now(),
-                'received_by_user_id' => auth()->id(),
-            ]);
+            DB::transaction(function () {
+                foreach ($this->transfer->items as $index => $item) {
+                    $recibido = (int) $this->received[$index];
+
+                    $item->update(['quantity_received' => $recibido]);
+
+                    if ($recibido > 0) {
+                        StockAdjuster::applyManualDelta($item->product_id, $recibido, $this->transfer->to_sucursal_id);
+                    }
+                }
+
+                $this->transfer->update([
+                    'status' => StockTransferStatus::Recibido,
+                    'received_at' => now(),
+                    'received_by_user_id' => auth()->id(),
+                ]);
+            });
         });
 
         $this->transfer->refresh()->load('items', 'receivedBy');

@@ -51,6 +51,36 @@ class StockAdjustmentTest extends TestCase
         $this->assertSame('Se rompieron 5 paquetes en el depósito', $adjustment->notes);
     }
 
+    /**
+     * MEJORA: render() no filtraba por sucursal (a diferencia de todas sus
+     * pantallas hermanas - ProductBatches\Index, Purchases\Index, etc.) -
+     * un vendedor/encargado veía los ajustes de stock de TODAS las
+     * sucursales, no solo la suya.
+     */
+    public function test_un_vendedor_solo_ve_los_ajustes_de_stock_de_su_propia_sucursal(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $vendedor = User::factory()->create(['role' => Role::Vendedor, 'active' => true, 'sucursal_id' => $principal->id]);
+
+        $productoPrincipal = Product::create(['name' => 'Harina Principal', 'price' => 800, 'stock' => 20]);
+        $productoNorte = Product::create(['name' => 'Harina Norte', 'price' => 800, 'stock' => 20]);
+
+        StockAdjustment::create([
+            'product_id' => $productoPrincipal->id, 'sucursal_id' => $principal->id, 'user_id' => $vendedor->id,
+            'previous_stock' => 20, 'new_stock' => 15, 'reason' => 'rotura',
+        ]);
+        StockAdjustment::create([
+            'product_id' => $productoNorte->id, 'sucursal_id' => $norte->id, 'user_id' => $vendedor->id,
+            'previous_stock' => 20, 'new_stock' => 10, 'reason' => 'rotura',
+        ]);
+
+        Livewire::actingAs($vendedor)
+            ->test('stock-adjustments.index')
+            ->assertSee('Harina Principal')
+            ->assertDontSee('Harina Norte');
+    }
+
     public function test_el_ajuste_tambien_genera_un_log_de_auditoria_del_producto(): void
     {
         $product = Product::create(['name' => 'Fideos 500g', 'price' => 900, 'stock' => 10]);

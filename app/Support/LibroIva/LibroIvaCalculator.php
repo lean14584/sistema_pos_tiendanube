@@ -4,6 +4,7 @@ namespace App\Support\LibroIva;
 
 use App\Models\Invoice;
 use App\Models\Purchase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -33,10 +34,15 @@ final class LibroIvaCalculator
         // Illuminate\Database\Eloquent\Collection vacío cacheado bajo esta
         // key en vez del array de LibroIvaRow). Un array de escalares no
         // tiene ese riesgo.
+        //
+        // MEJORA: whereDate() envuelve la columna en DATE(...), lo que
+        // impide usar el índice de issue_date - mismo criterio que
+        // SalesReport::buildUncached(). El corte superior usa "< día
+        // siguiente" para seguir siendo un rango sargable.
         $rows = Cache::remember("libro-iva:ventas:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Invoice::query()
             ->whereNotNull('cae')
-            ->whereDate('issue_date', '>=', $desde)
-            ->whereDate('issue_date', '<=', $hasta)
+            ->where('issue_date', '>=', $desde)
+            ->where('issue_date', '<', Carbon::parse($hasta)->addDay()->toDateString())
             ->with('client', 'items')
             ->orderBy('issue_date')
             ->orderBy('punto_venta')
@@ -54,13 +60,19 @@ final class LibroIvaCalculator
      */
     public static function compras(string $desde, string $hasta): Collection
     {
-        // MEJORA: mismo criterio que ventas() de acá arriba, ver ese comentario.
+        // MEJORA: mismo criterio de caché e índice que ventas() de acá arriba.
+        //
+        // MEJORA: faltaba eager-cargar 'taxes' - fromPurchase() lee
+        // $purchase->total, que Purchase::total() calcula sumando
+        // percepcionesTotal() (-> $this->taxes->sum(...)), así que sin este
+        // with() se disparaba una query extra POR CADA compra del período
+        // al armar el Libro IVA Compras (y en sus 4 exports).
         $rows = Cache::remember("libro-iva:compras:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Purchase::query()
             ->whereNot('status', 'draft')
             ->whereNotNull('tipo_comprobante')
-            ->whereDate('issue_date', '>=', $desde)
-            ->whereDate('issue_date', '<=', $hasta)
-            ->with('provider', 'items')
+            ->where('issue_date', '>=', $desde)
+            ->where('issue_date', '<', Carbon::parse($hasta)->addDay()->toDateString())
+            ->with('provider', 'items', 'taxes')
             ->orderBy('issue_date')
             ->orderBy('punto_venta')
             ->orderBy('tipo_comprobante')

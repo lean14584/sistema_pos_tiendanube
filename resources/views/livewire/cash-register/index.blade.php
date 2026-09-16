@@ -111,7 +111,10 @@
                                     <td class="px-5 py-3 text-right text-red-600 dark:text-red-400">{{ $m->type->value === 'egreso' ? '$'.money($m->amount) : '—' }}</td>
                                     <td class="px-5 py-3 text-right">
                                         @if ($m->source->value === 'manual')
-                                            <button wire:click="deleteMovement({{ $m->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all">
+                                            <button
+                                                x-on:click="confirmThen('¿Borrar el movimiento ' + @js($m->concept) + '?', () => $wire.deleteMovement({{ $m->id }}))"
+                                                class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
+                                            >
                                                 <x-heroicon-o-trash class="w-4 h-4" />
                                             </button>
                                         @endif
@@ -131,7 +134,10 @@
                                         <p class="text-xs text-gray-500 dark:text-gray-400">{{ $m->date->format('d/m/Y') }} · <span class="capitalize">{{ $m->source->value }}</span></p>
                                     </div>
                                     @if ($m->source->value === 'manual')
-                                        <button wire:click="deleteMovement({{ $m->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 shrink-0">
+                                        <button
+                                            x-on:click="confirmThen('¿Borrar el movimiento ' + @js($m->concept) + '?', () => $wire.deleteMovement({{ $m->id }}))"
+                                            class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 shrink-0"
+                                        >
                                             <x-heroicon-o-trash class="w-4 h-4" />
                                         </button>
                                     @endif

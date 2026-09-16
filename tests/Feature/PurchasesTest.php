@@ -102,6 +102,35 @@ class PurchasesTest extends TestCase
         $this->assertEquals(10, $product->fresh()->stock);
     }
 
+    /**
+     * MEJORA: este save() de edición no tenía ninguna protección contra
+     * doble-submit (a diferencia de purchases.create, ver el test de acá
+     * arriba) - dos submits casi simultáneos revertían/reaplicaban el
+     * stock y desvinculaban/vinculaban pagos por su cuenta cada uno.
+     */
+    public function test_doble_clic_en_guardar_edicion_no_duplica_el_ajuste_de_stock(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        $purchase = Purchase::create([
+            'number' => 'COM-0001', 'provider_id' => $provider->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'draft',
+        ]);
+        $purchase->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 3, 'unit_price' => 1000]);
+        $product->increment('stock', 3);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('purchases.edit', ['purchase' => $purchase])
+            ->set('items.0.quantity', '5');
+
+        $component->call('save')->assertHasNoErrors();
+        $component->call('save')->assertHasNoErrors(); // el flag corta antes de tocar nada, no un error de validación
+
+        // Old +3 reverted, new +5 applied ONCE: 8 - 3 + 5 = 10 (no 12 ni 15)
+        $this->assertEquals(10, $product->fresh()->stock);
+    }
+
     public function test_deleting_a_purchase_reverts_stock(): void
     {
         $provider = Provider::create(['name' => 'Proveedor 1']);
