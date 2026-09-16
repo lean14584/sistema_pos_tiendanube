@@ -1,21 +1,10 @@
 <form wire:submit="save" class="space-y-5 max-w-xl">
-    <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Logo</label>
-        <div class="flex items-center gap-4">
-            @if ($logo)
-                <img src="{{ $logo->temporaryUrl() }}" class="w-16 h-16 rounded-lg object-contain border border-gray-200 dark:border-gray-800 bg-white">
-            @elseif (isset($sucursal) && $sucursal->logo_path)
-                <img src="{{ $sucursal->logo_url }}" class="w-16 h-16 rounded-lg object-contain border border-gray-200 dark:border-gray-800 bg-white">
-            @else
-                <div class="w-16 h-16 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-300 dark:text-gray-700">
-                    <x-heroicon-o-building-storefront class="w-6 h-6" />
-                </div>
-            @endif
-            <input type="file" wire:model="logo" accept="image/*" class="text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 dark:file:bg-gray-800 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 dark:file:text-gray-300 hover:file:bg-gray-200 dark:hover:file:bg-gray-700">
-        </div>
-        @error('logo') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-    </div>
-
+    {{-- Logo sacado de este form a propósito: era un campo muerto (ver
+         MEJORA en Sucursales\Edit) - no se usa en ningún ticket, factura,
+         PDF ni en el kiosco de precios, solo en estas pantallas de
+         Sucursales. El logo real del sistema es el de Datos de la Empresa
+         (CompanySettings). La columna sucursales.logo_path queda en la
+         base sin tocar (bajo riesgo, no se borra por una migración). --}}
     <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
         <input
