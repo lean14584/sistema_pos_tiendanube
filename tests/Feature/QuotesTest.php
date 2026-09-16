@@ -38,6 +38,29 @@ class QuotesTest extends TestCase
         $this->assertEquals(200.0, (float) $quote->total);
     }
 
+    /**
+     * MEJORA: este formulario de alta no tenía ningún estado para detectar
+     * "esto ya se guardó" — el lock de 'quote-number' solo serializaba la
+     * NUMERACIÓN, así que dos submits casi simultáneos (doble clic) creaban
+     * dos presupuestos con números distintos. Mismo patrón de test que
+     * InvoicesTest::test_doble_clic_en_guardar_no_duplica_la_factura.
+     */
+    public function test_doble_clic_en_guardar_no_duplica_el_presupuesto(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Servicio X', 'price' => 200]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('quotes.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id);
+
+        $component->call('save')->assertHasNoErrors();
+        $component->call('save')->assertHasNoErrors(); // el flag corta antes de crear nada, no un error de validación
+
+        $this->assertSame(1, Quote::count(), 'No debería duplicarse el presupuesto al guardar dos veces la misma pantalla.');
+    }
+
     public function test_un_descuento_manual_mayor_a_100_no_se_puede_guardar(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);

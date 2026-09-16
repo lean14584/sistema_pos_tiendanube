@@ -12,6 +12,7 @@ use App\Models\Purchase;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -39,6 +40,17 @@ class Create extends Component
     public string $notes = '';
 
     public string $status = 'draft';
+
+    /**
+     * Guarda contra doble-submit: mismo criterio que Invoices\Create — este
+     * form no tiene ningún estado persistente natural para detectar "esto
+     * ya se guardó" (a diferencia de Pos\Index, que vacía el carrito solo).
+     * El lock de 'purchase-number' de más abajo solo serializa la
+     * NUMERACIÓN (evita números repetidos si dos compras distintas se
+     * crean casi a la vez), no evita que dos submits del mismo click doble
+     * generen dos compras completas con números distintos.
+     */
+    public bool $submitted = false;
 
     /** @var array<int, array{product_id: int, description: string, quantity: string, unit_price: string, batch_number: string, expiration_date: string}> */
     public array $items = [];
@@ -175,6 +187,15 @@ class Create extends Component
 
     public function save(): void
     {
+        Cache::lock('purchases:create:'.CurrentSucursal::id().':'.Auth::id(), 10)->block(5, fn () => $this->saveInterno());
+    }
+
+    private function saveInterno(): void
+    {
+        if ($this->submitted) {
+            return;
+        }
+
         $this->validate([
             'provider_id' => ['required', 'exists:providers,id'],
             'tipo_comprobante' => ['required', Rule::enum(TipoComprobante::class)],
@@ -217,6 +238,10 @@ class Create extends Component
         // quien esté editando/borrando más adelante (ver migración
         // add_sucursal_id_to_purchases_table).
         $sucursalId = CurrentSucursal::id();
+
+        // Recién acá, pasadas todas las validaciones: una falla de
+        // validación legítima no debe dejar al usuario sin poder reintentar.
+        $this->submitted = true;
 
         $purchase = Cache::lock('purchase-number', 10)->block(10, fn () => DB::transaction(function () use ($sucursalId) {
             $purchase = Purchase::create([

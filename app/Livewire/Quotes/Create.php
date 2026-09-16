@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\Quote;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -29,6 +30,15 @@ class Create extends Component
     public string $notes = '';
 
     public string $status = 'draft';
+
+    /**
+     * Guarda contra doble-submit: mismo criterio que Invoices\Create y
+     * Purchases\Create — este form no tiene ningún estado persistente
+     * natural para detectar "esto ya se guardó". El lock de 'quote-number'
+     * de más abajo solo serializa la NUMERACIÓN, no evita que dos submits
+     * del mismo click doble generen dos presupuestos completos.
+     */
+    public bool $submitted = false;
 
     /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string, discount: string}> */
     public array $items = [];
@@ -169,6 +179,15 @@ class Create extends Component
 
     public function save(): void
     {
+        Cache::lock('quotes:create:'.Auth::id(), 10)->block(5, fn () => $this->saveInterno());
+    }
+
+    private function saveInterno(): void
+    {
+        if ($this->submitted) {
+            return;
+        }
+
         $this->validate([
             'client_id' => ['required', 'exists:clients,id'],
             'issue_date' => ['required', 'date'],
@@ -186,6 +205,10 @@ class Create extends Component
 
             return;
         }
+
+        // Recién acá, pasadas todas las validaciones: una falla de
+        // validación legítima no debe dejar al usuario sin poder reintentar.
+        $this->submitted = true;
 
         $quote = Cache::lock('quote-number', 10)->block(10, fn () => DB::transaction(function () use ($validItems) {
             $quote = Quote::create([

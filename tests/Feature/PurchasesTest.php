@@ -13,6 +13,7 @@ use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\Sucursal;
 use App\Models\User;
+use App\Support\CashLinker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -51,6 +52,31 @@ class PurchasesTest extends TestCase
 
         $this->assertEquals(8, $product->fresh()->stock);
         $this->assertEquals(1, Purchase::count());
+    }
+
+    /**
+     * MEJORA: este formulario de alta no tenía ningún estado para detectar
+     * "esto ya se guardó" — el lock de 'purchase-number' solo serializaba la
+     * NUMERACIÓN, así que dos submits casi simultáneos (doble clic) creaban
+     * dos compras con números distintos, sumando el stock dos veces. Mismo
+     * patrón de test que InvoicesTest::test_doble_clic_en_guardar_no_duplica_la_factura.
+     */
+    public function test_doble_clic_en_guardar_no_duplica_la_compra(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '3');
+
+        $component->call('save')->assertHasNoErrors();
+        $component->call('save')->assertHasNoErrors(); // el flag corta antes de crear nada, no un error de validación
+
+        $this->assertSame(1, Purchase::count(), 'No debería duplicarse la compra al guardar dos veces la misma pantalla.');
+        $this->assertEquals(8, $product->fresh()->stock, 'El stock no debería sumarse dos veces.');
     }
 
     public function test_editing_a_purchase_adjusts_stock_delta_correctly(): void
@@ -293,7 +319,7 @@ class PurchasesTest extends TestCase
         $product->increment('stock', 1);
         $oldPayment = $purchase->payments()->create(['method' => 'efectivo', 'amount' => 1000]);
         $this->actingAs($admin);
-        \App\Support\CashLinker::linkPurchasePayment($purchase, $oldPayment);
+        CashLinker::linkPurchasePayment($purchase, $oldPayment);
 
         $this->assertSame(1, CashMovement::count());
 
@@ -347,7 +373,7 @@ class PurchasesTest extends TestCase
         $purchase->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 1, 'unit_price' => 1000]);
         $payment = $purchase->payments()->create(['method' => 'efectivo', 'amount' => 1000]);
         $this->actingAs($admin);
-        \App\Support\CashLinker::linkPurchasePayment($purchase, $payment);
+        CashLinker::linkPurchasePayment($purchase, $payment);
 
         $this->assertSame(1, CashMovement::count());
 
