@@ -132,7 +132,7 @@ class Index extends Component
         $this->correr(function (TiendanubeSync $sync) {
             $r = $sync->pushProducts();
 
-            return "Productos enviados a Tiendanube: {$r['creados']} creados, {$r['actualizados']} actualizados.";
+            return "Productos enviados a Tiendanube: {$r['creados']} creados, {$r['actualizados']} actualizados".($r['errores'] ? ", {$r['errores']} con error." : '.');
         });
     }
 
