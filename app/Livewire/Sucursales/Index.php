@@ -4,6 +4,7 @@ namespace App\Livewire\Sucursales;
 
 use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Sucursal;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -15,6 +16,11 @@ class Index extends Component
 
     public function delete(Sucursal $sucursal): void
     {
+        // Mismo chequeo que Clients\Index::delete(): hoy solo Admin llega a
+        // este módulo y puede eliminar, pero es defensa en profundidad si el
+        // acceso a 'sucursales' se amplía en el futuro.
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para eliminar sucursales.');
+
         if (Sucursal::count() <= 1) {
             $this->toastError('No se puede eliminar la única sucursal.');
 

@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\Quote;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -16,6 +17,13 @@ use Livewire\Component;
 class Edit extends Component
 {
     public Quote $quote;
+
+    /**
+     * Guarda contra doble-submit, mismo criterio que Invoices\Edit y
+     * Purchases\Edit: sin esto, un doble-click en "Guardar" dispara dos
+     * requests que pisan/duplican los items del presupuesto.
+     */
+    public bool $submitted = false;
 
     public string $client_id = '';
 
@@ -179,6 +187,15 @@ class Edit extends Component
 
     public function save(): void
     {
+        Cache::lock('quotes:edit:'.$this->quote->id, 10)->block(5, fn () => $this->saveInterno());
+    }
+
+    private function saveInterno(): void
+    {
+        if ($this->submitted) {
+            return;
+        }
+
         if ($this->quote->status === QuoteStatus::Converted) {
             return;
         }
@@ -200,6 +217,10 @@ class Edit extends Component
 
             return;
         }
+
+        // Recién acá, pasadas todas las validaciones: una falla de
+        // validación legítima no debe dejar al usuario sin poder reintentar.
+        $this->submitted = true;
 
         DB::transaction(function () use ($validItems) {
             $this->quote->update([
