@@ -169,18 +169,26 @@ class TiendanubeSync
      * Empuja los productos locales a Tiendanube (crea los no vinculados y
      * actualiza los vinculados).
      *
-     * @return array{creados:int, actualizados:int}
+     * @return array{creados:int, actualizados:int, errores:int}
      */
     public function pushProducts(): array
     {
         $creados = 0;
         $actualizados = 0;
+        $errores = 0;
 
-        Product::query()->with('category')->each(function (Product $p) use (&$creados, &$actualizados) {
-            $this->pushProduct($p) === 'created' ? $creados++ : $actualizados++;
+        // A diferencia de antes: un error en un producto (API caída,
+        // validación, timeout) ya no aborta el resto del catálogo sin
+        // avisar — mismo criterio que pushStock/pushCustomers/pushCategories.
+        Product::query()->with('category')->each(function (Product $p) use (&$creados, &$actualizados, &$errores) {
+            try {
+                $this->pushProduct($p) === 'created' ? $creados++ : $actualizados++;
+            } catch (\Throwable $e) {
+                $errores++;
+            }
         });
 
-        return ['creados' => $creados, 'actualizados' => $actualizados];
+        return ['creados' => $creados, 'actualizados' => $actualizados, 'errores' => $errores];
     }
 
     /**

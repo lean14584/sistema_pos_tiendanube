@@ -5,6 +5,7 @@ namespace App\Services\Afip;
 use App\Enums\TipoComprobante;
 use App\Exceptions\Afip\AfipConnectionException;
 use App\Exceptions\Afip\AfipRejectedException;
+use App\Exceptions\Afip\AfipValidationException;
 use App\Services\Afip\Data\CaeRequest;
 use App\Services\Afip\Data\CaeResponse;
 use Illuminate\Support\Carbon;
@@ -301,8 +302,11 @@ class AfipSoapGateway implements AfipGatewayInterface
 
         // Antes caía en 21% en silencio: una alícuota no contemplada se
         // declaraba a ARCA bajo la tasa equivocada sin que nadie se
-        // enterara. Mismo criterio que AlicuotaResolver::codigo().
-        throw new \DomainException("Alícuota de IVA sin código ARCA: {$tasa}%.");
+        // enterara. Mismo criterio que AlicuotaResolver::codigo(). Antes
+        // tiraba \DomainException, que Invoices\Show::emitirAfip() no
+        // atrapaba (terminaba en 500 crudo) — AfipValidationException sí
+        // cae en el catch existente, con mensaje claro para el usuario.
+        throw new AfipValidationException("Alícuota de IVA sin código ARCA: {$tasa}%.");
     }
 
     /**

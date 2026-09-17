@@ -85,6 +85,23 @@ class Show extends Component
         $mp = app(MercadoPagoQrService::class);
 
         try {
+            // Si ya había un cobro QR iniciado antes (el cajero cerró la
+            // pantalla y volvió más tarde), reconciliamos esa referencia
+            // vieja antes de pisarla: createOrder() sobreescribe
+            // mp_external_reference, y si el cliente pagó esa orden vieja
+            // mientras tanto, ni el polling ni el webhook la van a encontrar
+            // nunca más porque ya no queda ningún lado que la busque.
+            if ($this->invoice->mp_external_reference) {
+                $estadoPrevio = $mp->paymentStatus($this->invoice->mp_external_reference, $this->invoice->sucursal_id);
+
+                if ($estadoPrevio === 'paid') {
+                    $this->showQrModal = true;
+                    $this->markPaidFromQr();
+
+                    return;
+                }
+            }
+
             $reference = $mp->createOrder($this->invoice);
             $this->invoice->update(['mp_external_reference' => $reference]);
 
