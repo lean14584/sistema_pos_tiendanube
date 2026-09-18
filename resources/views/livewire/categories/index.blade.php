@@ -36,6 +36,14 @@
                             <td class="px-5 py-3">
                                 <div class="flex justify-end gap-2">
                                     <a
+                                        href="{{ route('categories.pdf', $category) }}"
+                                        target="_blank"
+                                        title="Ver productos y stock en PDF"
+                                        class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
+                                    >
+                                        <x-heroicon-o-document-text class="w-4 h-4" />
+                                    </a>
+                                    <a
                                         href="{{ route('categories.edit', $category) }}"
                                         wire:navigate
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
@@ -68,6 +76,14 @@
                                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ $category->products_count }} producto{{ $category->products_count === 1 ? '' : 's' }}</p>
                             </div>
                             <div class="flex gap-1 shrink-0">
+                                <a
+                                    href="{{ route('categories.pdf', $category) }}"
+                                    target="_blank"
+                                    title="Ver productos y stock en PDF"
+                                    class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                >
+                                    <x-heroicon-o-document-text class="w-4 h-4" />
+                                </a>
                                 <a
                                     href="{{ route('categories.edit', $category) }}"
                                     wire:navigate

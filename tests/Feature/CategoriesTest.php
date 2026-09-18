@@ -75,4 +75,24 @@ class CategoriesTest extends TestCase
 
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     }
+
+    public function test_category_products_pdf_downloads(): void
+    {
+        $category = Category::create(['name' => 'Bebidas']);
+        Product::create(['name' => 'Coca Cola', 'price' => 100, 'category_id' => $category->id]);
+
+        $response = $this->actingAs($this->admin())->get(route('categories.pdf', $category));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_category_products_pdf_works_for_an_empty_category(): void
+    {
+        $category = Category::create(['name' => 'Sin productos']);
+
+        $response = $this->actingAs($this->admin())->get(route('categories.pdf', $category));
+
+        $response->assertOk();
+    }
 }

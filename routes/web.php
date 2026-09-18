@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\BackupDownloadController;
+use App\Http\Controllers\CategoryProductsPdfController;
 use App\Http\Controllers\ClientAccountStatementController;
 use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\LibroIvaExportController;
@@ -188,6 +189,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', CategoryIndex::class)->name('index');
         Route::get('/new', CategoryCreate::class)->name('create');
         Route::get('/{category}/edit', CategoryEdit::class)->name('edit');
+        Route::get('/{category}/pdf', CategoryProductsPdfController::class)->name('pdf');
     });
 
     if (config('features.price_lists')) {
