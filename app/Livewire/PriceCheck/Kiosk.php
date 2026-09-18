@@ -48,8 +48,12 @@ class Kiosk extends Component
             return;
         }
 
-        $producto = Product::where('sku', $code)
-            ->orWhere('name', 'like', "%{$code}%")
+        // findByBarcode() cubre el sku tal cual y las dos variantes de
+        // código impreso por la etiqueta (EAN13 completo y su equivalente
+        // UPC-A de 12 dígitos, ver Product::findByBarcode) — antes de esto,
+        // escanear la etiqueta acá no encontraba nada aunque el mismo
+        // código sí anduviera en el POS.
+        $producto = Product::findByBarcode($code) ?? Product::where('name', 'like', "%{$code}%")
             ->when(ctype_digit($code), fn ($q) => $q->orWhere('id', (int) $code))
             ->first();
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\Auditable;
 use App\Observers\ProductObserver;
 use App\Support\CurrentSucursal;
+use App\Support\Ean13;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -66,6 +67,48 @@ class Product extends Model
     public static function lowStockCountCached(): int
     {
         return once(fn () => self::lowStock()->count());
+    }
+
+    /**
+     * Busca el producto por un código escaneado, cubriendo los 3 formatos
+     * que puede transmitir un lector para la MISMA etiqueta (ver Ean13):
+     * el sku tal cual, el EAN13 completo (sku corto paddeado, o un sku que
+     * ya es el EAN13 guardado directo), y su equivalente UPC-A de 12
+     * dígitos (algunos lectores lo transmiten así en vez del EAN13
+     * completo). Compartido entre Pos\Index y PriceCheck\Kiosk para no
+     * duplicar — y no desincronizar — esta cadena de fallbacks.
+     */
+    public static function findByBarcode(string $code): ?self
+    {
+        if ($product = self::where('sku', $code)->first()) {
+            return $product;
+        }
+
+        if (strlen($code) === 13) {
+            $sku = Ean13::stripPadding($code);
+
+            if ($sku && $product = self::where('sku', $sku)->first()) {
+                return $product;
+            }
+        }
+
+        if (strlen($code) === 12) {
+            $ean13 = Ean13::reconstruirDesdeUpcA($code);
+
+            if ($ean13) {
+                if ($product = self::where('sku', $ean13)->first()) {
+                    return $product;
+                }
+
+                $sku = Ean13::stripPadding($ean13);
+
+                if ($sku && $product = self::where('sku', $sku)->first()) {
+                    return $product;
+                }
+            }
+        }
+
+        return null;
     }
 
     /** URL pública de la foto del producto, o null si no tiene. */

@@ -42,6 +42,22 @@ class PriceCheckAndRolesTest extends TestCase
             ->assertSet('code', ''); // se limpia para el próximo escaneo
     }
 
+    public function test_escanear_el_ean13_de_la_etiqueta_como_upc_a_muestra_el_precio(): void
+    {
+        // Mismo bug que en Pos\Index::addByBarcode(): el sku ya es el EAN13
+        // completo ("0000000000536"), y el lector lo transmite como su
+        // equivalente UPC-A de 12 dígitos ("000000000536", sin el primer
+        // '0'). Antes de Product::findByBarcode() esta pantalla no lo
+        // reconocía aunque el mismo código sí funcionara en el POS.
+        Product::create(['name' => 'Individuales x6 u', 'price' => 3200, 'stock' => 12, 'sku' => '0000000000536']);
+
+        Livewire::test('price-check.kiosk')
+            ->set('code', '000000000536')
+            ->call('search')
+            ->assertSet('notFound', false)
+            ->assertSet('product.name', 'Individuales x6 u');
+    }
+
     public function test_codigo_inexistente_marca_no_encontrado(): void
     {
         Livewire::test('price-check.kiosk')

@@ -15,7 +15,6 @@ use App\Models\PromotionGroup;
 use App\Models\PuntoVenta;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
-use App\Support\Ean13;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\PromotionEngine;
 use App\Support\ScaleBarcodeParser;
@@ -242,32 +241,12 @@ class Index extends Component
             }
         }
 
-        $product = Product::where('sku', $code)->first()
+        // findByBarcode() cubre el sku tal cual y las dos variantes de
+        // código impreso por la etiqueta (EAN13 completo y su equivalente
+        // UPC-A de 12 dígitos, ver Product::findByBarcode). El nombre exacto
+        // es un fallback aparte, propio de esta pantalla.
+        $product = Product::findByBarcode($code)
             ?? Product::where('name', $code)->first();
-
-        // El código de barras que imprime la etiqueta (ver Ean13::fromSku)
-        // completa un sku corto con ceros a la izquierda + dígito
-        // verificador: si no matcheó tal cual, probar recuperando el sku
-        // original antes de darlo por no encontrado.
-        if (! $product && strlen($code) === 13) {
-            $skuOriginal = Ean13::stripPadding($code);
-            $product = $skuOriginal ? Product::where('sku', $skuOriginal)->first() : null;
-        }
-
-        // Un EAN13 que arranca con '0' (nuestro esquema de sku corto siempre
-        // arranca así) es equivalente a un UPC-A de 12 dígitos: algunos
-        // lectores lo detectan y transmiten el UPC-A en vez del EAN13
-        // completo. Reconstruir el EAN13 y probar tanto el sku "tal cual"
-        // (por si ya está guardado paddeado, como un GTIN real) como el sku
-        // corto recuperado con stripPadding().
-        if (! $product && strlen($code) === 12) {
-            $ean13 = Ean13::reconstruirDesdeUpcA($code);
-
-            if ($ean13) {
-                $product = Product::where('sku', $ean13)->first()
-                    ?? Product::where('sku', Ean13::stripPadding($ean13))->first();
-            }
-        }
 
         if (! $product) {
             $this->addError('barcode', "No se encontró un producto con código «{$code}».");
