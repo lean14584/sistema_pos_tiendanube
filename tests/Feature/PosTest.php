@@ -58,12 +58,32 @@ class PosTest extends TestCase
         $this->assertSame($product->id, $pos->get('cart')[0]['product_id']);
     }
 
-    public function test_agrega_un_producto_escaneando_el_ean13_sin_digito_verificador(): void
+    public function test_agrega_un_producto_de_sku_corto_escaneado_como_upc_a(): void
     {
-        // Algunos lectores vienen configurados de fábrica para no transmitir
-        // el dígito verificador del EAN13: llegan los 12 dígitos de la base
-        // (ver Ean13::fromSku('536')) sin el 13ro.
+        // El lector detecta que el EAN13 impreso (Ean13::fromSku('536') =
+        // "0000000005364") arranca con '0' y transmite su equivalente UPC-A
+        // de 12 dígitos ("000000005364", sin ese primer '0') en vez del
+        // EAN13 completo — conversión estándar que hacen muchos lectores.
         $product = Product::create(['name' => 'Tornillo Autoperforante', 'sku' => '536', 'price' => 150, 'iva_rate' => 21, 'stock' => 100]);
+
+        $pos = Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('barcode', '000000005364')
+            ->call('addByBarcode');
+
+        $pos->assertHasNoErrors('barcode');
+        $this->assertCount(1, $pos->get('cart'));
+        $this->assertSame($product->id, $pos->get('cart')[0]['product_id']);
+    }
+
+    public function test_agrega_un_producto_cuyo_sku_ya_es_el_ean13_completo_escaneado_como_upc_a(): void
+    {
+        // Bug real reportado en DECO-HOGAR: el sku quedó cargado directamente
+        // como el EAN13 completo ("0000000000536", 13 dígitos que casualmente
+        // ya dan un checksum válido, así que Ean13::fromSku() lo usa tal
+        // cual). El lector lo transmite como UPC-A de 12 dígitos
+        // ("000000000536", sin el primer '0').
+        $product = Product::create(['name' => 'Individuales x6 u', 'sku' => '0000000000536', 'price' => 3200, 'iva_rate' => 21, 'stock' => 12]);
 
         $pos = Livewire::actingAs($this->admin())
             ->test('pos.index')

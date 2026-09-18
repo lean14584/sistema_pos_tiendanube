@@ -59,17 +59,24 @@ class Ean13Test extends TestCase
         $this->assertNull(Ean13::stripPadding('0000000098763'));
     }
 
-    public function test_strip_padding_sin_checksum_recupera_el_sku_de_una_base_de_12_digitos(): void
+    public function test_reconstruir_desde_upc_a_antepone_el_cero_y_valida_el_checksum(): void
     {
-        // Lector configurado para no transmitir el dígito verificador: llega
-        // la base de 12 dígitos de Ean13::fromSku('536') sin el 13ro.
-        $this->assertSame('536', Ean13::stripPaddingSinChecksum('000000000536'));
+        // Caso real visto en producción: el sku YA es el EAN13 completo
+        // guardado tal cual ("0000000000536", 13 dígitos), y el lector lo
+        // transmitió como su UPC-A equivalente (12 dígitos, sin el '0' de
+        // sistema numérico adelante).
+        $this->assertSame('0000000000536', Ean13::reconstruirDesdeUpcA('000000000536'));
+
+        // Caso de sku corto: Ean13::fromSku('9876') imprime '0000000098762',
+        // el lector manda el UPC-A '000000098762'.
+        $this->assertSame('0000000098762', Ean13::reconstruirDesdeUpcA('000000098762'));
     }
 
-    public function test_strip_padding_sin_checksum_rechaza_longitud_o_formato_invalido(): void
+    public function test_reconstruir_desde_upc_a_rechaza_longitud_formato_o_checksum_invalido(): void
     {
-        $this->assertNull(Ean13::stripPaddingSinChecksum('0000000005364')); // 13 dígitos, no 12
-        $this->assertNull(Ean13::stripPaddingSinChecksum('00000000053A')); // no numérico
+        $this->assertNull(Ean13::reconstruirDesdeUpcA('0000000005364')); // 13 dígitos, no 12
+        $this->assertNull(Ean13::reconstruirDesdeUpcA('00000000053A')); // no numérico
+        $this->assertNull(Ean13::reconstruirDesdeUpcA('000000000537')); // con el '0' antepuesto, checksum no da
     }
 
     public function test_is_valid(): void

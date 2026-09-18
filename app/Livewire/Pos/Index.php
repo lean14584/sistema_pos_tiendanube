@@ -254,12 +254,19 @@ class Index extends Component
             $product = $skuOriginal ? Product::where('sku', $skuOriginal)->first() : null;
         }
 
-        // Algunos lectores vienen configurados para no transmitir el dígito
-        // verificador del EAN13: llegan los 12 dígitos de la base, sin el
-        // 13ro. Mismo esquema que arriba, pero sin checksum que validar.
+        // Un EAN13 que arranca con '0' (nuestro esquema de sku corto siempre
+        // arranca así) es equivalente a un UPC-A de 12 dígitos: algunos
+        // lectores lo detectan y transmiten el UPC-A en vez del EAN13
+        // completo. Reconstruir el EAN13 y probar tanto el sku "tal cual"
+        // (por si ya está guardado paddeado, como un GTIN real) como el sku
+        // corto recuperado con stripPadding().
         if (! $product && strlen($code) === 12) {
-            $skuOriginal = Ean13::stripPaddingSinChecksum($code);
-            $product = $skuOriginal ? Product::where('sku', $skuOriginal)->first() : null;
+            $ean13 = Ean13::reconstruirDesdeUpcA($code);
+
+            if ($ean13) {
+                $product = Product::where('sku', $ean13)->first()
+                    ?? Product::where('sku', Ean13::stripPadding($ean13))->first();
+            }
         }
 
         if (! $product) {

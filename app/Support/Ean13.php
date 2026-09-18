@@ -62,18 +62,24 @@ class Ean13
     }
 
     /**
-     * Igual que stripPadding(), pero para lectores configurados de fábrica
-     * para NO transmitir el dígito verificador del EAN13: llega la base de
-     * 12 dígitos (sin el 13ro), así que no hay checksum que validar — se
-     * confía en que el lector leyó bien las barras.
+     * Reconstruye el EAN13 completo cuando el lector lo transmitió como su
+     * equivalente UPC-A: un EAN13 que arranca con '0' (nuestro esquema de
+     * sku corto siempre arranca así, por el padding) es, dígito a dígito, un
+     * código UPC-A de 12 dígitos con un '0' de sistema numérico adelante —
+     * muchos lectores detectan esto y mandan directamente los 12 dígitos del
+     * UPC-A en vez del EAN13 completo (conversión estándar, no un error del
+     * lector). Se antepone el '0' y se valida el checksum para confirmar que
+     * el código realmente encajaba en este esquema antes de buscar nada.
      */
-    public static function stripPaddingSinChecksum(string $base12): ?string
+    public static function reconstruirDesdeUpcA(string $upcA): ?string
     {
-        if (strlen($base12) !== 12 || ! ctype_digit($base12)) {
+        if (strlen($upcA) !== 12 || ! ctype_digit($upcA)) {
             return null;
         }
 
-        return ltrim($base12, '0') ?: '0';
+        $ean13 = '0'.$upcA;
+
+        return self::isValid($ean13) ? $ean13 : null;
     }
 
     /** Checksum estándar EAN13: dígitos impares (1ro, 3ro...) peso 1, pares peso 3, sobre los primeros 12. */
