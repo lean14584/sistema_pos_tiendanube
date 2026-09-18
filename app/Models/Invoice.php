@@ -19,7 +19,7 @@ use Illuminate\Support\Collection;
 
 #[Fillable([
     'number', 'client_id', 'sucursal_id', 'punto_venta', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
-    'tipo_comprobante_interno', 'related_invoice_id', 'remito_id', 'afecta_stock', 'mp_external_reference',
+    'tipo_comprobante_interno', 'related_invoice_id', 'remito_id', 'cambio_devolucion_id', 'afecta_stock', 'mp_external_reference',
     'tiendanube_order_id',
 ])]
 class Invoice extends Model
@@ -167,6 +167,24 @@ class Invoice extends Model
     public function facturasDelRemito(): HasMany
     {
         return $this->hasMany(Invoice::class, 'remito_id');
+    }
+
+    /**
+     * En un "cambio" armado desde el POS (Devolución + producto nuevo en la
+     * misma operación), la Devolución hermana de esta Venta.
+     */
+    public function cambioDevolucion(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'cambio_devolucion_id');
+    }
+
+    /**
+     * La Venta nueva emitida junto con esta Devolución en un "cambio" (null
+     * si la devolución fue pura, sin producto nuevo).
+     */
+    public function ventaDelCambio(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'cambio_devolucion_id');
     }
 
     /** True si este comprobante es un Remito X. */

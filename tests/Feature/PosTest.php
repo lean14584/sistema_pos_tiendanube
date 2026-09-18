@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Sucursal;
 use App\Models\User;
+use App\Models\Voucher;
 use App\Support\CurrentSucursal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -250,6 +251,236 @@ class PosTest extends TestCase
         $this->assertDatabaseHas('invoices', ['status' => 'paid', 'tipo_comprobante_interno' => 'devolucion']);
         $this->assertDatabaseHas('cash_movements', ['type' => 'egreso', 'source' => 'devolucion', 'amount' => 500]);
         $this->assertDatabaseMissing('cash_movements', ['type' => 'ingreso', 'amount' => 500]);
+    }
+
+    /**
+     * Factura "original" mínima para los tests de Cambio: un ítem de $1000,
+     * ya cargada como si fuera de una venta anterior (no pasa por el POS).
+     */
+    private function facturaOriginal(Product $product, float $precio = 1000): Invoice
+    {
+        $invoice = Invoice::create([
+            'number' => '0001-00000001',
+            'client_id' => Client::consumidorFinal()->id,
+            'punto_venta' => 1,
+            'tipo_comprobante_interno' => 'remito_x',
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->toDateString(),
+            'tax_rate' => 0,
+            'status' => 'paid',
+        ]);
+
+        $invoice->items()->create([
+            'product_id' => $product->id,
+            'description' => $product->name,
+            'quantity' => 1,
+            'unit_price' => $precio,
+            'iva_rate' => 0,
+        ]);
+
+        return $invoice;
+    }
+
+    public function test_cambio_carga_los_items_de_la_factura_original_al_buscarla(): void
+    {
+        $admin = $this->admin();
+        $productoOriginal = Product::create(['name' => 'Campera', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
+        $original = $this->facturaOriginal($productoOriginal);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('numeroFacturaOrigen', $original->number)
+            ->call('buscarFacturaOrigen');
+
+        $pos->assertHasNoErrors('numeroFacturaOrigen');
+        $this->assertSame($original->id, $pos->get('facturaOrigen')->id);
+        $this->assertCount(1, $pos->get('itemsADevolver'));
+        $this->assertSame('1000.00', $pos->get('itemsADevolver')[0]['unit_price']);
+    }
+
+    public function test_buscar_factura_origen_inexistente_muestra_error(): void
+    {
+        Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('numeroFacturaOrigen', '9999-99999999')
+            ->call('buscarFacturaOrigen')
+            ->assertHasErrors('numeroFacturaOrigen');
+    }
+
+    public function test_cambio_con_producto_mas_caro_cobra_la_diferencia_y_repone_stock_de_lo_devuelto(): void
+    {
+        $admin = $this->admin();
+        // DECO-HOGAR real: factura manual apagada, la venta nueva sale como Remito X.
+        config(['features.invoices_manual_create' => false]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $productoOriginal = Product::create(['name' => 'Campera chica', 'price' => 1000, 'iva_rate' => 0, 'stock' => 3]);
+        $original = $this->facturaOriginal($productoOriginal);
+
+        $productoNuevo = Product::create(['name' => 'Campera grande', 'price' => 1500, 'iva_rate' => 0, 'stock' => 5]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('numeroFacturaOrigen', $original->number)
+            ->call('buscarFacturaOrigen')
+            ->call('addProduct', $productoNuevo->id) // carrito: $1500
+            ->call('addPayment') // prellena con la diferencia: 1500 - 1000 = 500
+            ->set('payments.0.method', 'efectivo')
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        $pos->assertHasNoErrors();
+
+        $this->assertSame(4, $productoOriginal->fresh()->stock); // 3 + 1 (repuesto)
+        $this->assertSame(4, $productoNuevo->fresh()->stock); // 5 - 1 (vendido)
+
+        $venta = Invoice::where('tipo_comprobante_interno', 'remito_x')->where('id', '!=', $original->id)->sole();
+        $this->assertEqualsWithDelta(500.0, (float) $venta->total, 0.01);
+        $this->assertSame('paid', $venta->status->value);
+        $this->assertNotNull($venta->cambio_devolucion_id);
+
+        $devolucion = $venta->cambioDevolucion;
+        $this->assertSame('devolucion', $devolucion->tipo_comprobante_interno->value);
+        $this->assertSame($original->id, $devolucion->related_invoice_id);
+        $this->assertCount(0, $devolucion->payments);
+
+        $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 500, 'source' => 'venta']);
+        $this->assertDatabaseCount('vouchers', 0);
+    }
+
+    public function test_cambio_con_producto_mas_barato_emite_un_vale_por_el_sobrante(): void
+    {
+        $admin = $this->admin();
+        // DECO-HOGAR real: factura manual apagada, la venta nueva sale como Remito X.
+        config(['features.invoices_manual_create' => false]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $productoOriginal = Product::create(['name' => 'Campera grande', 'price' => 1000, 'iva_rate' => 0, 'stock' => 3]);
+        $original = $this->facturaOriginal($productoOriginal);
+
+        $productoNuevo = Product::create(['name' => 'Llavero', 'price' => 600, 'iva_rate' => 0, 'stock' => 10]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('numeroFacturaOrigen', $original->number)
+            ->call('buscarFacturaOrigen')
+            ->call('addProduct', $productoNuevo->id) // carrito: $600, sobran $400
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        $pos->assertHasNoErrors();
+
+        $venta = Invoice::where('tipo_comprobante_interno', 'remito_x')->where('id', '!=', $original->id)->sole();
+        $this->assertEqualsWithDelta(0.0, (float) $venta->total, 0.01);
+        $this->assertSame('paid', $venta->status->value);
+
+        $voucher = Voucher::sole();
+        $this->assertSame('400.00', (string) $voucher->amount);
+        $this->assertSame('400.00', (string) $voucher->balance);
+        $this->assertSame($venta->cambio_devolucion_id, $voucher->devolucion_invoice_id);
+
+        $this->assertDatabaseMissing('cash_movements', ['source' => 'venta']);
+    }
+
+    public function test_cambio_con_diferencia_a_favor_puede_dejarse_en_cuenta_corriente(): void
+    {
+        $admin = $this->admin();
+        // DECO-HOGAR real: factura manual apagada, la venta nueva sale como Remito X.
+        config(['features.invoices_manual_create' => false]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $cliente = Client::create(['name' => 'Cliente Real', 'email' => 'cliente@test.com', 'credit_limit' => 10000]);
+
+        $productoOriginal = Product::create(['name' => 'Campera chica', 'price' => 1000, 'iva_rate' => 0, 'stock' => 3]);
+        $original = $this->facturaOriginal($productoOriginal);
+
+        $productoNuevo = Product::create(['name' => 'Campera grande', 'price' => 1500, 'iva_rate' => 0, 'stock' => 5]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('client_id', $cliente->id)
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('numeroFacturaOrigen', $original->number)
+            ->call('buscarFacturaOrigen')
+            ->call('addProduct', $productoNuevo->id) // diferencia: $500, sin pago
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        $pos->assertHasNoErrors();
+
+        $venta = Invoice::where('tipo_comprobante_interno', 'remito_x')->where('id', '!=', $original->id)->sole();
+        $this->assertSame('pending', $venta->status->value);
+        $this->assertSame($cliente->id, $venta->client_id);
+    }
+
+    public function test_devolucion_pura_sin_producto_nuevo_emite_vale_por_el_total(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $productoOriginal = Product::create(['name' => 'Campera', 'price' => 1000, 'iva_rate' => 0, 'stock' => 3]);
+        $original = $this->facturaOriginal($productoOriginal);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('numeroFacturaOrigen', $original->number)
+            ->call('buscarFacturaOrigen')
+            ->call('cobrar'); // sin agregar nada al carrito
+
+        $pos->assertHasNoErrors();
+
+        $this->assertSame(4, $productoOriginal->fresh()->stock); // repuesto
+
+        $devolucion = Invoice::where('tipo_comprobante_interno', 'devolucion')->sole();
+        $this->assertSame($original->id, $devolucion->related_invoice_id);
+        $this->assertNull($devolucion->cambio_devolucion_id);
+
+        $voucher = Voucher::sole();
+        $this->assertSame('1000.00', (string) $voucher->balance);
+        $this->assertSame($devolucion->id, $voucher->devolucion_invoice_id);
+    }
+
+    public function test_canjear_un_vale_en_una_venta_posterior_descuenta_su_saldo_y_no_mueve_caja(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $voucher = Voucher::emitir(400);
+        $product = Product::create(['name' => 'Remera', 'price' => 600, 'iva_rate' => 0, 'stock' => 5]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->set('vale_codigo', $voucher->code)
+            ->call('buscarVale')
+            ->assertSet('vale_monto', '400')
+            ->call('addPayment') // prellena con lo que falta después del vale: 200
+            ->set('payments.0.method', 'efectivo')
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        $pos->assertHasNoErrors();
+
+        $this->assertSame('0.00', (string) $voucher->fresh()->balance);
+
+        $venta = Invoice::sole();
+        $this->assertDatabaseHas('invoice_payments', ['invoice_id' => $venta->id, 'voucher_id' => $voucher->id, 'amount' => 400]);
+        $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 200, 'source' => 'venta']);
+        $this->assertDatabaseMissing('cash_movements', ['amount' => 400]);
+    }
+
+    public function test_vale_con_codigo_inexistente_muestra_error(): void
+    {
+        Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('vale_codigo', 'NOEXISTE')
+            ->call('buscarVale')
+            ->assertHasErrors('vale_codigo');
     }
 
     /**

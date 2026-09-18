@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\PromotionGroup;
 use App\Models\PuntoVenta;
+use App\Models\Voucher;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
@@ -64,12 +65,34 @@ class Index extends Component
     /** Vacío = usar el único/por defecto de la sucursal activa (no se muestra selector). */
     public string $punto_venta = '';
 
+    // --- Cambio (devolución + producto nuevo en la misma operación) ---
+
+    public string $numeroFacturaOrigen = '';
+
+    /** Factura/remito original del que se están devolviendo ítems, o null. */
+    public ?Invoice $facturaOrigen = null;
+
+    /** Cuando el número ingresado matchea más de un comprobante (mismo número, distinto tipo). */
+    public Collection $facturaOrigenCandidatas;
+
+    /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string, iva_rate: string}> */
+    public array $itemsADevolver = [];
+
+    // --- Vale de cambio ---
+
+    public string $vale_codigo = '';
+
+    public string $vale_monto = '';
+
+    public ?Voucher $valeEncontrado = null;
+
     public function mount(): void
     {
         $cf = Client::consumidorFinal();
         $this->client_id = $cf->id;
         $this->price_list_id = $cf->price_list_id; // null = precio base
         $this->tipo_comprobante_interno = CompanySettings::current()->tipoComprobantePorDefecto()->value;
+        $this->facturaOrigenCandidatas = collect();
 
         $default = CurrentSucursal::get()?->puntoVentaPorDefecto();
         $this->punto_venta = $default ? (string) $default->numero : '';
@@ -553,6 +576,16 @@ class Index extends Component
         return max(0, round($this->total() - $this->paymentsTotal(), 2));
     }
 
+    /** Monto a mostrar en el botón "Cobrar": la diferencia neta de crédito en un cambio, o el total normal. */
+    public function montoACobrar(): float
+    {
+        if ($this->itemsADevolver !== []) {
+            return max(0, $this->diferencia());
+        }
+
+        return $this->totalConDescuentoPorMedioDePago() ?? $this->total();
+    }
+
     /**
      * Agrega una línea de pago con el saldo que falta cubrir prellenado (así
      * el caso típico de pago completo es un solo toque de método + cobrar),
@@ -562,7 +595,7 @@ class Index extends Component
      */
     public function addPayment(): void
     {
-        $faltante = round($this->total() - $this->paymentsTotal(), 2);
+        $faltante = round($this->objetivoACobrar() - $this->paymentsTotal() - $this->valeMontoPendiente(), 2);
 
         $this->payments[] = [
             'method' => '',
@@ -570,10 +603,156 @@ class Index extends Component
         ];
     }
 
+    /** Lo que hay que cubrir con pagos + vale: la diferencia neta de crédito en un cambio, o el total normal. */
+    private function objetivoACobrar(): float
+    {
+        return $this->itemsADevolver !== [] ? max(0, $this->diferencia()) : round($this->total(), 2);
+    }
+
+    /** Monto del vale ya seleccionado (aunque todavía no se haya confirmado el cobro). */
+    private function valeMontoPendiente(): float
+    {
+        return $this->valeEncontrado ? (float) $this->vale_monto : 0.0;
+    }
+
     public function removePayment(int $index): void
     {
         unset($this->payments[$index]);
         $this->payments = array_values($this->payments);
+    }
+
+    /**
+     * Busca el comprobante original por número (para el modo Cambio: se
+     * dispara al elegir "Devolución" en el tipo de comprobante). Excluye
+     * Notas de Crédito y Devoluciones — no tiene sentido "devolver" contra
+     * uno de esos. El número es único por (tipo, número), así que puede
+     * haber más de un comprobante con el mismo número si son de tipos
+     * distintos — en ese caso se deja elegir.
+     */
+    public function buscarFacturaOrigen(): void
+    {
+        $this->resetErrorBag('numeroFacturaOrigen');
+        $this->facturaOrigenCandidatas = collect();
+
+        $numero = trim($this->numeroFacturaOrigen);
+
+        if ($numero === '') {
+            return;
+        }
+
+        $candidatas = Invoice::where('number', $numero)
+            ->whereNotIn('tipo_comprobante_interno', [
+                TipoComprobanteInterno::Devolucion,
+                TipoComprobanteInterno::NotaCreditoA,
+                TipoComprobanteInterno::NotaCreditoB,
+                TipoComprobanteInterno::NotaCreditoC,
+            ])
+            ->with('items')
+            ->get();
+
+        if ($candidatas->isEmpty()) {
+            $this->addError('numeroFacturaOrigen', "No se encontró ningún comprobante con el número «{$numero}».");
+
+            return;
+        }
+
+        if ($candidatas->count() > 1) {
+            $this->facturaOrigenCandidatas = $candidatas;
+
+            return;
+        }
+
+        $this->cargarFacturaOrigen($candidatas->first());
+    }
+
+    public function elegirFacturaOrigen(int $invoiceId): void
+    {
+        $invoice = $this->facturaOrigenCandidatas->firstWhere('id', $invoiceId);
+
+        if ($invoice) {
+            $this->cargarFacturaOrigen($invoice);
+        }
+    }
+
+    private function cargarFacturaOrigen(Invoice $invoice): void
+    {
+        $this->facturaOrigen = $invoice;
+        $this->facturaOrigenCandidatas = collect();
+
+        $this->itemsADevolver = $invoice->items->map(fn ($item) => [
+            'product_id' => $item->product_id,
+            'description' => $item->description,
+            'quantity' => (string) $item->quantity,
+            'unit_price' => (string) $item->unit_price,
+            'iva_rate' => AlicuotaIva::normalizar($item->iva_rate_efectiva),
+        ])->all();
+    }
+
+    public function quitarFacturaOrigen(): void
+    {
+        $this->facturaOrigen = null;
+        $this->numeroFacturaOrigen = '';
+        $this->facturaOrigenCandidatas = collect();
+        $this->itemsADevolver = [];
+    }
+
+    public function removeItemADevolver(int $index): void
+    {
+        unset($this->itemsADevolver[$index]);
+        $this->itemsADevolver = array_values($this->itemsADevolver);
+    }
+
+    /** Neto de lo que se devuelve (cantidad x precio, tal como estaban en el comprobante original). */
+    public function creditoSubtotal(): float
+    {
+        return collect($this->itemsADevolver)->sum(fn ($i) => (float) $i['quantity'] * (float) $i['unit_price']);
+    }
+
+    public function creditoTaxAmount(): float
+    {
+        return collect($this->itemsADevolver)->sum(
+            fn ($i) => (float) $i['quantity'] * (float) $i['unit_price'] * ((float) $i['iva_rate'] / 100)
+        );
+    }
+
+    /** Valor total (con IVA) de lo que se devuelve — mismo criterio que total() para el carrito nuevo. */
+    public function creditoTotal(): float
+    {
+        return $this->creditoSubtotal() + $this->creditoTaxAmount();
+    }
+
+    /** Positivo: falta cobrar. Negativo: sobra a favor del cliente (se emite vale por eso). */
+    public function diferencia(): float
+    {
+        return round($this->total() - $this->creditoTotal(), 2);
+    }
+
+    public function buscarVale(): void
+    {
+        $this->resetErrorBag('vale_codigo');
+
+        $voucher = Voucher::porCodigo($this->vale_codigo);
+
+        if (! $voucher || ! $voucher->estaDisponible()) {
+            $this->valeEncontrado = null;
+            $this->addError('vale_codigo', 'Ese código de vale no existe o ya no tiene saldo.');
+
+            return;
+        }
+
+        $this->valeEncontrado = $voucher;
+
+        // Prellenado con lo que realmente hace falta cubrir (nunca más que
+        // el saldo del vale ni más que lo que falta pagar).
+        $faltante = max(0, round($this->objetivoACobrar() - $this->paymentsTotal(), 2));
+        $this->vale_monto = (string) min((float) $voucher->balance, $faltante);
+    }
+
+    public function quitarVale(): void
+    {
+        $this->valeEncontrado = null;
+        $this->vale_codigo = '';
+        $this->vale_monto = '';
     }
 
     public function cobrar(): void
@@ -593,6 +772,17 @@ class Index extends Component
 
     private function cobrarInterno(): void
     {
+        $modoCambio = $this->itemsADevolver !== [];
+
+        // Devolución pura (sin producto nuevo): solo repone stock y, si
+        // corresponde, emite un vale por el total — no pasa por el flujo de
+        // pago/carrito de una venta.
+        if ($modoCambio && $this->cart === []) {
+            $this->procesarDevolucionPura();
+
+            return;
+        }
+
         if ($this->cart === []) {
             $this->addError('cart', 'Agregá al menos un producto.');
 
@@ -613,8 +803,20 @@ class Index extends Component
             }
         }
 
-        $total = round($this->total(), 2);
-        $pagado = round($this->paymentsTotal(), 2);
+        $cartTotal = round($this->total(), 2);
+
+        // Crédito por lo devuelto, aplicado contra el carrito nuevo. Si
+        // sobra crédito (devuelve más de lo que se lleva), lo que falta
+        // cobrar es 0 y el sobrante se resuelve como vale más abajo.
+        $creditoTotal = $modoCambio ? round($this->creditoTotal(), 2) : 0.0;
+        $total = max(0, round($cartTotal - $creditoTotal, 2));
+
+        $voucherAplicado = $this->valeEncontrado;
+        $valeMonto = $voucherAplicado
+            ? max(0, round(min((float) $this->vale_monto, (float) $voucherAplicado->balance), 2))
+            : 0.0;
+
+        $pagado = round($this->paymentsTotal(), 2) + $valeMonto;
 
         if ($pagado > $total + 0.001) {
             $this->addError('payments', 'Lo pagado ($'.money($pagado).') supera el total. Ajustá los montos.');
@@ -642,9 +844,17 @@ class Index extends Component
             }
         }
 
-        $tipo = TipoComprobanteInterno::tryFrom($this->tipo_comprobante_interno);
-        if (! $tipo || ! in_array($tipo, CompanySettings::current()->tiposComprobanteSeleccionables(), true)) {
+        // En un cambio, lo que se lleva es SIEMPRE una venta normal (resta
+        // stock) — el tipo elegido en el selector ("Devolución") fue solo
+        // el gatillo para pedir el número de factura, no el tipo real del
+        // comprobante que sale por lo nuevo.
+        if ($modoCambio) {
             $tipo = CompanySettings::current()->tipoComprobantePorDefecto();
+        } else {
+            $tipo = TipoComprobanteInterno::tryFrom($this->tipo_comprobante_interno);
+            if (! $tipo || ! in_array($tipo, CompanySettings::current()->tiposComprobanteSeleccionables(), true)) {
+                $tipo = CompanySettings::current()->tipoComprobantePorDefecto();
+            }
         }
         $status = $pagado + 0.001 >= $total ? 'paid' : 'pending';
 
@@ -662,14 +872,29 @@ class Index extends Component
         // con el descuento propio de cada línea (manual + promo). Solo existe
         // cuando la venta queda pagada por completo en el momento (ver
         // totalConDescuentoPorMedioDePago()) — si queda saldo en cuenta
-        // corriente, esa parte se factura siempre a precio de lista.
-        $totalConDescuento = $this->totalConDescuentoPorMedioDePago();
-        $aplicaDescuentoPorMedioDePago = $totalConDescuento !== null;
-        $descuentoPctPagoGlobal = $aplicaDescuentoPorMedioDePago && $total > 0
-            ? round((1 - $totalConDescuento / $total) * 100, 4)
-            : 0.0;
+        // corriente, esa parte se factura siempre a precio de lista. En un
+        // cambio no se aplica: la base de comparación de ese método es el
+        // total del carrito nuevo, no la diferencia ya neta de crédito, así
+        // que mezclarlo ahí daría un descuento mal calculado.
+        if ($modoCambio) {
+            $aplicaDescuentoPorMedioDePago = false;
+            $descuentoPctPagoGlobal = 0.0;
+        } else {
+            $totalConDescuento = $this->totalConDescuentoPorMedioDePago();
+            $aplicaDescuentoPorMedioDePago = $totalConDescuento !== null;
+            $descuentoPctPagoGlobal = $aplicaDescuentoPorMedioDePago && $total > 0
+                ? round((1 - $totalConDescuento / $total) * 100, 4)
+                : 0.0;
+        }
 
-        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use ($tipo, $clientId, $status, $puntoVentaNumero, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago) {
+        $facturaOrigenSnapshot = $this->facturaOrigen;
+        $itemsADevolverSnapshot = $this->itemsADevolver;
+
+        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use (
+            $tipo, $clientId, $status, $puntoVentaNumero, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago,
+            $modoCambio, $creditoTotal, $cartTotal, $facturaOrigenSnapshot, $itemsADevolverSnapshot,
+            $valeMonto, $voucherAplicado,
+        ) {
             $invoice = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
                 'client_id' => $clientId,
@@ -696,6 +921,39 @@ class Index extends Component
 
             StockAdjuster::apply($this->cart, $tipo->stockSign());
 
+            $devolucionInvoice = null;
+
+            if ($modoCambio) {
+                // Línea sintética negativa: así $invoice->total (ver
+                // HasBillingTotals) ya sale neto del crédito, sin tocar la
+                // lógica de cta cte / límite de crédito / saldo que confía
+                // en ese accessor en todos lados.
+                $montoAplicado = min($creditoTotal, $cartTotal);
+
+                if ($montoAplicado > 0) {
+                    $invoice->items()->create([
+                        'product_id' => null,
+                        'description' => 'Crédito por devolución'.($facturaOrigenSnapshot ? " {$facturaOrigenSnapshot->number}" : ''),
+                        'quantity' => 1,
+                        'unit_price' => -$montoAplicado,
+                        'discount_percent' => 0,
+                        'iva_rate' => 0,
+                    ]);
+                }
+
+                // Devolución hermana: repone stock de lo devuelto. Sin pagos
+                // propios — la resolución financiera de la diferencia vive
+                // toda en la Venta de arriba (o en el vale, si sobra).
+                $devolucionInvoice = InvoiceNumberGenerator::withLock(
+                    TipoComprobanteInterno::Devolucion->value,
+                    fn () => $this->crearInvoiceDevolucion($facturaOrigenSnapshot, $itemsADevolverSnapshot, $puntoVentaNumero, $clientId),
+                    null,
+                    $puntoVentaNumero,
+                );
+
+                $invoice->update(['cambio_devolucion_id' => $devolucionInvoice->id]);
+            }
+
             foreach ($this->payments as $payment) {
                 if ((float) $payment['amount'] > 0) {
                     // Se guarda el monto REAL cobrado (con el descuento del
@@ -717,8 +975,30 @@ class Index extends Component
                 }
             }
 
-            return $invoice;
+            if ($valeMonto > 0 && $voucherAplicado) {
+                $voucherAplicado->redeem($valeMonto);
+                $invoice->payments()->create([
+                    'method' => PaymentMethod::Otro,
+                    'amount' => $valeMonto,
+                    'voucher_id' => $voucherAplicado->id,
+                ]);
+                // Sin CashLinker acá: canjear un vale no mete plata física en
+                // la caja, es una obligación que ya se había asumido cuando
+                // se emitió.
+            }
+
+            $voucherEmitido = null;
+            if ($modoCambio) {
+                $sobrante = max(0, round($creditoTotal - $cartTotal, 2));
+                if ($sobrante > 0) {
+                    $voucherEmitido = Voucher::emitir($sobrante, CurrentSucursal::id(), $devolucionInvoice);
+                }
+            }
+
+            return [$invoice, $voucherEmitido];
         }), null, $puntoVentaNumero);
+
+        [$invoice, $voucherEmitido] = $invoice;
 
         if ($this->printOnSale) {
             $cambio = $this->printExchangeSlip ? 1 : null;
@@ -734,12 +1014,102 @@ class Index extends Component
         $this->cart = [];
         $this->payments = [];
         $this->client_id = $consumidorFinal->id;
+        $this->quitarFacturaOrigen();
+        $this->quitarVale();
 
         $msg = "Venta {$invoice->number} registrada por $".money((float) $invoice->total).'.';
         if ($saldo > 0) {
             $msg .= ' Saldo en cuenta corriente: $'.money($saldo).'.';
         }
+        if ($voucherEmitido) {
+            $msg .= " Se generó el vale {$voucherEmitido->code} por $".money((float) $voucherEmitido->amount).'.';
+        }
         session()->flash('status', $msg);
+    }
+
+    /**
+     * Devolución sin producto nuevo: repone stock de lo devuelto y, si hay
+     * crédito, lo convierte directo en un vale (no hay nada contra qué
+     * aplicarlo).
+     */
+    private function procesarDevolucionPura(): void
+    {
+        if (! $this->hasOpenCashSession()) {
+            $this->addError('cart', 'Tenés que abrir la caja antes de procesar la devolución.');
+
+            return;
+        }
+
+        $puntoVentaNumero = $this->puntosVentaOpciones()->firstWhere('numero', (int) $this->punto_venta)?->numero;
+
+        if ($puntoVentaNumero === null) {
+            $this->addError('punto_venta', 'Elegí un punto de venta válido.');
+
+            return;
+        }
+
+        $creditoTotal = round($this->creditoTotal(), 2);
+        $facturaOrigenSnapshot = $this->facturaOrigen;
+        $itemsADevolverSnapshot = $this->itemsADevolver;
+        $clientId = $this->client_id ?: Client::consumidorFinal()->id;
+
+        [$devolucion, $voucherEmitido] = InvoiceNumberGenerator::withLock(
+            TipoComprobanteInterno::Devolucion->value,
+            fn () => DB::transaction(function () use ($facturaOrigenSnapshot, $itemsADevolverSnapshot, $puntoVentaNumero, $clientId, $creditoTotal) {
+                $devolucion = $this->crearInvoiceDevolucion($facturaOrigenSnapshot, $itemsADevolverSnapshot, $puntoVentaNumero, $clientId);
+
+                $voucher = $creditoTotal > 0 ? Voucher::emitir($creditoTotal, CurrentSucursal::id(), $devolucion) : null;
+
+                return [$devolucion, $voucher];
+            }),
+            null,
+            $puntoVentaNumero,
+        );
+
+        $this->quitarFacturaOrigen();
+
+        $msg = "Devolución {$devolucion->number} registrada.";
+        if ($voucherEmitido) {
+            $msg .= " Se generó el vale {$voucherEmitido->code} por $".money((float) $voucherEmitido->amount).'.';
+        }
+        session()->flash('status', $msg);
+    }
+
+    /**
+     * Crea el comprobante de Devolución (repone stock) por los ítems
+     * devueltos. Tiene que llamarse ya adentro de un
+     * InvoiceNumberGenerator::withLock(Devolucion, ...) — no numera con lock
+     * propio.
+     *
+     * @param  array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string, iva_rate: string}>  $items
+     */
+    private function crearInvoiceDevolucion(?Invoice $facturaOrigen, array $items, int $puntoVentaNumero, int $clientId): Invoice
+    {
+        $devolucion = Invoice::create([
+            'number' => InvoiceNumberGenerator::next(TipoComprobanteInterno::Devolucion->value, null, $puntoVentaNumero),
+            'client_id' => $clientId,
+            'punto_venta' => $puntoVentaNumero,
+            'tipo_comprobante_interno' => TipoComprobanteInterno::Devolucion,
+            'related_invoice_id' => $facturaOrigen?->id,
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->toDateString(),
+            'tax_rate' => 0,
+            'status' => 'paid',
+        ]);
+
+        foreach ($items as $item) {
+            $devolucion->items()->create([
+                'product_id' => $item['product_id'],
+                'description' => $item['description'],
+                'quantity' => $item['quantity'],
+                'unit_price' => $item['unit_price'],
+                'iva_rate' => $item['iva_rate'],
+            ]);
+        }
+
+        StockAdjuster::apply($items, TipoComprobanteInterno::Devolucion->stockSign());
+
+        return $devolucion;
     }
 
     public function render()

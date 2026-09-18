@@ -137,12 +137,88 @@
                 {{-- Tipo de comprobante --}}
                 <div>
                     <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tipo de comprobante</label>
-                    <select wire:model="tipo_comprobante_interno" class="{{ $posSelect }}">
+                    <select wire:model.live="tipo_comprobante_interno" class="{{ $posSelect }}">
                         @foreach ($tipoComprobanteInternoOptions as $option)
                             <option value="{{ $option->value }}">{{ $option->label() }}</option>
                         @endforeach
                     </select>
                 </div>
+
+                @if ($tipo_comprobante_interno === 'devolucion')
+                    <div class="rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50/60 dark:bg-amber-500/5 p-3 space-y-2">
+                        <p class="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Cambio / Devolución</p>
+
+                        @if (! $facturaOrigen)
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    wire:model="numeroFacturaOrigen"
+                                    wire:keydown.enter.prevent="buscarFacturaOrigen"
+                                    placeholder="Nº de factura/remito a devolver"
+                                    class="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 px-3 py-2 text-sm dark:text-gray-100"
+                                >
+                                <button type="button" wire:click="buscarFacturaOrigen" class="shrink-0 rounded-lg bg-amber-600 hover:bg-amber-700 px-3 py-2 text-xs font-medium text-white">
+                                    Buscar
+                                </button>
+                            </div>
+                            @error('numeroFacturaOrigen') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+
+                            @if ($facturaOrigenCandidatas->isNotEmpty())
+                                <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+                                    @foreach ($facturaOrigenCandidatas as $candidata)
+                                        <button type="button" wire:click="elegirFacturaOrigen({{ $candidata->id }})" class="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-500/10">
+                                            {{ $candidata->tipo_comprobante_interno->label() }} · {{ $candidata->issue_date->format('d/m/Y') }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <p class="text-xs text-amber-700/70 dark:text-amber-400/70">
+                                Sin número: funciona como una devolución simple, sin producto nuevo ni vale.
+                            </p>
+                        @else
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="font-medium text-amber-800 dark:text-amber-300">
+                                    {{ $facturaOrigen->tipo_comprobante_interno->label() }} {{ $facturaOrigen->number }}
+                                </span>
+                                <button type="button" wire:click="quitarFacturaOrigen" class="text-gray-400 hover:text-red-600">
+                                    <x-heroicon-o-x-mark class="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div class="space-y-1">
+                                @foreach ($itemsADevolver as $index => $item)
+                                    <div wire:key="devolver-{{ $index }}" class="flex items-center gap-2 text-xs">
+                                        <span class="flex-1 truncate text-gray-700 dark:text-gray-300">{{ $item['description'] }}</span>
+                                        <input type="number" step="0.01" min="0" wire:model.live="itemsADevolver.{{ $index }}.quantity" class="w-16 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1.5 py-1 text-right dark:text-gray-100">
+                                        <span class="w-20 text-right text-gray-500 dark:text-gray-400">${{ money($item['unit_price']) }}</span>
+                                        <button type="button" wire:click="removeItemADevolver({{ $index }})" class="text-gray-300 hover:text-red-500 dark:text-gray-600">
+                                            <x-heroicon-o-x-mark class="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <div class="flex items-center justify-between text-sm font-semibold text-amber-700 dark:text-amber-400 pt-1 border-t border-amber-200 dark:border-amber-500/20">
+                                <span>Crédito por devolución</span>
+                                <span>${{ money($this->creditoTotal()) }}</span>
+                            </div>
+
+                            @if (count($cart) > 0)
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-gray-500 dark:text-gray-400">{{ $this->diferencia() >= 0 ? 'Diferencia a cobrar' : 'Sobrante a favor (vale)' }}</span>
+                                    <span class="font-semibold {{ $this->diferencia() >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                        ${{ money(abs($this->diferencia())) }}
+                                    </span>
+                                </div>
+                            @else
+                                <p class="text-xs text-amber-700/80 dark:text-amber-400/80">
+                                    Sin producto nuevo: se emite un vale por el total devuelto.
+                                </p>
+                            @endif
+                        @endif
+                    </div>
+                @endif
 
                 @if ($this->puntosVentaOpciones->count() > 1)
                     <div>
@@ -266,6 +342,32 @@
                     @endif
                 </div>
 
+                {{-- Canje de vale de cambio: independiente del tipo de comprobante, sirve en cualquier venta --}}
+                <div class="space-y-1.5">
+                    @if (! $valeEncontrado)
+                        <div class="flex items-center gap-2">
+                            <input type="text" wire:model="vale_codigo" placeholder="Código de vale" class="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2 text-sm uppercase dark:text-gray-100">
+                            <button type="button" wire:click="buscarVale" class="shrink-0 rounded-lg bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 px-3 py-2 text-xs font-medium text-white">
+                                Canjear vale
+                            </button>
+                        </div>
+                        @error('vale_codigo') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                    @else
+                        <div class="flex items-center justify-between rounded-lg border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/5 px-3 py-2">
+                            <div class="text-sm">
+                                <span class="font-semibold text-emerald-700 dark:text-emerald-400">Vale {{ $valeEncontrado->code }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 block">Saldo disponible: ${{ money($valeEncontrado->balance) }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="number" min="0" step="0.01" wire:model.live="vale_monto" class="w-24 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-sm text-right dark:text-gray-100">
+                                <button type="button" wire:click="quitarVale" class="text-gray-400 hover:text-red-600">
+                                    <x-heroicon-o-x-mark class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
                 <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-1">
                     <input type="checkbox" wire:model="printOnSale" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
                     Imprimir ticket
@@ -280,11 +382,17 @@
                     wire:click="cobrar"
                     wire:loading.attr="disabled"
                     wire:target="cobrar"
-                    @disabled(count($cart) === 0)
+                    @disabled(count($cart) === 0 && empty($itemsADevolver))
                     class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-600/30 hover:from-emerald-700 hover:to-emerald-600 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     <x-heroicon-o-banknotes class="w-5 h-5" />
-                    <span wire:loading.remove wire:target="cobrar">Cobrar ${{ money($this->totalConDescuentoPorMedioDePago() ?? $this->total()) }}</span>
+                    <span wire:loading.remove wire:target="cobrar">
+                        @if ($itemsADevolver !== [] && count($cart) === 0)
+                            Confirmar devolución
+                        @else
+                            Cobrar ${{ money($this->montoACobrar()) }}
+                        @endif
+                    </span>
                     <span wire:loading wire:target="cobrar">Cobrando...</span>
                 </button>
             </div>

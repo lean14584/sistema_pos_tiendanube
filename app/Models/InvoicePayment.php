@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['invoice_id', 'method', 'amount'])]
+#[Fillable(['invoice_id', 'method', 'amount', 'voucher_id'])]
 class InvoicePayment extends Model
 {
     protected function casts(): array
@@ -21,5 +21,10 @@ class InvoicePayment extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(Voucher::class);
     }
 }
