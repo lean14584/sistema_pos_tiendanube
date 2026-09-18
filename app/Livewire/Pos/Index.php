@@ -254,6 +254,14 @@ class Index extends Component
             $product = $skuOriginal ? Product::where('sku', $skuOriginal)->first() : null;
         }
 
+        // Algunos lectores vienen configurados para no transmitir el dígito
+        // verificador del EAN13: llegan los 12 dígitos de la base, sin el
+        // 13ro. Mismo esquema que arriba, pero sin checksum que validar.
+        if (! $product && strlen($code) === 12) {
+            $skuOriginal = Ean13::stripPaddingSinChecksum($code);
+            $product = $skuOriginal ? Product::where('sku', $skuOriginal)->first() : null;
+        }
+
         if (! $product) {
             $this->addError('barcode', "No se encontró un producto con código «{$code}».");
 

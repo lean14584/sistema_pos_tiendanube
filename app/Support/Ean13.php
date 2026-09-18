@@ -61,6 +61,21 @@ class Ean13
         return ltrim(substr($code, 0, 12), '0') ?: '0';
     }
 
+    /**
+     * Igual que stripPadding(), pero para lectores configurados de fábrica
+     * para NO transmitir el dígito verificador del EAN13: llega la base de
+     * 12 dígitos (sin el 13ro), así que no hay checksum que validar — se
+     * confía en que el lector leyó bien las barras.
+     */
+    public static function stripPaddingSinChecksum(string $base12): ?string
+    {
+        if (strlen($base12) !== 12 || ! ctype_digit($base12)) {
+            return null;
+        }
+
+        return ltrim($base12, '0') ?: '0';
+    }
+
     /** Checksum estándar EAN13: dígitos impares (1ro, 3ro...) peso 1, pares peso 3, sobre los primeros 12. */
     public static function checkDigit(string $twelveDigits): string
     {

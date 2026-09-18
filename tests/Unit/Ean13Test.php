@@ -59,6 +59,19 @@ class Ean13Test extends TestCase
         $this->assertNull(Ean13::stripPadding('0000000098763'));
     }
 
+    public function test_strip_padding_sin_checksum_recupera_el_sku_de_una_base_de_12_digitos(): void
+    {
+        // Lector configurado para no transmitir el dígito verificador: llega
+        // la base de 12 dígitos de Ean13::fromSku('536') sin el 13ro.
+        $this->assertSame('536', Ean13::stripPaddingSinChecksum('000000000536'));
+    }
+
+    public function test_strip_padding_sin_checksum_rechaza_longitud_o_formato_invalido(): void
+    {
+        $this->assertNull(Ean13::stripPaddingSinChecksum('0000000005364')); // 13 dígitos, no 12
+        $this->assertNull(Ean13::stripPaddingSinChecksum('00000000053A')); // no numérico
+    }
+
     public function test_is_valid(): void
     {
         $this->assertTrue(Ean13::isValid('0000000098762'));

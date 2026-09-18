@@ -58,6 +58,23 @@ class PosTest extends TestCase
         $this->assertSame($product->id, $pos->get('cart')[0]['product_id']);
     }
 
+    public function test_agrega_un_producto_escaneando_el_ean13_sin_digito_verificador(): void
+    {
+        // Algunos lectores vienen configurados de fábrica para no transmitir
+        // el dígito verificador del EAN13: llegan los 12 dígitos de la base
+        // (ver Ean13::fromSku('536')) sin el 13ro.
+        $product = Product::create(['name' => 'Tornillo Autoperforante', 'sku' => '536', 'price' => 150, 'iva_rate' => 21, 'stock' => 100]);
+
+        $pos = Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('barcode', '000000000536')
+            ->call('addByBarcode');
+
+        $pos->assertHasNoErrors('barcode');
+        $this->assertCount(1, $pos->get('cart'));
+        $this->assertSame($product->id, $pos->get('cart')[0]['product_id']);
+    }
+
     public function test_buscar_cliente_encuentra_por_nombre_y_seleccionarlo_lo_deja_como_cliente_actual(): void
     {
         $client = Client::create(['name' => 'Distribuidora Norte', 'email' => 'dn@test.com', 'phone' => '3511234567']);
