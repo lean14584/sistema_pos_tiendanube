@@ -25,7 +25,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante *</label>
-            <select wire:model="tipo_comprobante" class="{{ $inputClass }}">
+            <select wire:model.live="tipo_comprobante" class="{{ $inputClass }}">
                 @foreach ($tiposComprobante as $tipo)
                     <option value="{{ $tipo->value }}">{{ $tipo->label() }}</option>
                 @endforeach
@@ -43,7 +43,11 @@
             @error('numero_comprobante') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
         </div>
     </div>
-    <p class="text-xs text-gray-400 dark:text-gray-500 -mt-3">Datos del comprobante tal como lo emitió el proveedor (para el Libro IVA Compras), distintos del número interno de esta app.</p>
+    @if ((int) $tipo_comprobante === \App\Enums\TipoComprobante::Remito->value)
+        <p class="text-xs text-gray-400 dark:text-gray-500 -mt-3">Datos del remito del proveedor. Esta compra <strong>no entra al Libro IVA Compras</strong> hasta que se cargue la factura real (editá esta compra y cambiá el tipo de comprobante cuando llegue).</p>
+    @else
+        <p class="text-xs text-gray-400 dark:text-gray-500 -mt-3">Datos del comprobante tal como lo emitió el proveedor (para el Libro IVA Compras), distintos del número interno de esta app.</p>
+    @endif
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>

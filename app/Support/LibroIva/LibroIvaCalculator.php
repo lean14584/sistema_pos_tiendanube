@@ -2,6 +2,7 @@
 
 namespace App\Support\LibroIva;
 
+use App\Enums\TipoComprobante;
 use App\Models\Invoice;
 use App\Models\Purchase;
 use Illuminate\Support\Carbon;
@@ -70,6 +71,11 @@ final class LibroIvaCalculator
         $rows = Cache::remember("libro-iva:compras:{$desde}:{$hasta}", now()->addSeconds(60), fn () => Purchase::query()
             ->whereNot('status', 'draft')
             ->whereNotNull('tipo_comprobante')
+            // Un Remito (ver Purchases\Create) no es un comprobante fiscal
+            // con crédito de IVA propio — la compra existe en el sistema
+            // (stock, cta cte) pero no entra al libro hasta que llegue la
+            // factura real del proveedor.
+            ->where('tipo_comprobante', '!=', TipoComprobante::Remito->value)
             ->where('issue_date', '>=', $desde)
             ->where('issue_date', '<', Carbon::parse($hasta)->addDay()->toDateString())
             ->with('provider', 'items', 'taxes')

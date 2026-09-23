@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Enums\TipoComprobante;
 use App\Livewire\SucursalSwitcher;
 use App\Models\CashMovement;
 use App\Models\CashSession;
@@ -500,6 +501,26 @@ class PurchasesTest extends TestCase
         $this->assertTrue($purchase->fresh()->sin_detalle);
         $this->assertCount(0, $purchase->fresh()->items);
         $this->assertEqualsWithDelta(2000.0, (float) $purchase->fresh()->total, 0.01);
+    }
+
+    public function test_crear_compra_con_tipo_comprobante_remito(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->set('tipo_comprobante', (string) TipoComprobante::Remito->value)
+            ->set('numero_comprobante', '12345')
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '3')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $purchase = Purchase::sole();
+        $this->assertSame(TipoComprobante::Remito, $purchase->tipo_comprobante);
+        $this->assertEquals(8, $product->fresh()->stock);
     }
 
     public function test_purchases_index_paginates_instead_of_loading_everything(): void

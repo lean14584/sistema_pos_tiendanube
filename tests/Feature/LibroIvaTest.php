@@ -138,6 +138,21 @@ class LibroIvaTest extends TestCase
         $this->assertCount(0, $rows);
     }
 
+    public function test_una_compra_cargada_como_remito_no_entra_al_libro_iva_compras(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor Remito']);
+        Purchase::create([
+            'number' => 'COM-0003', 'provider_id' => $provider->id,
+            'tipo_comprobante' => TipoComprobante::Remito, 'punto_venta' => 1, 'numero_comprobante' => 12345,
+            'issue_date' => now(), 'due_date' => now()->addDays(15),
+            'tax_rate' => 0, 'status' => 'paid',
+        ]);
+
+        $rows = LibroIvaCalculator::compras(now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString());
+
+        $this->assertCount(0, $rows, 'Un remito solo (sin factura del proveedor) no es un comprobante fiscal con crédito de IVA.');
+    }
+
     public function test_admin_puede_ver_la_pantalla_del_libro_iva(): void
     {
         $this->emitirFacturaFiscal();
