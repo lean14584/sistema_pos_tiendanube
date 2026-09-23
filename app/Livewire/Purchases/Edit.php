@@ -43,6 +43,12 @@ class Edit extends Component
 
     public string $status = 'draft';
 
+    public bool $sin_detalle = false;
+
+    public string $manual_total = '';
+
+    public string $remito_number = '';
+
     /** @var array<int, array{product_id: int, description: string, quantity: string, unit_price: string}> */
     public array $items = [];
 
@@ -76,6 +82,13 @@ class Edit extends Component
         $this->tax_rate = (string) $purchase->tax_rate;
         $this->notes = (string) $purchase->notes;
         $this->status = $purchase->status->value;
+        // ?? false: igual que punto_venta/tipo_comprobante más abajo — un
+        // Purchase recién creado en memoria (sin fresh()) no trae este
+        // atributo cargado, y el cast primitivo de Eloquent devuelve null
+        // en vez del default de la columna cuando el valor crudo falta.
+        $this->sin_detalle = $purchase->sin_detalle ?? false;
+        $this->manual_total = $purchase->manual_total !== null ? (string) $purchase->manual_total : '';
+        $this->remito_number = (string) $purchase->remito_number;
 
         $this->items = $purchase->items->map(fn ($item) => [
             'product_id' => $item->product_id,
@@ -152,6 +165,14 @@ class Edit extends Component
         $this->items = array_values($this->items);
     }
 
+    /** Al activar "sin detalle" se descartan los productos ya cargados: no tendría sentido guardarlos junto a un total puesto a mano. */
+    public function updatedSinDetalle(bool $value): void
+    {
+        if ($value) {
+            $this->items = [];
+        }
+    }
+
     public function subtotal(): float
     {
         return collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
@@ -180,6 +201,10 @@ class Edit extends Component
 
     public function total(): float
     {
+        if ($this->sin_detalle) {
+            return (float) $this->manual_total;
+        }
+
         return $this->subtotal() + $this->taxAmount() + $this->percepcionesTotal();
     }
 
@@ -234,14 +259,16 @@ class Edit extends Component
             'tax_rate' => ['required', 'numeric', 'min:0'],
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
+            'remito_number' => ['nullable', 'string', 'max:60'],
+            'manual_total' => [$this->sin_detalle ? 'required' : 'nullable', 'numeric', 'min:0.01'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'taxes.*.concepto' => ['required_with:taxes.*.amount', 'nullable', 'string', 'max:100'],
             'taxes.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        if (empty($this->items)) {
-            $this->addError('items', 'Agregá al menos un producto.');
+        if (! $this->sin_detalle && empty($this->items)) {
+            $this->addError('items', 'Agregá al menos un producto, o marcá "Compra sin detalle" si no vas a cargar productos.');
 
             return;
         }
@@ -313,10 +340,15 @@ class Edit extends Component
                 'tax_rate' => $this->tax_rate,
                 'notes' => $this->notes ?: null,
                 'status' => $this->status,
+                'sin_detalle' => $this->sin_detalle,
+                'manual_total' => $this->sin_detalle ? $this->manual_total : null,
+                'remito_number' => $this->remito_number !== '' ? trim($this->remito_number) : null,
             ]);
 
+            $itemsParaGuardar = $this->sin_detalle ? [] : $this->items;
+
             $this->purchase->items()->delete();
-            foreach ($this->items as $item) {
+            foreach ($itemsParaGuardar as $item) {
                 $this->purchase->items()->create($item);
             }
 
@@ -330,7 +362,7 @@ class Edit extends Component
                 }
             }
 
-            StockAdjuster::apply($this->items, 1, $sucursalId);
+            StockAdjuster::apply($itemsParaGuardar, 1, $sucursalId);
 
             $this->purchase->payments->each(fn ($payment) => CashLinker::unlinkPurchasePayment($payment));
             $this->purchase->payments()->delete();

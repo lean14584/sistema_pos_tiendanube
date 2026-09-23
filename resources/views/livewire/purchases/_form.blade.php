@@ -45,6 +45,28 @@
     </div>
     <p class="text-xs text-gray-400 dark:text-gray-500 -mt-3">Datos del comprobante tal como lo emitió el proveedor (para el Libro IVA Compras), distintos del número interno de esta app.</p>
 
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">N° de remito</label>
+            <input type="text" wire:model="remito_number" maxlength="60" placeholder="Ej: 0001-00012345" class="{{ $inputClass }}">
+            @error('remito_number') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+        </div>
+        <div class="flex items-end pb-2">
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" wire:model.live="sin_detalle" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Compra sin detalle (sin cargar productos, solo el total)</span>
+            </label>
+        </div>
+    </div>
+
+    @if ($sin_detalle)
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total de la compra *</label>
+            <input type="number" min="0.01" step="0.01" wire:model.live="manual_total" placeholder="0.00" class="{{ $inputClass }} sm:max-w-xs">
+            @error('manual_total') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">No se carga stock de productos: la compra queda registrada solo por su total, para cuenta corriente del proveedor.</p>
+        </div>
+    @else
     <div>
         <div class="flex items-center justify-between mb-2">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Productos *</label>
@@ -221,9 +243,11 @@
             </div>
         @endif
     </div>
+    @endif
 
     <div class="flex justify-end">
         <div class="w-full max-w-xs space-y-2 text-sm">
+            @if (! $sin_detalle)
             <div class="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Subtotal</span>
                 <span>${{ money($this->subtotal()) }}</span>
@@ -241,6 +265,7 @@
                     <span>Percepciones / otros impuestos</span>
                     <span>${{ money($this->percepcionesTotal()) }}</span>
                 </div>
+            @endif
             @endif
             <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                 <span>Total</span>
@@ -297,7 +322,7 @@
 
     <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
-        <textarea wire:model="notes" rows="3" placeholder="Condiciones de pago, remito, etc." class="{{ $inputClass }}"></textarea>
+        <textarea wire:model="notes" rows="3" placeholder="Condiciones de pago, etc." class="{{ $inputClass }}"></textarea>
     </div>
 
     <div class="flex gap-3 pt-2">

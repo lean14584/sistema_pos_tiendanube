@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'number', 'provider_id', 'sucursal_id', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
     'tipo_comprobante', 'punto_venta', 'numero_comprobante',
+    'sin_detalle', 'manual_total', 'remito_number',
 ])]
 class Purchase extends Model
 {
@@ -29,6 +30,8 @@ class Purchase extends Model
             'tax_rate' => 'decimal:2',
             'status' => InvoiceStatus::class,
             'tipo_comprobante' => TipoComprobante::class,
+            'sin_detalle' => 'boolean',
+            'manual_total' => 'decimal:2',
         ];
     }
 
@@ -74,10 +77,15 @@ class Purchase extends Model
 
     /**
      * Total de la compra: subtotal + IVA + percepciones (sobrescribe el
-     * total de HasBillingTotals para sumar los impuestos extra).
+     * total de HasBillingTotals para sumar los impuestos extra). Si la
+     * compra se cargó "sin detalle" (sin productos, ver Purchases\Create),
+     * no hay ítems de los que derivar subtotal/IVA — el total es el que se
+     * tipeó a mano.
      */
     protected function total(): Attribute
     {
-        return Attribute::get(fn () => $this->subtotal + $this->tax_amount + $this->percepciones_total);
+        return Attribute::get(fn () => $this->sin_detalle
+            ? (float) $this->manual_total
+            : $this->subtotal + $this->tax_amount + $this->percepciones_total);
     }
 }

@@ -131,10 +131,15 @@ final class LibroIvaCalculator
     {
         // Las compras se cargan con una sola alícuota (el comprobante del
         // proveedor), a diferencia de las ventas que la desglosan por ítem.
+        //
+        // Una compra "sin detalle" (ver Purchases\Create) no tiene ítems de
+        // los que derivar subtotal/IVA — su total sale de manual_total. Sin
+        // desglose de alícuota disponible, se asienta entero como exento en
+        // vez de mostrar $0 gravado con un total no-cero (que no cerraría).
         $tasa = (float) $purchase->tax_rate;
-        $exento = $tasa <= 0.0;
+        $exento = $purchase->sin_detalle || $tasa <= 0.0;
 
-        $alicuotas = $exento
+        $alicuotas = ($exento || $purchase->sin_detalle)
             ? []
             : [new LibroIvaAlicuota($tasa, (float) $purchase->subtotal, (float) $purchase->tax_amount)];
 
@@ -147,7 +152,7 @@ final class LibroIvaCalculator
             numeroDocumento: $purchase->provider->tax_id ?: '0',
             denominacion: $purchase->provider->name,
             importeTotal: (float) $purchase->total,
-            importeExento: $exento ? (float) $purchase->subtotal : 0.0,
+            importeExento: $exento ? ($purchase->sin_detalle ? (float) $purchase->total : (float) $purchase->subtotal) : 0.0,
             alicuotas: $alicuotas,
             codigoOperacion: $exento ? 'E' : '',
         );

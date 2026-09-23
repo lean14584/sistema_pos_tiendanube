@@ -413,6 +413,95 @@ class PurchasesTest extends TestCase
         $this->assertSame(0, CashMovement::count());
     }
 
+    public function test_crear_compra_sin_detalle_no_requiere_productos_ni_mueve_stock(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->set('sin_detalle', true)
+            ->set('manual_total', '5000')
+            ->set('remito_number', '0001-00001234')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $purchase = Purchase::sole();
+        $this->assertTrue($purchase->sin_detalle);
+        $this->assertEqualsWithDelta(5000.0, (float) $purchase->total, 0.01);
+        $this->assertSame('0001-00001234', $purchase->remito_number);
+        $this->assertCount(0, $purchase->items);
+    }
+
+    public function test_crear_compra_sin_detalle_sin_total_da_error(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->set('sin_detalle', true)
+            ->call('save')
+            ->assertHasErrors('manual_total');
+
+        $this->assertSame(0, Purchase::count());
+    }
+
+    public function test_crear_compra_sin_marcar_sin_detalle_y_sin_productos_da_error(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->call('save')
+            ->assertHasErrors('items');
+
+        $this->assertSame(0, Purchase::count());
+    }
+
+    public function test_activar_sin_detalle_en_el_form_descarta_los_productos_ya_cargados(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('purchases.create')
+            ->set('provider_id', (string) $provider->id)
+            ->call('addProductItem', $product->id);
+
+        $this->assertCount(1, $component->get('items'));
+
+        $component->set('sin_detalle', true);
+
+        $this->assertCount(0, $component->get('items'), 'Al activar "sin detalle" los productos ya cargados deberían descartarse.');
+    }
+
+    public function test_editar_compra_con_productos_para_marcarla_sin_detalle_revierte_el_stock(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 5]);
+
+        $purchase = Purchase::create([
+            'number' => 'COM-0001', 'provider_id' => $provider->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'draft',
+        ]);
+        $purchase->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 3, 'unit_price' => 1000]);
+        $product->increment('stock', 3);
+
+        Livewire::actingAs($this->admin())
+            ->test('purchases.edit', ['purchase' => $purchase])
+            ->set('sin_detalle', true)
+            ->set('manual_total', '2000')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertEquals(5, $product->fresh()->stock, 'El stock de los ítems viejos tiene que revertirse al pasar la compra a sin detalle.');
+        $this->assertTrue($purchase->fresh()->sin_detalle);
+        $this->assertCount(0, $purchase->fresh()->items);
+        $this->assertEqualsWithDelta(2000.0, (float) $purchase->fresh()->total, 0.01);
+    }
+
     public function test_purchases_index_paginates_instead_of_loading_everything(): void
     {
         $provider = Provider::create(['name' => 'Proveedor 1']);

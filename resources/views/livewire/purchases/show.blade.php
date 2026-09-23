@@ -46,8 +46,19 @@
                 @if ($purchase->provider->address)<p class="text-sm text-gray-500 dark:text-gray-400">{{ $purchase->provider->address }}</p>@endif
                 @if ($purchase->provider->tax_id)<p class="text-sm text-gray-500 dark:text-gray-400">ID fiscal: {{ $purchase->provider->tax_id }}</p>@endif
             </div>
+            @if ($purchase->remito_number)
+                <div>
+                    <p class="text-xs uppercase text-gray-400 dark:text-gray-500 mb-1">N° de remito</p>
+                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ $purchase->remito_number }}</p>
+                </div>
+            @endif
         </div>
 
+        @if ($purchase->sin_detalle)
+            <div class="mb-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 text-sm text-gray-600 dark:text-gray-400">
+                Compra cargada sin detalle de productos — no movió stock.
+            </div>
+        @else
         <div class="overflow-x-auto">
         <table class="w-full text-sm mb-6">
             <thead>
@@ -70,23 +81,26 @@
             </tbody>
         </table>
         </div>
+        @endif
 
         <div class="flex justify-end">
             <div class="w-full max-w-xs space-y-2 text-sm">
-                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Subtotal</span>
-                    <span>${{ money($purchase->subtotal) }}</span>
-                </div>
-                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Impuesto ({{ $purchase->tax_rate }}%)</span>
-                    <span>${{ money($purchase->tax_amount) }}</span>
-                </div>
-                @foreach ($purchase->taxes as $tax)
+                @if (! $purchase->sin_detalle)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                        <span>{{ $tax->concepto }}</span>
-                        <span>${{ money($tax->amount) }}</span>
+                        <span>Subtotal</span>
+                        <span>${{ money($purchase->subtotal) }}</span>
                     </div>
-                @endforeach
+                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Impuesto ({{ $purchase->tax_rate }}%)</span>
+                        <span>${{ money($purchase->tax_amount) }}</span>
+                    </div>
+                    @foreach ($purchase->taxes as $tax)
+                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                            <span>{{ $tax->concepto }}</span>
+                            <span>${{ money($tax->amount) }}</span>
+                        </div>
+                    @endforeach
+                @endif
                 <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-2 border-t border-gray-200 dark:border-gray-800">
                     <span>Total</span>
                     <span>${{ money($purchase->total) }}</span>

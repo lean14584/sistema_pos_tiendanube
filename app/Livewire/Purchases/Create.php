@@ -42,6 +42,17 @@ class Create extends Component
     public string $status = 'draft';
 
     /**
+     * Compra "sin detalle": el proveedor no pasó un desglose de productos
+     * (o no vale la pena cargarlo ítem por ítem) — se anota solo el total
+     * a mano y no se toca el stock de ningún producto.
+     */
+    public bool $sin_detalle = false;
+
+    public string $manual_total = '';
+
+    public string $remito_number = '';
+
+    /**
      * Guarda contra doble-submit: mismo criterio que Invoices\Create — este
      * form no tiene ningún estado persistente natural para detectar "esto
      * ya se guardó" (a diferencia de Pos\Index, que vacía el carrito solo).
@@ -130,6 +141,14 @@ class Create extends Component
         $this->items = array_values($this->items);
     }
 
+    /** Al activar "sin detalle" se descartan los productos ya cargados: no tendría sentido guardarlos junto a un total puesto a mano. */
+    public function updatedSinDetalle(bool $value): void
+    {
+        if ($value) {
+            $this->items = [];
+        }
+    }
+
     public function subtotal(): float
     {
         return collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
@@ -158,6 +177,10 @@ class Create extends Component
 
     public function total(): float
     {
+        if ($this->sin_detalle) {
+            return (float) $this->manual_total;
+        }
+
         return $this->subtotal() + $this->taxAmount() + $this->percepcionesTotal();
     }
 
@@ -206,6 +229,8 @@ class Create extends Component
             'tax_rate' => ['required', 'numeric', 'min:0'],
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
+            'remito_number' => ['nullable', 'string', 'max:60'],
+            'manual_total' => [$this->sin_detalle ? 'required' : 'nullable', 'numeric', 'min:0.01'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.batch_number' => ['nullable', 'string', 'max:60'],
@@ -214,8 +239,8 @@ class Create extends Component
             'taxes.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        if (empty($this->items)) {
-            $this->addError('items', 'Agregá al menos un producto.');
+        if (! $this->sin_detalle && empty($this->items)) {
+            $this->addError('items', 'Agregá al menos un producto, o marcá "Compra sin detalle" si no vas a cargar productos.');
 
             return;
         }
@@ -256,10 +281,15 @@ class Create extends Component
                 'tax_rate' => $this->tax_rate,
                 'notes' => $this->notes ?: null,
                 'status' => $this->status,
+                'sin_detalle' => $this->sin_detalle,
+                'manual_total' => $this->sin_detalle ? $this->manual_total : null,
+                'remito_number' => $this->remito_number !== '' ? trim($this->remito_number) : null,
             ]);
 
-            foreach ($this->items as $item) {
-                $purchase->items()->create($item);
+            if (! $this->sin_detalle) {
+                foreach ($this->items as $item) {
+                    $purchase->items()->create($item);
+                }
             }
 
             foreach ($this->taxes as $tax) {
@@ -271,9 +301,11 @@ class Create extends Component
                 }
             }
 
-            StockAdjuster::apply($this->items, 1, $sucursalId);
+            $itemsParaStock = $this->sin_detalle ? [] : $this->items;
 
-            foreach ($this->items as $item) {
+            StockAdjuster::apply($itemsParaStock, 1, $sucursalId);
+
+            foreach ($itemsParaStock as $item) {
                 if ($sucursalId !== null && ! empty($item['expiration_date'])) {
                     ProductBatch::create([
                         'product_id' => $item['product_id'],
