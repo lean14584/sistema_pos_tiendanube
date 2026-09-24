@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\Role;
 use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Invoice;
 use App\Models\Product;
@@ -78,6 +79,10 @@ class Dashboard extends Component
             'systemWarnings' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'health')
                 ? app(SystemHealth::class)->avisos()
                 : 0,
+            // El total facturado es información sensible del negocio en su
+            // conjunto — solo el Administrador debería verlo, no encargados,
+            // vendedores ni cajeros.
+            'canSeeRevenue' => Auth::user()?->role === Role::Admin,
             'canManageInvoices' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'invoices'),
             'canManageProducts' => Auth::user() && Permissions::canAccess(Auth::user()->role, 'products'),
             'topProducts' => collect($agg['topProducts']),

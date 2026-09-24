@@ -10,10 +10,18 @@
         'indigo' => 'from-indigo-500 to-indigo-600 shadow-indigo-500/30',
     ];
     $c = $colors[$color] ?? $colors['indigo'];
+
+    // Montos en millones ("$12.345.678,90") desbordaban la tarjeta con el
+    // tamaño fijo de antes — se achica la letra según el largo del valor.
+    $valueSize = match (true) {
+        strlen((string) $value) > 15 => 'text-xl',
+        strlen((string) $value) > 11 => 'text-2xl',
+        default => 'text-3xl',
+    };
 @endphp
 
 <div class="relative overflow-hidden rounded-xl bg-gradient-to-br {{ $c }} text-white p-5 shadow-lg hover:-translate-y-0.5 transition-all">
-    <p class="text-3xl font-bold tracking-tight leading-none">{{ $value }}</p>
+    <p class="{{ $valueSize }} font-bold tracking-tight leading-none">{{ $value }}</p>
     <p class="text-sm font-medium text-white/90 mt-2">{{ $label }}</p>
     <x-dynamic-component :component="'heroicon-o-' . $icon" class="w-24 h-24 absolute -right-4 -bottom-4 text-white/20 pointer-events-none" />
 </div>
