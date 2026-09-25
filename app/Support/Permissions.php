@@ -23,7 +23,7 @@ class Permissions
             'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'products-manage', 'categories', 'price-lists', 'promotions',
             'stock-adjustments', 'stock-transfers', 'product-batches', 'providers', 'purchases', 'cash-register', 'users', 'audit', 'reports', 'messages', 'tasks', 'price-check',
         ],
-        'vendedor' => ['dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'products-manage', 'categories', 'price-lists', 'promotions', 'stock-adjustments', 'stock-transfers', 'product-batches', 'reports', 'messages', 'tasks', 'price-check'],
+        'vendedor' => ['dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'products-manage', 'categories', 'price-lists', 'promotions', 'stock-adjustments', 'stock-transfers', 'product-batches', 'reports', 'messages', 'tasks', 'price-check', 'cash-register'],
         // Cajero tiene 'products' (consulta) pero no 'products-manage': puede ver
         // el catálogo y el precio, no crear/editar/borrar productos ni ver su historial.
         'cajero' => ['dashboard', 'pos', 'invoices', 'clients', 'cobranzas', 'cash-register', 'products', 'messages', 'tasks', 'price-check'],

@@ -122,10 +122,10 @@ class PriceCheckAndRolesTest extends TestCase
 
     public function test_permisos_del_vendedor(): void
     {
-        foreach (['dashboard', 'quotes', 'invoices', 'clients', 'products', 'products-manage', 'categories', 'reports', 'price-check'] as $m) {
+        foreach (['dashboard', 'quotes', 'invoices', 'clients', 'products', 'products-manage', 'categories', 'reports', 'price-check', 'cash-register'] as $m) {
             $this->assertTrue(Permissions::canAccess(Role::Vendedor, $m), "vendedor debería ver {$m}");
         }
-        foreach (['cash-register', 'providers', 'purchases', 'users', 'company-settings'] as $m) {
+        foreach (['providers', 'purchases', 'users', 'company-settings'] as $m) {
             $this->assertFalse(Permissions::canAccess(Role::Vendedor, $m), "vendedor NO debería ver {$m}");
         }
     }
@@ -168,10 +168,10 @@ class PriceCheckAndRolesTest extends TestCase
         $this->assertNotNull($product->fresh());
     }
 
-    public function test_vendedor_no_entra_a_caja(): void
+    public function test_vendedor_puede_entrar_a_caja(): void
     {
         $vendedor = $this->user(Role::Vendedor);
 
-        $this->actingAs($vendedor)->get(route('cash-register.index'))->assertForbidden();
+        $this->actingAs($vendedor)->get(route('cash-register.index'))->assertOk();
     }
 }
