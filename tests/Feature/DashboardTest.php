@@ -180,6 +180,31 @@ class DashboardTest extends TestCase
         $component->assertDontSee('Ventas por sucursal'); // no ve el selector ni el desglose
     }
 
+    public function test_solo_admin_ve_el_total_facturado(): void
+    {
+        // El total facturado es información sensible del negocio en su
+        // conjunto — encargado/vendedor/cajero no deberían verlo en el
+        // dashboard, aunque sigan viendo el resto de las tarjetas.
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+        $cajero = User::factory()->create(['role' => Role::Cajero, 'active' => true]);
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $invoice = Invoice::create([
+            'number' => 'FAC-0005', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'paid',
+        ]);
+        $invoice->items()->create(['description' => 'x', 'quantity' => 1, 'unit_price' => 500]);
+
+        Livewire::actingAs($admin)
+            ->test('dashboard')
+            ->assertSee('Total facturado (pagado)');
+
+        Livewire::actingAs($cajero)
+            ->test('dashboard')
+            ->assertDontSee('Total facturado (pagado)')
+            ->assertSee('Pendiente de cobro');
+    }
+
     public function test_el_conteo_de_stock_bajo_se_consulta_una_sola_vez_por_request(): void
     {
         // El sidebar (todas las páginas) y el Dashboard piden el mismo

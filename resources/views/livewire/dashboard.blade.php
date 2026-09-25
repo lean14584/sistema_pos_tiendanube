@@ -40,7 +40,9 @@
     @endif
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <x-stat-card label="Total facturado (pagado)" value="${{ money($stats['totalRevenue']) }}" icon="currency-dollar" color="emerald" />
+        @if ($canSeeRevenue)
+            <x-stat-card label="Total facturado (pagado)" value="${{ money($stats['totalRevenue']) }}" icon="currency-dollar" color="emerald" />
+        @endif
         <x-stat-card label="Pendiente de cobro" value="${{ money($stats['pendingAmount']) }}" icon="clock" color="amber" />
         <x-stat-card label="Facturas vencidas" value="{{ $stats['overdueCount'] }}" icon="exclamation-triangle" color="red" />
         <x-stat-card label="Total de facturas" value="{{ $stats['totalInvoices'] }}" icon="document-text" color="sky" />
