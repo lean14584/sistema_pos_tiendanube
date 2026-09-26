@@ -225,6 +225,46 @@ class ProductLabelsTest extends TestCase
         $this->assertStringContainsString('<div class="price">$2.000,00</div>', $html);
     }
 
+    public function test_actualizar_cantidad_de_un_producto_recien_eliminado_no_rompe_el_render(): void
+    {
+        // Reproduce la carrera real vista en producción (2026-09-25): el
+        // input de qty y el botón de eliminar viven en el mismo chip; si un
+        // update de qty en vuelo llega después de eliminar el producto,
+        // Livewire reconstruye la entrada solo con 'qty', sin 'name'/'sku'
+        // — ver Labels::updated().
+        $product = Product::create(['name' => 'Yerba', 'sku' => 'YER-1', 'price' => 1500, 'iva_rate' => 21, 'stock' => 10]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('products.labels')
+            ->call('addProduct', $product->id)
+            ->call('removeProduct', $product->id)
+            ->set('selected.'.$product->id.'.qty', 5);
+
+        $component->assertOk();
+
+        $selected = $component->get('selected')[$product->id];
+        $this->assertSame('Yerba', $selected['name']);
+        $this->assertSame('YER-1', $selected['sku']);
+        $this->assertSame(5, $selected['qty']);
+    }
+
+    public function test_actualizar_cantidad_de_un_producto_borrado_del_catalogo_saca_la_entrada(): void
+    {
+        $product = Product::create(['name' => 'Yerba', 'sku' => 'YER-1', 'price' => 1500, 'iva_rate' => 21, 'stock' => 10]);
+
+        $component = Livewire::actingAs($this->admin())
+            ->test('products.labels')
+            ->call('addProduct', $product->id)
+            ->call('removeProduct', $product->id);
+
+        $product->delete();
+
+        $component->set('selected.'.$product->id.'.qty', 5);
+
+        $component->assertOk();
+        $this->assertArrayNotHasKey($product->id, $component->get('selected'));
+    }
+
     public function test_agregar_categoria_entera_suma_sus_productos(): void
     {
         $cat = Category::create(['name' => 'Bebidas']);
