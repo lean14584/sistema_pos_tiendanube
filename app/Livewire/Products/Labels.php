@@ -114,6 +114,40 @@ class Labels extends Component
         unset($this->selected[$productId]);
     }
 
+    /**
+     * El input de cantidad usa wire:model.live="selected.{id}.qty" en el
+     * mismo chip que el botón de eliminar. Si el request de "eliminar" llega
+     * antes que un update de cantidad que ya estaba en vuelo para ese mismo
+     * id, Livewire reconstruye la entrada solo con 'qty' (la key no existía
+     * más), perdiendo 'id'/'name'/'sku' y rompiendo el render. Repara u
+     * ordena tirar cualquier entrada incompleta después de cada update.
+     */
+    public function updated(string $name): void
+    {
+        if (! str_starts_with($name, 'selected.')) {
+            return;
+        }
+
+        foreach ($this->selected as $id => $row) {
+            if (isset($row['id'], $row['name'], $row['sku'])) {
+                continue;
+            }
+
+            $product = Product::find($id);
+
+            if ($product) {
+                $this->selected[$id] = [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'qty' => max(1, (int) ($row['qty'] ?? 1)),
+                ];
+            } else {
+                unset($this->selected[$id]);
+            }
+        }
+    }
+
     public function clear(): void
     {
         $this->selected = [];
