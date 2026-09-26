@@ -736,4 +736,25 @@ class PosTest extends TestCase
 
         $this->assertCount(0, $pos->instance()->barcodeResults());
     }
+
+    public function test_actualizar_un_pago_ya_eliminado_no_deja_una_entrada_corrupta(): void
+    {
+        // Mismo mecanismo que rompió Products\Labels en producción
+        // (2026-09-25): wire:model.live="payments.{i}.amount" vive en el
+        // mismo renglón que el botón de quitar. Si un update de monto en
+        // vuelo llega después de eliminar esa fila (y el array se reindexó
+        // con array_values()), Livewire puede reconstruir una entrada
+        // incompleta — acá se simula eliminando y después actualizando el
+        // mismo índice.
+        $admin = $this->admin();
+
+        $component = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addPayment')
+            ->call('removePayment', 0)
+            ->set('payments.0.amount', '500');
+
+        $component->assertOk();
+        $this->assertSame([], $component->get('payments'));
+    }
 }

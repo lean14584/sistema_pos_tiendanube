@@ -170,6 +170,24 @@ class Edit extends Component
         $this->items = array_values($this->items);
     }
 
+    /**
+     * `wire:model.live` de "discount" vive en el mismo renglón que el botón
+     * de "quitar" — un update en vuelo puede dejar una entrada a medio
+     * construir tras un borrado + reindexado por `array_values()`, mismo
+     * mecanismo que rompió `Products\Labels` en producción. Se descarta
+     * cualquier entrada incompleta en vez de arriesgar un presupuesto con un
+     * ítem a medio llenar.
+     */
+    public function updated(string $name): void
+    {
+        if (str_starts_with($name, 'items.')) {
+            $this->items = array_values(array_filter(
+                $this->items,
+                fn (array $i) => isset($i['description'], $i['quantity'], $i['unit_price'], $i['discount'])
+            ));
+        }
+    }
+
     public function subtotal(): float
     {
         return collect($this->items)->sum(fn ($item) => $this->lineNeto($item));

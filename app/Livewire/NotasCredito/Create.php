@@ -131,6 +131,30 @@ class Create extends Component
         $this->payments = array_values($this->payments);
     }
 
+    /**
+     * `wire:model.live` en el mismo renglón que el botón de "quitar" puede
+     * dejar una entrada a medio construir tras un borrado + reindexado por
+     * `array_values()` — mismo mecanismo que rompió `Products\Labels` en
+     * producción. Se descarta cualquier entrada incompleta en vez de
+     * arriesgar una Nota de Crédito con un ítem o pago a medio llenar.
+     */
+    public function updated(string $name): void
+    {
+        if (str_starts_with($name, 'items.')) {
+            $this->items = array_values(array_filter(
+                $this->items,
+                fn (array $i) => isset($i['description'], $i['quantity'], $i['unit_price'], $i['iva_rate'])
+            ));
+        }
+
+        if (str_starts_with($name, 'payments.')) {
+            $this->payments = array_values(array_filter(
+                $this->payments,
+                fn (array $p) => isset($p['method'], $p['amount'])
+            ));
+        }
+    }
+
     public function save(): void
     {
         $validItems = collect($this->items)->filter(fn ($item) => trim($item['description']) !== '');

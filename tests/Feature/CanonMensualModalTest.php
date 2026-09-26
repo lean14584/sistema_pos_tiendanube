@@ -97,6 +97,7 @@ class CanonMensualModalTest extends TestCase
                 'id' => 555444333,
                 'status' => 'approved',
                 'transaction_amount' => 9000,
+                'external_reference' => 'localhost-canon-'.now()->format('Y-m'),
             ], 200),
         ]);
 
@@ -113,6 +114,72 @@ class CanonMensualModalTest extends TestCase
             'mes' => now()->format('m'),
             'anio' => now()->format('Y'),
         ]);
+    }
+
+    public function test_no_registra_un_pago_aprobado_de_otra_instalacion_o_mes(): void
+    {
+        // El mismo MP_JJSOFTWARE_ACCESS_TOKEN se usa para todos los clientes
+        // de jjsoftware: un collection_id real pero de OTRO sitio/mes no
+        // tiene que poder marcar el canon de este sitio como pagado.
+        $this->travelTo(now()->setDay(10));
+
+        Http::fake([
+            'api.mercadopago.com/v1/payments/*' => Http::response([
+                'id' => 111222333,
+                'status' => 'approved',
+                'transaction_amount' => 9000,
+                'external_reference' => 'otro-cliente.jjsoftware.click-canon-2026-01',
+            ], 200),
+        ]);
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('dashboard', [
+            'collection_id' => '111222333',
+            'collection_status' => 'approved',
+        ]));
+
+        $this->assertDatabaseMissing('canon_pagos', [
+            'mp_payment_id' => '111222333',
+        ]);
+    }
+
+    public function test_no_registra_un_pago_aprobado_por_menos_del_monto_del_canon(): void
+    {
+        $this->travelTo(now()->setDay(10));
+
+        Http::fake([
+            'api.mercadopago.com/v1/payments/*' => Http::response([
+                'id' => 777888999,
+                'status' => 'approved',
+                'transaction_amount' => 100,
+                'external_reference' => 'localhost-canon-'.now()->format('Y-m'),
+            ], 200),
+        ]);
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('dashboard', [
+            'collection_id' => '777888999',
+            'collection_status' => 'approved',
+        ]));
+
+        $this->assertDatabaseMissing('canon_pagos', [
+            'mp_payment_id' => '777888999',
+        ]);
+    }
+
+    public function test_no_revienta_si_mercado_pago_esta_caido_al_crear_la_preferencia(): void
+    {
+        $this->travelTo(now()->setDay(10));
+
+        Http::fake([
+            'api.mercadopago.com/checkout/preferences*' => fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout'),
+        ]);
+
+        Livewire::actingAs($this->admin())
+            ->test(CanonMensualModal::class)
+            ->assertSet('mostrarModal', false);
     }
 
     public function test_no_registra_el_pago_si_mercado_pago_no_lo_aprobo(): void

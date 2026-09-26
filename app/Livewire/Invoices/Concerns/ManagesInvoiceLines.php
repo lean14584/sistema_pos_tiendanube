@@ -134,6 +134,34 @@ trait ManagesInvoiceLines
     }
 
     /**
+     * `wire:model.live` en el mismo renglón que el botón de "quitar" (tanto
+     * en `items` como en `payments`) puede dejar una entrada a medio
+     * construir: si un update ya en vuelo para una fila llega DESPUÉS de que
+     * esa fila (u otra anterior) se eliminó y el array se reindexó con
+     * `array_values()`, Livewire puede crear una entrada nueva con una sola
+     * clave, o pisar la fila que quedó en ese índice con el valor
+     * equivocado — mismo mecanismo que rompió `Products\Labels` en
+     * producción. Se descarta cualquier entrada incompleta en vez de
+     * arriesgar facturar con un ítem o pago a medio llenar.
+     */
+    public function updated(string $name): void
+    {
+        if (str_starts_with($name, 'items.')) {
+            $this->items = array_values(array_filter(
+                $this->items,
+                fn (array $i) => isset($i['description'], $i['quantity'], $i['unit_price'], $i['discount'], $i['iva_rate'])
+            ));
+        }
+
+        if (str_starts_with($name, 'payments.')) {
+            $this->payments = array_values(array_filter(
+                $this->payments,
+                fn (array $p) => isset($p['method'], $p['amount'])
+            ));
+        }
+    }
+
+    /**
      * % de descuento por pago de contado para un medio de pago cargado en
      * $payments (según la configuración de la empresa). Mismo criterio que
      * Pos\Index — antes esta pantalla nunca lo aplicaba, así que la misma

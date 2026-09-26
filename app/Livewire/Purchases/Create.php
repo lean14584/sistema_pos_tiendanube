@@ -208,6 +208,31 @@ class Create extends Component
         $this->payments = array_values($this->payments);
     }
 
+    /**
+     * `wire:model.live` en el mismo renglón que el botón de "quitar" (en
+     * `taxes` y `payments`) puede dejar una entrada a medio construir tras un
+     * borrado + reindexado por `array_values()` — mismo mecanismo que rompió
+     * `Products\Labels` en producción. Se descarta cualquier entrada
+     * incompleta en vez de arriesgar una compra con una percepción o pago a
+     * medio llenar.
+     */
+    public function updated(string $name): void
+    {
+        if (str_starts_with($name, 'taxes.')) {
+            $this->taxes = array_values(array_filter(
+                $this->taxes,
+                fn (array $t) => isset($t['concepto'], $t['amount'])
+            ));
+        }
+
+        if (str_starts_with($name, 'payments.')) {
+            $this->payments = array_values(array_filter(
+                $this->payments,
+                fn (array $p) => isset($p['method'], $p['amount'])
+            ));
+        }
+    }
+
     public function save(): void
     {
         Cache::lock('purchases:create:'.CurrentSucursal::id().':'.Auth::id(), 10)->block(5, fn () => $this->saveInterno());

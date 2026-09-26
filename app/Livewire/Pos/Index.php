@@ -622,6 +622,33 @@ class Index extends Component
     }
 
     /**
+     * `wire:model.live` en el mismo renglón que el botón de "quitar" puede
+     * dejar una entrada a medio construir: si un update de monto/cantidad ya
+     * en vuelo para una fila llega DESPUÉS de que esa fila (u otra anterior)
+     * se eliminó y el array se reindexó con `array_values()`, Livewire puede
+     * crear una entrada nueva con una sola clave, o pisar la fila que quedó
+     * en ese índice con el valor equivocado — mismo mecanismo que rompió
+     * `Products\Labels` en producción. Se descarta cualquier entrada
+     * incompleta en vez de arriesgar cobrar/devolver con datos a medias.
+     */
+    public function updated(string $name): void
+    {
+        if (str_starts_with($name, 'payments.')) {
+            $this->payments = array_values(array_filter(
+                $this->payments,
+                fn (array $p) => isset($p['method'], $p['amount'])
+            ));
+        }
+
+        if (str_starts_with($name, 'itemsADevolver.')) {
+            $this->itemsADevolver = array_values(array_filter(
+                $this->itemsADevolver,
+                fn (array $i) => isset($i['description'], $i['quantity'], $i['unit_price'], $i['iva_rate'])
+            ));
+        }
+    }
+
+    /**
      * Busca el comprobante original por número (para el modo Cambio: se
      * dispara al elegir "Devolución" en el tipo de comprobante). Excluye
      * Notas de Crédito y Devoluciones — no tiene sentido "devolver" contra
