@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    // Cuenta de Mercado Pago de jjsoftware (el desarrollador, no el
+    // negocio) para cobrar el servicio mensual - ver CanonMensualModal.
+    // Sin access_token configurado, el modal simplemente no se muestra
+    // (así queda apagado en instalaciones de otros clientes).
+    'mercadopago_jjsoftware' => [
+        'access_token' => env('MP_JJSOFTWARE_ACCESS_TOKEN'),
+        'monto_canon' => env('MP_JJSOFTWARE_MONTO_CANON', 9000),
+    ],
+
 ];

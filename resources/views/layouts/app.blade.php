@@ -37,6 +37,7 @@
 
         <main class="flex-1 overflow-y-auto">
             @include('layouts.partials.flash-toasts')
+            <livewire:canon-mensual-modal />
             {{ $slot }}
         </main>
     </div>
