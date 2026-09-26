@@ -6,7 +6,9 @@ use App\Livewire\Concerns\ShowsToasts;
 use App\Models\CanonPago;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 /**
@@ -56,8 +58,22 @@ class CanonMensualModal extends Component
             return;
         }
 
-        $this->mostrarModal = true;
         $this->initPoint = $this->crearPreferencia($accessToken);
+        $this->mostrarModal = $this->initPoint !== '';
+    }
+
+    // El mismo MP_JJSOFTWARE_ACCESS_TOKEN se usa para TODOS los clientes de
+    // jjsoftware (una sola cuenta de MP cobrandole a todos). Sin esta
+    // referencia, un Admin que visite una URL con ?collection_id=<ID de
+    // CUALQUIER pago aprobado real de esa cuenta, de cualquier cliente o
+    // monto> podria marcar el canon de este sitio como pagado sin que exista
+    // una transaccion real hecha para este sitio/mes. Ata cada preferencia a
+    // instalacion+mes y se vuelve a chequear al confirmar el pago.
+    private function referenciaExterna(): string
+    {
+        $host = parse_url((string) config('app.url'), PHP_URL_HOST) ?: request()->getHost();
+
+        return $host.'-canon-'.now()->format('Y-m');
     }
 
     // Se usa el link de checkout directo (init_point) en vez del widget JS
@@ -69,22 +85,32 @@ class CanonMensualModal extends Component
     // link comun al mismo destino no tiene esa carrera.
     private function crearPreferencia(string $accessToken): string
     {
-        $response = Http::asJson()->post(
-            'https://api.mercadopago.com/checkout/preferences?access_token='.$accessToken,
-            [
-                'items' => [[
-                    'title' => 'Servicio Mensual',
-                    'quantity' => 1,
-                    'unit_price' => $this->monto,
-                ]],
-                'back_urls' => [
-                    'success' => route('dashboard'),
-                ],
-                'auto_return' => 'approved',
-            ]
-        );
+        try {
+            $response = Http::asJson()->post(
+                'https://api.mercadopago.com/checkout/preferences?access_token='.$accessToken,
+                [
+                    'items' => [[
+                        'title' => 'Servicio Mensual',
+                        'quantity' => 1,
+                        'unit_price' => $this->monto,
+                    ]],
+                    'external_reference' => $this->referenciaExterna(),
+                    'back_urls' => [
+                        'success' => route('dashboard'),
+                    ],
+                    'auto_return' => 'approved',
+                ]
+            );
 
-        return (string) ($response->json('init_point') ?? '');
+            return (string) ($response->json('init_point') ?? '');
+        } catch (ConnectionException $e) {
+            // El modal vive en el layout global: si Mercado Pago esta caido
+            // o no responde, no puede tirar 500 en TODAS las paginas que
+            // carga un Admin. Se degrada a "no mostrar el cobro esta carga".
+            Log::warning('Canon mensual: fallo al crear preferencia de MP', ['error' => $e->getMessage()]);
+
+            return '';
+        }
     }
 
     private function procesarRetornoDePago(string $accessToken, User $user): void
@@ -98,12 +124,44 @@ class CanonMensualModal extends Component
 
         // No confiar en collection_status de la URL (se puede manipular a
         // mano) - confirmar el estado real contra la API de Mercado Pago.
-        $payment = Http::get("https://api.mercadopago.com/v1/payments/{$collectionId}", [
-            'access_token' => $accessToken,
-        ])->json();
+        try {
+            $payment = Http::get("https://api.mercadopago.com/v1/payments/{$collectionId}", [
+                'access_token' => $accessToken,
+            ])->json();
+        } catch (ConnectionException $e) {
+            Log::warning('Canon mensual: fallo al verificar pago contra la API de MP', ['error' => $e->getMessage()]);
+
+            return;
+        }
 
         if (($payment['status'] ?? null) !== 'approved') {
             $this->toastError('El pago no fue aprobado por Mercado Pago (estado: '.($payment['status'] ?? 'desconocido').'). No se registró.');
+
+            return;
+        }
+
+        // Mismo token de MP para todos los clientes: sin este chequeo,
+        // cualquier pago aprobado real de la cuenta (de otro cliente, otro
+        // mes, o un monto menor) podria reusarse via ?collection_id=... para
+        // marcar el canon de este sitio como pagado. Ver referenciaExterna().
+        if (($payment['external_reference'] ?? null) !== $this->referenciaExterna()) {
+            $this->toastError('El pago no corresponde a este sitio o período. No se registró.');
+            Log::warning('Canon mensual: external_reference no coincide, posible reuso de un pago de otra instalación', [
+                'collection_id' => $collectionId,
+                'esperada' => $this->referenciaExterna(),
+                'recibida' => $payment['external_reference'] ?? null,
+            ]);
+
+            return;
+        }
+
+        if ((float) ($payment['transaction_amount'] ?? 0) < $this->monto) {
+            $this->toastError('El monto del pago no coincide con el canon mensual. No se registró.');
+            Log::warning('Canon mensual: monto insuficiente', [
+                'collection_id' => $collectionId,
+                'esperado' => $this->monto,
+                'recibido' => $payment['transaction_amount'] ?? null,
+            ]);
 
             return;
         }
@@ -121,7 +179,15 @@ class CanonMensualModal extends Component
             $this->toastSuccess('Pago registrado correctamente');
         } catch (QueryException $e) {
             // unique(mes, anio) o mp_payment_id ya insertado - el usuario
-            // recargo la URL de retorno de MP (F5), no es un error real.
+            // recargo la URL de retorno de MP (F5), no es un error real. Pero
+            // si la causa es otra (ej. columna nueva sin migrar), no
+            // queremos perderlo en silencio.
+            if (! str_contains($e->getMessage(), 'Duplicate entry')) {
+                Log::error('Canon mensual: fallo inesperado al registrar el pago', [
+                    'collection_id' => $collectionId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         // Sin redirect: cortaria la respuesta HTTP (302) antes de que el
