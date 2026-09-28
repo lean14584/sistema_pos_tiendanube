@@ -6,8 +6,10 @@ use App\Enums\AlicuotaIva;
 use App\Models\Category;
 use App\Models\CompanySettings;
 use App\Models\Product;
+use App\Models\ProductStock;
 use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -110,13 +112,32 @@ class Edit extends Component
         // agregado de products.stock en sync, con su registro auditado). Los
         // productos por peso no llevan control de stock, así que se ignora.
         $sucursalId = CurrentSucursal::id();
-        $delta = $data['sold_by_weight'] ? 0 : (int) $data['stock'] - $this->product->stockEnSucursal($sucursalId);
+        $stockDeseado = (int) $data['stock'];
+        $sinControlDeStock = (bool) $data['sold_by_weight'];
         unset($data['stock']);
 
         $this->product->update($data);
 
-        if ($delta !== 0 && $sucursalId !== null) {
-            StockAdjuster::applyManualDelta($this->product->id, $delta, $sucursalId);
+        if (! $sinControlDeStock && $sucursalId !== null) {
+            // El delta se recalcula ADENTRO de la transacción, con la fila
+            // de stock lockeada: sin esto, dos ediciones simultáneas del
+            // mismo producto (dos pestañas, o un doble clic en "Guardar")
+            // pueden leer el mismo stock de partida y calcular cada una su
+            // propio delta contra ese valor viejo — el resultado final
+            // termina sin corresponder al valor absoluto que ninguno de los
+            // dos admins tipeó.
+            DB::transaction(function () use ($stockDeseado, $sucursalId) {
+                $row = ProductStock::where('product_id', $this->product->id)
+                    ->where('sucursal_id', $sucursalId)
+                    ->lockForUpdate()
+                    ->first();
+
+                $delta = $stockDeseado - ($row?->stock ?? 0);
+
+                if ($delta !== 0) {
+                    StockAdjuster::applyManualDelta($this->product->id, $delta, $sucursalId);
+                }
+            });
         }
 
         session()->flash('status', 'Producto actualizado.');

@@ -88,7 +88,9 @@
                                 <button
                                     type="button"
                                     x-on:click="confirmThen('¿Eliminar el punto de venta {{ str_pad($pv->numero, 4, '0', STR_PAD_LEFT) }}?', () => $wire.eliminarPuntoVenta({{ $pv->id }}))"
-                                    class="text-xs font-medium text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                                    wire:loading.attr="disabled"
+                                    wire:target="eliminarPuntoVenta"
+                                    class="text-xs font-medium text-red-500 hover:text-red-700 dark:hover:text-red-400 disabled:opacity-50"
                                 >
                                     Eliminar
                                 </button>
@@ -110,7 +112,9 @@
                             class="{{ $inputClass }}">
                     </div>
                     <button type="button" wire:click="agregarPuntoVenta"
-                        class="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm">
+                        wire:loading.attr="disabled"
+                        wire:target="agregarPuntoVenta"
+                        class="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm disabled:opacity-50">
                         Agregar
                     </button>
                 </div>
