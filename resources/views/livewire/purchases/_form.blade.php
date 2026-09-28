@@ -224,18 +224,6 @@
                 </select>
                 @error('tipo_comprobante') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="{{ $label }}">Punto de venta *</label>
-                    <input type="number" min="1" max="9999" wire:model="punto_venta" class="{{ $inputClass }}">
-                    @error('punto_venta') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="{{ $label }}">N° de comprobante *</label>
-                    <input type="number" min="1" max="99999999" wire:model="numero_comprobante" class="{{ $inputClass }}">
-                    @error('numero_comprobante') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
             @if ((int) $tipo_comprobante === \App\Enums\TipoComprobante::Remito->value)
                 <p class="text-xs text-gray-500 dark:text-gray-400">Datos del remito del proveedor. Esta compra <strong>no entra al Libro IVA Compras</strong> hasta que se cargue la factura real.</p>
             @else
@@ -293,9 +281,9 @@
         </div>
         @endif
 
-        {{-- Sección: Pago y estado --}}
+        {{-- Sección: Pago --}}
         <div class="space-y-3 {{ $sectionDivider }}">
-            <h3 class="{{ $sectionTitle }}">Pago y estado</h3>
+            <h3 class="{{ $sectionTitle }}">Pago</h3>
 
             <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Métodos de pago</span>
@@ -330,34 +318,20 @@
                 @if ($this->remaining() > 0.005) · Resta ${{ money($this->remaining()) }} (queda en cuenta corriente) @endif
             </p>
             @error('payments') <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+        </div>
 
-            <div>
-                <label class="{{ $label }}">Estado</label>
-                <select wire:model="status" class="{{ $inputClass }}">
-                    @foreach ($statuses as $s)
-                        <option value="{{ $s->value }}">{{ $s->label() }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <label class="{{ $label }}">Notas</label>
-                <textarea wire:model="notes" rows="3" placeholder="Condiciones de pago, etc." class="{{ $inputClass }}"></textarea>
-            </div>
+        <div class="flex gap-3 {{ $sectionDivider }}">
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="flex-1 inline-flex items-center justify-center rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
+                {{ $submitLabel }}
+            </button>
+            <a href="{{ route('purchases.index') }}" wire:navigate class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                Cancelar
+            </a>
         </div>
 
         </div>
         {{-- /Columna derecha --}}
       </div>
       {{-- /grid --}}
-
-        <div class="flex gap-3 {{ $sectionDivider }}">
-            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
-                {{ $submitLabel }}
-            </button>
-            <a href="{{ route('purchases.index') }}" wire:navigate class="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
-                Cancelar
-            </a>
-        </div>
     </div>
 </form>
