@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Proveedores" subtitle="Gestioná los datos de tus proveedores" icon="truck">
         <x-slot:actions>
             @if (\App\Support\Permissions::canAccess(auth()->user()->role, 'data-import'))

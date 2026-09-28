@@ -6,7 +6,7 @@
     $fileInputClass = 'w-full text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 dark:file:bg-sky-500/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-700 dark:file:text-sky-300 hover:file:bg-sky-100 dark:hover:file:bg-sky-500/20';
 @endphp
 
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Datos de la empresa" subtitle="Estos datos se usan para determinar el tipo de comprobante (Factura A/B/C) y se envían a ARCA al emitir cada factura." icon="building-office" />
 
     <form wire:submit="save" class="max-w-5xl" enctype="multipart/form-data">

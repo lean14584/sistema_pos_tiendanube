@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Respaldo" subtitle="Descargá una copia completa del sistema para guardarla en un lugar seguro." icon="circle-stack" />
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">

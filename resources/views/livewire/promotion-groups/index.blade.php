@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Promos por familia" subtitle="Agrupá productos (ej. Coca, Fanta, Sprite) y aplicá un NxM: el POS regala la unidad más barata del grupo." icon="gift" />
 
     @php

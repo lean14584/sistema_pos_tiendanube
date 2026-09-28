@@ -3,7 +3,7 @@
     $sectionTitle = 'text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider';
 @endphp
 
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Listas de precios" subtitle="Cada lista ajusta el precio base por un porcentaje (ej.: Mayorista −15%, Tarjeta +10%). Se asigna por cliente y se puede elegir al vender." icon="currency-dollar" />
 
     {{-- Alta / edición --}}

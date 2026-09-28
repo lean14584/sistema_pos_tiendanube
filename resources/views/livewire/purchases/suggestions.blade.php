@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Sugerencias de compra" subtitle="Productos con stock bajo, priorizados por mayor venta en los últimos {{ $lookbackDays }} días" icon="clipboard-document-check">
         <x-slot:actions>
         <a

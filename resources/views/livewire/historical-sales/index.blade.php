@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Ventas históricas" subtitle="Ventas importadas de otro sistema (ej. Tango), solo para consulta. No son facturas: no tienen numeración AFIP ni afectan la cuenta corriente." icon="clock">
         <x-slot:actions>
             <a href="{{ route('historical-sales.import') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/25 px-4 py-2 text-sm font-medium text-white hover:bg-white/25 active:scale-[0.98] transition-all">

@@ -7,7 +7,7 @@
     ];
 @endphp
 
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Estado del sistema" subtitle="Chequeos rápidos de lo que conviene tener al día." icon="heart" />
 
     @if ($avisos === 0)

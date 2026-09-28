@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Ajustes de Stock" subtitle="Corregí el stock de un producto por rotura, vencimiento, conteo físico o merma — fuera del flujo normal de ventas y compras." icon="wrench" />
 
     @php
