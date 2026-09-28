@@ -1,7 +1,4 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <a href="{{ route('products.index') }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
-        <x-heroicon-o-arrow-left class="w-4 h-4" /> Productos
-    </a>
     <x-page-header title="Promociones" subtitle="El POS aplica estas promos solo, según el producto y la cantidad." icon="gift">
         <x-slot:actions>
             <a href="{{ route('promotions.poster') }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">

@@ -8,9 +8,6 @@
 @endphp
 
 <div class="p-8 max-w-6xl mx-auto">
-    <a href="{{ route('products.index') }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
-        <x-heroicon-o-arrow-left class="w-4 h-4" /> Productos
-    </a>
     <x-page-header title="Historial de {{ $product->name }}" subtitle="Altas, modificaciones, bajas y ajustes de stock de este producto." icon="clock" />
 
     <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
