@@ -131,7 +131,7 @@
 
             {{-- Resumen de totales, pegado a la lista de ítems --}}
             <div class="flex justify-end">
-                <div class="w-full max-w-xs space-y-1.5 text-sm rounded-xl border border-sky-200 dark:border-sky-500/20 bg-sky-50 dark:bg-sky-500/10 p-4">
+                <div class="w-full max-w-xs space-y-1.5 text-sm rounded-xl border border-sky-300 dark:border-sky-500/30 bg-sky-100 dark:bg-sky-500/20 p-4">
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>Subtotal</span>
                         <span>${{ money($this->subtotal()) }}</span>
