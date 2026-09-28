@@ -186,34 +186,18 @@
             </div>
         </div>
 
-        {{-- Sección: Estado y notas --}}
-        <div class="space-y-4 {{ $sectionDivider }}">
-            <h3 class="{{ $sectionTitle }}">Estado y notas</h3>
-
-            <x-select label="Estado" wire:model="status">
-                @foreach ($statuses as $s)
-                    <option value="{{ $s->value }}">{{ $s->label() }}</option>
-                @endforeach
-            </x-select>
-
-            <div>
-                <label class="{{ $label }}">Notas</label>
-                <textarea wire:model="notes" rows="3" placeholder="Condiciones, validez, aclaraciones, etc." class="{{ $inputClass }}"></textarea>
-            </div>
+        <div class="flex gap-3 {{ $sectionDivider }}">
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="flex-1 inline-flex items-center justify-center rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
+                {{ $submitLabel }}
+            </button>
+            <a href="{{ route('quotes.index') }}" wire:navigate class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                Cancelar
+            </a>
         </div>
 
         </div>
         {{-- /Columna derecha --}}
       </div>
       {{-- /grid --}}
-
-        <div class="flex gap-3 {{ $sectionDivider }}">
-            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
-                {{ $submitLabel }}
-            </button>
-            <a href="{{ route('quotes.index') }}" wire:navigate class="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
-                Cancelar
-            </a>
-        </div>
     </div>
 </form>
