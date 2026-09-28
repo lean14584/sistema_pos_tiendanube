@@ -4,10 +4,15 @@
     </a>
     <x-page-header title="Ajustes de Stock" subtitle="Corregí el stock de un producto por rotura, vencimiento, conteo físico o merma — fuera del flujo normal de ventas y compras." icon="wrench" />
 
-    @php $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'; @endphp
+    @php $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm hover:border-indigo-300 dark:hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition'; @endphp
 
-    <form wire:submit="save" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md p-5 mb-8">
-        <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Nuevo ajuste</h2>
+    <form wire:submit="save" class="bg-gradient-to-b from-white to-sky-50/70 dark:from-gray-900 dark:to-gray-950 rounded-2xl border border-sky-100 dark:border-gray-800 shadow-md shadow-sky-100/50 dark:shadow-black/30 p-5 sm:p-6 mb-8">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 inline-flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+                <x-heroicon-o-wrench class="w-4 h-4" />
+            </span>
+            Nuevo ajuste
+        </h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="sm:col-span-2">
@@ -40,14 +45,14 @@
         </div>
 
         <div class="flex gap-3 mt-5">
-            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50">Registrar ajuste</button>
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50">Registrar ajuste</button>
         </div>
     </form>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div>
             @if ($filterProduct !== '')
-                <div class="flex items-center justify-between gap-2 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 px-3 py-2 text-sm">
+                <div class="flex items-center justify-between gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm">
                     <span class="truncate text-gray-800 dark:text-gray-100">{{ $filterProductName }}</span>
                     <button type="button" wire:click="clearFilterProduct" class="text-gray-400 hover:text-red-500 shrink-0">
                         <x-heroicon-o-x-mark class="w-4 h-4" />
@@ -63,12 +68,12 @@
                         class="{{ $inputClass }} pl-9"
                     >
                     @if (trim($filterProductQuery) !== '')
-                        <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
+                        <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-xl border border-sky-100 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
                             @forelse ($this->filterProductResults as $product)
                                 <button
                                     type="button"
                                     wire:click="selectFilterProduct({{ $product->id }})"
-                                    class="w-full flex items-center px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                                    class="w-full flex items-center px-3 py-2 text-left hover:bg-sky-50/70 dark:hover:bg-indigo-500/10 transition-colors"
                                 >
                                     <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                 </button>
@@ -84,7 +89,7 @@
         <input type="date" wire:model.live="hasta" class="{{ $inputClass }}" placeholder="Hasta">
     </div>
 
-    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-800/50">
