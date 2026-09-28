@@ -8,7 +8,9 @@
 
 <form wire:submit="save" class="max-w-5xl">
     <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
-
+      <div class="grid grid-cols-1 lg:grid-cols-12 lg:gap-x-8">
+        {{-- Columna izquierda: Ítems --}}
+        <div class="lg:col-span-8">
         {{-- Sección: Ítems --}}
         <div class="space-y-3">
             <h3 class="{{ $sectionTitle }}">Ítems</h3>
@@ -149,9 +151,14 @@
                 </div>
             </div>
         </div>
+        </div>
+        {{-- /Columna izquierda --}}
+
+        {{-- Columna derecha: resto de los datos --}}
+        <div class="lg:col-span-4 mt-6 pt-6 border-t lg:mt-0 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-8 border-sky-200/70 dark:border-gray-800">
 
         {{-- Sección: Cliente y vigencia --}}
-        <div class="space-y-3 {{ $sectionDivider }}">
+        <div class="space-y-3">
             <h3 class="{{ $sectionTitle }}">Cliente y vigencia</h3>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -201,6 +208,11 @@
                 <textarea wire:model="notes" rows="3" placeholder="Condiciones, validez, aclaraciones, etc." class="{{ $inputClass }}"></textarea>
             </div>
         </div>
+
+        </div>
+        {{-- /Columna derecha --}}
+      </div>
+      {{-- /grid --}}
 
         <div class="flex gap-3 {{ $sectionDivider }}">
             <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
