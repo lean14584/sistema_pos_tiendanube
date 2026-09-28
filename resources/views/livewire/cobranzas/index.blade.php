@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Cobranzas" subtitle="Clientes con saldo pendiente. Registrá el cobro o mandá un recordatorio por WhatsApp." icon="banknotes">
         <x-slot:actions>
             <div class="text-right">

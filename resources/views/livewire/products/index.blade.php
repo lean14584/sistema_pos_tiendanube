@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Productos" subtitle="{{ $canManageProducts ? 'Gestioná tu catálogo de productos' : 'Consultá tu catálogo de productos' }}" icon="cube">
         @if ($canManageProducts)
             <x-slot:actions>

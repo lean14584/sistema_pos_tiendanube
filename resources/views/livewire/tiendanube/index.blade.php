@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Tiendanube" subtitle="Conectá tu tienda online para importar productos y pedidos, y sincronizar el stock." icon="shopping-bag">
         <x-slot:actions>
             @if ($configurado)

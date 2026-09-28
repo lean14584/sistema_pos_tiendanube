@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Promociones" subtitle="El POS aplica estas promos solo, según el producto y la cantidad." icon="gift">
         <x-slot:actions>
             <a href="{{ route('promotions.poster') }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">

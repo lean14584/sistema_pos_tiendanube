@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto" wire:poll.5s>
+<div class="p-8 max-w-6xl mx-auto" wire:poll.5s>
     <x-page-header title="Mensajes" subtitle="Chat interno entre usuarios" icon="chat-bubble-left-right" />
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 flex h-[32rem] overflow-hidden">

@@ -5,7 +5,7 @@
     $label = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 @endphp
 
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Nueva tarea" icon="check-circle" />
 
     <form wire:submit="save" class="max-w-5xl">

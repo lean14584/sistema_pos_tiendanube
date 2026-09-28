@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Editar presupuesto {{ $quote->number }}" icon="clipboard-document-list" />
 
     @if ($quote->status->value === 'converted')

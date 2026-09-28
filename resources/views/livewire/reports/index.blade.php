@@ -2,7 +2,7 @@
     $barPct = fn ($value, $max) => $max > 0 ? max(2, round(($value / $max) * 100)) : 0;
 @endphp
 
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Informes de ventas" subtitle="Facturas no borrador, agrupadas por distintos criterios" icon="chart-bar">
         <x-slot:actions>
             <a href="{{ route('reports.export.pdf', ['fromDate' => $fromDate, 'toDate' => $toDate, 'sucursal_id' => $sucursal_id]) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/25 px-3 py-2 text-sm font-medium text-white hover:bg-white/25 transition-all">

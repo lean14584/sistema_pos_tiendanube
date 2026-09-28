@@ -2,7 +2,7 @@
     $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors';
 @endphp
 
-<div class="p-8 max-w-3xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <a href="{{ route('invoices.show', $invoice) }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
         <x-heroicon-o-arrow-left class="w-4 h-4" />
         {{ $invoice->number }}

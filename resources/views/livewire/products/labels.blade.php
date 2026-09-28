@@ -1,4 +1,4 @@
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-6xl mx-auto">
     <style>
         @media print {
             /* Modo hoja con grilla (impresora normal): el modo etiquetadora
