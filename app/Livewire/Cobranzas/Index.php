@@ -11,17 +11,21 @@ use App\Models\CompanySettings;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\Whatsapp;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    use ScopedToSucursal;
+    use ScopedToSucursal, WithPagination;
+
+    private const PER_PAGE = 20;
 
     public string $search = '';
 
@@ -37,6 +41,11 @@ class Index extends Component
     public function mount(): void
     {
         $this->payDate = now()->toDateString();
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
     }
 
     /**
@@ -159,17 +168,37 @@ class Index extends Component
         // sola vez acá afuera.
         $empresa = CompanySettings::current()->display_name;
 
-        $deudores = $this->deudores()->map(function ($row) use ($empresa) {
-            /** @var Client $client */
-            $client = $row['client'];
-            $row['whatsapp'] = Whatsapp::link($client->phone, $this->mensajeRecordatorio($client, $row['saldo'], $empresa));
+        // deudores() ya trae/computa la deuda de TODOS los clientes que
+        // matchean el filtro (necesario: el orden es por saldo desc, no se
+        // puede paginar en SQL sin duplicar el cálculo de saldoCuentaCorriente
+        // ahí). Lo que faltaba era paginar la lista que se manda a la vista:
+        // con muchos deudores, esto igual evita renderizar cientos de filas
+        // de una sola vez. El total ($totalACobrar) sigue sumando TODOS los
+        // deudores, no solo la página visible.
+        $todos = $this->deudores();
+        $totalACobrar = $todos->sum('saldo');
 
-            return $row;
-        });
+        $deudores = $todos->forPage($this->getPage(), self::PER_PAGE)
+            ->map(function ($row) use ($empresa) {
+                /** @var Client $client */
+                $client = $row['client'];
+                $row['whatsapp'] = Whatsapp::link($client->phone, $this->mensajeRecordatorio($client, $row['saldo'], $empresa));
+
+                return $row;
+            })
+            ->values();
+
+        $deudoresPaginados = new LengthAwarePaginator(
+            $deudores,
+            $todos->count(),
+            self::PER_PAGE,
+            $this->getPage(),
+            ['path' => request()->url(), 'pageName' => 'page']
+        );
 
         return view('livewire.cobranzas.index', [
-            'deudores' => $deudores,
-            'totalACobrar' => $deudores->sum('saldo'),
+            'deudores' => $deudoresPaginados,
+            'totalACobrar' => $totalACobrar,
             'paymentMethods' => PaymentMethod::cases(),
         ]);
     }

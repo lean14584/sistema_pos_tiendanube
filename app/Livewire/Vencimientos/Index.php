@@ -19,6 +19,15 @@ class Index extends Component
 {
     use ScopedToSucursal;
 
+    /**
+     * Tope de filas mostradas en cada panel (por cobrar / por pagar). La
+     * pantalla ya ordena por fecha de vencimiento ascendente, así que lo
+     * primero que se corta son los vencimientos más lejanos, nunca los
+     * urgentes. Los totales ($totalCobrar/$vencidoCobrar/etc.) siempre se
+     * calculan sobre el conjunto completo, no sobre lo mostrado.
+     */
+    private const MAX_FILAS = 200;
+
     /** null (string vacío) = todas las sucursales consolidadas. Solo un admin global puede elegir esto. */
     #[Url]
     public string $sucursal_id = '';
@@ -174,13 +183,23 @@ class Index extends Component
         $porCobrar = $porCobrar->sortBy(fn ($r) => $r['due']->timestamp)->values();
         $porPagar = $porPagar->sortBy(fn ($r) => $r['due']->timestamp)->values();
 
+        // Los totales se calculan sobre TODO antes de cortar la lista: el
+        // tope de abajo es solo para no renderizar cientos de filas, no debe
+        // afectar los montos mostrados arriba.
+        $totalCobrar = $porCobrar->sum('amount');
+        $totalPagar = $porPagar->sum('amount');
+        $vencidoCobrar = $porCobrar->where('estado', 'vencido')->sum('amount');
+        $vencidoPagar = $porPagar->where('estado', 'vencido')->sum('amount');
+
         return view('livewire.vencimientos.index', [
-            'porCobrar' => $porCobrar,
-            'porPagar' => $porPagar,
-            'totalCobrar' => $porCobrar->sum('amount'),
-            'totalPagar' => $porPagar->sum('amount'),
-            'vencidoCobrar' => $porCobrar->where('estado', 'vencido')->sum('amount'),
-            'vencidoPagar' => $porPagar->where('estado', 'vencido')->sum('amount'),
+            'porCobrar' => $porCobrar->take(self::MAX_FILAS)->values(),
+            'porPagar' => $porPagar->take(self::MAX_FILAS)->values(),
+            'hayMasCobrar' => $porCobrar->count() > self::MAX_FILAS,
+            'hayMasPagar' => $porPagar->count() > self::MAX_FILAS,
+            'totalCobrar' => $totalCobrar,
+            'totalPagar' => $totalPagar,
+            'vencidoCobrar' => $vencidoCobrar,
+            'vencidoPagar' => $vencidoPagar,
             'puedeVerTodasLasSucursales' => $this->puedeVerTodasLasSucursales(),
             'sucursales' => $this->puedeVerTodasLasSucursales() ? Sucursal::forSelectCached() : collect(),
         ]);

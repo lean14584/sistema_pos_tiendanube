@@ -120,7 +120,7 @@
             <div class="flex items-end gap-1.5 h-40 overflow-x-auto pb-1">
                 @foreach ($byDay as $row)
                     <div class="flex flex-col items-center justify-end shrink-0 group" style="min-width: 2rem;">
-                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">${{ number_format($row['total'], 0) }}</span>
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">${{ number_format($row['total'], 0, ',', '.') }}</span>
                         <div class="w-6 rounded-t bg-sky-500 dark:bg-sky-400 hover:bg-sky-600 dark:hover:bg-sky-300 transition-colors" style="height: {{ $maxDay > 0 ? max(4, round(($row['total'] / $maxDay) * 120)) : 4 }}px" title="{{ $row['label'] }}: ${{ money($row['total']) }} ({{ $row['count'] }} fact.)"></div>
                         <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">{{ $row['label'] }}</span>
                     </div>

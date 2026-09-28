@@ -54,6 +54,9 @@
                 @empty
                     <div class="px-4 py-10 text-center text-sm text-gray-400 dark:text-gray-500">Nadie te debe. ¡Todo cobrado! 🎉</div>
                 @endforelse
+                @if ($hayMasCobrar)
+                    <div class="px-4 py-2.5 text-center text-xs text-gray-400 dark:text-gray-500">Mostrando los {{ $porCobrar->count() }} vencimientos más próximos. El total de arriba incluye todos.</div>
+                @endif
             </div>
         </section>
 
@@ -83,6 +86,9 @@
                 @empty
                     <div class="px-4 py-10 text-center text-sm text-gray-400 dark:text-gray-500">No le debés nada a nadie. 👍</div>
                 @endforelse
+                @if ($hayMasPagar)
+                    <div class="px-4 py-2.5 text-center text-xs text-gray-400 dark:text-gray-500">Mostrando los {{ $porPagar->count() }} vencimientos más próximos. El total de arriba incluye todos.</div>
+                @endif
             </div>
         </section>
     </div>

@@ -135,4 +135,8 @@
             @endforelse
         </div>
     </div>
+
+    <div class="mt-4">
+        {{ $deudores->links() }}
+    </div>
 </div>

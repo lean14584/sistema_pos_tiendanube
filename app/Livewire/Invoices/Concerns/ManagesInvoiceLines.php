@@ -4,26 +4,23 @@ namespace App\Livewire\Invoices\Concerns;
 
 use App\Enums\AlicuotaIva;
 use App\Enums\PaymentMethod;
+use App\Livewire\Concerns\CalculatesInvoiceTotals;
 use App\Models\CompanySettings;
 use App\Models\Product;
 
 /**
  * Compartido por Invoices\Create e Invoices\Edit: manejo de los ítems y pagos
- * del formulario (antes de guardar) y el cálculo de neto/IVA/total sobre esos
- * arrays en memoria. Antes estaba copiado byte a byte en los dos componentes
- * — cualquier cambio a una regla de cálculo (redondeo, descuento, alícuotas)
- * había que acordarse de aplicarlo dos veces.
+ * del formulario (antes de guardar). El cálculo de neto/IVA/total en sí vive
+ * en CalculatesInvoiceTotals (compartido a su vez con NotasCredito\Create) —
+ * acá solo queda lo específico de una factura: agregar/quitar ítems desde el
+ * buscador de productos y el descuento por medio de pago.
  *
  * Requiere que la clase que lo use declare `array $items` (con
  * quantity/unit_price/discount/iva_rate por ítem) y `array $payments`.
  */
 trait ManagesInvoiceLines
 {
-    /** Neto de una línea: cantidad x precio, menos el descuento de la línea. */
-    private function lineNeto(array $item): float
-    {
-        return (float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100);
-    }
+    use CalculatesInvoiceTotals;
 
     public function addProductItem(int $productId): void
     {
@@ -57,70 +54,6 @@ trait ManagesInvoiceLines
     {
         unset($this->items[$index]);
         $this->items = array_values($this->items);
-    }
-
-    /**
-     * Ítems que realmente se van a persistir al guardar (mismo filtro que
-     * `saveInterno()`/`save()` en Create/Edit). Antes los totales/validaciones
-     * se calculaban sobre TODOS los ítems, incluido uno recién agregado con
-     * "addFreeformItem()" al que todavía no se le tipeó la descripción — ese
-     * ítem contaba para el total mostrado, el límite de crédito y si la
-     * venta quedaba "paid", pero al guardar se descartaba en silencio,
-     * dejando la factura persistida con un total menor a lo cobrado.
-     */
-    private function validItems(): \Illuminate\Support\Collection
-    {
-        return collect($this->items)->filter(fn ($item) => trim($item['description'] ?? '') !== '');
-    }
-
-    public function subtotal(): float
-    {
-        return $this->validItems()->sum(fn ($item) => $this->lineNeto($item));
-    }
-
-    public function netoGravado(): float
-    {
-        return $this->validItems()
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
-            ->sum(fn ($item) => $this->lineNeto($item));
-    }
-
-    public function netoExento(): float
-    {
-        return $this->validItems()
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) <= 0)
-            ->sum(fn ($item) => $this->lineNeto($item));
-    }
-
-    public function taxAmount(): float
-    {
-        return $this->validItems()->sum(
-            fn ($item) => $this->lineNeto($item) * ((float) ($item['iva_rate'] ?? 0) / 100)
-        );
-    }
-
-    public function total(): float
-    {
-        return $this->subtotal() + $this->taxAmount();
-    }
-
-    /**
-     * Desglose del IVA por alícuota para mostrar en el formulario.
-     *
-     * @return array<int, array{tasa: float, iva: float}>
-     */
-    public function ivaBreakdown(): array
-    {
-        return $this->validItems()
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
-            ->groupBy(fn ($item) => (string) (float) $item['iva_rate'])
-            ->map(fn ($grupo, $tasa) => [
-                'tasa' => (float) $tasa,
-                'iva' => $grupo->sum(fn ($item) => $this->lineNeto($item) * ((float) $item['iva_rate'] / 100)),
-            ])
-            ->sortBy('tasa')
-            ->values()
-            ->all();
     }
 
     public function paidTotal(): float

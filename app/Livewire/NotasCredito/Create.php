@@ -6,6 +6,7 @@ use App\Enums\AlicuotaIva;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
+use App\Livewire\Concerns\CalculatesInvoiceTotals;
 use App\Models\Invoice;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
@@ -21,6 +22,8 @@ use RuntimeException;
 #[Layout('layouts.app')]
 class Create extends Component
 {
+    use CalculatesInvoiceTotals;
+
     public Invoice $invoice;
 
     public bool $afecta_stock = true;
@@ -59,54 +62,6 @@ class Create extends Component
     {
         unset($this->items[$index]);
         $this->items = array_values($this->items);
-    }
-
-    public function subtotal(): float
-    {
-        return collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
-    }
-
-    public function netoGravado(): float
-    {
-        return collect($this->items)
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
-            ->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
-    }
-
-    public function netoExento(): float
-    {
-        return collect($this->items)
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) <= 0)
-            ->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
-    }
-
-    public function taxAmount(): float
-    {
-        return collect($this->items)->sum(
-            fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) ($item['iva_rate'] ?? 0) / 100)
-        );
-    }
-
-    public function total(): float
-    {
-        return $this->subtotal() + $this->taxAmount();
-    }
-
-    /**
-     * @return array<int, array{tasa: float, iva: float}>
-     */
-    public function ivaBreakdown(): array
-    {
-        return collect($this->items)
-            ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
-            ->groupBy(fn ($item) => (string) (float) $item['iva_rate'])
-            ->map(fn ($grupo, $tasa) => [
-                'tasa' => (float) $tasa,
-                'iva' => $grupo->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price'] * ((float) $item['iva_rate'] / 100)),
-            ])
-            ->sortBy('tasa')
-            ->values()
-            ->all();
     }
 
     public function paidTotal(): float
@@ -159,7 +114,7 @@ class Create extends Component
 
     public function save(): void
     {
-        $validItems = collect($this->items)->filter(fn ($item) => trim($item['description']) !== '');
+        $validItems = $this->validItems();
 
         if ($validItems->isEmpty()) {
             $this->addError('items', 'Agregá al menos un ítem con descripción.');
