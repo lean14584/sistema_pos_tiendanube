@@ -130,16 +130,16 @@
                     <textarea wire:model="notes" rows="2" class="{{ $inputClass }}" placeholder="Ej: reposición de fin de semana"></textarea>
                 </div>
 
+                <div class="{{ $sectionDivider }}">
+                    <button type="submit" wire:loading.attr="disabled" class="w-full inline-flex items-center justify-center rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
+                        Registrar envío
+                    </button>
+                </div>
+
                 </div>
                 {{-- /Columna derecha --}}
               </div>
               {{-- /grid --}}
-
-                <div class="{{ $sectionDivider }}">
-                    <button type="submit" wire:loading.attr="disabled" class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
-                        Registrar envío
-                    </button>
-                </div>
             </div>
         </form>
     @endif
