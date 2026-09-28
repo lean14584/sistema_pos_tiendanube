@@ -158,50 +158,43 @@
         <div class="lg:col-span-4 mt-6 pt-6 border-t lg:mt-0 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-8 border-sky-200/70 dark:border-gray-800">
 
         {{-- Sección: Cliente y vigencia --}}
-        <div class="space-y-3">
+        <div class="space-y-4">
             <h3 class="{{ $sectionTitle }}">Cliente y vigencia</h3>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                    <x-client-picker
-                        :client-name="$clients->firstWhere('id', (int) $client_id)?->name ?? '—'"
-                        :client-query="$clientQuery"
-                        :client-results="$this->clientResults"
-                    />
-                    @error('client_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <x-select label="Lista de precios" wire:model.live="price_list_id">
-                    <option value="">Precio base</option>
-                    @foreach ($priceLists as $list)
-                        <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
-                    @endforeach
-                </x-select>
-                <div></div>
+            <div>
+                <x-client-picker
+                    :client-name="$clients->firstWhere('id', (int) $client_id)?->name ?? '—'"
+                    :client-query="$clientQuery"
+                    :client-results="$this->clientResults"
+                />
+                @error('client_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
+            <x-select label="Lista de precios" wire:model.live="price_list_id">
+                <option value="">Precio base</option>
+                @foreach ($priceLists as $list)
+                    <option value="{{ $list->id }}">{{ $list->name }} ({{ (float) $list->adjustment_percent > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($list->adjustment_percent, 2), '0'), '.') }}%)</option>
+                @endforeach
+            </x-select>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                    <label class="{{ $label }}">Fecha de emisión</label>
-                    <input type="date" wire:model="issue_date" class="{{ $inputClass }}">
-                </div>
-                <div>
-                    <label class="{{ $label }}">Válido hasta</label>
-                    <input type="date" wire:model="valid_until" class="{{ $inputClass }}">
-                </div>
+            <div>
+                <label class="{{ $label }}">Fecha de emisión</label>
+                <input type="date" wire:model="issue_date" class="{{ $inputClass }}">
+            </div>
+            <div>
+                <label class="{{ $label }}">Válido hasta</label>
+                <input type="date" wire:model="valid_until" class="{{ $inputClass }}">
             </div>
         </div>
 
         {{-- Sección: Estado y notas --}}
-        <div class="space-y-3 {{ $sectionDivider }}">
+        <div class="space-y-4 {{ $sectionDivider }}">
             <h3 class="{{ $sectionTitle }}">Estado y notas</h3>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <x-select label="Estado" wire:model="status">
-                    @foreach ($statuses as $s)
-                        <option value="{{ $s->value }}">{{ $s->label() }}</option>
-                    @endforeach
-                </x-select>
-            </div>
+            <x-select label="Estado" wire:model="status">
+                @foreach ($statuses as $s)
+                    <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                @endforeach
+            </x-select>
 
             <div>
                 <label class="{{ $label }}">Notas</label>
