@@ -131,7 +131,7 @@
 
             {{-- Resumen de totales, pegado a la lista de ítems --}}
             <div class="flex justify-end">
-                <div class="w-full max-w-xs space-y-1.5 text-sm">
+                <div class="w-full max-w-xs space-y-1.5 text-sm rounded-xl border border-sky-200 dark:border-sky-500/20 bg-sky-50 dark:bg-sky-500/10 p-4">
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                         <span>Subtotal</span>
                         <span>${{ money($this->subtotal()) }}</span>
@@ -144,7 +144,7 @@
                         <span>Monto impuesto</span>
                         <span>${{ money($this->taxAmount()) }}</span>
                     </div>
-                    <div class="flex justify-between font-semibold text-gray-900 dark:text-gray-100 text-base pt-1.5 border-t border-sky-200/70 dark:border-gray-800">
+                    <div class="flex justify-between font-semibold text-sky-900 dark:text-sky-100 text-base pt-1.5 border-t border-sky-300/70 dark:border-sky-500/20">
                         <span>Total</span>
                         <span>${{ money($this->total()) }}</span>
                     </div>
