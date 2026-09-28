@@ -32,32 +32,36 @@
 <div class="p-8 max-w-6xl mx-auto">
     <x-page-header title="Auditoría" subtitle="Altas, bajas y modificaciones en facturas, presupuestos, productos, clientes, proveedores, compras, promociones y usuarios." icon="clipboard-document-check" />
 
-    <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-6">
-        <select wire:model.live="modelo" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <option value="">Todos los modelos</option>
-            @foreach ($tiposAuditados as $clase => $etiqueta)
-                <option value="{{ $clase }}">{{ $etiqueta }}</option>
-            @endforeach
-        </select>
-        <select wire:model.live="userId" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <option value="">Todos los usuarios</option>
-            @foreach ($usuarios as $usuario)
-                <option value="{{ $usuario->id }}">{{ $usuario->name }}</option>
-            @endforeach
-        </select>
-        @if ($puedeVerTodasLasSucursales)
-            <select wire:model.live="sucursal_id" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                <option value="">Todas las sucursales</option>
-                @foreach ($sucursales as $s)
-                    <option value="{{ $s->id }}">{{ $s->name }}</option>
+    @php $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition'; @endphp
+
+    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <select wire:model.live="modelo" class="{{ $inputClass }}">
+                <option value="">Todos los modelos</option>
+                @foreach ($tiposAuditados as $clase => $etiqueta)
+                    <option value="{{ $clase }}">{{ $etiqueta }}</option>
                 @endforeach
             </select>
-        @endif
-        <input type="date" wire:model.live="desde" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Desde">
-        <input type="date" wire:model.live="hasta" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Hasta">
+            <select wire:model.live="userId" class="{{ $inputClass }}">
+                <option value="">Todos los usuarios</option>
+                @foreach ($usuarios as $usuario)
+                    <option value="{{ $usuario->id }}">{{ $usuario->name }}</option>
+                @endforeach
+            </select>
+            @if ($puedeVerTodasLasSucursales)
+                <select wire:model.live="sucursal_id" class="{{ $inputClass }}">
+                    <option value="">Todas las sucursales</option>
+                    @foreach ($sucursales as $s)
+                        <option value="{{ $s->id }}">{{ $s->name }}</option>
+                    @endforeach
+                </select>
+            @endif
+            <input type="date" wire:model.live="desde" class="{{ $inputClass }}" placeholder="Desde">
+            <input type="date" wire:model.live="hasta" class="{{ $inputClass }}" placeholder="Hasta">
+        </div>
     </div>
 
-    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">
+    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         @if ($logs->isEmpty())
             <div class="p-12 text-center text-gray-400 dark:text-gray-500">
                 <x-heroicon-o-clipboard-document-check class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
@@ -67,7 +71,7 @@
             <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
+                    <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                         <th class="px-4 py-2 font-medium">Fecha</th>
                         <th class="px-4 py-2 font-medium">Usuario</th>
                         @if ($puedeVerTodasLasSucursales)
@@ -88,7 +92,7 @@
                             @endif
                             <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
                                 @if ($rutaRegistro($log))
-                                    <a href="{{ $rutaRegistro($log) }}" wire:navigate class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    <a href="{{ $rutaRegistro($log) }}" wire:navigate class="text-sky-700 dark:text-sky-400 hover:underline">
                                         {{ \App\Models\AuditLog::etiquetaModelo($log->auditable_type) }} #{{ $log->auditable_id }}
                                     </a>
                                 @else
@@ -122,7 +126,7 @@
                         <div class="flex items-start justify-between gap-3">
                             <p class="text-gray-700 dark:text-gray-300">
                                 @if ($rutaRegistro($log))
-                                    <a href="{{ $rutaRegistro($log) }}" wire:navigate class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    <a href="{{ $rutaRegistro($log) }}" wire:navigate class="text-sky-700 dark:text-sky-400 hover:underline">
                                         {{ \App\Models\AuditLog::etiquetaModelo($log->auditable_type) }} #{{ $log->auditable_id }}
                                     </a>
                                 @else

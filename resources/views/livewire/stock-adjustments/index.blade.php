@@ -4,15 +4,13 @@
     </a>
     <x-page-header title="Ajustes de Stock" subtitle="Corregí el stock de un producto por rotura, vencimiento, conteo físico o merma — fuera del flujo normal de ventas y compras." icon="wrench" />
 
-    @php $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm hover:border-indigo-300 dark:hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition'; @endphp
+    @php
+        $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition';
+        $sectionTitle = 'text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider';
+    @endphp
 
-    <form wire:submit="save" class="bg-gradient-to-b from-white to-sky-50/70 dark:from-gray-900 dark:to-gray-950 rounded-2xl border border-sky-100 dark:border-gray-800 shadow-md shadow-sky-100/50 dark:shadow-black/30 p-5 sm:p-6 mb-8">
-        <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 inline-flex items-center gap-2">
-            <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
-                <x-heroicon-o-wrench class="w-4 h-4" />
-            </span>
-            Nuevo ajuste
-        </h2>
+    <form wire:submit="save" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-6 mb-8">
+        <h2 class="{{ $sectionTitle }} mb-4">Nuevo ajuste</h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="sm:col-span-2">
@@ -45,7 +43,7 @@
         </div>
 
         <div class="flex gap-3 mt-5">
-            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50">Registrar ajuste</button>
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">Registrar ajuste</button>
         </div>
     </form>
 
@@ -73,7 +71,7 @@
                                 <button
                                     type="button"
                                     wire:click="selectFilterProduct({{ $product->id }})"
-                                    class="w-full flex items-center px-3 py-2 text-left hover:bg-sky-50/70 dark:hover:bg-indigo-500/10 transition-colors"
+                                    class="w-full flex items-center px-3 py-2 text-left hover:bg-sky-50/70 dark:hover:bg-sky-500/10 transition-colors"
                                 >
                                     <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                 </button>

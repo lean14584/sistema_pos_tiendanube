@@ -7,7 +7,7 @@
     ];
 @endphp
 
-<div class="p-8 max-w-3xl mx-auto">
+<div class="p-8 max-w-5xl mx-auto">
     <x-page-header title="Estado del sistema" subtitle="Chequeos rápidos de lo que conviene tener al día." icon="heart" />
 
     @if ($avisos === 0)
@@ -22,7 +22,7 @@
         </div>
     @endif
 
-    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 divide-y divide-gray-100 dark:divide-gray-800">
+    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm divide-y divide-sky-100/70 dark:divide-gray-800">
         @foreach ($chequeos as $c)
             @php $e = $estilos[$c['estado']]; @endphp
             <div class="flex items-center gap-3 px-5 py-4">
