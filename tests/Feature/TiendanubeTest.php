@@ -150,6 +150,70 @@ class TiendanubeTest extends TestCase
         $this->assertSame(1, Invoice::whereNotNull('tiendanube_order_id')->count());
     }
 
+    /**
+     * clients.email no tiene constraint único: dos pedidos del mismo cliente
+     * nuevo en la misma corrida (o dos corridas casi simultáneas) no deberían
+     * crear dos filas Client con el mismo email. No reproduce la carrera en
+     * sí (el test es de un solo hilo), pero confirma que el lock agregado
+     * alrededor de firstOrCreate() no rompe el caso normal: dos pedidos con
+     * el mismo email terminan compartiendo un único Client.
+     */
+    public function test_dos_pedidos_del_mismo_email_no_duplican_el_cliente(): void
+    {
+        $this->conectar();
+        $this->fakeApi([
+            '*/orders*' => Http::response([
+                [
+                    'id' => 555, 'number' => 1001, 'contact_name' => 'Ana', 'contact_email' => 'ana@test.com',
+                    'created_at' => '2026-08-10T12:00:00+0000',
+                    'products' => [['name' => ['es' => 'Remera'], 'price' => '1500.00', 'quantity' => 1]],
+                ],
+                [
+                    'id' => 556, 'number' => 1002, 'contact_name' => 'Ana', 'contact_email' => 'ana@test.com',
+                    'created_at' => '2026-08-10T12:05:00+0000',
+                    'products' => [['name' => ['es' => 'Buzo'], 'price' => '3000.00', 'quantity' => 1]],
+                ],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->admin())->test('tiendanube.index')->call('importOrders');
+
+        $this->assertSame(1, Client::where('email', 'ana@test.com')->count());
+        $this->assertSame(2, Invoice::whereNotNull('tiendanube_order_id')->count());
+    }
+
+    /**
+     * Bug real: un pedido con un dato inesperado (acá, una fecha ilegible)
+     * abortaba TODA la importación sin procesar el resto de la página — a
+     * diferencia de pushProducts/pushStock/pushCustomers/pushCategories, que
+     * ya aislaban los errores por ítem.
+     */
+    public function test_un_pedido_con_error_no_aborta_la_importacion_del_resto(): void
+    {
+        $this->conectar();
+        $this->fakeApi([
+            '*/orders*' => Http::response([
+                [
+                    'id' => 555, 'number' => 1001, 'contact_name' => 'Ana', 'contact_email' => 'ana@test.com',
+                    'created_at' => 'esto-no-es-una-fecha',
+                    'products' => [['name' => ['es' => 'Remera'], 'price' => '1500.00', 'quantity' => 1]],
+                ],
+                [
+                    'id' => 556, 'number' => 1002, 'contact_name' => 'Beto', 'contact_email' => 'beto@test.com',
+                    'created_at' => '2026-08-10T12:05:00+0000',
+                    'products' => [['name' => ['es' => 'Buzo'], 'price' => '3000.00', 'quantity' => 1]],
+                ],
+            ], 200),
+        ]);
+
+        $c = Livewire::actingAs($this->admin())->test('tiendanube.index');
+        $c->call('importOrders');
+
+        $this->assertDatabaseMissing('invoices', ['tiendanube_order_id' => 555]);
+        $this->assertDatabaseHas('invoices', ['tiendanube_order_id' => 556]);
+        $c->assertSet('resultado', 'Pedidos: 1 importados, 0 ya existían, 1 con error.');
+    }
+
     public function test_sincronizar_stock_empuja_a_tiendanube(): void
     {
         $this->conectar();

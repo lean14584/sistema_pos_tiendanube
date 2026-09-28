@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Afip\AfipGatewayInterface;
 use App\Services\Afip\InvoiceCaeEmitter;
 use App\Support\LibroIva\LibroIvaCalculator;
+use App\Support\LibroIva\LibroIvaExporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\Fakes\FakeAfipGateway;
@@ -124,6 +125,33 @@ class LibroIvaTest extends TestCase
         $this->assertEqualsWithDelta(105.0, $row->ivaLiquidado, 0.01);
     }
 
+    /**
+     * Bug real: las percepciones cargadas en PurchaseTax (Purchase::total()
+     * las suma) no se volcaban a NINGÚN campo del registro exportado — el
+     * total declarado no cerraba contra la suma de sus componentes.
+     */
+    public function test_las_percepciones_de_una_compra_se_vuelcan_al_libro_iva(): void
+    {
+        $purchase = $this->cargarCompra(); // $500 neto + 21% IVA = $605
+        $purchase->taxes()->create(['concepto' => 'Percepción IIBB', 'amount' => 50]);
+
+        $this->assertEqualsWithDelta(655.0, (float) $purchase->fresh()->total, 0.01);
+
+        $rows = LibroIvaCalculator::compras(now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString());
+        $row = $rows->sole();
+
+        $this->assertEqualsWithDelta(50.0, $row->importeOtrosTributos, 0.01);
+        // El total declarado ahora sí cierra contra la suma de sus componentes.
+        $this->assertEqualsWithDelta(
+            $row->importeTotal,
+            $row->importeNetoGravado + $row->ivaLiquidado + $row->importeExento + $row->importeOtrosTributos,
+            0.01
+        );
+
+        $linea = LibroIvaExporter::comprasCbte($rows);
+        $this->assertStringContainsString('000000000005000', $linea); // $50 * 100, padded a 15
+    }
+
     public function test_una_compra_en_borrador_no_entra_al_libro_iva_compras(): void
     {
         $provider = Provider::create(['name' => 'Proveedor Draft']);
@@ -168,6 +196,34 @@ class LibroIvaTest extends TestCase
         $vendedor = User::factory()->create(['role' => Role::Vendedor, 'active' => true]);
 
         $this->actingAs($vendedor)->get(route('libro-iva.index'))->assertForbidden();
+    }
+
+    /**
+     * Bug real: AlicuotaResolver::codigo() tira DomainException cruda para
+     * una alícuota no estándar (dato migrado/importado) — mismo modo de
+     * falla que ya se había arreglado específicamente para la emisión a
+     * AFIP, pero no para esta ruta hermana del export del Libro IVA.
+     */
+    public function test_exportar_con_una_alicuota_no_estandar_da_422_no_500(): void
+    {
+        $provider = Provider::create(['name' => 'Proveedor Raro', 'tax_id' => '30111111113', 'tipo_documento' => 'cuit']);
+        $purchase = Purchase::create([
+            'number' => 'COM-0099', 'provider_id' => $provider->id,
+            'tipo_comprobante' => TipoComprobante::FacturaA, 'punto_venta' => 3, 'numero_comprobante' => 200,
+            'issue_date' => now(), 'due_date' => now()->addDays(15),
+            'tax_rate' => 15, // no está en la tabla de códigos AFIP
+            'status' => 'paid',
+        ]);
+        $product = Product::create(['name' => 'Insumo raro', 'price' => 500, 'stock' => 0]);
+        $purchase->items()->create(['product_id' => $product->id, 'description' => 'Insumo raro', 'quantity' => 1, 'unit_price' => 500]);
+
+        $response = $this->actingAs($this->admin())->get(route('libro-iva.export', [
+            'desde' => now()->startOfMonth()->toDateString(),
+            'hasta' => now()->endOfMonth()->toDateString(),
+        ]));
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('15%', $response->getContent());
     }
 
     public function test_el_export_genera_un_zip_con_los_cuatro_archivos_rg4597(): void

@@ -78,6 +78,29 @@ class PriceListAndDiscountTest extends TestCase
         $this->assertEquals(800.0, $cart[0]['unit_price']); // 1000 - 20%
     }
 
+    /**
+     * Bug real: FEATURE_PRICE_LISTS=false apagaba solo la pantalla de
+     * administración de listas — el POS/Facturas/Presupuestos seguían
+     * aplicando la lista del cliente igual, así que el flag no desactivaba
+     * nada de lo que promete.
+     */
+    public function test_pos_ignora_la_lista_del_cliente_si_el_flag_esta_apagado(): void
+    {
+        config(['features.price_lists' => false]);
+
+        $mayorista = PriceList::create(['name' => 'Mayorista', 'adjustment_percent' => -20, 'is_default' => false, 'active' => true]);
+        $client = Client::create(['name' => 'Distri', 'email' => 'distri@test.com', 'price_list_id' => $mayorista->id]);
+        $product = Product::create(['name' => 'Fideos', 'price' => 1000, 'iva_rate' => 0, 'stock' => 50]);
+
+        $pos = Livewire::actingAs($this->admin())
+            ->test('pos.index')
+            ->set('client_id', $client->id)
+            ->call('addProduct', $product->id);
+
+        $this->assertEquals(1000.0, $pos->get('cart')[0]['unit_price']); // precio base, sin el -20%
+        $pos->assertDontSee('Mayorista');
+    }
+
     public function test_pos_usa_precio_base_para_consumidor_final_aunque_haya_lista_con_ajuste(): void
     {
         // Una lista con ajuste, incluso marcada como predeterminada, no debe

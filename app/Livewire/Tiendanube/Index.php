@@ -114,7 +114,7 @@ class Index extends Component
         $this->correr(function (TiendanubeSync $sync) {
             $r = $sync->importOrders();
 
-            return "Pedidos: {$r['importados']} importados, {$r['omitidos']} ya existían.";
+            return "Pedidos: {$r['importados']} importados, {$r['omitidos']} ya existían".($r['errores'] ? ", {$r['errores']} con error." : '.');
         });
     }
 

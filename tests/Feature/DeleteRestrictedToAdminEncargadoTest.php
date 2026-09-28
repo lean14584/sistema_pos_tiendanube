@@ -9,7 +9,10 @@ use App\Models\PriceList;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\PromotionGroup;
+use App\Models\Provider;
+use App\Models\Purchase;
 use App\Models\Quote;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -132,6 +135,23 @@ class DeleteRestrictedToAdminEncargadoTest extends TestCase
             ->assertStatus(403);
 
         $this->assertDatabaseHas('promotions', ['id' => $promotion->id]);
+    }
+
+    public function test_cajero_no_puede_eliminar_una_compra(): void
+    {
+        $cajero = User::factory()->create(['role' => Role::Cajero, 'active' => true, 'sucursal_id' => Sucursal::sole()->id]);
+        $provider = Provider::create(['name' => 'Proveedor 1']);
+        $purchase = Purchase::create([
+            'number' => 'COM-0001', 'provider_id' => $provider->id, 'sucursal_id' => Sucursal::sole()->id,
+            'issue_date' => now(), 'due_date' => now()->addDays(15), 'status' => 'draft',
+        ]);
+
+        Livewire::actingAs($cajero)
+            ->test('purchases.show', ['purchase' => $purchase])
+            ->call('delete')
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('purchases', ['id' => $purchase->id]);
     }
 
     public function test_vendedor_no_puede_eliminar_una_familia_de_promocion(): void

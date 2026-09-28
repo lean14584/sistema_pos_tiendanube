@@ -15,12 +15,14 @@
             <x-heroicon-o-pencil class="w-4 h-4" />
             Editar
         </a>
-        <button
-            x-on:click="confirmThen('¿Eliminar la compra ' + @js($purchase->number) + '? Esto revertirá el stock sumado por esta compra.', () => $wire.delete())"
-            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-        >
-            <x-heroicon-o-trash class="w-4 h-4" />
-        </button>
+        @if (Auth::user()->esAdminGlobal() || Auth::user()->esEncargado())
+            <button
+                x-on:click="confirmThen('¿Eliminar la compra ' + @js($purchase->number) + '? Esto revertirá el stock sumado por esta compra.', () => $wire.delete())"
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+            >
+                <x-heroicon-o-trash class="w-4 h-4" />
+            </button>
+        @endif
     </div>
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 mb-6">

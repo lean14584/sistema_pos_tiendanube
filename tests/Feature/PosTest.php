@@ -299,6 +299,31 @@ class PosTest extends TestCase
         $this->assertSame('1000.00', $pos->get('itemsADevolver')[0]['unit_price']);
     }
 
+    public function test_cambio_no_permite_devolver_mas_cantidad_de_la_vendida(): void
+    {
+        $admin = $this->admin();
+        config(['features.invoices_manual_create' => false]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $productoOriginal = Product::create(['name' => 'Campera', 'price' => 1000, 'iva_rate' => 0, 'stock' => 3]);
+        $original = $this->facturaOriginal($productoOriginal); // vendió 1 unidad
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('numeroFacturaOrigen', $original->number)
+            ->call('buscarFacturaOrigen')
+            ->set('itemsADevolver.0.quantity', '1000') // cajero edita a mano una cantidad absurda
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        $pos->assertHasErrors('cart');
+
+        $this->assertSame(3, $productoOriginal->fresh()->stock); // no se repuso nada
+        $this->assertDatabaseCount('vouchers', 0);
+        $this->assertDatabaseMissing('invoices', ['tipo_comprobante_interno' => 'devolucion']);
+    }
+
     public function test_buscar_factura_origen_inexistente_muestra_error(): void
     {
         Livewire::actingAs($this->admin())

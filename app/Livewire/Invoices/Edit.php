@@ -100,6 +100,11 @@ class Edit extends Component
 
     public function currentPriceList(): ?PriceList
     {
+        // Ver el mismo comentario en Invoices\Create::currentPriceList().
+        if (! config('features.price_lists')) {
+            return null;
+        }
+
         return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
     }
 
@@ -195,6 +200,9 @@ class Edit extends Component
             'due_date' => ['required', 'date'],
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
+            // Mismo tope que Purchases/Create — ver Invoices\Create::saveInterno().
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.iva_rate' => ['nullable', Rule::in(AlicuotaIva::valores())],
             'items.*.discount' => ['nullable', 'numeric', 'between:0,100'],
         ]);
@@ -331,7 +339,7 @@ class Edit extends Component
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'tipoComprobanteInternoOptions' => $opciones,
-            'priceLists' => PriceList::active()->orderBy('name')->get(),
+            'priceLists' => config('features.price_lists') ? PriceList::active()->orderBy('name')->get() : collect(),
             'esNotaCredito' => $this->invoice->related_invoice_id !== null,
             'ocultarIva' => CompanySettings::current()->debeOcultarIvaPorItem(),
         ]);

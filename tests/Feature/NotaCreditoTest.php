@@ -189,6 +189,37 @@ class NotaCreditoTest extends TestCase
         $this->assertSame(0, CashMovement::count());
     }
 
+    public function test_no_se_puede_acreditar_mas_cantidad_de_la_facturada_en_un_item(): void
+    {
+        $fake = $this->fake();
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+        $factura = $this->facturaEmitida($fake, $product); // 3 unidades facturadas
+
+        Livewire::actingAs($this->admin())
+            ->test('notas-credito.create', ['invoice' => $factura])
+            ->set('items.0.quantity', '20') // más de lo facturado
+            ->call('save')
+            ->assertHasErrors('items');
+
+        $this->assertDatabaseMissing('invoices', ['related_invoice_id' => $factura->id]);
+        $this->assertSame(7, $product->fresh()->stock); // no se repuso nada
+    }
+
+    public function test_no_se_puede_acreditar_mas_precio_unitario_del_facturado_en_un_item(): void
+    {
+        $fake = $this->fake();
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+        $factura = $this->facturaEmitida($fake, $product); // $1000 c/u facturado
+
+        Livewire::actingAs($this->admin())
+            ->test('notas-credito.create', ['invoice' => $factura])
+            ->set('items.0.unit_price', '5000') // más caro de lo facturado
+            ->call('save')
+            ->assertHasErrors('items');
+
+        $this->assertDatabaseMissing('invoices', ['related_invoice_id' => $factura->id]);
+    }
+
     public function test_no_se_puede_acreditar_mas_del_saldo_de_la_factura_original(): void
     {
         $fake = $this->fake();

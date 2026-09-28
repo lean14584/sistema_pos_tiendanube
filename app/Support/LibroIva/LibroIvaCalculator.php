@@ -161,6 +161,7 @@ final class LibroIvaCalculator
             importeExento: $exento ? ($purchase->sin_detalle ? (float) $purchase->total : (float) $purchase->subtotal) : 0.0,
             alicuotas: $alicuotas,
             codigoOperacion: $exento ? 'E' : '',
+            importeOtrosTributos: (float) $purchase->percepciones_total,
         );
     }
 }

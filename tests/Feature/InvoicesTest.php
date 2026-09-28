@@ -118,6 +118,36 @@ class InvoicesTest extends TestCase
     }
 
     /**
+     * Bug real: "+ Agregar ítem sin producto" crea una línea con descripción
+     * vacía. Antes de este fix, esa línea contaba para total()/netoGravado()
+     * (lo que se ve en pantalla y lo que valida el límite de crédito/estado
+     * "paid"), pero se descartaba en save() por no tener descripción — la
+     * factura quedaba persistida con un total menor al que se mostró y
+     * validó.
+     */
+    public function test_item_sin_descripcion_no_cuenta_para_el_total_mostrado_ni_el_guardado(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10, 'iva_rate' => 0]);
+
+        $invoices = Livewire::actingAs($this->admin())
+            ->test('invoices.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id) // ítem válido: $1000
+            ->call('addFreeformItem') // descripción vacía todavía
+            ->set('items.1.quantity', '5')
+            ->set('items.1.unit_price', '2000'); // cargó cantidad/precio pero no la descripción
+
+        $invoices->assertSee('1.000,00')->assertDontSee('11.000,00');
+
+        $invoices->call('save');
+
+        $invoice = Invoice::sole();
+        $this->assertEquals(1, $invoice->items->count());
+        $this->assertEqualsWithDelta(1000.0, (float) $invoice->total, 0.01);
+    }
+
+    /**
      * MEJORA: a diferencia de Pos\Index (el carrito se vacía al vender) o de
      * NotasCredito/FacturarRemito/Quotes (releen un registro existente), este
      * formulario de alta no tenía ningún estado para detectar "esto ya se
@@ -159,6 +189,23 @@ class InvoicesTest extends TestCase
 
         $this->assertDatabaseCount('invoices', 0);
         $this->assertEquals(10, $product->fresh()->stock);
+    }
+
+    public function test_no_se_puede_guardar_un_item_con_cantidad_negativa(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+
+        Livewire::actingAs($this->admin())
+            ->test('invoices.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', '-5')
+            ->call('save')
+            ->assertHasErrors('items.0.quantity');
+
+        $this->assertSame(0, Invoice::count());
+        $this->assertSame(10, $product->fresh()->stock);
     }
 
     public function test_cannot_save_invoice_without_items(): void

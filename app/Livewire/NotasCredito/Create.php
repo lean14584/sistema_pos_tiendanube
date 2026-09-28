@@ -48,7 +48,9 @@ class Create extends Component
             'product_id' => $item->product_id,
             'description' => $item->description,
             'quantity' => (string) $item->quantity,
+            'quantity_original' => (string) $item->quantity,
             'unit_price' => (string) $item->unit_price,
+            'unit_price_original' => (string) $item->unit_price,
             'iva_rate' => AlicuotaIva::normalizar($item->iva_rate_efectiva),
         ])->all();
     }
@@ -171,6 +173,24 @@ class Create extends Component
 
         if ($cantidadOPrecioInvalido) {
             $this->addError('items', 'Cada ítem necesita una cantidad mayor a cero y un precio unitario válido.');
+
+            return;
+        }
+
+        // Los inputs solo tienen min="0" en el HTML — sin este chequeo, se
+        // podía subir la cantidad o el precio de una línea por encima de lo
+        // que decía la factura original (ej. acreditar 20 unidades de un
+        // producto habiendo vendido 10) mientras se borraba otra línea para
+        // que el total en pesos siguiera dentro de lo disponible: la NC
+        // quedaba "cuadrada" en plata pero el stock repuesto no coincidía
+        // con lo realmente devuelto.
+        $excedeElOriginal = $validItems->contains(
+            fn ($item) => (float) $item['quantity'] > (float) $item['quantity_original']
+                || (float) $item['unit_price'] > (float) $item['unit_price_original']
+        );
+
+        if ($excedeElOriginal) {
+            $this->addError('items', 'La cantidad o el precio de algún ítem supera lo facturado originalmente.');
 
             return;
         }
