@@ -14,19 +14,19 @@
         </x-slot:actions>
     </x-page-header>
 
-    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
+    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
         <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
-            <input type="date" wire:model.live="fromDate" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <input type="date" wire:model.live="fromDate" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
         </div>
         <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
-            <input type="date" wire:model.live="toDate" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <input type="date" wire:model.live="toDate" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
         </div>
         @if ($puedeVerTodasLasSucursales)
             <div>
                 <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sucursal</label>
-                <select wire:model.live="sucursal_id" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <select wire:model.live="sucursal_id" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                     <option value="">Todas (consolidado)</option>
                     @foreach ($sucursales as $s)
                         <option value="{{ $s->id }}">{{ $s->name }}</option>
@@ -60,9 +60,9 @@
         </div>
     </div>
 
-    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4 mb-6">
+    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4 mb-6">
         <label class="flex items-center gap-2 cursor-pointer w-fit">
-            <input type="checkbox" wire:model.live="compare" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
+            <input type="checkbox" wire:model.live="compare" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-sky-600 focus:ring-sky-500">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Comparar contra otro período</span>
         </label>
 
@@ -70,11 +70,11 @@
             <div class="flex flex-col sm:flex-row sm:items-end gap-3 mt-3">
                 <div>
                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde (período B)</label>
-                    <input type="date" wire:model.live="fromDateB" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="date" wire:model.live="fromDateB" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta (período B)</label>
-                    <input type="date" wire:model.live="toDateB" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="date" wire:model.live="toDateB" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                 </div>
             </div>
 
@@ -104,7 +104,7 @@
     </div>
 
     @if ($summary['count'] === 0)
-        <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-12 text-center text-gray-400 dark:text-gray-500">
+        <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-12 text-center text-gray-400 dark:text-gray-500">
             <x-heroicon-o-chart-bar class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
             <p class="text-sm">No hay ventas en el período seleccionado.</p>
         </div>
@@ -112,16 +112,16 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <x-stat-card label="Costo de mercadería" value="${{ money($profitability['cost']) }}" icon="cube" accent="text-gray-600 bg-gradient-to-br from-gray-50 to-gray-100/60 dark:text-gray-400 dark:from-gray-500/15 dark:to-gray-500/5" />
             <x-stat-card label="Ganancia bruta" value="${{ money($profitability['profit']) }}" icon="banknotes" accent="text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:text-emerald-400 dark:from-emerald-500/15 dark:to-emerald-500/5" />
-            <x-stat-card label="Margen" value="{{ number_format($profitability['marginPct'], 1) }}%" icon="chart-bar" accent="text-indigo-600 bg-gradient-to-br from-indigo-50 to-indigo-100/60 dark:text-indigo-400 dark:from-indigo-500/15 dark:to-indigo-500/5" />
+            <x-stat-card label="Margen" value="{{ number_format($profitability['marginPct'], 1) }}%" icon="chart-bar" accent="text-sky-600 bg-gradient-to-br from-sky-50 to-sky-100/60 dark:text-sky-400 dark:from-sky-500/15 dark:to-sky-500/5" />
         </div>
 
-        <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5 mb-6">
+        <section class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 mb-6">
             <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por día</h2>
             <div class="flex items-end gap-1.5 h-40 overflow-x-auto pb-1">
                 @foreach ($byDay as $row)
                     <div class="flex flex-col items-center justify-end shrink-0 group" style="min-width: 2rem;">
                         <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">${{ number_format($row['total'], 0) }}</span>
-                        <div class="w-6 rounded-t bg-indigo-500 dark:bg-indigo-400 hover:bg-indigo-600 dark:hover:bg-indigo-300 transition-colors" style="height: {{ $maxDay > 0 ? max(4, round(($row['total'] / $maxDay) * 120)) : 4 }}px" title="{{ $row['label'] }}: ${{ money($row['total']) }} ({{ $row['count'] }} fact.)"></div>
+                        <div class="w-6 rounded-t bg-sky-500 dark:bg-sky-400 hover:bg-sky-600 dark:hover:bg-sky-300 transition-colors" style="height: {{ $maxDay > 0 ? max(4, round(($row['total'] / $maxDay) * 120)) : 4 }}px" title="{{ $row['label'] }}: ${{ money($row['total']) }} ({{ $row['count'] }} fact.)"></div>
                         <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">{{ $row['label'] }}</span>
                     </div>
                 @endforeach
@@ -130,7 +130,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             @if ($puedeVerTodasLasSucursales && $sucursal_id === '' && $bySucursal->count() > 1)
-                <section class="lg:col-span-2 bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+                <section class="lg:col-span-2 rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5">
                     <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por sucursal</h2>
                     <div class="space-y-3">
                         @foreach ($bySucursal as $row)
@@ -140,7 +140,7 @@
                                     <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}</span>
                                 </div>
                                 <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                                    <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxSucursal) }}%"></div>
+                                    <div class="h-1.5 rounded-full bg-sky-500 dark:bg-sky-400" style="width: {{ $barPct($row['total'], $maxSucursal) }}%"></div>
                                 </div>
                             </div>
                         @endforeach
@@ -148,7 +148,7 @@
                 </section>
             @endif
 
-            <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+            <section class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por artículo</h2>
                 <div class="space-y-3">
                     @foreach ($byArticle as $row)
@@ -158,14 +158,14 @@
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ rtrim(rtrim(number_format($row['quantity'], 2), '0'), '.') }} u. · ${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                                <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxArticle) }}%"></div>
+                                <div class="h-1.5 rounded-full bg-sky-500 dark:bg-sky-400" style="width: {{ $barPct($row['total'], $maxArticle) }}%"></div>
                             </div>
                         </div>
                     @endforeach
                 </div>
             </section>
 
-            <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+            <section class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por categoría</h2>
                 <div class="space-y-3">
                     @foreach ($byCategory as $row)
@@ -175,14 +175,14 @@
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ rtrim(rtrim(number_format($row['quantity'], 2), '0'), '.') }} u. · ${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                                <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxCategory) }}%"></div>
+                                <div class="h-1.5 rounded-full bg-sky-500 dark:bg-sky-400" style="width: {{ $barPct($row['total'], $maxCategory) }}%"></div>
                             </div>
                         </div>
                     @endforeach
                 </div>
             </section>
 
-            <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+            <section class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por método de pago</h2>
                 <div class="space-y-3">
                     @forelse ($byMethod as $row)
@@ -192,7 +192,7 @@
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                                <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxMethod) }}%"></div>
+                                <div class="h-1.5 rounded-full bg-sky-500 dark:bg-sky-400" style="width: {{ $barPct($row['total'], $maxMethod) }}%"></div>
                             </div>
                         </div>
                     @empty
@@ -201,7 +201,7 @@
                 </div>
             </section>
 
-            <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+            <section class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Top clientes</h2>
                 <div class="space-y-3">
                     @forelse ($byClient as $row)
@@ -211,7 +211,7 @@
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'factura' : 'facturas' }} · ${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                                <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxClient) }}%"></div>
+                                <div class="h-1.5 rounded-full bg-sky-500 dark:bg-sky-400" style="width: {{ $barPct($row['total'], $maxClient) }}%"></div>
                             </div>
                         </div>
                     @empty
@@ -220,7 +220,7 @@
                 </div>
             </section>
 
-            <section class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5">
+            <section class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por hora del día</h2>
                 <div class="space-y-3">
                     @foreach ($byHour as $row)
@@ -230,7 +230,7 @@
                                 <span class="text-gray-500 dark:text-gray-400">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}</span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
-                                <div class="h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" style="width: {{ $barPct($row['total'], $maxHour) }}%"></div>
+                                <div class="h-1.5 rounded-full bg-sky-500 dark:bg-sky-400" style="width: {{ $barPct($row['total'], $maxHour) }}%"></div>
                             </div>
                         </div>
                     @endforeach

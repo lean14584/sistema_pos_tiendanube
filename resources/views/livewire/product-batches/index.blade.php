@@ -1,26 +1,25 @@
 <div class="p-8 max-w-6xl mx-auto">
-    <a href="{{ route('products.index') }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
-        <x-heroicon-o-arrow-left class="w-4 h-4" /> Productos
-    </a>
     <x-page-header title="Lotes y Vencimientos" subtitle="Lotes de productos perecederos cargados al recibir mercadería, con su fecha de vencimiento." icon="calendar-days" />
 
-    @php $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'; @endphp
+    @php $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition'; @endphp
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        @if ($puedeVerTodasLasSucursales)
-            <select wire:model.live="sucursal_id" class="{{ $inputClass }}">
-                <option value="">Todas las sucursales</option>
-                @foreach ($sucursales as $s)
-                    <option value="{{ $s->id }}">{{ $s->name }}</option>
-                @endforeach
+    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            @if ($puedeVerTodasLasSucursales)
+                <select wire:model.live="sucursal_id" class="{{ $inputClass }}">
+                    <option value="">Todas las sucursales</option>
+                    @foreach ($sucursales as $s)
+                        <option value="{{ $s->id }}">{{ $s->name }}</option>
+                    @endforeach
+                </select>
+            @endif
+            <select wire:model.live="estado" class="{{ $inputClass }}">
+                <option value="">Todos los estados</option>
+                <option value="vencido">Vencidos</option>
+                <option value="por_vencer">Por vencer (≤ {{ \App\Models\ProductBatch::DIAS_ALERTA }} días)</option>
+                <option value="ok">OK</option>
             </select>
-        @endif
-        <select wire:model.live="estado" class="{{ $inputClass }}">
-            <option value="">Todos los estados</option>
-            <option value="vencido">Vencidos</option>
-            <option value="por_vencer">Por vencer (≤ {{ \App\Models\ProductBatch::DIAS_ALERTA }} días)</option>
-            <option value="ok">OK</option>
-        </select>
+        </div>
     </div>
 
     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
