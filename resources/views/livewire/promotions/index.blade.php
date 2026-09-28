@@ -1,4 +1,4 @@
-<div class="p-8 max-w-4xl mx-auto">
+<div class="p-8 max-w-5xl mx-auto">
     <a href="{{ route('products.index') }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
         <x-heroicon-o-arrow-left class="w-4 h-4" /> Productos
     </a>
@@ -13,10 +13,13 @@
         </x-slot:actions>
     </x-page-header>
 
-    @php $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'; @endphp
+    @php
+        $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition';
+        $sectionTitle = 'text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider';
+    @endphp
 
-    <form wire:submit="save" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md p-5 mb-8">
-        <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">{{ $editingId ? 'Editar promoción' : 'Nueva promoción' }}</h2>
+    <form wire:submit="save" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-6 mb-8">
+        <h2 class="{{ $sectionTitle }} mb-4">{{ $editingId ? 'Editar promoción' : 'Nueva promoción' }}</h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -83,14 +86,14 @@
                 @error('ends_at') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <label class="flex items-end gap-2 text-sm text-gray-700 dark:text-gray-300 pb-2">
-                <input type="checkbox" wire:model="active" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"> Activa
+                <input type="checkbox" wire:model="active" class="rounded border-gray-300 dark:border-gray-600 text-sky-600 focus:ring-sky-500"> Activa
             </label>
         </div>
 
         <div class="flex gap-3 mt-5">
-            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50">{{ $editingId ? 'Guardar cambios' : 'Crear promoción' }}</button>
+            <button type="submit" wire:loading.attr="disabled" wire:target="save" class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">{{ $editingId ? 'Guardar cambios' : 'Crear promoción' }}</button>
             @if ($editingId)
-                <button type="button" wire:click="cancel" class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancelar</button>
+                <button type="button" wire:click="cancel" class="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
             @endif
         </div>
     </form>
@@ -124,7 +127,7 @@
                             </button>
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <button wire:click="edit({{ $promo->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400">
+                            <button wire:click="edit({{ $promo->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
                             @if (Auth::user()->puedeEliminar())
@@ -147,7 +150,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $promo->product->name ?? '—' }}</p>
                         <div class="flex gap-1 shrink-0">
-                            <button wire:click="edit({{ $promo->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400">
+                            <button wire:click="edit({{ $promo->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
                             @if (Auth::user()->puedeEliminar())
