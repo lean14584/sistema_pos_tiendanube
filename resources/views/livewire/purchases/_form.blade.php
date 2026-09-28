@@ -195,45 +195,43 @@
         <div class="lg:col-span-4 mt-6 pt-6 border-t lg:mt-0 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-8 border-sky-200/70 dark:border-gray-800">
 
         {{-- Sección: Proveedor y comprobante --}}
-        <div class="space-y-3">
+        <div class="space-y-4">
             <h3 class="{{ $sectionTitle }}">Proveedor y comprobante</h3>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="sm:col-span-1">
-                    <x-provider-picker
-                        :provider-name="$selectedProviderName ?? '—'"
-                        :provider-query="$providerQuery"
-                        :provider-results="$this->providerResults"
-                    />
-                    @error('provider_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="{{ $label }}">Fecha de compra</label>
-                    <input type="date" wire:model="issue_date" class="{{ $inputClass }}">
-                </div>
-                <div>
-                    <label class="{{ $label }}">Fecha de vencimiento</label>
-                    <input type="date" wire:model="due_date" class="{{ $inputClass }}">
-                </div>
+            <div>
+                <x-provider-picker
+                    :provider-name="$selectedProviderName ?? '—'"
+                    :provider-query="$providerQuery"
+                    :provider-results="$this->providerResults"
+                />
+                @error('provider_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="{{ $label }}">Fecha de compra</label>
+                <input type="date" wire:model="issue_date" class="{{ $inputClass }}">
+            </div>
+            <div>
+                <label class="{{ $label }}">Fecha de vencimiento</label>
+                <input type="date" wire:model="due_date" class="{{ $inputClass }}">
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                    <label class="{{ $label }}">Tipo de comprobante *</label>
-                    <select wire:model.live="tipo_comprobante" class="{{ $inputClass }}">
-                        @foreach ($tiposComprobante as $tipo)
-                            <option value="{{ $tipo->value }}">{{ $tipo->label() }}</option>
-                        @endforeach
-                    </select>
-                    @error('tipo_comprobante') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-                </div>
+            <div>
+                <label class="{{ $label }}">Tipo de comprobante *</label>
+                <select wire:model.live="tipo_comprobante" class="{{ $inputClass }}">
+                    @foreach ($tiposComprobante as $tipo)
+                        <option value="{{ $tipo->value }}">{{ $tipo->label() }}</option>
+                    @endforeach
+                </select>
+                @error('tipo_comprobante') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="{{ $label }}">Punto de venta *</label>
                     <input type="number" min="1" max="9999" wire:model="punto_venta" class="{{ $inputClass }}">
                     @error('punto_venta') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="{{ $label }}">Número de comprobante *</label>
+                    <label class="{{ $label }}">N° de comprobante *</label>
                     <input type="number" min="1" max="99999999" wire:model="numero_comprobante" class="{{ $inputClass }}">
                     @error('numero_comprobante') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -266,27 +264,29 @@
             @if (count($taxes) === 0)
                 <p class="text-sm text-gray-400 dark:text-gray-500">Sin percepciones. Agregá las que figuren en la factura del proveedor (IIBB, percepción IVA, etc.).</p>
             @else
-                <div class="space-y-2">
+                <div class="space-y-3">
                     @foreach ($taxes as $index => $tax)
-                        <div class="flex items-center gap-2">
-                            <input
-                                type="text"
-                                list="conceptos-impuestos"
-                                wire:model="taxes.{{ $index }}.concepto"
-                                placeholder="Concepto (ej. Percepción IIBB)"
-                                class="flex-1 {{ $inputClass }}"
-                            >
+                        <div class="space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    list="conceptos-impuestos"
+                                    wire:model="taxes.{{ $index }}.concepto"
+                                    placeholder="Concepto (ej. Percepción IIBB)"
+                                    class="flex-1 min-w-0 {{ $inputClass }}"
+                                >
+                                <button type="button" wire:click="removeTax({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                </button>
+                            </div>
                             <input
                                 type="number" min="0" step="0.01"
                                 wire:model.live="taxes.{{ $index }}.amount"
                                 placeholder="Monto"
-                                class="w-32 {{ $inputClass }} text-right"
+                                class="w-full {{ $inputClass }} text-right"
                             >
-                            <button type="button" wire:click="removeTax({{ $index }})" class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
-                                <x-heroicon-o-trash class="w-4 h-4" />
-                            </button>
+                            @error("taxes.{$index}.concepto") <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                         </div>
-                        @error("taxes.{$index}.concepto") <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                     @endforeach
                 </div>
             @endif
@@ -307,18 +307,20 @@
             @if (count($payments) === 0)
                 <p class="text-sm text-gray-400 dark:text-gray-500">Sin método de pago registrado todavía — la compra queda en cuenta corriente del proveedor.</p>
             @else
-                <div class="space-y-2">
+                <div class="space-y-3">
                     @foreach ($payments as $index => $payment)
-                        <div wire:key="payment-{{ $index }}" class="flex items-center gap-2">
-                            <select wire:model="payments.{{ $index }}.method" class="{{ $inputClass }}">
-                                @foreach ($paymentMethods as $method)
-                                    <option value="{{ $method->value }}">{{ $method->label() }}</option>
-                                @endforeach
-                            </select>
-                            <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-32 {{ $inputClass }} text-right">
-                            <button type="button" wire:click="removePayment({{ $index }})" class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
-                                <x-heroicon-o-trash class="w-4 h-4" />
-                            </button>
+                        <div wire:key="payment-{{ $index }}" class="space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <select wire:model="payments.{{ $index }}.method" class="flex-1 min-w-0 {{ $inputClass }}">
+                                    @foreach ($paymentMethods as $method)
+                                        <option value="{{ $method->value }}">{{ $method->label() }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button" wire:click="removePayment({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                </button>
+                            </div>
+                            <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-full {{ $inputClass }} text-right">
                         </div>
                     @endforeach
                 </div>
@@ -329,15 +331,13 @@
             </p>
             @error('payments') <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="{{ $label }}">Estado</label>
-                    <select wire:model="status" class="{{ $inputClass }}">
-                        @foreach ($statuses as $s)
-                            <option value="{{ $s->value }}">{{ $s->label() }}</option>
-                        @endforeach
-                    </select>
-                </div>
+            <div>
+                <label class="{{ $label }}">Estado</label>
+                <select wire:model="status" class="{{ $inputClass }}">
+                    @foreach ($statuses as $s)
+                        <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                    @endforeach
+                </select>
             </div>
 
             <div>

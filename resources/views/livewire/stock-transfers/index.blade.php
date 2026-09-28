@@ -94,35 +94,33 @@
                 <div class="lg:col-span-4 mt-6 pt-6 border-t lg:mt-0 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-8 border-sky-200/70 dark:border-gray-800">
 
                 {{-- Sección: Origen y destino --}}
-                <div class="space-y-3">
+                <div class="space-y-4">
                     <h3 class="{{ $sectionTitle }}">Origen y destino</h3>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="{{ $label }}">Origen</label>
-                            @if ($puedeElegirOrigen)
-                                <select wire:model="from_sucursal_id" class="{{ $inputClass }}">
-                                    @foreach ($sucursales as $s)
-                                        <option value="{{ $s->id }}">{{ $s->name }}</option>
-                                    @endforeach
-                                </select>
-                            @else
-                                <p class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700">{{ $sucursalActiva?->name }}</p>
-                            @endif
-                            @error('from_sucursal_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="{{ $label }}">Destino *</label>
-                            <select wire:model="to_sucursal_id" class="{{ $inputClass }}">
-                                <option value="">Elegir sucursal...</option>
+                    <div>
+                        <label class="{{ $label }}">Origen</label>
+                        @if ($puedeElegirOrigen)
+                            <select wire:model="from_sucursal_id" class="{{ $inputClass }}">
                                 @foreach ($sucursales as $s)
-                                    @if ((string) $s->id !== $from_sucursal_id)
-                                        <option value="{{ $s->id }}">{{ $s->name }}</option>
-                                    @endif
+                                    <option value="{{ $s->id }}">{{ $s->name }}</option>
                                 @endforeach
                             </select>
-                            @error('to_sucursal_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
-                        </div>
+                        @else
+                            <p class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700">{{ $sucursalActiva?->name }}</p>
+                        @endif
+                        @error('from_sucursal_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="{{ $label }}">Destino *</label>
+                        <select wire:model="to_sucursal_id" class="{{ $inputClass }}">
+                            <option value="">Elegir sucursal...</option>
+                            @foreach ($sucursales as $s)
+                                @if ((string) $s->id !== $from_sucursal_id)
+                                    <option value="{{ $s->id }}">{{ $s->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        @error('to_sucursal_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
