@@ -342,41 +342,45 @@
                     @endif
                 </div>
 
-                {{-- Canje de vale de cambio: independiente del tipo de comprobante, sirve en cualquier venta --}}
-                <div class="space-y-1.5">
-                    @if (! $valeEncontrado)
-                        <div class="flex items-center gap-2">
-                            <input type="text" wire:model="vale_codigo" placeholder="Código de vale" class="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2 text-sm uppercase dark:text-gray-100">
-                            <button type="button" wire:click="buscarVale" class="shrink-0 rounded-lg bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 px-3 py-2 text-xs font-medium text-white">
-                                Canjear vale
-                            </button>
-                        </div>
-                        @error('vale_codigo') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                    @else
-                        <div class="flex items-center justify-between rounded-lg border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/5 px-3 py-2">
-                            <div class="text-sm">
-                                <span class="font-semibold text-emerald-700 dark:text-emerald-400">Vale {{ $valeEncontrado->code }}</span>
-                                <span class="text-xs text-gray-500 dark:text-gray-400 block">Saldo disponible: ${{ money($valeEncontrado->balance) }}</span>
-                            </div>
+                @if (config('features.vale_cambio'))
+                    {{-- Canje de vale de cambio: independiente del tipo de comprobante, sirve en cualquier venta --}}
+                    <div class="space-y-1.5">
+                        @if (! $valeEncontrado)
                             <div class="flex items-center gap-2">
-                                <input type="number" min="0" step="0.01" wire:model.live="vale_monto" class="w-24 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-sm text-right dark:text-gray-100">
-                                <button type="button" wire:click="quitarVale" class="text-gray-400 hover:text-red-600">
-                                    <x-heroicon-o-x-mark class="w-4 h-4" />
+                                <input type="text" wire:model="vale_codigo" placeholder="Código de vale" class="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2 text-sm uppercase dark:text-gray-100">
+                                <button type="button" wire:click="buscarVale" class="shrink-0 rounded-lg bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 px-3 py-2 text-xs font-medium text-white">
+                                    Canjear vale
                                 </button>
                             </div>
-                        </div>
-                    @endif
-                </div>
+                            @error('vale_codigo') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                        @else
+                            <div class="flex items-center justify-between rounded-lg border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/5 px-3 py-2">
+                                <div class="text-sm">
+                                    <span class="font-semibold text-emerald-700 dark:text-emerald-400">Vale {{ $valeEncontrado->code }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 block">Saldo disponible: ${{ money($valeEncontrado->balance) }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" min="0" step="0.01" wire:model.live="vale_monto" class="w-24 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-sm text-right dark:text-gray-100">
+                                    <button type="button" wire:click="quitarVale" class="text-gray-400 hover:text-red-600">
+                                        <x-heroicon-o-x-mark class="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-1">
                     <input type="checkbox" wire:model="printOnSale" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
                     Imprimir ticket
                 </label>
 
-                <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-1">
-                    <input type="checkbox" wire:model="printExchangeSlip" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
-                    Ticket de cambio
-                </label>
+                @if (config('features.vale_cambio'))
+                    <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-1">
+                        <input type="checkbox" wire:model="printExchangeSlip" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                        Ticket de cambio
+                    </label>
+                @endif
 
                 <button
                     wire:click="cobrar"

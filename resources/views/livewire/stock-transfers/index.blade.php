@@ -1,15 +1,21 @@
 <div class="p-8 max-w-5xl mx-auto">
     <x-page-header title="Envío de Mercadería" subtitle="Trasladá stock entre sucursales como una sola operación" icon="arrows-right-left" />
 
-    @php $inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'; @endphp
+    @php $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm hover:border-indigo-300 dark:hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition'; @endphp
+    @php $cellInputClass = 'w-24 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm shadow-sm hover:border-indigo-300 dark:hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition'; @endphp
 
     @if ($sucursales->count() < 2)
-        <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md p-8 text-center text-gray-400 dark:text-gray-500 mb-8">
+        <div class="bg-gradient-to-b from-white to-sky-50/70 dark:from-gray-900 dark:to-gray-950 rounded-2xl border border-sky-100 dark:border-gray-800 shadow-md shadow-sky-100/50 dark:shadow-black/30 p-8 text-center text-gray-400 dark:text-gray-500 mb-8">
             Necesitás al menos 2 sucursales activas para hacer un envío de mercadería.
         </div>
     @else
-        <form wire:submit="save" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md p-5 mb-8">
-            <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Nuevo envío</h2>
+        <form wire:submit="save" class="bg-gradient-to-b from-white to-sky-50/70 dark:from-gray-900 dark:to-gray-950 rounded-2xl border border-sky-100 dark:border-gray-800 shadow-md shadow-sky-100/50 dark:shadow-black/30 p-5 sm:p-6 mb-8">
+            <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 inline-flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+                    <x-heroicon-o-arrows-right-left class="w-4 h-4" />
+                </span>
+                Nuevo envío
+            </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -21,7 +27,7 @@
                             @endforeach
                         </select>
                     @else
-                        <p class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800/60 rounded-lg">{{ $sucursalActiva?->name }}</p>
+                        <p class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 bg-sky-50/70 dark:bg-gray-800/60 rounded-xl border border-sky-100 dark:border-gray-700">{{ $sucursalActiva?->name }}</p>
                     @endif
                     @error('from_sucursal_id') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -50,12 +56,12 @@
                         class="{{ $inputClass }} pl-9"
                     >
                     @if (trim($productQuery) !== '')
-                        <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
+                        <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-xl border border-sky-100 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
                             @forelse ($this->productResults as $product)
                                 <button
                                     type="button"
                                     wire:click="addProductItem({{ $product->id }})"
-                                    class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                                    class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-sky-50/70 dark:hover:bg-indigo-500/10 transition-colors"
                                 >
                                     <span class="min-w-0">
                                         <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
@@ -72,10 +78,10 @@
             </div>
 
             @if (count($items) > 0)
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-4">
+                <div class="border border-sky-100 dark:border-gray-700 rounded-xl overflow-hidden mb-4 bg-white/70 dark:bg-transparent">
                     <div class="overflow-x-auto">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 dark:bg-gray-800/50">
+                        <thead class="bg-sky-50/80 dark:bg-gray-800/50">
                             <tr class="text-left text-gray-500 dark:text-gray-400">
                                 <th class="px-3 py-2 font-medium">Producto</th>
                                 <th class="px-3 py-2 font-medium w-28">Cantidad</th>
@@ -84,10 +90,10 @@
                         </thead>
                         <tbody>
                             @foreach ($items as $index => $item)
-                                <tr wire:key="item-{{ $index }}" class="border-t border-gray-100 dark:border-gray-800">
+                                <tr wire:key="item-{{ $index }}" class="border-t border-sky-50 dark:border-gray-800">
                                     <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ $item['description'] }}</td>
                                     <td class="px-3 py-2">
-                                        <input type="number" min="1" wire:model="items.{{ $index }}.quantity" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <input type="number" min="1" wire:model="items.{{ $index }}.quantity" class="{{ $cellInputClass }}">
                                         @error("items.{$index}.quantity") <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                                     </td>
                                     <td class="px-2 py-2 text-center">
@@ -108,13 +114,13 @@
                 <textarea wire:model="notes" rows="2" class="{{ $inputClass }}" placeholder="Ej: reposición de fin de semana"></textarea>
             </div>
 
-            <button type="submit" wire:loading.attr="disabled" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-700 hover:to-indigo-600 disabled:opacity-50">
+            <button type="submit" wire:loading.attr="disabled" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50">
                 Registrar envío
             </button>
         </form>
     @endif
 
-    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-800/50">

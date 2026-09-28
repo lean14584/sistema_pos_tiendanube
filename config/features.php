@@ -16,6 +16,7 @@ return [
     'vencimientos_finanzas' => env('FEATURE_VENCIMIENTOS_FINANZAS', true),
     'sell_by_weight' => env('FEATURE_SELL_BY_WEIGHT', true),
     'historical_sales' => env('FEATURE_HISTORICAL_SALES', true),
+    'vale_cambio' => env('FEATURE_VALE_CAMBIO', true),
 
     // Al revés que las anteriores: default false para no cambiarle a nadie
     // la validación de clientes que ya tiene (email obligatorio, celular

@@ -1,8 +1,9 @@
 @php
-    $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-800 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition';
+    $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 text-gray-800 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm hover:border-indigo-300 dark:hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition';
+    $cellInputClass = 'w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm shadow-sm hover:border-indigo-300 dark:hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 transition';
 @endphp
 
-<form wire:submit="save" class="space-y-5 rounded-2xl border border-indigo-100 dark:border-gray-800 bg-gradient-to-b from-white to-indigo-50/50 dark:from-gray-900 dark:to-gray-950 shadow-md shadow-indigo-100/50 dark:shadow-black/30 p-6">
+<form wire:submit="save" class="space-y-5 rounded-2xl border border-sky-100 dark:border-gray-800 bg-gradient-to-b from-white to-sky-50/70 dark:from-gray-900 dark:to-gray-950 shadow-md shadow-sky-100/50 dark:shadow-black/30 p-5 sm:p-6">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
             <x-client-picker
@@ -40,12 +41,12 @@
                 class="{{ $inputClass }} pl-9"
             >
             @if (trim($productQuery) !== '')
-                <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
+                <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-xl border border-sky-100 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
                     @forelse ($this->productResults as $product)
                         <button
                             type="button"
                             wire:click="addProductItem({{ $product->id }})"
-                            class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                            class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-sky-50/70 dark:hover:bg-indigo-500/10 transition-colors"
                         >
                             <span class="min-w-0">
                                 <span class="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
@@ -64,10 +65,10 @@
         @error('items') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
 
         @if (count($items) > 0)
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mt-3">
+            <div class="border border-sky-100 dark:border-gray-700 rounded-xl overflow-hidden mt-3 bg-white/70 dark:bg-transparent">
                 <div class="hidden sm:block overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead class="bg-gray-50 dark:bg-gray-800/50">
+                    <thead class="bg-sky-50/80 dark:bg-gray-800/50">
                         <tr class="text-left text-gray-500 dark:text-gray-400">
                             <th class="px-4 py-2 font-medium">Descripción</th>
                             <th class="px-4 py-2 font-medium w-24">Cant.</th>
@@ -79,18 +80,18 @@
                     </thead>
                     <tbody>
                         @foreach ($items as $index => $item)
-                            <tr wire:key="item-{{ $index }}" class="border-t border-gray-100 dark:border-gray-800">
+                            <tr wire:key="item-{{ $index }}" class="border-t border-sky-50 dark:border-gray-800">
                                 <td class="px-4 py-2">
-                                    <input type="text" wire:model="items.{{ $index }}.description" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="text" wire:model="items.{{ $index }}.description" class="{{ $cellInputClass }}">
                                 </td>
                                 <td class="px-4 py-2">
-                                    <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="{{ $cellInputClass }}">
                                 </td>
                                 <td class="px-4 py-2">
-                                    <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="{{ $cellInputClass }}">
                                 </td>
                                 <td class="px-4 py-2">
-                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="{{ $cellInputClass }} text-right">
                                 </td>
                                 <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">
                                     ${{ money((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100)) }}
@@ -106,11 +107,11 @@
                 </table>
                 </div>
 
-                <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                <div class="sm:hidden divide-y divide-sky-50 dark:divide-gray-800">
                     @foreach ($items as $index => $item)
                         <div wire:key="item-card-{{ $index }}" class="p-3 space-y-2">
                             <div class="flex items-start gap-2">
-                                <input type="text" wire:model="items.{{ $index }}.description" placeholder="Descripción" class="flex-1 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <input type="text" wire:model="items.{{ $index }}.description" placeholder="Descripción" class="flex-1 {{ $cellInputClass }}">
                                 <button type="button" wire:click="removeItem({{ $index }})" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 shrink-0">
                                     <x-heroicon-o-trash class="w-4 h-4" />
                                 </button>
@@ -118,15 +119,15 @@
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Cantidad</label>
-                                    <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" min="0" step="1" wire:model="items.{{ $index }}.quantity" class="{{ $cellInputClass }}">
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Precio unit.</label>
-                                    <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="{{ $cellInputClass }}">
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Desc %</label>
-                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="w-full rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="{{ $cellInputClass }} text-right">
                                 </div>
                             </div>
                             <div class="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 pt-1">
@@ -147,7 +148,7 @@
     </div>
 
     <div class="flex justify-end">
-        <div class="w-full max-w-xs rounded-2xl overflow-hidden border border-indigo-100 dark:border-indigo-500/20 shadow-sm">
+        <div class="w-full max-w-xs rounded-2xl overflow-hidden border border-sky-100 dark:border-indigo-500/20 shadow-sm">
             <div class="bg-white/70 dark:bg-gray-900/40 px-4 py-3 space-y-2 text-sm">
                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Subtotal</span>
