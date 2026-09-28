@@ -33,6 +33,15 @@ final class LibroIvaRow
         public readonly float $importeExento,
         public readonly array $alicuotas,
         public readonly string $codigoOperacion,
+        /**
+         * Percepciones/impuestos que no son IVA de la operación (en compras,
+         * lo cargado en PurchaseTax — IIBB, Ganancias, municipales, etc.).
+         * Sin desglosar por tipo en este sistema, se asienta todo junto en
+         * el campo "Otros tributos" del Libro IVA — antes no se volcaba a
+         * NINGÚN campo del registro, así que el total declarado no cerraba
+         * contra la suma de sus componentes. Siempre 0 para ventas.
+         */
+        public readonly float $importeOtrosTributos = 0.0,
     ) {
         $this->importeNetoGravado = array_sum(array_map(fn (LibroIvaAlicuota $a) => $a->netoGravado, $alicuotas));
         $this->ivaLiquidado = array_sum(array_map(fn (LibroIvaAlicuota $a) => $a->ivaLiquidado, $alicuotas));
@@ -62,6 +71,7 @@ final class LibroIvaRow
             'importeExento' => $this->importeExento,
             'alicuotas' => array_map(fn (LibroIvaAlicuota $a) => $a->toArray(), $this->alicuotas),
             'codigoOperacion' => $this->codigoOperacion,
+            'importeOtrosTributos' => $this->importeOtrosTributos,
         ];
     }
 
@@ -82,6 +92,7 @@ final class LibroIvaRow
             importeExento: $data['importeExento'],
             alicuotas: array_map(fn (array $a) => LibroIvaAlicuota::fromArray($a), $data['alicuotas']),
             codigoOperacion: $data['codigoOperacion'],
+            importeOtrosTributos: $data['importeOtrosTributos'] ?? 0.0,
         );
     }
 }

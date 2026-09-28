@@ -13,6 +13,7 @@ use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
 use App\Support\TiendanubeSyncGuard;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -91,12 +92,13 @@ class TiendanubeSync
      * Trae los pedidos de Tiendanube y crea una factura (Remito interno) por
      * cada uno que todavía no se haya importado.
      *
-     * @return array{importados:int, omitidos:int}
+     * @return array{importados:int, omitidos:int, errores:int}
      */
     public function importOrders(): array
     {
         $importados = 0;
         $omitidos = 0;
+        $errores = 0;
         $perPage = config('tiendanube.per_page');
 
         for ($page = 1; $page <= config('tiendanube.max_pages'); $page++) {
@@ -107,7 +109,16 @@ class TiendanubeSync
             }
 
             foreach ($pedidos as $tn) {
-                $this->importOrder($tn) ? $importados++ : $omitidos++;
+                // A diferencia de antes: un error en un pedido puntual (dato
+                // inesperado del payload, o una carrera con el webhook que ya
+                // insertó el mismo tiendanube_order_id) ya no aborta el resto
+                // de la página sin avisar — mismo criterio que
+                // pushProducts/pushStock/pushCustomers/pushCategories.
+                try {
+                    $this->importOrder($tn) ? $importados++ : $omitidos++;
+                } catch (\Throwable $e) {
+                    $errores++;
+                }
             }
 
             if (count($pedidos) < $perPage) {
@@ -115,7 +126,7 @@ class TiendanubeSync
             }
         }
 
-        return ['importados' => $importados, 'omitidos' => $omitidos];
+        return ['importados' => $importados, 'omitidos' => $omitidos, 'errores' => $errores];
     }
 
     /**
@@ -673,10 +684,19 @@ class TiendanubeSync
             return Client::consumidorFinal();
         }
 
-        return Client::firstOrCreate(
+        // clients.email no tiene constraint único en la DB, así que
+        // firstOrCreate() no es atómico por sí solo: dos pedidos del mismo
+        // cliente nuevo llegando casi al mismo tiempo (reintento de webhook
+        // de Tiendanube, o un webhook en paralelo con una importación
+        // manual) pueden pasar el SELECT los dos antes de que el primero
+        // haga el INSERT, y terminan creando dos filas Client con el mismo
+        // email — el historial/cuenta corriente de ese cliente queda
+        // partido en dos. El lock por email hace que el segundo espere a
+        // que el primero termine y reuse la fila recién creada.
+        return Cache::lock("tiendanube:cliente:{$email}", 10)->block(5, fn () => Client::firstOrCreate(
             ['email' => $email],
             ['name' => $nombre],
-        );
+        ));
     }
 
     /**

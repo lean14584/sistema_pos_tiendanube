@@ -59,8 +59,7 @@ class VencimientosTest extends TestCase
     /**
      * Antes de este fix, "por cobrar" no filtraba por sucursal en absoluto:
      * un admin veía mezclada la deuda de todos los locales sin poder
-     * separarla. "Por pagar" no lleva este mismo filtro porque las compras
-     * (Purchase) no tienen sucursal_id — son de toda la empresa.
+     * separarla.
      */
     public function test_admin_puede_filtrar_por_cobrar_por_sucursal(): void
     {
@@ -140,5 +139,55 @@ class VencimientosTest extends TestCase
         Livewire::actingAs($vendedor)->test('vencimientos.index')
             ->assertSee('Cliente Principal')
             ->assertDontSee('Cliente Norte');
+    }
+
+    /**
+     * Bug real: a diferencia de "por cobrar", "por pagar" no filtraba por
+     * sucursal en absoluto pese a que Purchase sí tiene sucursal_id desde
+     * add_sucursal_id_to_purchases_table — un Vendedor/Encargado veía la
+     * deuda con proveedores de TODAS las sucursales, no solo la suya.
+     */
+    public function test_admin_puede_filtrar_por_pagar_por_sucursal(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $product = Product::create(['name' => 'Insumo', 'price' => 1000, 'stock' => 0]);
+
+        $proveedorPrincipal = Provider::create(['name' => 'Proveedor Principal']);
+        $comP = Purchase::create(['number' => 'COM-P', 'provider_id' => $proveedorPrincipal->id, 'sucursal_id' => $principal->id, 'tax_rate' => 0, 'issue_date' => now()->subDays(5), 'due_date' => now()->subDays(1), 'status' => 'pending']);
+        $comP->items()->create(['product_id' => $product->id, 'description' => 'x', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $proveedorNorte = Provider::create(['name' => 'Proveedor Norte']);
+        $comN = Purchase::create(['number' => 'COM-N', 'provider_id' => $proveedorNorte->id, 'sucursal_id' => $norte->id, 'tax_rate' => 0, 'issue_date' => now()->subDays(5), 'due_date' => now()->subDays(1), 'status' => 'pending']);
+        $comN->items()->create(['product_id' => $product->id, 'description' => 'x', 'quantity' => 1, 'unit_price' => 2000]);
+
+        Livewire::actingAs($this->admin())->test('vencimientos.index')
+            ->assertSee('Proveedor Principal')
+            ->assertSee('Proveedor Norte');
+
+        Livewire::actingAs($this->admin())->test('vencimientos.index')
+            ->set('sucursal_id', (string) $norte->id)
+            ->assertDontSee('Proveedor Principal')
+            ->assertSee('Proveedor Norte');
+    }
+
+    public function test_vendedor_solo_ve_por_pagar_de_su_propia_sucursal(): void
+    {
+        $principal = Sucursal::sole();
+        $norte = Sucursal::create(['name' => 'Norte', 'razon_social' => 'Mi Empresa', 'punto_venta' => 2]);
+        $vendedor = User::factory()->create(['role' => Role::Vendedor, 'active' => true, 'sucursal_id' => $principal->id]);
+        $product = Product::create(['name' => 'Insumo', 'price' => 1000, 'stock' => 0]);
+
+        $proveedorPrincipal = Provider::create(['name' => 'Proveedor Principal']);
+        $comP = Purchase::create(['number' => 'COM-P', 'provider_id' => $proveedorPrincipal->id, 'sucursal_id' => $principal->id, 'tax_rate' => 0, 'issue_date' => now()->subDays(5), 'due_date' => now()->subDays(1), 'status' => 'pending']);
+        $comP->items()->create(['product_id' => $product->id, 'description' => 'x', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $proveedorNorte = Provider::create(['name' => 'Proveedor Norte']);
+        $comN = Purchase::create(['number' => 'COM-N', 'provider_id' => $proveedorNorte->id, 'sucursal_id' => $norte->id, 'tax_rate' => 0, 'issue_date' => now()->subDays(5), 'due_date' => now()->subDays(1), 'status' => 'pending']);
+        $comN->items()->create(['product_id' => $product->id, 'description' => 'x', 'quantity' => 1, 'unit_price' => 2000]);
+
+        Livewire::actingAs($vendedor)->test('vencimientos.index')
+            ->assertSee('Proveedor Principal')
+            ->assertDontSee('Proveedor Norte');
     }
 }

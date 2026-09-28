@@ -101,6 +101,14 @@ class Create extends Component
     /** Lista de precios vigente. null = precio base (sin ajuste). */
     public function currentPriceList(): ?PriceList
     {
+        // FEATURE_PRICE_LISTS=false apagaba solo la pantalla de
+        // administración de listas (routes/web.php) — el selector de acá
+        // seguía aplicando la lista del cliente/elegida igual, así que el
+        // flag no desactivaba nada de lo que su nombre promete.
+        if (! config('features.price_lists')) {
+            return null;
+        }
+
         return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
     }
 
@@ -198,6 +206,12 @@ class Create extends Component
             'due_date' => ['required', 'date'],
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
+            // Mismo tope que Purchases/Create — antes no había ninguna regla
+            // acá (ni de este lado ni en la columna decimal de la DB), así
+            // que un ítem con cantidad o precio negativo/cero podía llegar a
+            // guardarse y mover stock en sentido incorrecto.
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.iva_rate' => ['nullable', Rule::in(AlicuotaIva::valores())],
             'items.*.discount' => ['nullable', 'numeric', 'between:0,100'],
         ]);
@@ -333,7 +347,7 @@ class Create extends Component
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
-            'priceLists' => PriceList::active()->orderBy('name')->get(),
+            'priceLists' => config('features.price_lists') ? PriceList::active()->orderBy('name')->get() : collect(),
             'esNotaCredito' => false,
             'ocultarIva' => CompanySettings::current()->debeOcultarIvaPorItem(),
         ]);

@@ -56,6 +56,11 @@ class Create extends Component
 
     public function currentPriceList(): ?PriceList
     {
+        // Ver el mismo comentario en Invoices\Create::currentPriceList().
+        if (! config('features.price_lists')) {
+            return null;
+        }
+
         return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
     }
 
@@ -280,7 +285,7 @@ class Create extends Component
         return view('livewire.quotes.create', [
             'clients' => Client::forSelectCached(),
             'statuses' => QuoteStatus::editable(),
-            'priceLists' => PriceList::active()->orderBy('name')->get(),
+            'priceLists' => config('features.price_lists') ? PriceList::active()->orderBy('name')->get() : collect(),
         ]);
     }
 }

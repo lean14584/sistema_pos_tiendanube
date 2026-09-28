@@ -92,7 +92,7 @@ final class LibroIvaExporter
                 self::cantidadAlicuotas($row).
                 self::codigoOperacion($row->codigoOperacion).
                 self::importe($row->ivaLiquidado, 15). // crédito fiscal computable
-                self::importe(0, 15).
+                self::importe($row->importeOtrosTributos, 15). // percepciones (IIBB, Ganancias, etc.) cargadas en PurchaseTax
                 self::numZero('', 11). // CUIT emisor/corredor: no aplica
                 self::alfa('', 30).
                 self::importe(0, 15);

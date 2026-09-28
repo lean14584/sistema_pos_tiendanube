@@ -119,6 +119,11 @@ class Index extends Component
     /** Lista de precios vigente. null = precio base (sin ajuste). */
     public function currentPriceList(): ?PriceList
     {
+        // Ver el mismo comentario en Invoices\Create::currentPriceList().
+        if (! config('features.price_lists')) {
+            return null;
+        }
+
         return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
     }
 
@@ -710,6 +715,7 @@ class Index extends Component
             'product_id' => $item->product_id,
             'description' => $item->description,
             'quantity' => (string) $item->quantity,
+            'quantity_original' => (string) $item->quantity,
             'unit_price' => (string) $item->unit_price,
             'iva_rate' => AlicuotaIva::normalizar($item->iva_rate_efectiva),
         ])->all();
@@ -727,6 +733,17 @@ class Index extends Component
     {
         unset($this->itemsADevolver[$index]);
         $this->itemsADevolver = array_values($this->itemsADevolver);
+    }
+
+    private function itemsADevolverExcedenLoVendido(): bool
+    {
+        foreach ($this->itemsADevolver as $item) {
+            if ((float) $item['quantity'] > (float) $item['quantity_original']) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Neto de lo que se devuelve (cantidad x precio, tal como estaban en el comprobante original). */
@@ -800,6 +817,18 @@ class Index extends Component
     private function cobrarInterno(): void
     {
         $modoCambio = $this->itemsADevolver !== [];
+
+        // El input de cantidad a devolver solo tiene un `min="0"` en el
+        // HTML — sin este chequeo, un cajero podía escribir cualquier
+        // cantidad (ej. 1000 en vez de la 1 unidad realmente vendida) y el
+        // sistema reponía ese stock inventado y emitía un vale por la
+        // diferencia, sin ningún tope contra lo que decía el comprobante
+        // original.
+        if ($modoCambio && $this->itemsADevolverExcedenLoVendido()) {
+            $this->addError('cart', 'La cantidad a devolver de algún ítem supera lo vendido en el comprobante original.');
+
+            return;
+        }
 
         // Devolución pura (sin producto nuevo): solo repone stock y, si
         // corresponde, emite un vale por el total — no pasa por el flujo de
@@ -1144,7 +1173,7 @@ class Index extends Component
         return view('livewire.pos.index', [
             'paymentMethods' => PaymentMethod::cases(),
             'clients' => Client::forSelectCached(),
-            'priceLists' => PriceList::active()->orderBy('name')->get(),
+            'priceLists' => config('features.price_lists') ? PriceList::active()->orderBy('name')->get() : collect(),
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
         ]);
     }

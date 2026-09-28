@@ -38,6 +38,16 @@ class Show extends Component
 
     public function delete(): void
     {
+        // Borrar revierte stock, da de baja lotes y desvincula pagos de
+        // caja — mismo impacto real en plata/stock que Invoices\Show, donde
+        // Cajero y Vendedor ya están excluidos. Acá faltaba ese mismo
+        // chequeo: solo Admin/Encargado.
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || Auth::user()?->esEncargado(),
+            403,
+            'Tu rol no tiene permiso para eliminar compras.'
+        );
+
         DB::transaction(function () {
             $items = $this->purchase->items->map(fn ($item) => [
                 'product_id' => $item->product_id,

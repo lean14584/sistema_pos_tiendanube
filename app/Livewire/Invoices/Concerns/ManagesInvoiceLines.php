@@ -59,28 +59,42 @@ trait ManagesInvoiceLines
         $this->items = array_values($this->items);
     }
 
+    /**
+     * Ítems que realmente se van a persistir al guardar (mismo filtro que
+     * `saveInterno()`/`save()` en Create/Edit). Antes los totales/validaciones
+     * se calculaban sobre TODOS los ítems, incluido uno recién agregado con
+     * "addFreeformItem()" al que todavía no se le tipeó la descripción — ese
+     * ítem contaba para el total mostrado, el límite de crédito y si la
+     * venta quedaba "paid", pero al guardar se descartaba en silencio,
+     * dejando la factura persistida con un total menor a lo cobrado.
+     */
+    private function validItems(): \Illuminate\Support\Collection
+    {
+        return collect($this->items)->filter(fn ($item) => trim($item['description'] ?? '') !== '');
+    }
+
     public function subtotal(): float
     {
-        return collect($this->items)->sum(fn ($item) => $this->lineNeto($item));
+        return $this->validItems()->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function netoGravado(): float
     {
-        return collect($this->items)
+        return $this->validItems()
             ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
             ->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function netoExento(): float
     {
-        return collect($this->items)
+        return $this->validItems()
             ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) <= 0)
             ->sum(fn ($item) => $this->lineNeto($item));
     }
 
     public function taxAmount(): float
     {
-        return collect($this->items)->sum(
+        return $this->validItems()->sum(
             fn ($item) => $this->lineNeto($item) * ((float) ($item['iva_rate'] ?? 0) / 100)
         );
     }
@@ -97,7 +111,7 @@ trait ManagesInvoiceLines
      */
     public function ivaBreakdown(): array
     {
-        return collect($this->items)
+        return $this->validItems()
             ->filter(fn ($item) => (float) ($item['iva_rate'] ?? 0) > 0)
             ->groupBy(fn ($item) => (string) (float) $item['iva_rate'])
             ->map(fn ($grupo, $tasa) => [

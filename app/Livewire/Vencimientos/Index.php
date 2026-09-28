@@ -128,13 +128,23 @@ class Index extends Component
             }
         }
 
-        $purchasesPendientes = fn ($q) => $q->where('status', InvoiceStatus::Pending)->with('items', 'taxes', 'payments');
+        // Mismo criterio que "Por Cobrar": purchases sí tiene sucursal_id
+        // (a diferencia de ProviderPayment, que es a nivel de toda la
+        // empresa), así que se trae SIEMPRE la deuda completa del proveedor
+        // para que aging() reparta el crédito una sola vez, y recién
+        // después se filtran las filas a la sucursal que se está mirando.
+        // Antes esta mitad de la pantalla no filtraba por sucursal en
+        // absoluto: un Vendedor/Encargado veía la deuda con proveedores de
+        // TODAS las sucursales, no solo la suya.
+        $purchasesPendientesTodas = fn ($q) => $q->where('status', InvoiceStatus::Pending)->with('items', 'taxes', 'payments');
+        $purchasesPendientesEnSucursal = fn ($q) => $purchasesPendientesTodas($q)
+            ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId));
 
         // ---- POR PAGAR (proveedores) ----
         $porPagar = collect();
         $providers = Provider::query()
-            ->whereHas('purchases', $purchasesPendientes)
-            ->with(['purchases' => $purchasesPendientes, 'payments'])
+            ->whereHas('purchases', $purchasesPendientesEnSucursal)
+            ->with(['purchases' => $purchasesPendientesTodas, 'payments'])
             ->get();
 
         foreach ($providers as $provider) {
@@ -142,10 +152,15 @@ class Index extends Component
                 'due' => $p->due_date,
                 'remaining' => (float) $p->total - (float) $p->payments->sum('amount'),
                 'label' => $p->number,
+                'sucursal_id' => $p->sucursal_id,
             ]);
             $credito = (float) $provider->payments->sum('amount');
 
             foreach ($this->aging($comprobantes, $credito) as $row) {
+                if ($sucursalId !== null && $row['sucursal_id'] !== $sucursalId) {
+                    continue;
+                }
+
                 $porPagar->push(array_merge([
                     'name' => $provider->name,
                     'href' => route('providers.account', $provider),
