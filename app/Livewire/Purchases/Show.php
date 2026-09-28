@@ -8,6 +8,7 @@ use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -48,26 +49,42 @@ class Show extends Component
             'Tu rol no tiene permiso para eliminar compras.'
         );
 
-        DB::transaction(function () {
-            $items = $this->purchase->items->map(fn ($item) => [
-                'product_id' => $item->product_id,
-                'quantity' => (float) $item->quantity,
-            ])->all();
+        // Reversión de stock + baja de lotes + desvinculación de pagos tiene
+        // que ser una sola unidad atómica por compra: sin esto, un doble
+        // clic en "Eliminar" puede disparar dos requests que lean la compra
+        // todavía existente y reviertan el stock dos veces antes de que la
+        // primera termine de borrarla (mismo mecanismo ya arreglado en
+        // NotasCredito\Create y CashRegister\Index).
+        $purchaseId = $this->purchase->id;
 
-            // La sucursal de la compra, no la activa de quien la borra
-            // ahora (ver migración add_sucursal_id_to_purchases_table).
-            StockAdjuster::apply($items, -1, $this->purchase->sucursal_id);
+        Cache::lock("compra:eliminar:{$purchaseId}", 10)->block(5, function () use ($purchaseId) {
+            DB::transaction(function () use ($purchaseId) {
+                $purchase = Purchase::with('items', 'payments')->find($purchaseId);
 
-            // MEJORA: los lotes de esta compra sobrevivían con purchase_id
-            // en null (nullOnDelete) y su quantity_remaining intacta, pese a
-            // que el stock que representaban ya se revirtió arriba — quedaban
-            // como lotes "fantasma" en Lotes y Vencimientos, y darlos de baja
-            // después descontaba stock que ya no existía.
-            $this->purchase->batches()->delete();
+                if (! $purchase) {
+                    return; // Ya se borró en otro request (doble clic).
+                }
 
-            $this->purchase->payments->each(fn ($payment) => CashLinker::unlinkPurchasePayment($payment));
+                $items = $purchase->items->map(fn ($item) => [
+                    'product_id' => $item->product_id,
+                    'quantity' => (float) $item->quantity,
+                ])->all();
 
-            $this->purchase->delete();
+                // La sucursal de la compra, no la activa de quien la borra
+                // ahora (ver migración add_sucursal_id_to_purchases_table).
+                StockAdjuster::apply($items, -1, $purchase->sucursal_id);
+
+                // MEJORA: los lotes de esta compra sobrevivían con purchase_id
+                // en null (nullOnDelete) y su quantity_remaining intacta, pese a
+                // que el stock que representaban ya se revirtió arriba — quedaban
+                // como lotes "fantasma" en Lotes y Vencimientos, y darlos de baja
+                // después descontaba stock que ya no existía.
+                $purchase->batches()->delete();
+
+                $purchase->payments->each(fn ($payment) => CashLinker::unlinkPurchasePayment($payment));
+
+                $purchase->delete();
+            });
         });
 
         session()->flash('status', 'Compra eliminada.');

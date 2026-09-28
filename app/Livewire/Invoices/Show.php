@@ -16,11 +16,13 @@ use App\Support\CurrentSucursal;
 use App\Support\MercadoPagoPaymentApplier;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use RuntimeException;
 
 #[Layout('layouts.app')]
 class Show extends Component
@@ -199,6 +201,16 @@ class Show extends Component
             $this->afipError = $e->getMessage();
         } catch (AfipConnectionException $e) {
             $this->afipError = 'No se pudo contactar a ARCA, reintentá en unos minutos.';
+        } catch (RuntimeException $e) {
+            // InvoiceCaeEmitter ya serializa la emisión con un lock propio y
+            // re-chequea el CAE adentro — esto solo salta si un doble clic
+            // (u otra pestaña) alcanzó a emitir primero. No es un error real:
+            // refrescamos la factura para mostrar el CAE que ya se obtuvo.
+            $this->invoice->refresh();
+
+            if (! $this->invoice->isFiscal) {
+                $this->afipError = $e->getMessage();
+            }
         }
     }
 
@@ -257,20 +269,33 @@ class Show extends Component
             'Este remito ya fue facturado, no se puede eliminar: eliminá o corregí la factura generada primero.'
         );
 
-        DB::transaction(function () {
-            $items = $this->invoice->items->map(fn ($item) => [
-                'product_id' => $item->product_id,
-                'quantity' => (float) $item->quantity,
-            ])->all();
-            $sign = $this->invoice->afecta_stock ? $this->invoice->tipo_comprobante_interno->stockSign() : 0;
-            // La sucursal de la factura, no la activa de quien la borra (un
-            // admin global puede borrar la de cualquier sucursal, ver
-            // mount()) — mismo criterio que Invoices\Edit::save().
-            StockAdjuster::apply($items, -$sign, $this->invoice->sucursal_id);
+        // Mismo mecanismo que Purchases\Show::delete(): un doble clic en
+        // "Eliminar" puede disparar dos requests que reviertan el stock dos
+        // veces antes de que la primera termine de borrar el comprobante.
+        $invoiceId = $this->invoice->id;
 
-            $this->invoice->payments->each(fn ($payment) => CashLinker::unlinkInvoicePayment($payment));
+        Cache::lock("comprobante:eliminar:{$invoiceId}", 10)->block(5, function () use ($invoiceId) {
+            DB::transaction(function () use ($invoiceId) {
+                $invoice = Invoice::with('items', 'payments')->find($invoiceId);
 
-            $this->invoice->delete();
+                if (! $invoice) {
+                    return; // Ya se borró en otro request (doble clic).
+                }
+
+                $items = $invoice->items->map(fn ($item) => [
+                    'product_id' => $item->product_id,
+                    'quantity' => (float) $item->quantity,
+                ])->all();
+                $sign = $invoice->afecta_stock ? $invoice->tipo_comprobante_interno->stockSign() : 0;
+                // La sucursal de la factura, no la activa de quien la borra (un
+                // admin global puede borrar la de cualquier sucursal, ver
+                // mount()) — mismo criterio que Invoices\Edit::save().
+                StockAdjuster::apply($items, -$sign, $invoice->sucursal_id);
+
+                $invoice->payments->each(fn ($payment) => CashLinker::unlinkInvoicePayment($payment));
+
+                $invoice->delete();
+            });
         });
 
         session()->flash('status', 'Comprobante eliminado.');

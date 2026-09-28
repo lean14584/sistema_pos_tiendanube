@@ -4,6 +4,7 @@ namespace App\Livewire\StockTransfers;
 
 use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\StockTransfer;
 use App\Models\Sucursal;
 use App\Support\CurrentSucursal;
@@ -13,6 +14,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use RuntimeException;
 
 /**
  * Envío de mercadería entre sucursales: resta stock de una y suma en la otra
@@ -135,7 +137,10 @@ class Index extends Component
 
         // No tiene sentido "enviar" más de lo que físicamente hay en el
         // origen (a diferencia de una venta, acá no hay una razón de negocio
-        // para permitirlo — sería mover algo que no existe).
+        // para permitirlo — sería mover algo que no existe). Este primer
+        // chequeo es solo para dar feedback rápido por campo; el que de
+        // verdad importa es el de adentro de la transacción, con el stock
+        // lockeado.
         foreach ($this->items as $index => $item) {
             $product = Product::find($item['product_id']);
             $disponible = $product?->stockEnSucursal($fromId) ?? 0;
@@ -151,23 +156,47 @@ class Index extends Component
         // cuando alguien ahí confirma qué recibió (StockTransfers\Show):
         // puede diferir de lo enviado por rotura o pérdida en el traslado,
         // y así no aparece "stock fantasma" en destino antes de llegar.
-        DB::transaction(function () use ($fromId, $toId) {
-            $transfer = StockTransfer::create([
-                'from_sucursal_id' => $fromId,
-                'to_sucursal_id' => $toId,
-                'user_id' => auth()->id(),
-                'notes' => $this->notes ?: null,
-            ]);
-
-            foreach ($this->items as $item) {
-                $transfer->items()->create([
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
+        try {
+            DB::transaction(function () use ($fromId, $toId) {
+                $transfer = StockTransfer::create([
+                    'from_sucursal_id' => $fromId,
+                    'to_sucursal_id' => $toId,
+                    'user_id' => auth()->id(),
+                    'notes' => $this->notes ?: null,
                 ]);
 
-                StockAdjuster::applyManualDelta($item['product_id'], -(int) $item['quantity'], $fromId);
-            }
-        });
+                foreach ($this->items as $item) {
+                    // Re-chequeo de disponibilidad con la fila de stock
+                    // LOCKEADA: el de arriba (sin lock, antes de la
+                    // transacción) es solo una guía rápida para el usuario —
+                    // sin este segundo chequeo, un doble clic (u otra
+                    // pestaña) puede disparar dos envíos simultáneos que
+                    // lean el mismo stock disponible y, entre los dos,
+                    // comprometan más de lo que hay físicamente en origen.
+                    $stockRow = ProductStock::where('product_id', $item['product_id'])
+                        ->where('sucursal_id', $fromId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    $disponible = $stockRow?->stock ?? 0;
+
+                    if ((int) $item['quantity'] > $disponible) {
+                        throw new RuntimeException('El stock disponible cambió mientras se procesaba el envío. Revisá las cantidades y reintentá.');
+                    }
+
+                    $transfer->items()->create([
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                    ]);
+
+                    StockAdjuster::applyManualDelta($item['product_id'], -(int) $item['quantity'], $fromId);
+                }
+            });
+        } catch (RuntimeException $e) {
+            $this->addError('items', $e->getMessage());
+
+            return;
+        }
 
         session()->flash('status', 'Envío registrado. Queda pendiente hasta que confirmen la recepción en destino.');
         $this->reset(['to_sucursal_id', 'notes', 'items', 'productQuery']);

@@ -81,32 +81,52 @@ class Index extends Component
         ]);
 
         DB::transaction(function () use ($batch) {
+            // Releemos el lote CON LOCK adentro de la transacción: el
+            // chequeo de arriba (fuera de la transacción, contra
+            // $batch->quantity_remaining en memoria) es solo feedback rápido
+            // — sin este segundo chequeo, un doble clic puede disparar dos
+            // requests que resten cada uno sobre el mismo valor viejo de
+            // quantity_remaining, dejando el lote con un remanente que no
+            // coincide con lo que realmente se dio de baja (el stock total,
+            // vía increment atómico en StockAdjuster, sí queda bien igual).
+            $freshBatch = ProductBatch::where('id', $batch->id)->lockForUpdate()->first();
+
+            if (! $freshBatch || $freshBatch->quantity_remaining <= 0) {
+                return; // Ya se terminó de dar de baja en otro request.
+            }
+
             // El stock se maneja en unidades enteras (ver Product::$stock):
             // una baja parcial de un lote pesado se redondea a la unidad más
-            // cercana, igual que ya hace Ajustes de Stock.
-            $cantidad = (int) round((float) $this->bajaCantidad);
-            $sucursalId = $batch->sucursal_id;
+            // cercana, igual que ya hace Ajustes de Stock. Se topea a lo que
+            // efectivamente queda del lote (releído arriba), no a lo tipeado.
+            $cantidad = (int) round(min((float) $this->bajaCantidad, (float) $freshBatch->quantity_remaining));
 
-            $row = ProductStock::where('product_id', $batch->product_id)->where('sucursal_id', $sucursalId)->lockForUpdate()->first();
+            if ($cantidad <= 0) {
+                return;
+            }
+
+            $sucursalId = $freshBatch->sucursal_id;
+
+            $row = ProductStock::where('product_id', $freshBatch->product_id)->where('sucursal_id', $sucursalId)->lockForUpdate()->first();
             $previous = $row?->stock ?? 0;
 
-            StockAdjuster::applyManualDelta($batch->product_id, -$cantidad, $sucursalId);
+            StockAdjuster::applyManualDelta($freshBatch->product_id, -$cantidad, $sucursalId);
 
             StockAdjustment::create([
-                'product_id' => $batch->product_id,
+                'product_id' => $freshBatch->product_id,
                 'sucursal_id' => $sucursalId,
                 'user_id' => auth()->id(),
                 'previous_stock' => $previous,
                 'new_stock' => $previous - $cantidad,
                 'reason' => StockAdjustmentReason::Vencimiento->value,
-                'notes' => $this->bajaNotes ?: ($batch->batch_number ? "Baja de lote {$batch->batch_number}" : 'Baja de lote vencido'),
+                'notes' => $this->bajaNotes ?: ($freshBatch->batch_number ? "Baja de lote {$freshBatch->batch_number}" : 'Baja de lote vencido'),
             ]);
 
-            $batch->quantity_remaining = max(0, (float) $batch->quantity_remaining - (float) $this->bajaCantidad);
-            if ($batch->quantity_remaining <= 0) {
-                $batch->written_off_at = now();
+            $freshBatch->quantity_remaining = max(0, (float) $freshBatch->quantity_remaining - (float) $this->bajaCantidad);
+            if ($freshBatch->quantity_remaining <= 0) {
+                $freshBatch->written_off_at = now();
             }
-            $batch->save();
+            $freshBatch->save();
         });
 
         $this->toastSuccess('Lote dado de baja.');

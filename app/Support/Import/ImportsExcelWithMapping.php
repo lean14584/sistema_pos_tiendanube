@@ -4,6 +4,7 @@ namespace App\Support\Import;
 
 use App\Models\ImportMapping;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\WithFileUploads;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -133,22 +134,34 @@ trait ImportsExcelWithMapping
             $requeridos->mapWithKeys(fn ($f, $campo) => ["mapeo.{$campo}" => $f['label']])->all(),
         );
 
-        $rutaCompleta = Storage::disk('local')->path($this->rutaTemporal);
-        $spreadsheet = IOFactory::load($rutaCompleta);
-        $filas = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
-        array_shift($filas); // cabecera
+        // Sin este lock, un doble clic en "Confirmar importación" dispara dos
+        // requests que leen el mismo archivo todavía sin borrar y llaman a
+        // procesarFilas() dos veces — si el importador no es 100% upsert por
+        // clave natural, duplica todas las filas del Excel. El lock serializa
+        // las dos llamadas; la que llega segunda encuentra el archivo temporal
+        // ya borrado por la primera y no reprocesa nada.
+        Cache::lock("import:confirmar:{$this->rutaTemporal}", 15)->block(5, function () {
+            if (! Storage::disk('local')->exists($this->rutaTemporal)) {
+                return;
+            }
 
-        $this->resultado = $this->procesarFilas($filas);
+            $rutaCompleta = Storage::disk('local')->path($this->rutaTemporal);
+            $spreadsheet = IOFactory::load($rutaCompleta);
+            $filas = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+            array_shift($filas); // cabecera
 
-        // Recordar el mapeo para la próxima vez que suban un Excel con estas mismas cabeceras.
-        $mapeoPorNombre = collect($this->mapeo)
-            ->map(fn ($indice) => $indice !== null && $indice !== '' ? $this->cabeceras[$indice] : null)
-            ->all();
-        ImportMapping::guardarPara($this->contextoImport(), $this->cabeceras, $mapeoPorNombre);
+            $this->resultado = $this->procesarFilas($filas);
 
-        Storage::disk('local')->delete($this->rutaTemporal);
+            // Recordar el mapeo para la próxima vez que suban un Excel con estas mismas cabeceras.
+            $mapeoPorNombre = collect($this->mapeo)
+                ->map(fn ($indice) => $indice !== null && $indice !== '' ? $this->cabeceras[$indice] : null)
+                ->all();
+            ImportMapping::guardarPara($this->contextoImport(), $this->cabeceras, $mapeoPorNombre);
 
-        $this->step = 'resultado';
+            Storage::disk('local')->delete($this->rutaTemporal);
+
+            $this->step = 'resultado';
+        });
     }
 
     /** Valor de una fila para un campo del sistema, según el mapeo actual (o null si no está mapeado). */
