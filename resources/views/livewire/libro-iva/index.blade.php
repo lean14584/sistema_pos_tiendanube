@@ -11,28 +11,28 @@
         </x-slot:actions>
     </x-page-header>
 
-    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
+    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
         <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
-            <input type="date" wire:model.live="fromDate" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <input type="date" wire:model.live="fromDate" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
         </div>
         <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
-            <input type="date" wire:model.live="toDate" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <input type="date" wire:model.live="toDate" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
         </div>
 
         <div class="sm:ml-auto flex rounded-lg border border-gray-200 dark:border-gray-800 p-1 bg-gray-50 dark:bg-gray-800/50">
             <button
                 type="button"
                 wire:click="$set('tab', 'ventas')"
-                class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {{ $tab === 'ventas' ? 'bg-white dark:bg-gray-900 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200' }}"
+                class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {{ $tab === 'ventas' ? 'bg-white dark:bg-gray-900 text-sky-700 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200' }}"
             >
                 Ventas
             </button>
             <button
                 type="button"
                 wire:click="$set('tab', 'compras')"
-                class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {{ $tab === 'compras' ? 'bg-white dark:bg-gray-900 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200' }}"
+                class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {{ $tab === 'compras' ? 'bg-white dark:bg-gray-900 text-sky-700 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200' }}"
             >
                 Compras
             </button>
@@ -47,7 +47,7 @@
     </div>
 
     @if ($resumen->isNotEmpty())
-        <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-5 mb-6">
+        <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 mb-6">
             <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Resumen por alícuota</h2>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                 @foreach ($resumen as $item)
@@ -61,7 +61,7 @@
         </div>
     @endif
 
-    <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 overflow-hidden">
+    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm overflow-hidden">
         @if ($rows->isEmpty())
             <div class="p-12 text-center text-gray-400 dark:text-gray-500">
                 <x-heroicon-o-document-text class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />

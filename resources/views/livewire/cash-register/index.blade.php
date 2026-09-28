@@ -2,11 +2,11 @@
     <x-page-header title="Caja" subtitle="Apertura, movimientos y cierre de caja de {{ $sucursalActiva?->name ?? 'tu sucursal' }}" icon="banknotes" />
 
     @if ($otherOpenSessions->isNotEmpty())
-        <div class="mb-6 bg-indigo-50/60 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-xl p-4">
-            <p class="text-xs font-medium text-indigo-700 dark:text-indigo-300 uppercase mb-2">Otras cajas abiertas ahora en {{ $sucursalActiva?->name ?? 'esta sucursal' }}</p>
+        <div class="mb-6 bg-sky-50/70 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 rounded-xl p-4">
+            <p class="text-xs font-medium text-sky-700 dark:text-sky-300 uppercase mb-2">Otras cajas abiertas ahora en {{ $sucursalActiva?->name ?? 'esta sucursal' }}</p>
             <ul class="flex flex-wrap gap-3">
                 @foreach ($otherOpenSessions as $s)
-                    <li class="text-sm text-indigo-800 dark:text-indigo-200 bg-white dark:bg-gray-900 rounded-lg border border-indigo-100 dark:border-indigo-500/20 px-3 py-1.5">
+                    <li class="text-sm text-sky-800 dark:text-sky-200 bg-white dark:bg-gray-900 rounded-lg border border-sky-100 dark:border-sky-500/20 px-3 py-1.5">
                         {{ $s->user->name }} · desde las {{ $s->opened_at->format('H:i') }}
                     </li>
                 @endforeach
@@ -15,22 +15,22 @@
     @endif
 
     @if (! $openSession)
-        <form wire:submit="openSession" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-6 max-w-md">
+        <form wire:submit="openSession" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-6 max-w-md">
             <div class="flex items-center gap-2 mb-4">
-                <x-heroicon-o-lock-open class="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <x-heroicon-o-lock-open class="w-5 h-5 text-sky-600 dark:text-sky-400" />
                 <h2 class="font-medium text-gray-900 dark:text-gray-100">Abrir caja</h2>
             </div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto de apertura *</label>
-                    <input type="number" min="0" step="0.01" wire:model="openingAmount" placeholder="0.00" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="number" min="0" step="0.01" wire:model="openingAmount" placeholder="0.00" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                     @error('openingAmount') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
-                    <input type="text" wire:model="openingNotes" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="text" wire:model="openingNotes" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                 </div>
-                <button type="submit" wire:loading.attr="disabled" class="rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50">
+                <button type="submit" wire:loading.attr="disabled" class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
                     Abrir caja
                 </button>
             </div>
@@ -38,61 +38,61 @@
     @else
         <div class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
+                <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Apertura</p>
                     <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($openSession->opening_amount) }}</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ $openSession->opened_at->format('d/m/Y H:i') }} · {{ $openSession->user->name }}</p>
                 </div>
-                <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
+                <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Ingresos</p>
                     <p class="text-lg font-semibold text-emerald-600 dark:text-emerald-400">${{ money($summary['ingresos']) }}</p>
                 </div>
-                <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
+                <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Egresos</p>
                     <p class="text-lg font-semibold text-red-600 dark:text-red-400">${{ money($summary['egresos']) }}</p>
                 </div>
-                <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
+                <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Saldo esperado</p>
                     <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($summary['expectedClosing']) }}</p>
                 </div>
             </div>
 
-            <form wire:submit="addMovement" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
+            <form wire:submit="addMovement" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
                 <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Agregar movimiento</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Tipo</label>
-                        <select wire:model="movType" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <select wire:model="movType" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                             <option value="ingreso">Ingreso</option>
                             <option value="egreso">Egreso</option>
                         </select>
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Concepto</label>
-                        <input type="text" wire:model="movConcept" placeholder="Ej: Gastos de librería" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="text" wire:model="movConcept" placeholder="Ej: Gastos de librería" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Monto</label>
-                        <input type="number" min="0" step="0.01" wire:model="movAmount" placeholder="0.00" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="number" min="0" step="0.01" wire:model="movAmount" placeholder="0.00" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
-                        <input type="date" wire:model="movDate" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="date" wire:model="movDate" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                     </div>
                 </div>
-                <button type="submit" wire:loading.attr="disabled" class="mt-3 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-indigo-600/30 hover:from-indigo-700 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-600/40 active:scale-[0.98] transition-all disabled:opacity-50">
+                <button type="submit" wire:loading.attr="disabled" class="mt-3 rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 transition-all">
                     Agregar movimiento
                 </button>
             </form>
 
-            <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">
+            <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm">
                 @if ($sessionMovements->isEmpty())
                     <div class="p-10 text-center text-sm text-gray-400 dark:text-gray-500">Sin movimientos todavía en esta caja.</div>
                 @else
                     <div class="hidden sm:block overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
+                            <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                                 <th class="px-5 py-3 font-medium">Fecha</th>
                                 <th class="px-5 py-3 font-medium">Concepto</th>
                                 <th class="px-5 py-3 font-medium">Origen</th>
@@ -151,7 +151,7 @@
                 @endif
             </div>
 
-            <form x-on:submit.prevent="confirmThen('¿Confirmás el cierre de caja?', () => $wire.closeSession())" class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40 p-4">
+            <form x-on:submit.prevent="confirmThen('¿Confirmás el cierre de caja?', () => $wire.closeSession())" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
                 <div class="flex items-center gap-2 mb-3">
                     <x-heroicon-o-lock-closed class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">Cerrar caja</h3>
@@ -159,12 +159,12 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Monto de cierre (real) *</label>
-                        <input type="number" min="0" step="0.01" wire:model="closingAmount" placeholder="{{ money($summary['expectedClosing']) }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="number" min="0" step="0.01" wire:model="closingAmount" placeholder="{{ money($summary['expectedClosing']) }}" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 dark:placeholder-gray-500 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                         @error('closingAmount') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Notas</label>
-                        <input type="text" wire:model="closingNotes" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="text" wire:model="closingNotes" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                     </div>
                 </div>
                 <button
@@ -180,7 +180,7 @@
 
     <div class="mt-10">
         <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Historial de cajas</h2>
-        <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">
+        <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm">
             @if ($closedSessions->isEmpty())
                 <div class="p-10 text-center text-gray-400 dark:text-gray-500">
                     <x-heroicon-o-banknotes class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
@@ -190,7 +190,7 @@
                 <div class="hidden sm:block overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
+                        <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                             <th class="px-5 py-3 font-medium">Usuario</th>
                             <th class="px-5 py-3 font-medium">Apertura</th>
                             <th class="px-5 py-3 font-medium">Cierre</th>

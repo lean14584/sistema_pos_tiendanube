@@ -1,7 +1,4 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <a href="{{ route('promotions.index') }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
-        <x-heroicon-o-arrow-left class="w-4 h-4" /> Promociones por producto
-    </a>
     <x-page-header title="Promos por familia" subtitle="Agrupá productos (ej. Coca, Fanta, Sprite) y aplicá un NxM: el POS regala la unidad más barata del grupo." icon="gift" />
 
     @php

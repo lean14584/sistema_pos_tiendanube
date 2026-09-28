@@ -5,7 +5,7 @@
         {{-- "Por pagar" no distingue sucursal (las compras son de toda la empresa): este selector solo filtra "por cobrar". --}}
         <div class="mb-5 max-w-xs">
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sucursal (por cobrar)</label>
-            <select wire:model.live="sucursal_id" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <select wire:model.live="sucursal_id" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                 <option value="">Todas (consolidado)</option>
                 @foreach ($sucursales as $s)
                     <option value="{{ $s->id }}">{{ $s->name }}</option>
@@ -59,12 +59,12 @@
 
         {{-- POR PAGAR --}}
         <section class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-indigo-50/70 dark:bg-indigo-500/10">
-                <h2 class="text-sm font-semibold text-indigo-800 dark:text-indigo-300 inline-flex items-center gap-2">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-sky-50/70 dark:bg-sky-500/10">
+                <h2 class="text-sm font-semibold text-sky-800 dark:text-sky-300 inline-flex items-center gap-2">
                     <x-heroicon-o-arrow-up-right class="w-4 h-4" /> Por pagar (proveedores)
                 </h2>
                 <div class="text-right">
-                    <p class="text-lg font-bold text-indigo-700 dark:text-indigo-400">${{ money($totalPagar) }}</p>
+                    <p class="text-lg font-bold text-sky-700 dark:text-sky-400">${{ money($totalPagar) }}</p>
                     @if ($vencidoPagar > 0.009)
                         <p class="text-[11px] text-red-600 dark:text-red-400">${{ money($vencidoPagar) }} vencido</p>
                     @endif

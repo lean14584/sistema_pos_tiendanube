@@ -1,7 +1,4 @@
 <div class="p-8 max-w-5xl mx-auto">
-    <a href="{{ route('products.index') }}" wire:navigate class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6">
-        <x-heroicon-o-arrow-left class="w-4 h-4" /> Productos
-    </a>
     <x-page-header title="Ajustes de Stock" subtitle="Corregí el stock de un producto por rotura, vencimiento, conteo físico o merma — fuera del flujo normal de ventas y compras." icon="wrench" />
 
     @php
