@@ -31,7 +31,7 @@
             <tbody>
                 @forelse ($deudores as $row)
                     @php $client = $row['client']; @endphp
-                    <tr class="border-t border-gray-100 dark:border-gray-800">
+                    <tr wire:key="deudor-{{ $client->id }}" class="border-t border-gray-100 dark:border-gray-800">
                         <td class="px-4 py-3">
                             <a href="{{ route('clients.account', $client) }}" wire:navigate class="font-medium text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">{{ $client->name }}</a>
                             @if ($client->phone)
@@ -86,7 +86,7 @@
         <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
             @forelse ($deudores as $row)
                 @php $client = $row['client']; @endphp
-                <div class="p-4">
+                <div wire:key="deudor-card-{{ $client->id }}" class="p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <a href="{{ route('clients.account', $client) }}" wire:navigate class="font-medium text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">{{ $client->name }}</a>

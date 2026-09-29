@@ -20,9 +20,9 @@
                     <label class="{{ $label }}">Logo</label>
                     <div class="flex items-center gap-4">
                         @if ($logo)
-                            <img src="{{ $logo->temporaryUrl() }}" class="w-16 h-16 rounded-xl object-contain border border-gray-200 dark:border-gray-800 bg-white">
+                            <img src="{{ $logo->temporaryUrl() }}" alt="Logo de la empresa" class="w-16 h-16 rounded-xl object-contain border border-gray-200 dark:border-gray-800 bg-white">
                         @elseif ($company->logo_path)
-                            <img src="{{ asset('storage/'.$company->logo_path) }}" class="w-16 h-16 rounded-xl object-contain border border-gray-200 dark:border-gray-800 bg-white">
+                            <img src="{{ asset('storage/'.$company->logo_path) }}" alt="Logo de la empresa" class="w-16 h-16 rounded-xl object-contain border border-gray-200 dark:border-gray-800 bg-white">
                         @else
                             <div class="w-16 h-16 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-300 dark:text-gray-600">
                                 <x-heroicon-o-photo class="w-6 h-6" />

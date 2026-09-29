@@ -37,7 +37,7 @@
         <tr>
             <td style="width: 55%;">
                 @if ($logoPath)
-                    <img src="{{ $logoPath }}" style="height: 32px; vertical-align: middle;">
+                    <img src="{{ $logoPath }}" alt="Logo" style="height: 32px; vertical-align: middle;">
                 @else
                     <span class="brand-mark"></span>
                 @endif

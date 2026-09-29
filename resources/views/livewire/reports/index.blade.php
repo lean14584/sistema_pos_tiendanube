@@ -119,7 +119,7 @@
             <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por día</h2>
             <div class="flex items-end gap-1.5 h-40 overflow-x-auto pb-1">
                 @foreach ($byDay as $row)
-                    <div class="flex flex-col items-center justify-end shrink-0 group" style="min-width: 2rem;">
+                    <div wire:key="byday-{{ $loop->index }}" class="flex flex-col items-center justify-end shrink-0 group" style="min-width: 2rem;">
                         <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">${{ number_format($row['total'], 0, ',', '.') }}</span>
                         <div class="w-6 rounded-t bg-sky-500 dark:bg-sky-400 hover:bg-sky-600 dark:hover:bg-sky-300 transition-colors" style="height: {{ $maxDay > 0 ? max(4, round(($row['total'] / $maxDay) * 120)) : 4 }}px" title="{{ $row['label'] }}: ${{ money($row['total']) }} ({{ $row['count'] }} fact.)"></div>
                         <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">{{ $row['label'] }}</span>
@@ -134,7 +134,7 @@
                     <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por sucursal</h2>
                     <div class="space-y-3">
                         @foreach ($bySucursal as $row)
-                            <div>
+                            <div wire:key="bysucursal-{{ $loop->index }}">
                                 <div class="flex justify-between text-sm mb-1">
                                     <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
                                     <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}</span>
@@ -152,7 +152,7 @@
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por artículo</h2>
                 <div class="space-y-3">
                     @foreach ($byArticle as $row)
-                        <div>
+                        <div wire:key="byarticle-{{ $loop->index }}">
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ rtrim(rtrim(number_format($row['quantity'], 2), '0'), '.') }} u. · ${{ money($row['total']) }}</span>
@@ -169,7 +169,7 @@
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por categoría</h2>
                 <div class="space-y-3">
                     @foreach ($byCategory as $row)
-                        <div>
+                        <div wire:key="bycategory-{{ $loop->index }}">
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ rtrim(rtrim(number_format($row['quantity'], 2), '0'), '.') }} u. · ${{ money($row['total']) }}</span>
@@ -186,7 +186,7 @@
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por método de pago</h2>
                 <div class="space-y-3">
                     @forelse ($byMethod as $row)
-                        <div>
+                        <div wire:key="bymethod-{{ $loop->index }}">
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ money($row['total']) }}</span>
@@ -205,7 +205,7 @@
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Top clientes</h2>
                 <div class="space-y-3">
                     @forelse ($byClient as $row)
-                        <div>
+                        <div wire:key="byclient-{{ $loop->index }}">
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'factura' : 'facturas' }} · ${{ money($row['total']) }}</span>
@@ -224,7 +224,7 @@
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por hora del día</h2>
                 <div class="space-y-3">
                     @foreach ($byHour as $row)
-                        <div>
+                        <div wire:key="byhour-{{ $row['hour'] }}">
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300">{{ str_pad($row['hour'], 2, '0', STR_PAD_LEFT) }}:00 – {{ str_pad($row['hour'], 2, '0', STR_PAD_LEFT) }}:59</span>
                                 <span class="text-gray-500 dark:text-gray-400">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}</span>

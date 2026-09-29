@@ -100,7 +100,7 @@
             </thead>
             <tbody>
                 @forelse ($adjustments as $adj)
-                    <tr class="border-t border-gray-100 dark:border-gray-800">
+                    <tr wire:key="adjustment-{{ $adj->id }}" class="border-t border-gray-100 dark:border-gray-800">
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ $adj->created_at->format('d/m/Y H:i') }}</td>
                         <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{{ $adj->product->name ?? 'Producto eliminado' }}</td>
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $adj->sucursal->name ?? '—' }}</td>
@@ -121,7 +121,7 @@
 
         <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
             @forelse ($adjustments as $adj)
-                <div class="p-4">
+                <div wire:key="adjustment-card-{{ $adj->id }}" class="p-4">
                     <div class="flex items-start justify-between gap-3">
                         <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $adj->product->name ?? 'Producto eliminado' }}</p>
                         <p class="text-sm shrink-0 {{ $adj->delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">

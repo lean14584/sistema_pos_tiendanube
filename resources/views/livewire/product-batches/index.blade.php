@@ -40,7 +40,7 @@
             </thead>
             <tbody>
                 @forelse ($batches as $batch)
-                    <tr class="border-t border-gray-100 dark:border-gray-800">
+                    <tr wire:key="batch-{{ $batch->id }}" class="border-t border-gray-100 dark:border-gray-800">
                         <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{{ $batch->product->name ?? 'Producto eliminado' }}</td>
                         @if ($puedeVerTodasLasSucursales)
                             <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ $batch->sucursal->name ?? '—' }}</td>
@@ -71,7 +71,7 @@
 
         <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
             @forelse ($batches as $batch)
-                <div class="p-4">
+                <div wire:key="batch-card-{{ $batch->id }}" class="p-4">
                     <div class="flex items-start justify-between gap-3">
                         <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $batch->product->name ?? 'Producto eliminado' }}</p>
                         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset shrink-0 {{ $batch->status->colorClasses() }}">

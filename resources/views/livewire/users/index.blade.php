@@ -53,6 +53,7 @@
                                             x-on:click="confirmThen('¿Eliminar al usuario ' + @js($user->name) + '?', () => $wire.delete({{ $user->id }}))"
                                             wire:loading.attr="disabled"
                                             wire:target="delete"
+                                            aria-label="Eliminar usuario"
                                             class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all disabled:opacity-50"
                                         >
                                             <x-heroicon-o-trash class="w-4 h-4" />
@@ -88,6 +89,7 @@
                                         x-on:click="confirmThen('¿Eliminar al usuario ' + @js($user->name) + '?', () => $wire.delete({{ $user->id }}))"
                                         wire:loading.attr="disabled"
                                         wire:target="delete"
+                                        aria-label="Eliminar usuario"
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 disabled:opacity-50"
                                     >
                                         <x-heroicon-o-trash class="w-4 h-4" />

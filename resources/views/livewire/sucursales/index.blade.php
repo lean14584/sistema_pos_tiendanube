@@ -34,7 +34,7 @@
                         <tr wire:key="sucursal-{{ $sucursal->id }}" class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                             <td class="px-5 py-3">
                                 @if ($sucursal->logo_path)
-                                    <img src="{{ $sucursal->logo_url }}" class="w-8 h-8 rounded-md object-contain border border-gray-200 dark:border-gray-800 bg-white">
+                                    <img src="{{ $sucursal->logo_url }}" alt="Logo de {{ $sucursal->name }}" class="w-8 h-8 rounded-md object-contain border border-gray-200 dark:border-gray-800 bg-white">
                                 @else
                                     <div class="w-8 h-8 rounded-md border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-300 dark:text-gray-700">
                                         <x-heroicon-o-building-storefront class="w-4 h-4" />
@@ -64,6 +64,7 @@
                                         x-on:click="confirmThen('¿Eliminar la sucursal ' + @js($sucursal->name) + '?', () => $wire.delete({{ $sucursal->id }}))"
                                         wire:loading.attr="disabled"
                                         wire:target="delete"
+                                        aria-label="Eliminar sucursal"
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all disabled:opacity-50"
                                     >
                                         <x-heroicon-o-trash class="w-4 h-4" />
@@ -82,7 +83,7 @@
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-start gap-3 min-w-0">
                                 @if ($sucursal->logo_path)
-                                    <img src="{{ $sucursal->logo_url }}" class="w-8 h-8 rounded-md object-contain border border-gray-200 dark:border-gray-800 bg-white shrink-0">
+                                    <img src="{{ $sucursal->logo_url }}" alt="Logo de {{ $sucursal->name }}" class="w-8 h-8 rounded-md object-contain border border-gray-200 dark:border-gray-800 bg-white shrink-0">
                                 @else
                                     <div class="w-8 h-8 rounded-md border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-300 dark:text-gray-700 shrink-0">
                                         <x-heroicon-o-building-storefront class="w-4 h-4" />
@@ -106,6 +107,7 @@
                                     x-on:click="confirmThen('¿Eliminar la sucursal ' + @js($sucursal->name) + '?', () => $wire.delete({{ $sucursal->id }}))"
                                     wire:loading.attr="disabled"
                                     wire:target="delete"
+                                    aria-label="Eliminar sucursal"
                                     class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 disabled:opacity-50"
                                 >
                                     <x-heroicon-o-trash class="w-4 h-4" />

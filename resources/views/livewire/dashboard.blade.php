@@ -205,7 +205,7 @@
                 </thead>
                 <tbody>
                     @foreach ($recentInvoices as $invoice)
-                        <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <tr wire:key="recent-invoice-{{ $invoice->id }}" class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                             <td class="px-5 py-3">
                                 @if ($canManageInvoices)
                                     <a href="{{ route('invoices.show', $invoice) }}" wire:navigate class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">{{ $invoice->number }}</a>
@@ -243,7 +243,7 @@
                 </thead>
                 <tbody>
                     @foreach ($lowStockProducts as $product)
-                        <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <tr wire:key="low-stock-product-{{ $product->id }}" class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                             <td class="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{{ $product->name }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $product->category?->name ?? '—' }}</td>
                             <td class="px-5 py-3 text-right font-medium text-red-600 dark:text-red-400">{{ $product->stock }}</td>

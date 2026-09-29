@@ -112,7 +112,9 @@
                                     <td class="px-5 py-3 text-right">
                                         @if ($m->source->value === 'manual')
                                             <button
+                                                type="button"
                                                 x-on:click="confirmThen('¿Borrar el movimiento ' + @js($m->concept) + '?', () => $wire.deleteMovement({{ $m->id }}))"
+                                                aria-label="Eliminar movimiento"
                                                 class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 hover:scale-110 transition-all"
                                             >
                                                 <x-heroicon-o-trash class="w-4 h-4" />
@@ -135,7 +137,9 @@
                                     </div>
                                     @if ($m->source->value === 'manual')
                                         <button
+                                            type="button"
                                             x-on:click="confirmThen('¿Borrar el movimiento ' + @js($m->concept) + '?', () => $wire.deleteMovement({{ $m->id }}))"
+                                            aria-label="Eliminar movimiento"
                                             class="p-1.5 rounded-md text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 shrink-0"
                                         >
                                             <x-heroicon-o-trash class="w-4 h-4" />

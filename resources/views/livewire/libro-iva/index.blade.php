@@ -83,7 +83,7 @@
                 </thead>
                 <tbody>
                     @foreach ($rows as $row)
-                        <tr class="border-t border-gray-100 dark:border-gray-800">
+                        <tr wire:key="comprobante-{{ $row->tipoComprobante->value }}-{{ $numeroCompleto($row) }}" class="border-t border-gray-100 dark:border-gray-800">
                             <td class="px-4 py-2 text-gray-700 dark:text-gray-300">{{ $row->fecha->format('d/m/Y') }}</td>
                             <td class="px-4 py-2 text-gray-700 dark:text-gray-300">
                                 {{ $row->tipoComprobante->label() }}
@@ -102,7 +102,7 @@
 
             <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
                 @foreach ($rows as $row)
-                    <div class="p-4">
+                    <div wire:key="comprobante-card-{{ $row->tipoComprobante->value }}-{{ $numeroCompleto($row) }}" class="p-4">
                         <div class="flex items-start justify-between gap-3">
                             <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $row->denominacion }}</p>
                             <p class="font-medium text-gray-900 dark:text-gray-100 shrink-0">${{ money($row->importeTotal) }}</p>

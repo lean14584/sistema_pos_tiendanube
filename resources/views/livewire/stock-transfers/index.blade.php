@@ -73,7 +73,7 @@
                                                 @error("items.{$index}.quantity") <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                                             </td>
                                             <td class="px-2 py-2 text-center">
-                                                <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                                <button type="button" wire:click="removeItem({{ $index }})" aria-label="Eliminar ítem" class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
                                                     <x-heroicon-o-trash class="w-4 h-4" />
                                                 </button>
                                             </td>

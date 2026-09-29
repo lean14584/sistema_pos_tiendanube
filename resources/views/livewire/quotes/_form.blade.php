@@ -80,7 +80,7 @@
                                         ${{ money((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100)) }}
                                     </td>
                                     <td class="px-2 py-2 text-center">
-                                        <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                        <button type="button" wire:click="removeItem({{ $index }})" aria-label="Eliminar ítem" class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
                                             <x-heroicon-o-trash class="w-4 h-4" />
                                         </button>
                                     </td>
@@ -95,7 +95,7 @@
                             <div wire:key="item-card-{{ $index }}" class="p-3 space-y-2">
                                 <div class="flex items-start gap-2">
                                     <input type="text" wire:model="items.{{ $index }}.description" placeholder="Descripción" class="flex-1 {{ $cellInputClass }}">
-                                    <button type="button" wire:click="removeItem({{ $index }})" class="p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 shrink-0">
+                                    <button type="button" wire:click="removeItem({{ $index }})" aria-label="Eliminar ítem" class="p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 shrink-0">
                                         <x-heroicon-o-trash class="w-4 h-4" />
                                     </button>
                                 </div>

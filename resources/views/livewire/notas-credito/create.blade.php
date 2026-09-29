@@ -51,7 +51,7 @@
                                         ${{ money((float) $item['quantity'] * (float) $item['unit_price']) }}
                                     </td>
                                     <td class="px-2 py-2 text-center">
-                                        <button type="button" wire:click="removeItem({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
+                                        <button type="button" wire:click="removeItem({{ $index }})" aria-label="Eliminar ítem" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
                                             <x-heroicon-o-trash class="w-4 h-4" />
                                         </button>
                                     </td>
@@ -66,7 +66,7 @@
                             <div wire:key="item-card-{{ $index }}" class="p-3 space-y-2">
                                 <div class="flex items-start justify-between gap-2">
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $item['description'] }}</p>
-                                    <button type="button" wire:click="removeItem({{ $index }})" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 shrink-0">
+                                    <button type="button" wire:click="removeItem({{ $index }})" aria-label="Eliminar ítem" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 shrink-0">
                                         <x-heroicon-o-trash class="w-4 h-4" />
                                     </button>
                                 </div>
@@ -146,7 +146,7 @@
                                 @endforeach
                             </select>
                             <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-32 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            <button type="button" wire:click="removePayment({{ $index }})" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
+                            <button type="button" wire:click="removePayment({{ $index }})" aria-label="Eliminar pago" class="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400">
                                 <x-heroicon-o-trash class="w-4 h-4" />
                             </button>
                         </div>

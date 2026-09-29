@@ -48,7 +48,7 @@
                 <div class="flex-1 overflow-y-auto p-5 space-y-3" x-data x-init="$el.scrollTop = $el.scrollHeight" x-on:livewire:navigated.window="$el.scrollTop = $el.scrollHeight">
                     @forelse ($thread as $message)
                         @php $isMine = $message->sender_id === auth()->id(); @endphp
-                        <div class="flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                        <div wire:key="mensaje-{{ $message->id }}" class="flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
                             <div class="max-w-[75%] rounded-xl px-3.5 py-2 text-sm {{ $isMine
                                 ? 'bg-indigo-600 text-white rounded-br-sm'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-sm' }}">
