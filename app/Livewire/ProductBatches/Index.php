@@ -144,8 +144,14 @@ class Index extends Component
         $batches = ProductBatch::with(['product', 'sucursal'])
             ->active()
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
-            ->when($this->estado === 'vencido', fn ($q) => $q->whereDate('expiration_date', '<', $today))
-            ->when($this->estado === 'por_vencer', fn ($q) => $q->whereDate('expiration_date', '>=', $today)->expiringWithin(ProductBatch::DIAS_ALERTA))
+            // expiration_date ya es una columna DATE pura (sin hora): usar
+            // whereDate() envuelve la columna en DATE(...), lo que impide
+            // usar el índice (sucursal_id, expiration_date) ya existente —
+            // un where() directo contra el mismo string 'Y-m-d' es
+            // equivalente y sargable. Mismo criterio que SalesReport/
+            // LibroIvaCalculator, que ya evitan whereDate() a propósito.
+            ->when($this->estado === 'vencido', fn ($q) => $q->where('expiration_date', '<', $today))
+            ->when($this->estado === 'por_vencer', fn ($q) => $q->where('expiration_date', '>=', $today)->expiringWithin(ProductBatch::DIAS_ALERTA))
             ->when($this->estado === 'ok', fn ($q) => $q->where('expiration_date', '>', now()->addDays(ProductBatch::DIAS_ALERTA)->toDateString()))
             ->orderBy('expiration_date')
             ->paginate(20);

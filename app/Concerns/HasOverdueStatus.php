@@ -34,12 +34,19 @@ trait HasOverdueStatus
      */
     public function scopeWithEffectiveStatus(Builder $query, string $status): Builder
     {
+        // due_date ya es una columna DATE pura (sin hora): whereDate()
+        // envuelve la columna en DATE(...), lo que impide usar cualquier
+        // índice que la incluya — un where() directo contra el mismo string
+        // 'Y-m-d' es equivalente y sargable. Mismo criterio que
+        // ProductBatches\Index/SalesReport/LibroIvaCalculator.
+        $hoy = Carbon::today()->toDateString();
+
         return match ($status) {
             InvoiceStatus::Overdue->value => $query->where('status', InvoiceStatus::Pending)
                 ->whereNotNull('due_date')
-                ->whereDate('due_date', '<', Carbon::today()),
+                ->where('due_date', '<', $hoy),
             InvoiceStatus::Pending->value => $query->where('status', InvoiceStatus::Pending)
-                ->where(fn ($q) => $q->whereNull('due_date')->orWhereDate('due_date', '>=', Carbon::today())),
+                ->where(fn ($q) => $q->whereNull('due_date')->orWhere('due_date', '>=', $hoy)),
             default => $query->where('status', $status),
         };
     }

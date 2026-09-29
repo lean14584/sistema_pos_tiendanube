@@ -206,10 +206,17 @@ class Invoice extends Model
             ? -1 : 1;
     }
 
-    /** La factura ya generada a partir de este remito, o null. */
+    /**
+     * La factura ya generada a partir de este remito, o null. Usa la
+     * relación precargada si ya está (ver Invoices\Show::render()) — sin
+     * esto, cada visita a un Remito disparaba hasta 4 queries idénticas
+     * (se llama varias veces en la misma vista).
+     */
     public function facturaGenerada(): ?Invoice
     {
-        return $this->facturasDelRemito()->first();
+        return $this->relationLoaded('facturasDelRemito')
+            ? $this->facturasDelRemito->first()
+            : $this->facturasDelRemito()->first();
     }
 
     /**
@@ -222,8 +229,14 @@ class Invoice extends Model
      */
     protected function creditedTotal(): Attribute
     {
+        // Usa la relación precargada si ya está (ver Invoices\Show::render())
+        // — antes ignoraba ese load() y disparaba una query extra igual.
+        // NotasCredito\Create sigue viendo el valor fresco porque ahí se
+        // llama sobre $invoice->fresh() (instancia nueva, sin relaciones
+        // cargadas), no sobre esta misma.
         return Attribute::get(
-            fn () => $this->creditNotes()->get()->sum(fn (Invoice $nc) => $nc->total)
+            fn () => ($this->relationLoaded('creditNotes') ? $this->creditNotes : $this->creditNotes()->get())
+                ->sum(fn (Invoice $nc) => $nc->total)
         );
     }
 

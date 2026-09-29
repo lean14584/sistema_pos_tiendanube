@@ -7,6 +7,7 @@ use App\Models\CanonPago;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -85,6 +86,19 @@ class CanonMensualModal extends Component
     // link comun al mismo destino no tiene esa carrera.
     private function crearPreferencia(string $accessToken): string
     {
+        // Este mount() corre en CADA carga de página de un Admin (el modal
+        // vive en el layout) — sin cachear, cada una disparaba un POST real
+        // a la API de MP para crear una preferencia nueva. Se cachea por
+        // instalación+mes (misma clave que referenciaExterna()) y solo si
+        // salió bien: un fallo de MP no se cachea, para poder reintentar en
+        // la próxima carga en vez de quedar 12h sin mostrar el cobro.
+        $cacheKey = 'canon-mensual:init-point:'.$this->referenciaExterna();
+        $cached = Cache::get($cacheKey);
+
+        if ($cached) {
+            return $cached;
+        }
+
         try {
             $response = Http::asJson()->post(
                 'https://api.mercadopago.com/checkout/preferences?access_token='.$accessToken,
@@ -102,7 +116,13 @@ class CanonMensualModal extends Component
                 ]
             );
 
-            return (string) ($response->json('init_point') ?? '');
+            $initPoint = (string) ($response->json('init_point') ?? '');
+
+            if ($initPoint !== '') {
+                Cache::put($cacheKey, $initPoint, now()->addHours(12));
+            }
+
+            return $initPoint;
         } catch (ConnectionException $e) {
             // El modal vive en el layout global: si Mercado Pago esta caido
             // o no responde, no puede tirar 500 en TODAS las paginas que

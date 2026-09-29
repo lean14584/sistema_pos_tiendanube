@@ -36,7 +36,7 @@ class SucursalSwitcher extends Component
     public function render()
     {
         return view('livewire.sucursal-switcher', [
-            'sucursales' => Sucursal::where('active', true)->orderBy('name')->get(),
+            'sucursales' => Sucursal::activasParaSelectCached(),
         ]);
     }
 }

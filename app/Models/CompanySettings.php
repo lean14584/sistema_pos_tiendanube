@@ -122,13 +122,20 @@ class CompanySettings extends Model
      * Fila única de configuración de la empresa (sembrada por la migración
      * con id=1), para no repetir firstOrCreate en cada lugar que la usa.
      *
-     * MEJORA intentada y descartada: memoizar con once() ahorraría varias
+     * MEJORA intentada y descartada (dos veces): memoizar ahorraría varias
      * consultas idénticas por acción (se llama decenas de veces en todo el
-     * sistema), pero rompe cualquier flujo que actualice esta fila y la
-     * vuelva a leer dentro del mismo proceso — confirmado por 7 tests que
-     * empezaron a fallar (guardar Configuración de Empresa y releer el
-     * modelo actualizado, tests de Livewire que hacen mount+set+call+assert
-     * en un solo proceso PHP). No vale el riesgo para el ahorro que da.
+     * sistema). El primer intento con once() rompía flujos que actualizan y
+     * releen esta fila dentro del mismo proceso (7 tests). Un segundo intento
+     * usando una propiedad estática invalidada por el evento `saved` (más
+     * reseteada en booted(), para cubrir el reseteo de booted-state entre
+     * tests) TAMPOCO alcanzó: filtró valores de un test a otro de todos
+     * modos (booted() no se dispara de forma confiable en el límite exacto
+     * de cada test), causando montos de descuento equivocados en Invoices/
+     * Pos/PromotionGroup — un bug de plata real, no cosmético. Ninguna
+     * variante de caché en memoria de proceso es segura acá sin una
+     * inversión bastante más grande (ej. cache real invalidado por evento Y
+     * verificado contra Octane/tests a fondo). No vale el riesgo para el
+     * ahorro que da.
      */
     public static function current(): self
     {

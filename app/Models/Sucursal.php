@@ -92,4 +92,25 @@ class Sucursal extends Model
 
         return collect(json_decode($json));
     }
+
+    /**
+     * Igual que forSelectCached(), pero solo las activas — para pickers
+     * donde no corresponde elegir una sucursal dada de baja (switcher del
+     * sidebar, envío de mercadería entre sucursales). No se puede reusar
+     * forSelectCached() directo porque esa trae TODAS sin filtrar por
+     * 'active'. Corre en el sidebar de CADA carga de página para un admin
+     * global, antes sin cachear.
+     *
+     * @return Collection<int, object{id: int, name: string}>
+     */
+    public static function activasParaSelectCached(): Collection
+    {
+        $json = Cache::remember(
+            'sucursales:activas-select-list-v1',
+            now()->addSeconds(60),
+            fn () => self::where('active', true)->orderBy('name')->get(['id', 'name'])->toJson(),
+        );
+
+        return collect(json_decode($json));
+    }
 }

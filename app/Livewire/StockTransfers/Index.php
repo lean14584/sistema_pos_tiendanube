@@ -213,7 +213,10 @@ class Index extends Component
 
         return view('livewire.stock-transfers.index', [
             'transfers' => $transfers,
-            'sucursales' => Sucursal::where('active', true)->orderBy('name')->get(),
+            // No se usa Sucursal::forSelectCached() a propósito: esa trae
+            // TODAS las sucursales sin filtrar por 'active', y acá no
+            // corresponde poder enviar hacia/desde una sucursal inactiva.
+            'sucursales' => Sucursal::activasParaSelectCached(),
             'sucursalActiva' => CurrentSucursal::get(),
             'puedeElegirOrigen' => $this->puedeElegirOrigen(),
         ]);
