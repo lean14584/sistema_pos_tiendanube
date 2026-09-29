@@ -34,6 +34,11 @@ class Show extends Component
 
     public function setStatus(string $status): void
     {
+        // Mismo chequeo que delete() de este componente: cambiar el estado a
+        // mano es una acción administrativa igual de consecuente que borrar,
+        // sin control de rol quedaba abierta a cualquiera con acceso al módulo.
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para cambiar el estado de una compra.');
+
         $this->purchase->update(['status' => $status]);
     }
 

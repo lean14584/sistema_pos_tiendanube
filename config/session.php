@@ -169,7 +169,15 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Default a "true" en producción (todos los hostings de este linaje
+    // corren sobre HTTPS) para que una instalación nueva no quede con la
+    // cookie de sesión sin el flag Secure si SESSION_SECURE_COOKIE nunca se
+    // seteó a mano en su .env. En local (Laragon, sin HTTPS) sigue en false.
+    // OJO: usar env('APP_ENV') acá, NO app()->environment() — este archivo
+    // se carga en un punto del boot donde el binding 'env' del contenedor
+    // todavía no está listo en algunos comandos artisan (ej. config:clear),
+    // y app()->environment() lo necesita internamente.
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

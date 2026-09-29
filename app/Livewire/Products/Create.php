@@ -109,7 +109,10 @@ class Create extends Component
             'min_stock' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string'],
             'category_id' => ['nullable', 'exists:categories,id'],
-            'image' => ['nullable', 'image', 'max:4096'],
+            // 'image' de Laravel admite SVG, que puede llevar <script>
+            // embebido (XSS almacenado si algún día se sirve el archivo
+            // fuera de un <img>). Se restringe a los formatos rasterizados.
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         if ($this->sold_by_weight && $data['sku'] !== null && ! ctype_digit($data['sku'])) {

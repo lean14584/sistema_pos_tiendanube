@@ -122,15 +122,14 @@ class Create extends Component
             return;
         }
 
-        $cantidadOPrecioInvalido = $validItems->contains(
-            fn ($item) => (float) $item['quantity'] <= 0 || (float) $item['unit_price'] < 0
-        );
-
-        if ($cantidadOPrecioInvalido) {
-            $this->addError('items', 'Cada ítem necesita una cantidad mayor a cero y un precio unitario válido.');
-
-            return;
-        }
+        // Antes solo se comparaba con (float) cast: un valor no numérico
+        // colapsaba en silencio a 0 en vez de disparar un error, más débil
+        // que Invoices\Create/Edit y Purchases\Create/Edit para el mismo
+        // tipo de operación (acá también mueve stock y plata).
+        $this->validate([
+            'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+        ]);
 
         // Los inputs solo tienen min="0" en el HTML — sin este chequeo, se
         // podía subir la cantidad o el precio de una línea por encima de lo

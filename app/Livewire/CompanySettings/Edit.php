@@ -125,7 +125,11 @@ class Edit extends Component
             'barcode_scale_weight_digits' => ['required_if:barcode_scale_enabled,true', 'nullable', 'integer', 'min:1', 'max:9'],
             'descuento_efectivo_pct' => ['required', 'numeric', 'min:0', 'max:100'],
             'descuento_transferencia_pct' => ['required', 'numeric', 'min:0', 'max:100'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            // 'image' de Laravel admite SVG, que puede llevar <script>
+            // embebido (XSS almacenado si algún día se sirve el archivo
+            // fuera de un <img>). Se restringe a los formatos rasterizados
+            // que realmente hacen falta para un logo.
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             // El certificado y la clave son texto (PEM); se validan por
             // extensión más abajo porque su mime no es confiable.
             'cert' => ['nullable', 'file', 'max:200'],

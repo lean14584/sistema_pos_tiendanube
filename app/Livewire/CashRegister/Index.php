@@ -9,6 +9,7 @@ use App\Models\CashSession;
 use App\Support\CurrentSucursal;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -93,6 +94,7 @@ class Index extends Component
         }
 
         $this->validate([
+            'movType' => ['required', Rule::enum(CashMovementType::class)],
             'movConcept' => ['required', 'string'],
             'movAmount' => ['required', 'numeric', 'min:0.01'],
             'movDate' => ['required', 'date'],

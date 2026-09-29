@@ -7,6 +7,7 @@ use App\Models\PriceList;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -14,6 +15,10 @@ class Index extends Component
 {
     use ShowsToasts;
 
+    // Solo se setea server-side, desde edit()/cancel() — sin esto, el
+    // payload de Livewire podía mandar cualquier id y save() actualizaría
+    // ese registro en vez del que el usuario realmente abrió para editar.
+    #[Locked]
     public ?int $editingId = null;
 
     public string $name = '';

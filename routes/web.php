@@ -88,10 +88,12 @@ Route::middleware('guest')->group(function () {
 });
 
 // Webhook público de Mercado Pago (sin auth ni CSRF; se valida contra la API).
-Route::match(['get', 'post'], '/mp/webhook', MercadoPagoWebhookController::class)->name('mp.webhook');
+// throttle: la firma se valida barato, pero son 2 endpoints 100% públicos
+// sin ningún límite de tasa hasta ahora.
+Route::match(['get', 'post'], '/mp/webhook', MercadoPagoWebhookController::class)->middleware('throttle:60,1')->name('mp.webhook');
 
 // Webhook público de Tiendanube (sin auth ni CSRF; firma HMAC opcional).
-Route::post('/tiendanube/webhook', TiendanubeWebhookController::class)->name('tiendanube.webhook');
+Route::post('/tiendanube/webhook', TiendanubeWebhookController::class)->middleware('throttle:60,1')->name('tiendanube.webhook');
 
 // Kiosco público de consulta de precios (para dejar fijo en el salón).
 // {sucursal} opcional: en una instalación multisucursal, cada pantalla física

@@ -49,6 +49,12 @@ class Show extends Component
 
     public function setStatus(string $status): void
     {
+        // Mismo chequeo que delete() de este componente: cambiar el estado a
+        // mano (ej. "Rechazado") es una acción administrativa igual de
+        // consecuente que borrar, sin control de rol quedaba abierta a
+        // cualquiera con acceso al módulo.
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para cambiar el estado de un presupuesto.');
+
         $this->quote->update(['status' => $status]);
     }
 
@@ -87,7 +93,10 @@ class Show extends Component
         // el check-then-act adentro del lock, releyendo con fresh().
         try {
             $invoice = Cache::lock("quote:convert:{$this->quote->id}", 10)->block(5, function () use ($updatePrices, $tipo, $puntoVentaNumero) {
-                $quote = $this->quote->fresh();
+                // 'items.product': el foreach de abajo lee $item->product por
+                // cada ítem — sin este eager-load era una query extra por
+                // ítem del presupuesto.
+                $quote = $this->quote->fresh('items.product');
 
                 if ($quote->status === QuoteStatus::Converted) {
                     throw new \RuntimeException('Este presupuesto ya fue convertido a factura.');

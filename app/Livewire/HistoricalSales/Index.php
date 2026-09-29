@@ -3,6 +3,7 @@
 namespace App\Livewire\HistoricalSales;
 
 use App\Models\HistoricalSale;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -23,6 +24,10 @@ class Index extends Component
 
     public function delete(HistoricalSale $sale): void
     {
+        // Mismo chequeo que Providers\Index::delete()/Clients\Index::delete():
+        // era el único delete() de todo el sistema sin control de rol.
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para eliminar ventas históricas.');
+
         $sale->delete();
     }
 

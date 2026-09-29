@@ -4,13 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\ClientPayment;
 use App\Models\CompanySettings;
+use App\Support\CurrentSucursal;
 use App\Support\InvoiceNumberGenerator;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 
 class ReciboPdfController extends Controller
 {
     public function __invoke(ClientPayment $payment)
     {
+        // Mismo chequeo que InvoicePdfController/RemitoPdfController/
+        // StockTransferPdfController: el listado de Cobranzas/cuenta corriente
+        // ya filtra por sucursal, pero eso no protege el acceso directo por
+        // id — sin esto, cualquier Cajero/Vendedor podía bajar el recibo de
+        // un cobro hecho en OTRA sucursal con solo cambiar el id en la URL.
+        abort_unless(
+            Auth::user()?->esAdminGlobal() || $payment->sucursal_id === CurrentSucursal::id(),
+            403,
+            'No podés ver el recibo de un cobro de otra sucursal.'
+        );
+
         $client = $payment->client;
         $cutoff = $payment->created_at;
 

@@ -162,6 +162,12 @@ class Show extends Component
 
     public function setStatus(string $status): void
     {
+        // Mismo chequeo que delete() de este componente: cambiar el estado a
+        // mano (ej. marcar "Pagado" sin que haya entrado la plata a caja) es
+        // una acción administrativa igual de consecuente que borrar, sin
+        // control de rol quedaba abierta a cualquiera con acceso al módulo.
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para cambiar el estado de un comprobante.');
+
         if ($this->invoice->isFiscal && $status === InvoiceStatus::Draft->value) {
             $this->addError('status', 'No se puede volver a borrador una factura que ya tiene CAE.');
 
@@ -304,7 +310,7 @@ class Show extends Component
 
     public function render()
     {
-        $this->invoice->load('client', 'items', 'payments', 'relatedInvoice', 'creditNotes');
+        $this->invoice->load('client', 'items', 'payments', 'relatedInvoice', 'creditNotes', 'facturasDelRemito');
 
         return view('livewire.invoices.show', [
             'statuses' => InvoiceStatus::cases(),

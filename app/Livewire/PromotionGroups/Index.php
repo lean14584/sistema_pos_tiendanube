@@ -8,6 +8,7 @@ use App\Models\PromotionGroup;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -16,6 +17,10 @@ class Index extends Component
 {
     use ShowsToasts, WithPagination;
 
+    // Solo se setea server-side, desde edit()/cancel() — sin esto, el
+    // payload de Livewire podía mandar cualquier id y save() actualizaría
+    // ese registro en vez del que el usuario realmente abrió para editar.
+    #[Locked]
     public ?int $editingId = null;
 
     public string $name = '';
