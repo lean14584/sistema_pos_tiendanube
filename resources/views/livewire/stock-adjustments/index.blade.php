@@ -6,7 +6,7 @@
         $sectionTitle = 'text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider';
     @endphp
 
-    <form wire:submit="save" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-6 mb-8">
+    <form wire:submit="save" class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-6 mb-8">
         <h2 class="{{ $sectionTitle }} mb-4">Nuevo ajuste</h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">

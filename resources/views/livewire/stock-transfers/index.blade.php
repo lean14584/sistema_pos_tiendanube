@@ -10,12 +10,12 @@
     @endphp
 
     @if ($sucursales->count() < 2)
-        <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-8 text-center text-gray-400 dark:text-gray-500 mb-8">
+        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-8 text-center text-gray-400 dark:text-gray-500 mb-8">
             Necesitás al menos 2 sucursales activas para hacer un envío de mercadería.
         </div>
     @else
         <form wire:submit="save" class="mb-8">
-            <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
+            <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
               <div class="grid grid-cols-1 lg:grid-cols-12 lg:gap-x-8">
                 {{-- Columna izquierda: Productos --}}
                 <div class="lg:col-span-8">

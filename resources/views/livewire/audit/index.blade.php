@@ -34,7 +34,7 @@
 
     @php $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition'; @endphp
 
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
             <select wire:model.live="modelo" class="{{ $inputClass }}">
                 <option value="">Todos los modelos</option>

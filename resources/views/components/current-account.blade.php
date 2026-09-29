@@ -57,15 +57,15 @@
 
 <div class="space-y-6">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
             <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Total {{ strtolower($debitLabel) }}s</p>
             <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($totalDebit) }}</p>
         </div>
-        <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
             <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Total {{ strtolower($paymentLabel) }}s</p>
             <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($totalCredit) }}</p>
         </div>
-        <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
             <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">{{ $balance > 0 ? $balanceOwedLabel : 'Saldo' }}</p>
             <p class="text-lg font-semibold {{ $balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400' }}">
                 ${{ money(abs($balance)) }}
@@ -74,7 +74,7 @@
         </div>
     </div>
 
-    <form wire:submit="addPayment" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5">
+    <form wire:submit="addPayment" class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5">
         <h3 class="{{ $sectionTitle }} mb-3">Registrar {{ strtolower($paymentLabel) }}</h3>
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>

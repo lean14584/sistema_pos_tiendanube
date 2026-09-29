@@ -7,7 +7,7 @@
 @endphp
 
 <form wire:submit="save" class="max-w-5xl">
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
       <div class="grid grid-cols-1 lg:grid-cols-12 lg:gap-x-8">
         {{-- Columna izquierda: Ítems --}}
         <div class="lg:col-span-8">

@@ -32,7 +32,7 @@
     @endif
 
     {{-- Credenciales --}}
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
         <h2 class="{{ $sectionTitle }} mb-4">Conexión</h2>
 
         <form wire:submit="saveCredentials" class="space-y-4">
@@ -96,7 +96,7 @@
     </div>
 
     {{-- Traer de Tiendanube --}}
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
         <h2 class="{{ $sectionTitle }}">Traer de Tiendanube <span class="text-gray-400 normal-case font-normal">→ sistema</span></h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Necesita la conexión guardada.</p>
 
@@ -122,7 +122,7 @@
     </div>
 
     {{-- Enviar a Tiendanube --}}
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
         <h2 class="{{ $sectionTitle }}">Enviar a Tiendanube <span class="text-gray-400 normal-case font-normal">sistema →</span></h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4 flex items-start gap-1.5">
             <x-heroicon-o-bolt class="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
@@ -165,7 +165,7 @@
     </div>
 
     {{-- Sincronización automática --}}
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
         <h2 class="{{ $sectionTitle }}">Sincronización automática <span class="text-gray-400 normal-case font-normal">(webhooks)</span></h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
             Cuando en la tienda entra una venta o cambia un producto, cliente o categoría, se refleja solo en el sistema. Requiere que el sistema tenga una URL pública.

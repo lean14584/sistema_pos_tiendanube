@@ -3,7 +3,7 @@
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         @foreach ($conteos as $c)
-            <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+            <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
                 <x-dynamic-component :component="'heroicon-o-'.$c['icon']" class="w-5 h-5 text-sky-600 dark:text-sky-400 mb-2" />
                 <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ $c['value'] }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ $c['label'] }}</p>
@@ -11,7 +11,7 @@
         @endforeach
     </div>
 
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
         <div class="flex items-start gap-4">
             <div class="w-11 h-11 shrink-0 rounded-xl bg-sky-100 dark:bg-sky-500/10 flex items-center justify-center">
                 <x-heroicon-o-circle-stack class="w-6 h-6 text-sky-600 dark:text-sky-400" />
@@ -43,7 +43,7 @@
     </div>
 
     {{-- Respaldo automático --}}
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mt-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mt-6">
         <div class="flex items-center gap-2 mb-3">
             <x-heroicon-o-clock class="w-5 h-5 text-sky-600 dark:text-sky-400" />
             <h2 class="text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider">Respaldo automático</h2>

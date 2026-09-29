@@ -15,7 +15,7 @@
     @endif
 
     @if (! $openSession)
-        <form wire:submit="openSession" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-6 max-w-md">
+        <form wire:submit="openSession" class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-6 max-w-md">
             <div class="flex items-center gap-2 mb-4">
                 <x-heroicon-o-lock-open class="w-5 h-5 text-sky-600 dark:text-sky-400" />
                 <h2 class="font-medium text-gray-900 dark:text-gray-100">Abrir caja</h2>
@@ -38,26 +38,26 @@
     @else
         <div class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+                <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Apertura</p>
                     <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($openSession->opening_amount) }}</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ $openSession->opened_at->format('d/m/Y H:i') }} · {{ $openSession->user->name }}</p>
                 </div>
-                <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+                <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Ingresos</p>
                     <p class="text-lg font-semibold text-emerald-600 dark:text-emerald-400">${{ money($summary['ingresos']) }}</p>
                 </div>
-                <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+                <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Egresos</p>
                     <p class="text-lg font-semibold text-red-600 dark:text-red-400">${{ money($summary['egresos']) }}</p>
                 </div>
-                <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+                <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
                     <p class="text-xs text-gray-400 dark:text-gray-500 uppercase mb-1">Saldo esperado</p>
                     <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">${{ money($summary['expectedClosing']) }}</p>
                 </div>
             </div>
 
-            <form wire:submit="addMovement" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+            <form wire:submit="addMovement" class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
                 <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Agregar movimiento</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
                     <div>
@@ -85,7 +85,7 @@
                 </button>
             </form>
 
-            <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm">
+            <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm">
                 @if ($sessionMovements->isEmpty())
                     <div class="p-10 text-center text-sm text-gray-400 dark:text-gray-500">Sin movimientos todavía en esta caja.</div>
                 @else
@@ -151,7 +151,7 @@
                 @endif
             </div>
 
-            <form x-on:submit.prevent="confirmThen('¿Confirmás el cierre de caja?', () => $wire.closeSession())" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-4">
+            <form x-on:submit.prevent="confirmThen('¿Confirmás el cierre de caja?', () => $wire.closeSession())" class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4">
                 <div class="flex items-center gap-2 mb-3">
                     <x-heroicon-o-lock-closed class="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">Cerrar caja</h3>
@@ -180,7 +180,7 @@
 
     <div class="mt-10">
         <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Historial de cajas</h2>
-        <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm">
+        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm">
             @if ($closedSessions->isEmpty())
                 <div class="p-10 text-center text-gray-400 dark:text-gray-500">
                     <x-heroicon-o-banknotes class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />

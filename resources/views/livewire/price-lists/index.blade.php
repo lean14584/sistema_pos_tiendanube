@@ -7,7 +7,7 @@
     <x-page-header title="Listas de precios" subtitle="Cada lista ajusta el precio base por un porcentaje (ej.: Mayorista −15%, Tarjeta +10%). Se asigna por cliente y se puede elegir al vender." icon="currency-dollar" />
 
     {{-- Alta / edición --}}
-    <form wire:submit="save" class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm p-5 sm:p-6 mb-6">
+    <form wire:submit="save" class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-6 mb-6">
         <h3 class="{{ $sectionTitle }} mb-3">{{ $editingId ? 'Editar lista' : 'Nueva lista' }}</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="sm:col-span-1">

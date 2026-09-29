@@ -22,7 +22,7 @@
         </div>
     @endif
 
-    <div class="rounded-2xl border border-sky-100 dark:border-gray-800 bg-sky-50/50 dark:bg-gray-900 shadow-sm divide-y divide-sky-100/70 dark:divide-gray-800">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm divide-y divide-sky-100/70 dark:divide-gray-800">
         @foreach ($chequeos as $c)
             @php $e = $estilos[$c['estado']]; @endphp
             <div class="flex items-center gap-3 px-5 py-4">
