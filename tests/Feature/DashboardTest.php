@@ -175,7 +175,7 @@ class DashboardTest extends TestCase
 
         $component = Livewire::actingAs($vendedor)->test('dashboard');
 
-        $this->assertEqualsWithDelta(500.0, $component->viewData('stats')['totalRevenue'], 0.01);
+        $this->assertEqualsWithDelta(500.0, $component->viewData('stats')['currentMonthRevenue'], 0.01);
         $component->assertDontSee('Secreto de Norte');
         $component->assertDontSee('Ventas por sucursal'); // no ve el selector ni el desglose
     }
@@ -197,11 +197,11 @@ class DashboardTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test('dashboard')
-            ->assertSee('Total facturado (pagado)');
+            ->assertSee('Vendido en el mes corriente');
 
         Livewire::actingAs($cajero)
             ->test('dashboard')
-            ->assertDontSee('Total facturado (pagado)')
+            ->assertDontSee('Vendido en el mes corriente')
             ->assertSee('Pendiente de cobro');
     }
 

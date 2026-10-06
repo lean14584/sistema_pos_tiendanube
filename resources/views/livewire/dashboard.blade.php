@@ -41,7 +41,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         @if ($canSeeRevenue)
-            <x-stat-card label="Total facturado (pagado)" value="${{ money($stats['totalRevenue']) }}" icon="currency-dollar" color="emerald" />
+            <x-stat-card label="Vendido en el mes corriente" value="${{ money($stats['currentMonthRevenue']) }}" icon="currency-dollar" color="emerald" />
         @endif
         <x-stat-card label="Pendiente de cobro" value="${{ money($stats['pendingAmount']) }}" icon="clock" color="amber" />
         <x-stat-card label="Facturas vencidas" value="{{ $stats['overdueCount'] }}" icon="exclamation-triangle" color="red" />
@@ -57,7 +57,7 @@
             @else
                 <div class="space-y-3">
                     @foreach ($topProducts as $row)
-                        <div>
+                        <div title="{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}">
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
                                 <span class="text-gray-500 dark:text-gray-400 shrink-0">${{ money($row['total']) }}</span>

@@ -127,8 +127,18 @@ class Dashboard extends Component
         $overdue = $invoices->filter(fn (Invoice $i) => $i->is_overdue);
         $nonDraft = $invoices->reject(fn (Invoice $i) => $i->status === InvoiceStatus::Draft);
 
+        // "Vendido en el mes corriente": antes esta tarjeta mostraba el
+        // acumulado histórico completo (todas las facturas pagadas de
+        // siempre), que con el tiempo deja de ser un número útil para
+        // seguir el mes en curso. Se filtra por mes/año reales de HOY, sin
+        // depender del selector $year del resto del dashboard.
+        $hoy = now();
+        $paidMesCorriente = $paid->filter(
+            fn (Invoice $i) => $i->issue_date->year === $hoy->year && $i->issue_date->month === $hoy->month
+        );
+
         $stats = [
-            'totalRevenue' => $paid->sum(fn (Invoice $i) => $i->signoDeuda() * (float) $i->total),
+            'currentMonthRevenue' => $paidMesCorriente->sum(fn (Invoice $i) => $i->signoDeuda() * (float) $i->total),
             'pendingAmount' => $pending->sum(fn (Invoice $i) => $i->signoDeuda() * (float) $i->total),
             'overdueCount' => $overdue->count(),
             'totalInvoices' => $invoices->count(),
@@ -151,8 +161,9 @@ class Dashboard extends Component
             $signo = $invoice->signoDeuda();
             foreach ($invoice->items as $item) {
                 $key = $item->product_id ?? "sin-producto-{$item->description}";
-                $current = $topProducts->get($key, ['label' => $item->product?->name ?? $item->description, 'total' => 0.0]);
+                $current = $topProducts->get($key, ['label' => $item->product?->name ?? $item->description, 'total' => 0.0, 'count' => 0]);
                 $current['total'] += $signo * (float) $item->line_total;
+                $current['count']++;
                 $topProducts->put($key, $current);
             }
         }
