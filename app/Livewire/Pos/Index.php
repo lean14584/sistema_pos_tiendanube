@@ -538,6 +538,30 @@ class Index extends Component
     }
 
     /**
+     * Igual que descuentoManualMonto(), pero en NETO (sin IVA) y por línea —
+     * la base que usa el ticket para el desglose (Subtotal/Descuento/Neto
+     * gravado ahí trabaja todo en neto, ver TicketPrinterService::armarTotales).
+     * Se persiste en Invoice::descuento_especial_monto al vender, porque una
+     * vez guardado el discount_percent ya compuesto de cada línea no se puede
+     * separar de nuevo cuánto vino de "Mis Descuentos" contra el resto.
+     */
+    private function descuentoManualMontoNeto(): float
+    {
+        $pct = $this->discountGlobalPct();
+
+        if ($pct <= 0) {
+            return 0.0;
+        }
+
+        return round(collect($this->cart)->sum(function (array $line) use ($pct) {
+            $gross = (float) $line['unit_price'] * (float) $line['quantity'];
+            $afterManualPromo = $gross * (1 - $this->lineDiscountPctSinDescuentoGlobal($line) / 100);
+
+            return $afterManualPromo * $pct / 100;
+        }), 2);
+    }
+
+    /**
      * Combina dos descuentos porcentuales aplicados en cadena (no se suman
      * directo: 20% + 20% no es 40%, es 1-(0.8*0.8) = 36%).
      */
@@ -1088,11 +1112,12 @@ class Index extends Component
 
         $facturaOrigenSnapshot = $this->facturaOrigen;
         $itemsADevolverSnapshot = $this->itemsADevolver;
+        $descuentoEspecialMonto = $this->descuentoManualMontoNeto();
 
         $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use (
             $tipo, $clientId, $status, $puntoVentaNumero, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago,
             $modoCambio, $creditoTotal, $cartTotal, $facturaOrigenSnapshot, $itemsADevolverSnapshot,
-            $valeMonto, $voucherAplicado,
+            $valeMonto, $voucherAplicado, $descuentoEspecialMonto,
         ) {
             $invoice = Invoice::create([
                 'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
@@ -1103,6 +1128,7 @@ class Index extends Component
                 'due_date' => now()->toDateString(),
                 'tax_rate' => 0,
                 'status' => $status,
+                'descuento_especial_monto' => $descuentoEspecialMonto,
             ]);
 
             foreach ($this->cart as $item) {
@@ -1163,6 +1189,13 @@ class Index extends Component
                     $created = $invoice->payments()->create([
                         'method' => $payment['method'],
                         'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
+                        // Cuánto se descontó de ESTE pago puntual por el
+                        // descuento de medio de pago — para mostrarlo como
+                        // línea separada en el ticket (ver
+                        // TicketPrinterService::armarPagos()).
+                        'discount_amount' => $aplicaDescuentoPorMedioDePago
+                            ? round((float) $payment['amount'] - $this->montoRealPago($payment), 2)
+                            : 0,
                     ]);
 
                     // Una Devolución es plata que SALE de la caja, no que

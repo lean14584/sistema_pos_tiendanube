@@ -310,6 +310,9 @@ class Edit extends Component
                         $created = $this->invoice->payments()->create([
                             'method' => $payment['method'],
                             'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
+                            'discount_amount' => $aplicaDescuentoPorMedioDePago
+                                ? round((float) $payment['amount'] - $this->montoRealPago($payment), 2)
+                                : 0,
                         ]);
 
                         $tipoNuevo === TipoComprobanteInterno::Devolucion || $tipoNuevo->esNotaCredito()

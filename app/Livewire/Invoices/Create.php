@@ -317,6 +317,9 @@ class Create extends Component
                         $created = $invoice->payments()->create([
                             'method' => $payment['method'],
                             'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
+                            'discount_amount' => $aplicaDescuentoPorMedioDePago
+                                ? round((float) $payment['amount'] - $this->montoRealPago($payment), 2)
+                                : 0,
                         ]);
 
                         $tipo === TipoComprobanteInterno::Devolucion

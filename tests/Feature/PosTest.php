@@ -621,6 +621,13 @@ class PosTest extends TestCase
         $this->assertDatabaseHas('invoice_payments', ['method' => 'tarjeta', 'amount' => 5000]);
         $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 4250]);
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 4250, 'source' => 'venta']);
+
+        // Cuánto se descontó de CADA pago, para el desglose por medio de
+        // pago en el ticket (ver TicketPrinterService::armarPagos): tarjeta
+        // no tiene % configurado, efectivo sí (15% de 5000 = 750).
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'tarjeta', 'amount' => 5000, 'discount_amount' => 0]);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 4250, 'discount_amount' => 750]);
+        $this->assertEqualsWithDelta(0.0, (float) $invoice->descuento_especial_monto, 0.01);
     }
 
     public function test_descuento_por_medio_de_pago_no_se_aplica_si_queda_saldo_en_cuenta_corriente(): void

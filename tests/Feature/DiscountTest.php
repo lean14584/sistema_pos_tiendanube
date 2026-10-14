@@ -202,6 +202,13 @@ class DiscountTest extends TestCase
         $invoice = Invoice::latest('id')->firstOrFail();
         $this->assertEqualsWithDelta(850.0, (float) $invoice->total, 0.01);
         $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 850]);
+
+        // El monto de "Mis Descuentos" queda guardado aparte (para el
+        // desglose del ticket, ver TicketPrinterService::armarTotales) y el
+        // pago en efectivo no tiene descuento propio: compitieron y ganó
+        // Mis Descuentos.
+        $this->assertEqualsWithDelta(150.0, (float) $invoice->descuento_especial_monto, 0.01);
+        $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 850, 'discount_amount' => 0]);
     }
 
     public function test_solo_muestra_descuentos_vigentes_en_el_selector_del_pos(): void

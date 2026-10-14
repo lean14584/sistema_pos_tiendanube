@@ -216,13 +216,26 @@ class TicketPrinterService
         // Neto gravado/exento ya vienen netos del descuento (ver HasLineTotal).
         // Para que el Descuento se pueda mostrar sin que el ticket parezca no
         // cerrar, primero se muestra el Subtotal bruto (sin descuento) y
-        // recién ahí se resta: Subtotal − Descuento = Neto gravado + Exento.
+        // recién ahí se resta: Subtotal − Descuento − Descuento Mis Descuentos
+        // = Neto gravado + Exento. El descuento por medio de pago (efectivo/
+        // transferencia) no se desglosa acá: se muestra en "Medios de pago"
+        // (ver armarPagos), ya que ahí es donde conceptualmente corresponde
+        // mostrar el ahorro por elegir ese medio.
         $bruto = $invoice->items->sum(fn ($i) => (float) $i->quantity * (float) $i->unit_price);
-        $descuento = $bruto - ((float) $invoice->neto_gravado + (float) $invoice->neto_exento);
+        $descuentoTotal = $bruto - ((float) $invoice->neto_gravado + (float) $invoice->neto_exento);
+        $descuentoEspecial = min($descuentoTotal, (float) $invoice->descuento_especial_monto);
+        $descuentoProducto = $descuentoTotal - $descuentoEspecial;
 
-        if ($descuento > 0.004) {
+        if ($descuentoTotal > 0.004) {
             $this->addColumns('Subtotal', '$'.$this->money($bruto));
-            $this->addColumns('Descuento', '-$'.$this->money($descuento));
+
+            if ($descuentoProducto > 0.004) {
+                $this->addColumns('Descuento', '-$'.$this->money($descuentoProducto));
+            }
+
+            if ($descuentoEspecial > 0.004) {
+                $this->addColumns('Descuento Mis Descuentos', '-$'.$this->money($descuentoEspecial));
+            }
         }
 
         // Factura C (Monotributista/Exento) no discrimina IVA: mostrar
@@ -256,6 +269,10 @@ class TicketPrinterService
         $this->addLeft('Medios de pago', bold: true);
         foreach ($invoice->payments as $payment) {
             $this->addColumns($payment->method->label(), '$'.$this->money($payment->amount));
+
+            if ((float) $payment->discount_amount > 0.004) {
+                $this->addColumns('Descuento '.$payment->method->label(), '-$'.$this->money($payment->discount_amount));
+            }
         }
 
         $vuelto = $invoice->payments->sum('amount') - (float) $invoice->total;

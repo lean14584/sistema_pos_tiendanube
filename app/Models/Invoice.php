@@ -20,7 +20,7 @@ use Illuminate\Support\Collection;
 #[Fillable([
     'number', 'client_id', 'sucursal_id', 'punto_venta', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
     'tipo_comprobante_interno', 'related_invoice_id', 'remito_id', 'cambio_devolucion_id', 'afecta_stock', 'mp_external_reference',
-    'tiendanube_order_id',
+    'tiendanube_order_id', 'descuento_especial_monto',
 ])]
 class Invoice extends Model
 {
@@ -58,6 +58,7 @@ class Invoice extends Model
             'issue_date' => 'date',
             'due_date' => 'date',
             'tax_rate' => 'decimal:2',
+            'descuento_especial_monto' => 'decimal:2',
             'status' => InvoiceStatus::class,
             'tipo_comprobante_interno' => TipoComprobanteInterno::class,
             'cae_vencimiento' => 'date',
