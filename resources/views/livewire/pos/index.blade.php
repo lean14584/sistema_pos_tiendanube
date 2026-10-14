@@ -293,31 +293,33 @@
                     </div>
 
                     {{--
-                        Medio + monto en un solo renglón, con un botón "Cargar" explícito:
-                        antes method/amount quedaban en dos líneas y se guardaban solos
-                        apenas se tipeaba (wire:model.live), sin ningún aviso de que ya
-                        había quedado cargado - el cajero no sabía si hacía falta tocar
-                        Enter o no. Ahora quedan "deferred" (wire:model sin .live) y recién
-                        se sincronizan al tocar "Cargar" (o Enter, wire:keydown.enter en el
-                        input), que es además la señal visual de que el pago quedó tomado.
+                        Medio y monto comparten renglón al 50/50, con un botón
+                        "Cargar" explícito ABAJO (ancho completo): antes method/
+                        amount quedaban en dos líneas y se guardaban solos apenas
+                        se tipeaba (wire:model.live), sin ningún aviso de que ya
+                        había quedado cargado - el cajero no sabía si hacía falta
+                        tocar Enter o no. Ahora quedan "deferred" (wire:model sin
+                        .live) y recién se sincronizan al tocar "Cargar" (o Enter,
+                        wire:keydown.enter en el input), que es además la señal
+                        visual de que el pago quedó tomado.
                     --}}
                     @forelse ($payments as $index => $payment)
                         <div wire:key="pay-{{ $index }}" class="space-y-1.5">
                             <div class="flex items-center gap-2">
-                                <select wire:model="payments.{{ $index }}.method" class="flex-1 min-w-0 {{ $inputClass }}">
+                                <select wire:model="payments.{{ $index }}.method" class="w-1/2 {{ $inputClass }}">
                                     <option value="">Elegí un medio</option>
                                     @foreach ($paymentMethods as $method)
                                         <option value="{{ $method->value }}">{{ $method->label() }}</option>
                                     @endforeach
                                 </select>
-                                <input type="number" min="0" step="0.01" wire:model="payments.{{ $index }}.amount" wire:keydown.enter="$refresh" placeholder="Monto" class="w-24 shrink-0 {{ $inputClass }} text-right">
-                                <button type="button" wire:click="$refresh" class="shrink-0 rounded-lg bg-sky-600 hover:bg-sky-700 px-2.5 py-2 text-xs font-semibold text-white shadow-sm active:scale-[0.98] transition-all">
-                                    Cargar
-                                </button>
+                                <input type="number" min="0" step="0.01" wire:model="payments.{{ $index }}.amount" wire:keydown.enter="$refresh" placeholder="Monto" class="w-1/2 {{ $inputClass }} text-right">
                                 <button type="button" wire:click="removePayment({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
                                     <x-heroicon-o-x-mark class="w-5 h-5" />
                                 </button>
                             </div>
+                            <button type="button" wire:click="$refresh" class="w-full rounded-lg bg-sky-600 hover:bg-sky-700 px-3 py-1.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98] transition-all">
+                                Cargar
+                            </button>
                             @if ($this->paymentDiscountPct($payment) > 0 && (float) ($payment['amount'] ?? 0) > 0)
                                 <p class="text-xs text-emerald-600 dark:text-emerald-400 text-right">
                                     -{{ rtrim(rtrim(number_format($this->paymentDiscountPct($payment), 2), '0'), '.') }}% → cobrás ${{ money($this->montoRealPago($payment)) }}

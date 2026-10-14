@@ -92,6 +92,9 @@ class Index extends Component
 
     public ?int $discount_id = null;
 
+    /** Lo que había que cubrir (total u objetivo con vale/cambio) justo antes de tocar discount_id, para decidir en updatedDiscountId() si corresponde reescalar. */
+    private float $objetivoAntesDeCambiarDescuento = 0.0;
+
     public function mount(): void
     {
         $cf = Client::consumidorFinal();
@@ -703,6 +706,55 @@ class Index extends Component
     private function objetivoACobrar(): float
     {
         return $this->itemsADevolver !== [] ? max(0, $this->diferencia()) : round($this->total(), 2);
+    }
+
+    /** Antes de aplicar el nuevo discount_id, guarda cuánto había que cubrir con el valor VIEJO. */
+    public function updatingDiscountId(): void
+    {
+        $this->objetivoAntesDeCambiarDescuento = round($this->objetivoACobrar() - $this->valeMontoPendiente(), 2);
+    }
+
+    /**
+     * Si los pagos ya cargados cubrían el 100% de lo que había que pagar
+     * ANTES de este cambio de "Mis Descuentos", se reescalan proporcionalmente
+     * para seguir cubriendo el 100% del nuevo objetivo — sin esto, sacar o
+     * cambiar el descuento manual después de cargar el pago dejaba un monto
+     * "huérfano" (el viejo) y la venta quedaba con saldo a cuenta corriente
+     * sin que el cajero lo haya pedido. Si el pago era PARCIAL a propósito
+     * (el cajero quería dejar algo en cta cte), no se toca nada.
+     */
+    public function updatedDiscountId(): void
+    {
+        if ($this->payments === [] || $this->objetivoAntesDeCambiarDescuento <= 0) {
+            return;
+        }
+
+        $pagadoAntes = round($this->paymentsTotal(), 2);
+
+        if ($pagadoAntes + 0.01 < $this->objetivoAntesDeCambiarDescuento) {
+            return;
+        }
+
+        $nuevoObjetivo = round($this->objetivoACobrar() - $this->valeMontoPendiente(), 2);
+
+        if ($nuevoObjetivo <= 0) {
+            return;
+        }
+
+        $factor = $nuevoObjetivo / $pagadoAntes;
+        $acumulado = 0.0;
+        $ultimo = array_key_last($this->payments);
+
+        foreach ($this->payments as $i => $payment) {
+            if ($i === $ultimo) {
+                $nuevoMonto = round($nuevoObjetivo - $acumulado, 2);
+            } else {
+                $nuevoMonto = round((float) $payment['amount'] * $factor, 2);
+                $acumulado += $nuevoMonto;
+            }
+
+            $this->payments[$i]['amount'] = (string) max(0, $nuevoMonto);
+        }
     }
 
     /** Monto del vale ya seleccionado (aunque todavía no se haya confirmado el cobro). */

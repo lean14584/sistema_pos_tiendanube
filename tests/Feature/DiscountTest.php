@@ -213,4 +213,60 @@ class DiscountTest extends TestCase
             ->assertSee('Vigente')
             ->assertDontSee('Apagado');
     }
+
+    /**
+     * Reproduce el bug reportado: se carga un pago en efectivo que cubre el
+     * 100% del total CON "Mis Descuentos" activo, y después se saca el
+     * descuento. El monto del pago se reescala para seguir cubriendo el
+     * 100% del nuevo total (sin esto, quedaba un saldo a cuenta corriente
+     * no pedido por el cajero).
+     */
+    public function test_al_sacar_mis_descuentos_reescala_el_pago_que_cubria_el_total(): void
+    {
+        $admin = $this->admin();
+        $this->abrirCaja($admin);
+        $product = Product::create(['name' => 'Cafetero', 'price' => 26800, 'iva_rate' => 0, 'stock' => 10]);
+        $discount = Discount::create(['name' => 'Promo', 'type' => 'percent', 'value' => 25, 'active' => true]);
+
+        $pos = Livewire::actingAs($admin)->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->set('discount_id', $discount->id)
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo');
+
+        // $26800 - 25% = $20100, pago prellenado cubre el 100%.
+        $this->assertEqualsWithDelta(20100.0, $pos->instance()->total(), 0.01);
+        $this->assertEqualsWithDelta(20100.0, (float) $pos->get('payments.0.amount'), 0.01);
+
+        $pos->set('discount_id', null);
+
+        // Se sacó el descuento: el total vuelve a $26800 y el pago se
+        // reescala solo para seguir cubriendo el 100%, sin saldo a cta cte.
+        $this->assertEqualsWithDelta(26800.0, $pos->instance()->total(), 0.01);
+        $this->assertEqualsWithDelta(26800.0, (float) $pos->get('payments.0.amount'), 0.01);
+        $this->assertEqualsWithDelta(0.0, $pos->instance()->saldoPendiente(), 0.01);
+    }
+
+    /** Si el pago era parcial a propósito (deja saldo en cta cte), no se toca al cambiar el descuento. */
+    public function test_pago_parcial_no_se_reescala_al_cambiar_mis_descuentos(): void
+    {
+        $admin = $this->admin();
+        $this->abrirCaja($admin);
+        $product = Product::create(['name' => 'Cafetero', 'price' => 26800, 'iva_rate' => 0, 'stock' => 10]);
+        $discount = Discount::create(['name' => 'Promo', 'type' => 'percent', 'value' => 25, 'active' => true]);
+
+        $pos = Livewire::actingAs($admin)->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->set('discount_id', $discount->id)
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('payments.0.amount', '10000');
+
+        $pos->set('discount_id', null);
+
+        // Pago parcial a propósito: se deja intacto, el saldo a cta cte
+        // simplemente refleja el nuevo total sin descuento.
+        $this->assertEqualsWithDelta(10000.0, (float) $pos->get('payments.0.amount'), 0.01);
+        $this->assertEqualsWithDelta(16800.0, $pos->instance()->saldoPendiente(), 0.01);
+    }
 }
