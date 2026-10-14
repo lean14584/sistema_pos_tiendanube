@@ -3,7 +3,7 @@
 
     @php $inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition'; @endphp
 
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5 mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             @if ($puedeVerTodasLasSucursales)
                 <select wire:model.live="sucursal_id" class="{{ $inputClass }}">
@@ -105,7 +105,7 @@
     </div>
 
     @if ($bajaBatchId !== null)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" wire:click.self="cancelarBaja">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" wire:click.self="cancelarBaja" x-data x-on:keydown.escape.window="$wire.cancelarBaja()">
             <div class="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 w-full max-w-sm p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Dar de baja lote</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Descuenta stock del producto (motivo: Vencimiento) y reduce la cantidad restante del lote.</p>

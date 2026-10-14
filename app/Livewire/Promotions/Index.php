@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -23,6 +24,16 @@ class Index extends Component
     // ese registro en vez del que el usuario realmente abrió para editar.
     #[Locked]
     public ?int $editingId = null;
+
+    #[Url]
+    public string $query = '';
+
+    public function updating(string $name): void
+    {
+        if ($name === 'query') {
+            $this->resetPage();
+        }
+    }
 
     public string $product_id = '';
 
@@ -190,12 +201,21 @@ class Index extends Component
 
     public function render()
     {
-        return view('livewire.promotions.index', [
+        $promotions = Promotion::with('product')
+            ->when($this->query !== '', function ($q) {
+                $term = '%'.$this->query.'%';
+                $q->whereHas('product', fn ($q2) => $q2->where('name', 'like', $term)->orWhere('sku', 'like', $term));
+            })
             // MEJORA: sin paginar, esta pantalla acumula sin límite (a
             // diferencia de Users/Sucursales/Audit, que sí paginan) —
             // con catálogos que juntan promociones estacionales sin
             // borrarlas, esto degradaba con el tiempo.
-            'promotions' => Promotion::with('product')->latest()->paginate(20),
+            ->latest()
+            ->paginate(20);
+
+        return view('livewire.promotions.index', [
+            'promotions' => $promotions,
+            'hasAnyPromotions' => Promotion::query()->exists(),
             'types' => PromotionType::cases(),
         ]);
     }

@@ -8,7 +8,7 @@
 @endphp
 
 <form wire:submit="save" class="max-w-5xl">
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
       <div class="grid grid-cols-1 lg:grid-cols-12 lg:gap-x-8">
         {{-- Columna izquierda: Productos --}}
         <div class="lg:col-span-8">
@@ -161,7 +161,7 @@
 
                 {{-- Resumen de totales, pegado a la lista de productos --}}
                 <div class="flex justify-end">
-                    <div class="w-full max-w-xs space-y-1.5 text-sm rounded-xl border border-sky-300 dark:border-sky-500/30 bg-sky-100 dark:bg-sky-500/20 p-4">
+                    <div class="w-full max-w-xs space-y-1.5 text-sm rounded-xl border border-sky-400 dark:border-sky-500/40 bg-sky-200 dark:bg-sky-500/30 p-4">
                         <div class="flex justify-between text-gray-600 dark:text-gray-400">
                             <span>Subtotal</span>
                             <span>${{ money($this->subtotal()) }}</span>

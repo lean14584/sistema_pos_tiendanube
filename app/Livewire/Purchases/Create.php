@@ -331,7 +331,7 @@ class Create extends Component
             StockAdjuster::apply($itemsParaStock, 1, $sucursalId);
 
             foreach ($itemsParaStock as $item) {
-                if ($sucursalId !== null && ! empty($item['expiration_date'])) {
+                if (config('features.product_batches') && $sucursalId !== null && ! empty($item['expiration_date'])) {
                     ProductBatch::create([
                         'product_id' => $item['product_id'],
                         'sucursal_id' => $sucursalId,

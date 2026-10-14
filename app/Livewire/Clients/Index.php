@@ -6,6 +6,7 @@ use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Client;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -13,6 +14,16 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use ShowsToasts, WithPagination;
+
+    #[Url]
+    public string $query = '';
+
+    public function updating(string $name): void
+    {
+        if ($name === 'query') {
+            $this->resetPage();
+        }
+    }
 
     public function delete(Client $client): void
     {
@@ -55,8 +66,20 @@ class Index extends Component
 
     public function render()
     {
+        $clients = Client::query()
+            ->when($this->query !== '', function ($q) {
+                $term = '%'.$this->query.'%';
+                $q->where(fn ($q2) => $q2->where('name', 'like', $term)
+                    ->orWhere('email', 'like', $term)
+                    ->orWhere('phone', 'like', $term)
+                    ->orWhere('tax_id', 'like', $term));
+            })
+            ->orderBy('name')
+            ->paginate(20);
+
         return view('livewire.clients.index', [
-            'clients' => Client::orderBy('name')->paginate(20),
+            'clients' => $clients,
+            'hasAnyClients' => Client::query()->exists(),
         ]);
     }
 }

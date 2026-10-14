@@ -1,6 +1,6 @@
 <div>
 @if ($mostrarModal)
-    <div x-data="{ open: true }" x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div x-data="{ open: true }" x-show="open" x-cloak x-on:keydown.escape.window="open = false" class="fixed inset-0 z-50 flex items-center justify-center px-4">
         <div class="fixed inset-0 bg-gray-900/60"></div>
 
         <div class="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">

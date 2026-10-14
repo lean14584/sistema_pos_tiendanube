@@ -7,6 +7,7 @@ use App\Livewire\Concerns\ShowsToasts;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -14,6 +15,16 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use ShowsToasts, WithPagination;
+
+    #[Url]
+    public string $query = '';
+
+    public function updating(string $name): void
+    {
+        if ($name === 'query') {
+            $this->resetPage();
+        }
+    }
 
     public function delete(User $user): void
     {
@@ -58,11 +69,18 @@ class Index extends Component
                         $inner->where('sucursal_id', $actor->sucursal_id)->whereIn('role', [Role::Vendedor, Role::Cajero]);
                     });
             }))
+            ->when($this->query !== '', function ($q) {
+                $term = '%'.$this->query.'%';
+                $q->where(fn ($q2) => $q2->where('name', 'like', $term)
+                    ->orWhere('username', 'like', $term)
+                    ->orWhere('email', 'like', $term));
+            })
             ->orderBy('name')
             ->paginate(20);
 
         return view('livewire.users.index', [
             'users' => $users,
+            'hasAnyUsers' => User::query()->exists(),
         ]);
     }
 }

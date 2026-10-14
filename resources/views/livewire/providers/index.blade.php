@@ -15,14 +15,31 @@
         </x-slot:actions>
     </x-page-header>
 
+    <div class="mb-4">
+        <div class="relative">
+            <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+                type="text"
+                wire:model.live.debounce.300ms="query"
+                placeholder="Buscar por nombre, email, teléfono o CUIT..."
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
+            >
+        </div>
+    </div>
+
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">
-        @if ($providers->isEmpty())
+        @if (! $hasAnyProviders)
             <div class="p-12 text-center text-gray-400 dark:text-gray-500">
                 <x-heroicon-o-truck class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
                 <p class="text-sm">Todavía no agregaste proveedores.</p>
                 <a href="{{ route('providers.create') }}" wire:navigate class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
                     Agregar el primero
                 </a>
+            </div>
+        @elseif ($providers->isEmpty())
+            <div class="p-12 text-center text-gray-400 dark:text-gray-500">
+                <x-heroicon-o-magnifying-glass class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
+                <p class="text-sm">Sin resultados para "{{ $query }}".</p>
             </div>
         @else
             <div class="hidden sm:block overflow-x-auto">

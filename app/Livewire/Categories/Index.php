@@ -6,12 +6,16 @@ use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Category;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
 class Index extends Component
 {
     use ShowsToasts;
+
+    #[Url]
+    public string $query = '';
 
     public function delete(Category $category): void
     {
@@ -30,8 +34,18 @@ class Index extends Component
 
     public function render()
     {
+        $categories = Category::withCount('products')
+            ->when($this->query !== '', function ($q) {
+                $term = '%'.$this->query.'%';
+                $q->where(fn ($q2) => $q2->where('name', 'like', $term)
+                    ->orWhere('description', 'like', $term));
+            })
+            ->orderBy('name')
+            ->get();
+
         return view('livewire.categories.index', [
-            'categories' => Category::withCount('products')->orderBy('name')->get(),
+            'categories' => $categories,
+            'hasAnyCategories' => Category::query()->exists(),
         ]);
     }
 }

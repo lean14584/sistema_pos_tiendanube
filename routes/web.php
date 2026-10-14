@@ -206,6 +206,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/cartel', PromotionPosterController::class)->name('poster');
     });
 
+    Route::middleware('module:discounts')->prefix('mis-descuentos')->name('discounts.')->group(function () {
+        Route::get('/', App\Livewire\Discounts\Index::class)->name('index');
+    });
+
     Route::middleware('module:providers')->prefix('providers')->name('providers.')->group(function () {
         Route::get('/', ProviderIndex::class)->name('index');
         Route::get('/new', ProviderCreate::class)->name('create');

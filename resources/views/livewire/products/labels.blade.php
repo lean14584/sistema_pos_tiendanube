@@ -110,7 +110,7 @@
                     <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-800 pl-3 pr-1.5 py-1 text-sm text-gray-700 dark:text-gray-200">
                         {{ $row['name'] }}
                         <input type="number" min="1" wire:model.live="selected.{{ $id }}.qty" class="w-14 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-1.5 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                        <button type="button" wire:click="removeProduct({{ $id }})" class="text-gray-400 hover:text-red-500">✕</button>
+                        <button type="button" wire:click="removeProduct({{ $id }})" aria-label="Quitar {{ $row['name'] }}" class="text-gray-400 hover:text-red-500">✕</button>
                     </span>
                 @endforeach
             </div>

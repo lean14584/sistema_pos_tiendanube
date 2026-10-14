@@ -6,6 +6,7 @@ use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Provider;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -13,6 +14,16 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use ShowsToasts, WithPagination;
+
+    #[Url]
+    public string $query = '';
+
+    public function updating(string $name): void
+    {
+        if ($name === 'query') {
+            $this->resetPage();
+        }
+    }
 
     public function delete(Provider $provider): void
     {
@@ -28,6 +39,17 @@ class Index extends Component
             return;
         }
 
+        // Mismo chequeo que Clients\Index::delete(): provider_payments.provider_id
+        // es cascadeOnDelete y puede haber pagos de cuenta corriente sin ninguna
+        // compra asociada (Providers\Account::addPayment()). Sin este chequeo, el
+        // cascade borra el pago por debajo de CashLinker::unlinkProviderPayment(),
+        // dejando un cash_movement huérfano que ensucia el arqueo de caja.
+        if ($provider->payments()->exists()) {
+            $this->toastError("No se puede eliminar \"{$provider->name}\" porque tiene pagos registrados.");
+
+            return;
+        }
+
         $provider->delete();
 
         $this->toastSuccess('Proveedor eliminado.');
@@ -35,8 +57,20 @@ class Index extends Component
 
     public function render()
     {
+        $providers = Provider::query()
+            ->when($this->query !== '', function ($q) {
+                $term = '%'.$this->query.'%';
+                $q->where(fn ($q2) => $q2->where('name', 'like', $term)
+                    ->orWhere('email', 'like', $term)
+                    ->orWhere('phone', 'like', $term)
+                    ->orWhere('tax_id', 'like', $term));
+            })
+            ->orderBy('name')
+            ->paginate(20);
+
         return view('livewire.providers.index', [
-            'providers' => Provider::orderBy('name')->paginate(20),
+            'providers' => $providers,
+            'hasAnyProviders' => Provider::query()->exists(),
         ]);
     }
 }

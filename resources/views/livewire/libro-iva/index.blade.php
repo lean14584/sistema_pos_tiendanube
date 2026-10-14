@@ -11,7 +11,7 @@
         </x-slot:actions>
     </x-page-header>
 
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
         <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
             <input type="date" wire:model.live="fromDate" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
@@ -42,12 +42,12 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <x-stat-card label="Neto gravado" value="${{ money($totalNeto) }}" icon="banknotes" />
         <x-stat-card label="IVA liquidado" value="${{ money($totalIva) }}" icon="receipt-percent" />
-        <x-stat-card label="Exento" value="${{ money($totalExento) }}" icon="no-symbol" accent="text-gray-600 bg-gradient-to-br from-gray-50 to-gray-100/60 dark:text-gray-400 dark:from-gray-500/15 dark:to-gray-500/5" />
-        <x-stat-card label="Total" value="${{ money($totalGeneral) }}" icon="calculator" accent="text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:text-emerald-400 dark:from-emerald-500/15 dark:to-emerald-500/5" />
+        <x-stat-card label="Exento" value="${{ money($totalExento) }}" icon="no-symbol" color="gray" />
+        <x-stat-card label="Total" value="${{ money($totalGeneral) }}" icon="calculator" color="emerald" />
     </div>
 
     @if ($resumen->isNotEmpty())
-        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 mb-6">
+        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5 mb-6">
             <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Resumen por alícuota</h2>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                 @foreach ($resumen as $item)
@@ -61,7 +61,7 @@
         </div>
     @endif
 
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm overflow-hidden">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm overflow-hidden">
         @if ($rows->isEmpty())
             <div class="p-12 text-center text-gray-400 dark:text-gray-500">
                 <x-heroicon-o-document-text class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />

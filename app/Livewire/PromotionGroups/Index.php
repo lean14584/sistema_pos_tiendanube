@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -22,6 +23,16 @@ class Index extends Component
     // ese registro en vez del que el usuario realmente abrió para editar.
     #[Locked]
     public ?int $editingId = null;
+
+    #[Url]
+    public string $query = '';
+
+    public function updating(string $name): void
+    {
+        if ($name === 'query') {
+            $this->resetPage();
+        }
+    }
 
     public string $name = '';
 
@@ -148,8 +159,14 @@ class Index extends Component
 
     public function render()
     {
+        $groups = PromotionGroup::with('products')
+            ->when($this->query !== '', fn ($q) => $q->where('name', 'like', '%'.$this->query.'%'))
+            ->latest()
+            ->paginate(20);
+
         return view('livewire.promotion-groups.index', [
-            'groups' => PromotionGroup::with('products')->latest()->paginate(20),
+            'groups' => $groups,
+            'hasAnyGroups' => PromotionGroup::query()->exists(),
         ]);
     }
 }

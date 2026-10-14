@@ -9,7 +9,7 @@ class Permissions
     /** @var array<string, string[]> */
     public const ROLE_PERMISSIONS = [
         'admin' => [
-            'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'products', 'products-manage', 'categories', 'price-lists', 'promotions',
+            'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'products', 'products-manage', 'categories', 'price-lists', 'promotions', 'discounts',
             'stock-adjustments', 'stock-transfers', 'product-batches', 'providers', 'purchases', 'cash-register', 'vencimientos', 'reports', 'users', 'messages', 'tasks',
             'company-settings', 'sucursales', 'audit', 'libro-iva', 'price-check', 'backups', 'health', 'data-import',
         ],
@@ -20,10 +20,10 @@ class Permissions
         // vive en los componentes Livewire, no acá (ver Users\Index/Create/Edit
         // y Audit\Index).
         'encargado' => [
-            'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'products-manage', 'categories', 'price-lists', 'promotions',
+            'dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'products-manage', 'categories', 'price-lists', 'promotions', 'discounts',
             'stock-adjustments', 'stock-transfers', 'product-batches', 'providers', 'purchases', 'cash-register', 'users', 'audit', 'reports', 'messages', 'tasks', 'price-check',
         ],
-        'vendedor' => ['dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'products-manage', 'categories', 'price-lists', 'promotions', 'stock-adjustments', 'stock-transfers', 'product-batches', 'reports', 'messages', 'tasks', 'price-check', 'cash-register'],
+        'vendedor' => ['dashboard', 'pos', 'quotes', 'invoices', 'clients', 'cobranzas', 'vencimientos', 'products', 'products-manage', 'categories', 'price-lists', 'promotions', 'discounts', 'stock-adjustments', 'stock-transfers', 'product-batches', 'reports', 'messages', 'tasks', 'price-check', 'cash-register'],
         // Cajero tiene 'products' (consulta) pero no 'products-manage': puede ver
         // el catálogo y el precio, no crear/editar/borrar productos ni ver su historial.
         'cajero' => ['dashboard', 'pos', 'invoices', 'clients', 'cobranzas', 'cash-register', 'products', 'messages', 'tasks', 'price-check'],

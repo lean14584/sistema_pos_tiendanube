@@ -33,6 +33,7 @@
         ['module' => 'categories', 'group' => 'Productos', 'pattern' => 'categories.*', 'href' => route('categories.index'), 'label' => 'Categorías', 'icon' => 'tag'],
         ['module' => 'price-lists', 'group' => 'Productos', 'pattern' => 'price-lists.*', 'href' => $safeRoute('price-lists.index'), 'label' => 'Listas de precios', 'icon' => 'currency-dollar'],
         ['module' => 'promotions', 'group' => 'Productos', 'pattern' => 'promotions.*', 'href' => route('promotions.index'), 'label' => 'Promociones', 'icon' => 'gift'],
+        ['module' => 'discounts', 'group' => 'Productos', 'pattern' => 'discounts.*', 'href' => route('discounts.index'), 'label' => 'Mis Descuentos', 'icon' => 'receipt-percent'],
         ['module' => 'stock-adjustments', 'group' => 'Productos', 'pattern' => 'stock-adjustments.*', 'href' => route('stock-adjustments.index'), 'label' => 'Ajustes de Stock', 'icon' => 'wrench'],
         ['module' => 'stock-transfers', 'group' => 'Productos', 'pattern' => 'stock-transfers.*', 'href' => $safeRoute('stock-transfers.index'), 'label' => 'Envío de Mercadería', 'icon' => 'arrows-right-left'],
         ['module' => 'product-batches', 'group' => 'Productos', 'pattern' => 'product-batches.*', 'href' => $safeRoute('product-batches.index'), 'label' => 'Lotes y Vencimientos', 'icon' => 'calendar-days', 'badge' => $expiringBatchesCount],
@@ -151,20 +152,6 @@
             </a>
         @endforeach
 
-        {{-- Cerrar sesión, arriba y a mano (igual que un ítem del menú) --}}
-        @if ($user)
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button
-                    type="submit"
-                    class="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 hover:bg-red-600 hover:text-white transition-all"
-                >
-                    <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
-                    <span class="flex-1 text-left">Cerrar sesión</span>
-                </button>
-            </form>
-        @endif
-
         {{-- Grupos plegables --}}
         @foreach ($groupedItems as $groupName => $items)
             @php
@@ -207,6 +194,20 @@
                 </div>
             </div>
         @endforeach
+
+        {{-- Cerrar sesión, al final del menú --}}
+        @if ($user)
+            <form method="POST" action="{{ route('logout') }}" class="pt-1.5">
+                @csrf
+                <button
+                    type="submit"
+                    class="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 hover:bg-red-600 hover:text-white transition-all"
+                >
+                    <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
+                    <span class="flex-1 text-left">Cerrar sesión</span>
+                </button>
+            </form>
+        @endif
     </nav>
 
     @if ($user)

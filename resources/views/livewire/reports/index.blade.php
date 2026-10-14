@@ -14,7 +14,7 @@
         </x-slot:actions>
     </x-page-header>
 
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-4 mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
         <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</label>
             <input type="date" wire:model.live="fromDate" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
@@ -60,7 +60,7 @@
         </div>
     </div>
 
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-4 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-4 mb-6">
         <label class="flex items-center gap-2 cursor-pointer w-fit">
             <input type="checkbox" wire:model.live="compare" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-sky-600 focus:ring-sky-500">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Comparar contra otro período</span>
@@ -104,18 +104,18 @@
     </div>
 
     @if ($summary['count'] === 0)
-        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-12 text-center text-gray-400 dark:text-gray-500">
+        <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-12 text-center text-gray-400 dark:text-gray-500">
             <x-heroicon-o-chart-bar class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
             <p class="text-sm">No hay ventas en el período seleccionado.</p>
         </div>
     @else
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <x-stat-card label="Costo de mercadería" value="${{ money($profitability['cost']) }}" icon="cube" accent="text-gray-600 bg-gradient-to-br from-gray-50 to-gray-100/60 dark:text-gray-400 dark:from-gray-500/15 dark:to-gray-500/5" />
-            <x-stat-card label="Ganancia bruta" value="${{ money($profitability['profit']) }}" icon="banknotes" accent="text-emerald-600 bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:text-emerald-400 dark:from-emerald-500/15 dark:to-emerald-500/5" />
-            <x-stat-card label="Margen" value="{{ number_format($profitability['marginPct'], 1) }}%" icon="chart-bar" accent="text-sky-600 bg-gradient-to-br from-sky-50 to-sky-100/60 dark:text-sky-400 dark:from-sky-500/15 dark:to-sky-500/5" />
+            <x-stat-card label="Costo de mercadería" value="${{ money($profitability['cost']) }}" icon="cube" color="gray" />
+            <x-stat-card label="Ganancia bruta" value="${{ money($profitability['profit']) }}" icon="banknotes" color="emerald" />
+            <x-stat-card label="Margen" value="{{ number_format($profitability['marginPct'], 1) }}%" icon="chart-bar" color="sky" />
         </div>
 
-        <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 mb-6">
+        <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5 mb-6">
             <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por día</h2>
             <div class="flex items-end gap-1.5 h-40 overflow-x-auto pb-1">
                 @foreach ($byDay as $row)
@@ -130,7 +130,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             @if ($puedeVerTodasLasSucursales && $sucursal_id === '' && $bySucursal->count() > 1)
-                <section class="lg:col-span-2 rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5">
+                <section class="lg:col-span-2 rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5">
                     <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por sucursal</h2>
                     <div class="space-y-3">
                         @foreach ($bySucursal as $row)
@@ -148,7 +148,7 @@
                 </section>
             @endif
 
-            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5">
+            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por artículo</h2>
                 <div class="space-y-3">
                     @foreach ($byArticle as $row)
@@ -165,7 +165,7 @@
                 </div>
             </section>
 
-            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5">
+            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por categoría</h2>
                 <div class="space-y-3">
                     @foreach ($byCategory as $row)
@@ -182,7 +182,7 @@
                 </div>
             </section>
 
-            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5">
+            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por método de pago</h2>
                 <div class="space-y-3">
                     @forelse ($byMethod as $row)
@@ -201,7 +201,7 @@
                 </div>
             </section>
 
-            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5">
+            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Top clientes</h2>
                 <div class="space-y-3">
                     @forelse ($byClient as $row)
@@ -220,7 +220,7 @@
                 </div>
             </section>
 
-            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5">
+            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por hora del día</h2>
                 <div class="space-y-3">
                     @foreach ($byHour as $row)

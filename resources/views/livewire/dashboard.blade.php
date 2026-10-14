@@ -192,7 +192,7 @@
                 @endif
             </div>
         @else
-            <div class="overflow-x-auto">
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -222,6 +222,28 @@
                 </tbody>
             </table>
             </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($recentInvoices as $invoice)
+                    <div wire:key="recent-invoice-card-{{ $invoice->id }}" class="p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                @if ($canManageInvoices)
+                                    <a href="{{ route('invoices.show', $invoice) }}" wire:navigate class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium truncate block">{{ $invoice->number }}</a>
+                                @else
+                                    <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $invoice->number }}</p>
+                                @endif
+                                <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ $invoice->client->name ?? 'Cliente desconocido' }}</p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Vence {{ $invoice->due_date->format('d/m/Y') }}</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="font-medium text-gray-900 dark:text-gray-100">${{ money($invoice->total) }}</p>
+                                <div class="mt-1"><x-status-badge :status="$invoice->effective_status" /></div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         @endif
     </div>
 
@@ -231,7 +253,7 @@
                 <h2 class="font-medium text-gray-900 dark:text-gray-100">Productos con stock bajo</h2>
                 <a href="{{ route('products.index', ['onlyAlerts' => 1]) }}" wire:navigate class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">Ver todos</a>
             </div>
-            <div class="overflow-x-auto">
+            <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/40">
@@ -252,6 +274,21 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
+
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($lowStockProducts as $product)
+                    <div wire:key="low-stock-product-card-{{ $product->id }}" class="p-4 flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $product->category?->name ?? '—' }}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="font-medium text-red-600 dark:text-red-400">{{ $product->stock }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Mín. {{ $product->min_stock }}</p>
+                        </div>
+                    </div>
+                @endforeach
             </div>
         </div>
     @endif

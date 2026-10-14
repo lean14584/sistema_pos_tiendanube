@@ -32,7 +32,7 @@
     @endif
 
     {{-- Credenciales --}}
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
         <h2 class="{{ $sectionTitle }} mb-4">Conexión</h2>
 
         <form wire:submit="saveCredentials" class="space-y-4">
@@ -81,9 +81,10 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-2 pt-1">
-                <button type="submit"
-                    class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all">
-                    Guardar credenciales
+                <button type="submit" wire:loading.attr="disabled" wire:target="saveCredentials"
+                    class="rounded-lg bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60 transition-all">
+                    <span wire:loading.remove wire:target="saveCredentials">Guardar credenciales</span>
+                    <span wire:loading wire:target="saveCredentials">Guardando...</span>
                 </button>
                 <button type="button" wire:click="testConnection" wire:loading.attr="disabled" wire:target="testConnection"
                     class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60 transition-colors">
@@ -96,7 +97,7 @@
     </div>
 
     {{-- Traer de Tiendanube --}}
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
         <h2 class="{{ $sectionTitle }}">Traer de Tiendanube <span class="text-gray-400 normal-case font-normal">→ sistema</span></h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Necesita la conexión guardada.</p>
 
@@ -122,7 +123,7 @@
     </div>
 
     {{-- Enviar a Tiendanube --}}
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7 mb-6">
         <h2 class="{{ $sectionTitle }}">Enviar a Tiendanube <span class="text-gray-400 normal-case font-normal">sistema →</span></h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4 flex items-start gap-1.5">
             <x-heroicon-o-bolt class="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
@@ -165,7 +166,7 @@
     </div>
 
     {{-- Sincronización automática --}}
-    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-100/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
+    <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5 sm:p-7">
         <h2 class="{{ $sectionTitle }}">Sincronización automática <span class="text-gray-400 normal-case font-normal">(webhooks)</span></h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
             Cuando en la tienda entra una venta o cambia un producto, cliente o categoría, se refleja solo en el sistema. Requiere que el sistema tenga una URL pública.

@@ -1,4 +1,4 @@
-@props(['clientName' => '—', 'clientQuery' => '', 'clientResults' => null])
+@props(['clientName' => '—', 'clientQuery' => '', 'clientResults' => null, 'showLabel' => true])
 
 {{--
     Card con el cliente actual + F2/F3 abre un modal con el buscador. Asume
@@ -7,7 +7,9 @@
     nombres en Invoices/Quotes (Create+Edit) y Pos/Index.
 --}}
 <div x-data="{ open: false }" x-on:keydown.f2.window.prevent="open = true" x-on:keydown.f3.window.prevent="open = true">
-    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente *</label>
+    @if ($showLabel)
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente *</label>
+    @endif
     <button
         type="button"
         x-on:click="open = true"

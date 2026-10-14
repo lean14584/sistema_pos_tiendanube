@@ -8,6 +8,7 @@
         'red' => 'from-red-500 to-red-600 shadow-red-500/30',
         'sky' => 'from-sky-500 to-sky-600 shadow-sky-500/30',
         'indigo' => 'from-indigo-500 to-indigo-600 shadow-indigo-500/30',
+        'gray' => 'from-gray-500 to-gray-600 shadow-gray-500/30',
     ];
     $c = $colors[$color] ?? $colors['indigo'];
 

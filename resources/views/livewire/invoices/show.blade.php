@@ -299,7 +299,7 @@
 
     {{-- Modal de cobro con QR de Mercado Pago --}}
     @if ($showQrModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data x-on:keydown.escape.window="$wire.{{ $qrState === 'waiting' ? 'cancelQrCharge' : 'closeQrModal' }}()">
             <div class="absolute inset-0 bg-gray-900/60" wire:click="{{ $qrState === 'waiting' ? 'cancelQrCharge' : 'closeQrModal' }}"></div>
 
             <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">

@@ -3,10 +3,12 @@
 namespace App\Livewire\Pos;
 
 use App\Enums\AlicuotaIva;
+use App\Enums\DiscountType;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
 use App\Models\Client;
 use App\Models\CompanySettings;
+use App\Models\Discount;
 use App\Models\Invoice;
 use App\Models\PriceList;
 use App\Models\Product;
@@ -86,6 +88,10 @@ class Index extends Component
 
     public ?Voucher $valeEncontrado = null;
 
+    // --- Mis Descuentos (descuento manual global de la venta) ---
+
+    public ?int $discount_id = null;
+
     public function mount(): void
     {
         $cf = Client::consumidorFinal();
@@ -114,6 +120,13 @@ class Index extends Component
         return $sucursalId
             ? PuntoVenta::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get()
             : collect();
+    }
+
+    /** Descuentos de "Mis Descuentos" activos y vigentes hoy, para el selector del POS. */
+    #[Computed]
+    public function discountsActivos()
+    {
+        return Discount::query()->activeNow()->orderBy('name')->get();
     }
 
     /** Lista de precios vigente. null = precio base (sin ajuste). */
@@ -435,10 +448,23 @@ class Index extends Component
     }
 
     /**
-     * Descuento efectivo (%) de la línea: combina el descuento manual con el
-     * de la promoción. Es lo que se guarda como discount_percent en la factura.
+     * Descuento efectivo (%) de la línea: combina el descuento manual, el de
+     * la promoción y el descuento global de "Mis Descuentos" (si hay uno
+     * elegido). Es lo que se guarda como discount_percent en la factura.
      */
     public function lineDiscountPct(array $line): float
+    {
+        return $this->componerDescuentos($this->lineDiscountPctSinDescuentoGlobal($line), $this->discountGlobalPct());
+    }
+
+    /**
+     * Igual que lineDiscountPct(), pero sin componer el descuento global de
+     * "Mis Descuentos" — es la base sobre la que discountGlobalPct() calcula
+     * el % equivalente de un descuento de monto fijo. No puede llamar a
+     * lineDiscountPct()/total() (ciclo infinito): por eso es un método propio
+     * en vez de reusar esos dos.
+     */
+    private function lineDiscountPctSinDescuentoGlobal(array $line): float
     {
         $gross = (float) $line['unit_price'] * (float) $line['quantity'];
 
@@ -453,6 +479,59 @@ class Index extends Component
         $descuento = max(0, min($gross, $manual + $this->promoDiscountAmount($line)));
 
         return round($descuento / $gross * 100, 4);
+    }
+
+    /** Total (con IVA) con descuentos manual+promo por línea, pero SIN el descuento global de "Mis Descuentos" todavía. */
+    private function totalSinDescuentoGlobal(): float
+    {
+        return collect($this->cart)->sum(function (array $line) {
+            $gross = (float) $line['unit_price'] * (float) $line['quantity'];
+            $neto = $gross * (1 - $this->lineDiscountPctSinDescuentoGlobal($line) / 100);
+
+            return $neto * (1 + (float) $line['iva_rate'] / 100);
+        });
+    }
+
+    /** El descuento manual elegido en el POS ("Mis Descuentos"), o null si no hay ninguno activo seleccionado. */
+    public function descuentoManualAplicado(): ?Discount
+    {
+        if (! $this->discount_id) {
+            return null;
+        }
+
+        return Discount::query()->activeNow()->find($this->discount_id);
+    }
+
+    /**
+     * % equivalente del descuento global elegido, sobre el total sin ese
+     * descuento (ver totalSinDescuentoGlobal()). Para 'percent' es el valor
+     * tal cual; para 'fixed' se convierte a % de ese total, así se compone
+     * igual que cualquier otro descuento porcentual (componerDescuentos()).
+     */
+    public function discountGlobalPct(): float
+    {
+        $discount = $this->descuentoManualAplicado();
+
+        if (! $discount) {
+            return 0.0;
+        }
+
+        $base = $this->totalSinDescuentoGlobal();
+
+        if ($base <= 0) {
+            return 0.0;
+        }
+
+        return match ($discount->type) {
+            DiscountType::Percent => min(100, max(0, (float) $discount->value)),
+            DiscountType::Fixed => min(100, round(((float) $discount->value) / $base * 100, 4)),
+        };
+    }
+
+    /** Monto (con IVA) que "Mis Descuentos" le está sacando al total de la venta. Para mostrar en el resumen/ticket. */
+    public function descuentoManualMonto(): float
+    {
+        return round($this->totalSinDescuentoGlobal() * $this->discountGlobalPct() / 100, 2);
     }
 
     /**
@@ -486,6 +565,18 @@ class Index extends Component
      */
     public function paymentDiscountPct(array $payment): float
     {
+        // MEJORA: "Mis Descuentos" (descuento manual global, ya compuesto
+        // dentro de total()/lineDiscountPct()) y el descuento clásico por
+        // medio de pago (efectivo/transferencia) se estaban acumulando - el
+        // cajero elegía un descuento manual y el pago en efectivo/
+        // transferencia igual restaba otro % encima. Son dos formas de
+        // descuento que compiten entre sí, no que se suman: si ya hay un
+        // descuento manual activo, el medio de pago se cobra al total ya
+        // descontado, sin descuento adicional propio.
+        if ($this->discountGlobalPct() > 0) {
+            return 0.0;
+        }
+
         $method = PaymentMethod::tryFrom($payment['method'] ?? '');
 
         return $method ? CompanySettings::current()->descuentoPctParaMedioDePago($method) : 0.0;
@@ -1070,6 +1161,7 @@ class Index extends Component
         $this->cart = [];
         $this->payments = [];
         $this->client_id = $consumidorFinal->id;
+        $this->discount_id = null;
         $this->quitarFacturaOrigen();
         $this->quitarVale();
 

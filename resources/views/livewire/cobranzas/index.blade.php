@@ -44,14 +44,14 @@
                         <td class="px-4 py-3">
                             @if ($payingClientId === $client->id)
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <input type="number" step="0.01" min="0.01" wire:model="payAmount" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                    <select wire:model="payMethod" class="rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <input type="number" step="0.01" min="0.01" wire:model="payAmount" aria-label="Monto a cobrar" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <select wire:model="payMethod" aria-label="Medio de pago" class="rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                         @foreach ($paymentMethods as $pm)
                                             <option value="{{ $pm->value }}">{{ $pm->label() }}</option>
                                         @endforeach
                                     </select>
                                     <button type="button" wire:click="savePayment" wire:loading.attr="disabled" wire:target="savePayment" class="rounded-md bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 text-white text-xs font-medium disabled:opacity-60">Guardar</button>
-                                    <button type="button" wire:click="cancelPayment" class="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5 text-gray-600 dark:text-gray-300 text-xs">✕</button>
+                                    <button type="button" wire:click="cancelPayment" aria-label="Cancelar cobro" class="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5 text-gray-600 dark:text-gray-300 text-xs">✕</button>
                                 </div>
                                 @error('payAmount') <p class="text-xs text-red-600 dark:text-red-400 mt-1 text-right">{{ $message }}</p> @enderror
                             @else
@@ -101,14 +101,14 @@
 
                     @if ($payingClientId === $client->id)
                         <div class="flex flex-wrap items-center gap-1.5 mt-3">
-                            <input type="number" step="0.01" min="0.01" wire:model="payAmount" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <select wire:model="payMethod" class="rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <input type="number" step="0.01" min="0.01" wire:model="payAmount" aria-label="Monto a cobrar" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <select wire:model="payMethod" aria-label="Medio de pago" class="rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 @foreach ($paymentMethods as $pm)
                                     <option value="{{ $pm->value }}">{{ $pm->label() }}</option>
                                 @endforeach
                             </select>
                             <button type="button" wire:click="savePayment" wire:loading.attr="disabled" wire:target="savePayment" class="rounded-md bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 text-white text-xs font-medium disabled:opacity-60">Guardar</button>
-                            <button type="button" wire:click="cancelPayment" class="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5 text-gray-600 dark:text-gray-300 text-xs">✕</button>
+                            <button type="button" wire:click="cancelPayment" aria-label="Cancelar cobro" class="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5 text-gray-600 dark:text-gray-300 text-xs">✕</button>
                         </div>
                         @error('payAmount') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                     @else
