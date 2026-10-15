@@ -32,7 +32,14 @@ class Import extends Component
         $actualizados = 0;
         $omitidos = [];
 
-        DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos) {
+        // MEJORA: cada fila disparaba 1-2 queries (Provider::where('tax_id',...)
+        // y, si no matcheaba, Provider::where('name',...)) — precargado una
+        // sola vez en memoria, mismo patrón que Clients\Import.
+        $todosLosProveedores = Provider::all();
+        $proveedoresPorTaxId = $todosLosProveedores->filter(fn (Provider $p) => filled($p->tax_id))->keyBy('tax_id');
+        $proveedoresPorNombre = $todosLosProveedores->keyBy('name');
+
+        DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, $proveedoresPorTaxId, $proveedoresPorNombre) {
             foreach ($filas as $numero => $fila) {
                 $nombre = trim((string) $this->valor($fila, 'name'));
 
@@ -64,20 +71,28 @@ class Import extends Component
 
                 $existente = null;
                 if (! empty($datos['tax_id'])) {
-                    $existente = Provider::where('tax_id', $datos['tax_id'])->first();
+                    $existente = $proveedoresPorTaxId->get($datos['tax_id']);
                 }
                 if (! $existente) {
-                    $existente = Provider::where('name', $nombre)->first();
+                    $existente = $proveedoresPorNombre->get($nombre);
                 }
 
                 if ($existente) {
                     $existente->update($datos);
                     $actualizados++;
                 } else {
-                    Provider::create([
+                    $nuevo = Provider::create([
                         'tipo_documento' => TaxIdResolver::tipoDocumentoPara($taxId)->value,
                         ...$datos,
                     ]);
+
+                    // Una fila duplicada más adelante en el mismo Excel tiene
+                    // que encontrar este proveedor recién creado.
+                    if (filled($nuevo->tax_id)) {
+                        $proveedoresPorTaxId->put($nuevo->tax_id, $nuevo);
+                    }
+                    $proveedoresPorNombre->put($nuevo->name, $nuevo);
+
                     $creados++;
                 }
             }

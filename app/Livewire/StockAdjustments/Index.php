@@ -9,6 +9,7 @@ use App\Models\ProductStock;
 use App\Models\StockAdjustment;
 use App\Support\CurrentSucursal;
 use App\Support\StockAdjuster;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -188,8 +189,12 @@ class Index extends Component
         $adjustments = StockAdjustment::with(['product', 'user', 'sucursal'])
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->when($this->filterProduct !== '', fn ($q) => $q->where('product_id', $this->filterProduct))
-            ->when($this->desde !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->desde))
-            ->when($this->hasta !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->hasta))
+            // whereDate() envuelve la columna en DATE(...) e impide usar el
+            // índice de created_at — mismo criterio que LibroIvaCalculator.
+            // El corte superior usa "< día siguiente" para seguir siendo un
+            // rango sargable.
+            ->when($this->desde !== '', fn ($q) => $q->where('created_at', '>=', $this->desde))
+            ->when($this->hasta !== '', fn ($q) => $q->where('created_at', '<', Carbon::parse($this->hasta)->addDay()->toDateString()))
             ->latest()
             ->paginate(20);
 

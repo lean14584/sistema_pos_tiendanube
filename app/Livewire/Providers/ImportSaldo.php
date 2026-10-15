@@ -37,7 +37,14 @@ class ImportSaldo extends Component
         $actualizados = 0;
         $omitidos = [];
 
-        DB::transaction(function () use ($filas, &$actualizados, &$omitidos) {
+        // MEJORA: cada fila disparaba 1-2 queries (Provider::where('tax_id',...)
+        // y, si no matcheaba, Provider::where('name',...)) — precargado una
+        // sola vez en memoria, mismo patrón que Providers\Import.
+        $todosLosProveedores = Provider::all();
+        $proveedoresPorTaxId = $todosLosProveedores->filter(fn (Provider $p) => filled($p->tax_id))->keyBy('tax_id');
+        $proveedoresPorNombre = $todosLosProveedores->keyBy('name');
+
+        DB::transaction(function () use ($filas, &$actualizados, &$omitidos, $proveedoresPorTaxId, $proveedoresPorNombre) {
             foreach ($filas as $numero => $fila) {
                 $nombre = trim((string) $this->valor($fila, 'name'));
                 $taxId = trim((string) ($this->valor($fila, 'tax_id') ?? ''));
@@ -57,10 +64,10 @@ class ImportSaldo extends Component
 
                 $proveedor = null;
                 if ($taxId !== '') {
-                    $proveedor = Provider::where('tax_id', $taxId)->first();
+                    $proveedor = $proveedoresPorTaxId->get($taxId);
                 }
                 if (! $proveedor && $nombre !== '') {
-                    $proveedor = Provider::where('name', $nombre)->first();
+                    $proveedor = $proveedoresPorNombre->get($nombre);
                 }
 
                 if (! $proveedor) {

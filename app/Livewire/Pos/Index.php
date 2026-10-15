@@ -487,11 +487,18 @@ class Index extends Component
     /** Total (con IVA) con descuentos manual+promo por línea, pero SIN el descuento global de "Mis Descuentos" todavía. */
     private function totalSinDescuentoGlobal(): float
     {
-        return collect($this->cart)->sum(function (array $line) {
-            $gross = (float) $line['unit_price'] * (float) $line['quantity'];
-            $neto = $gross * (1 - $this->lineDiscountPctSinDescuentoGlobal($line) / 100);
+        // Se llama una vez por línea del carrito (vía discountGlobalPct()
+        // dentro de lineDiscountPct()), y a su vez recorre TODO el carrito
+        // para sumar cada línea — sin memoizar, eso es O(carrito²) en cada
+        // render. Memoizado por request: $this->cart no cambia a mitad de
+        // un render.
+        return once(function () {
+            return collect($this->cart)->sum(function (array $line) {
+                $gross = (float) $line['unit_price'] * (float) $line['quantity'];
+                $neto = $gross * (1 - $this->lineDiscountPctSinDescuentoGlobal($line) / 100);
 
-            return $neto * (1 + (float) $line['iva_rate'] / 100);
+                return $neto * (1 + (float) $line['iva_rate'] / 100);
+            });
         });
     }
 
@@ -502,7 +509,10 @@ class Index extends Component
             return null;
         }
 
-        return Discount::query()->activeNow()->find($this->discount_id);
+        // Se llama por cada línea del carrito (vía discountGlobalPct() dentro
+        // de lineDiscountPct()) en cada render de Livewire; memoizado por
+        // request para no repetir la misma query una vez por línea.
+        return once(fn () => Discount::query()->activeNow()->find($this->discount_id));
     }
 
     /**

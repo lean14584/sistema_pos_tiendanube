@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Sucursal;
 use App\Models\User;
 use App\Support\CurrentSucursal;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -52,8 +53,12 @@ class Index extends Component
             ->when($this->modelo !== '', fn ($q) => $q->where('auditable_type', $this->modelo))
             ->when($this->userId !== '', fn ($q) => $q->where('user_id', $this->userId))
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
-            ->when($this->desde !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->desde))
-            ->when($this->hasta !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->hasta))
+            // whereDate() envuelve la columna en DATE(...) e impide usar el
+            // índice de created_at — mismo criterio que LibroIvaCalculator.
+            // El corte superior usa "< día siguiente" para seguir siendo un
+            // rango sargable.
+            ->when($this->desde !== '', fn ($q) => $q->where('created_at', '>=', $this->desde))
+            ->when($this->hasta !== '', fn ($q) => $q->where('created_at', '<', Carbon::parse($this->hasta)->addDay()->toDateString()))
             ->orderByDesc('created_at')
             ->paginate(25);
 

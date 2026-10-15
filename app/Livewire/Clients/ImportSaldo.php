@@ -36,7 +36,14 @@ class ImportSaldo extends Component
         $actualizados = 0;
         $omitidos = [];
 
-        DB::transaction(function () use ($filas, &$actualizados, &$omitidos) {
+        // MEJORA: cada fila disparaba 1-2 queries (Client::where('tax_id',...)
+        // y, si no matcheaba, Client::where('name',...)) — precargado una
+        // sola vez en memoria, mismo patrón que Clients\Import.
+        $todosLosClientes = Client::all();
+        $clientesPorTaxId = $todosLosClientes->filter(fn (Client $c) => filled($c->tax_id))->keyBy('tax_id');
+        $clientesPorNombre = $todosLosClientes->keyBy('name');
+
+        DB::transaction(function () use ($filas, &$actualizados, &$omitidos, $clientesPorTaxId, $clientesPorNombre) {
             foreach ($filas as $numero => $fila) {
                 $nombre = trim((string) $this->valor($fila, 'name'));
                 $taxId = trim((string) ($this->valor($fila, 'tax_id') ?? ''));
@@ -56,10 +63,10 @@ class ImportSaldo extends Component
 
                 $cliente = null;
                 if ($taxId !== '') {
-                    $cliente = Client::where('tax_id', $taxId)->first();
+                    $cliente = $clientesPorTaxId->get($taxId);
                 }
                 if (! $cliente && $nombre !== '') {
-                    $cliente = Client::where('name', $nombre)->first();
+                    $cliente = $clientesPorNombre->get($nombre);
                 }
 
                 if (! $cliente) {
