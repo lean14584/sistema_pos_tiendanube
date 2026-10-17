@@ -37,7 +37,7 @@
                 @if (trim($productQuery) !== '')
                     <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg max-h-56 overflow-y-auto">
                         @forelse ($this->productResults as $product)
-                            <button type="button" wire:click="addProduct({{ $product->id }})" class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            <button type="button" wire:key="product-result-{{ $product->id }}" wire:click="addProduct({{ $product->id }})" class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                 <span class="text-sm text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">${{ money($product->price) }}</span>
                             </button>
@@ -51,7 +51,7 @@
             @if (count($selected) > 0)
                 <div class="flex flex-wrap gap-2 mt-3">
                     @foreach ($selected as $id => $prod)
-                        <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-800 pl-3 pr-1.5 py-1 text-sm text-gray-700 dark:text-gray-200">
+                        <span wire:key="selected-product-{{ $id }}" class="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-800 pl-3 pr-1.5 py-1 text-sm text-gray-700 dark:text-gray-200">
                             {{ $prod['name'] }}
                             <button type="button" wire:click="removeProduct({{ $id }})" aria-label="Quitar {{ $prod['name'] }}" class="text-gray-400 hover:text-red-500">✕</button>
                         </span>

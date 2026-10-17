@@ -889,6 +889,7 @@ class Index extends Component
         $this->facturaOrigenCandidatas = collect();
 
         $this->itemsADevolver = $invoice->items->map(fn ($item) => [
+            'invoice_item_id' => $item->id,
             'product_id' => $item->product_id,
             'description' => $item->description,
             'quantity' => (string) $item->quantity,
@@ -976,6 +977,73 @@ class Index extends Component
         $this->vale_monto = '';
     }
 
+    /**
+     * Recalcula unit_price e iva_rate de cada línea del carrito contra el
+     * Product real — nunca confiar en lo que haya quedado en $cart (property
+     * pública de Livewire, tamperable desde el cliente). quantity y discount
+     * sí son legítimamente editables por el cajero y no se tocan acá.
+     */
+    private function sincronizarCartConCatalogo(): void
+    {
+        $priceList = $this->currentPriceList();
+        $ocultarIva = CompanySettings::current()->debeOcultarIvaPorItem();
+
+        foreach ($this->cart as $i => $item) {
+            $product = Product::find($item['product_id'] ?? null);
+
+            if (! $product) {
+                unset($this->cart[$i]);
+
+                continue;
+            }
+
+            $this->cart[$i]['unit_price'] = $product->priceForList($priceList);
+            $this->cart[$i]['iva_rate'] = $ocultarIva ? '0' : AlicuotaIva::normalizar($product->iva_rate);
+        }
+
+        $this->cart = array_values($this->cart);
+    }
+
+    /**
+     * Igual que sincronizarCartConCatalogo() pero para la devolución: cada
+     * línea de $itemsADevolver se vuelve a traer desde el InvoiceItem real de
+     * $facturaOrigen (ver cargarFacturaOrigen) por su invoice_item_id, scopeado
+     * a esa misma factura — así unit_price, iva_rate y quantity_original
+     * siempre salen de la base, nunca de lo que haya mandado el cliente.
+     * quantity (cuánto se devuelve de verdad) es lo único que queda tal como
+     * lo cargó el cajero.
+     */
+    private function sincronizarItemsADevolverConFacturaOrigen(): void
+    {
+        if ($this->itemsADevolver === []) {
+            return;
+        }
+
+        if (! $this->facturaOrigen) {
+            $this->itemsADevolver = [];
+
+            return;
+        }
+
+        foreach ($this->itemsADevolver as $i => $item) {
+            $original = $this->facturaOrigen->items->firstWhere('id', (int) ($item['invoice_item_id'] ?? 0));
+
+            if (! $original) {
+                unset($this->itemsADevolver[$i]);
+
+                continue;
+            }
+
+            $this->itemsADevolver[$i]['product_id'] = $original->product_id;
+            $this->itemsADevolver[$i]['description'] = $original->description;
+            $this->itemsADevolver[$i]['quantity_original'] = (string) $original->quantity;
+            $this->itemsADevolver[$i]['unit_price'] = (string) $original->unit_price;
+            $this->itemsADevolver[$i]['iva_rate'] = AlicuotaIva::normalizar($original->iva_rate_efectiva);
+        }
+
+        $this->itemsADevolver = array_values($this->itemsADevolver);
+    }
+
     public function cobrar(): void
     {
         // MEJORA: sin este lock, un doble clic en "Cobrar" (o dos pestañas
@@ -993,6 +1061,18 @@ class Index extends Component
 
     private function cobrarInterno(): void
     {
+        // $cart e $itemsADevolver son properties públicas de Livewire: llegan
+        // en cada request tal como las mande el cliente, sin ninguna garantía
+        // de que sigan siendo lo que este componente puso ahí (una request
+        // armada a mano al endpoint de Livewire podía cambiar unit_price,
+        // iva_rate o quantity_original antes de cobrar). Se resincronizan acá,
+        // justo antes de cualquier cálculo, contra el catálogo real y la
+        // factura origen real — así total()/creditoTotal() y lo que se graba
+        // en la Invoice usan siempre precios e IVA del servidor, nunca los
+        // que vinieron del cliente.
+        $this->sincronizarCartConCatalogo();
+        $this->sincronizarItemsADevolverConFacturaOrigen();
+
         $modoCambio = $this->itemsADevolver !== [];
 
         // El input de cantidad a devolver solo tiene un `min="0"` en el

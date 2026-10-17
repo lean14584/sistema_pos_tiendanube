@@ -38,6 +38,7 @@
                                 @forelse ($this->productResults as $product)
                                     <button
                                         type="button"
+                                        wire:key="product-result-{{ $product->id }}"
                                         wire:click="addProductItem({{ $product->id }})"
                                         class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
                                     >
@@ -159,7 +160,7 @@
             </thead>
             <tbody>
                 @forelse ($transfers as $transfer)
-                    <tr class="border-t border-gray-100 dark:border-gray-800">
+                    <tr wire:key="transfer-{{ $transfer->id }}" class="border-t border-gray-100 dark:border-gray-800">
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ $transfer->created_at->format('d/m/Y H:i') }}</td>
                         <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $transfer->fromSucursal->name ?? '—' }}</td>
                         <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $transfer->toSucursal->name ?? '—' }}</td>
@@ -186,7 +187,7 @@
 
         <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
             @forelse ($transfers as $transfer)
-                <div class="p-4">
+                <div wire:key="transfer-mobile-{{ $transfer->id }}" class="p-4">
                     <div class="flex items-start justify-between gap-3">
                         <p class="font-medium text-gray-900 dark:text-gray-100">{{ $transfer->fromSucursal->name ?? '—' }} → {{ $transfer->toSucursal->name ?? '—' }}</p>
                         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset shrink-0 {{ $transfer->status->colorClasses() }}">

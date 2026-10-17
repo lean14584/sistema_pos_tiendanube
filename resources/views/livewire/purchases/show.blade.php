@@ -34,6 +34,7 @@
             <div class="flex gap-1.5">
                 @foreach ($statuses as $s)
                     <button
+                        wire:key="status-{{ $s->value }}"
                         wire:click="setStatus('{{ $s->value }}')"
                         wire:loading.attr="disabled"
                         wire:target="setStatus"

@@ -229,6 +229,32 @@ class PosTest extends TestCase
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 1000, 'source' => 'venta']);
     }
 
+    public function test_no_se_puede_vender_manipulando_el_precio_del_carrito(): void
+    {
+        // $cart es una property pública de Livewire: una request armada a
+        // mano podía pisar unit_price/iva_rate antes de cobrar. ->set()
+        // simula exactamente eso (es lo mismo que recibe el servidor de una
+        // request real). cobrarInterno() tiene que resincronizar contra el
+        // Product real antes de facturar, ignorando el valor manipulado.
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $product = Product::create(['name' => 'Alfajor', 'price' => 500, 'iva_rate' => 0, 'stock' => 5]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment') // prellena con el total real (500) antes de manipular el precio
+            ->set('payments.0.method', 'efectivo')
+            ->set('cart.0.unit_price', 0.01) // intento de manipulación
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        $invoice = Invoice::latest('id')->first();
+        $this->assertSame('500.00', (string) $invoice->items->first()->unit_price);
+        $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 500, 'source' => 'venta']);
+    }
+
     public function test_cobrar_una_devolucion_registra_egreso_no_ingreso_en_caja(): void
     {
         // La plata de una devolución SALE de la caja — antes se registraba
@@ -321,6 +347,37 @@ class PosTest extends TestCase
 
         $this->assertSame(3, $productoOriginal->fresh()->stock); // no se repuso nada
         $this->assertDatabaseCount('vouchers', 0);
+        $this->assertDatabaseMissing('invoices', ['tipo_comprobante_interno' => 'devolucion']);
+    }
+
+    public function test_no_se_puede_inflar_el_credito_de_una_devolucion_manipulando_unit_price_o_quantity_original(): void
+    {
+        // $itemsADevolver también es una property pública: unit_price y
+        // quantity_original (la base del tope "no devuelvas más de lo
+        // vendido") tienen que resincronizarse contra el InvoiceItem real de
+        // la factura origen antes de cobrar, ignorando cualquier valor que
+        // haya llegado manipulado.
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $productoOriginal = Product::create(['name' => 'Campera', 'price' => 1000, 'iva_rate' => 0, 'stock' => 3]);
+        $original = $this->facturaOriginal($productoOriginal); // vendió 1 unidad a $1000
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('numeroFacturaOrigen', $original->number)
+            ->call('buscarFacturaOrigen')
+            ->set('itemsADevolver.0.unit_price', '50000') // intento: inflar el crédito
+            ->set('itemsADevolver.0.quantity_original', '1000') // intento: esquivar el tope de cantidad
+            ->set('itemsADevolver.0.quantity', '5') // devuelve más de lo vendido (real: 1)
+            ->set('printOnSale', false)
+            ->call('cobrar');
+
+        // Se rechaza igual que si no se hubiera tocado nada: la cantidad real
+        // vendida (1) sigue siendo el tope, no la manipulada (1000).
+        $pos->assertHasErrors('cart');
+        $this->assertSame(3, $productoOriginal->fresh()->stock);
         $this->assertDatabaseMissing('invoices', ['tipo_comprobante_interno' => 'devolucion']);
     }
 

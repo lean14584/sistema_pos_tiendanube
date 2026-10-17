@@ -41,7 +41,7 @@
                     @if (trim($productQuery) !== '')
                         <div class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg max-h-64 overflow-y-auto">
                             @forelse ($this->productResults as $product)
-                                <button type="button" wire:click="addProduct({{ $product->id }})" class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                <button type="button" wire:key="product-result-{{ $product->id }}" wire:click="addProduct({{ $product->id }})" class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                     <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $product->name }}</span>
                                     <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">${{ money($product->price) }}</span>
                                 </button>
@@ -56,7 +56,7 @@
                     <select wire:model="catToAdd" class="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="">Agregar una categoría entera...</option>
                         @foreach ($categories as $cat)
-                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                            <option wire:key="category-{{ $cat->id }}" value="{{ $cat->id }}">{{ $cat->name }}</option>
                         @endforeach
                     </select>
                     <button type="button" wire:click="addCategory" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-2 text-white text-sm font-medium">Agregar</button>

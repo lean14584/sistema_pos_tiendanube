@@ -49,7 +49,7 @@
             @if ($filterProduct !== '')
                 <div class="flex items-center justify-between gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm">
                     <span class="truncate text-gray-800 dark:text-gray-100">{{ $filterProductName }}</span>
-                    <button type="button" wire:click="clearFilterProduct" class="text-gray-400 hover:text-red-500 shrink-0">
+                    <button type="button" wire:click="clearFilterProduct" aria-label="Quitar filtro de producto" class="text-gray-400 hover:text-red-500 shrink-0">
                         <x-heroicon-o-x-mark class="w-4 h-4" />
                     </button>
                 </div>
@@ -67,6 +67,7 @@
                             @forelse ($this->filterProductResults as $product)
                                 <button
                                     type="button"
+                                    wire:key="filter-product-result-{{ $product->id }}"
                                     wire:click="selectFilterProduct({{ $product->id }})"
                                     class="w-full flex items-center px-3 py-2 text-left hover:bg-sky-50/70 dark:hover:bg-sky-500/10 transition-colors"
                                 >

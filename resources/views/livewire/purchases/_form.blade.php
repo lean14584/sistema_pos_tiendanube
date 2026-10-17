@@ -49,6 +49,7 @@
                             @forelse ($this->productResults as $product)
                                 <button
                                     type="button"
+                                    wire:key="product-result-{{ $product->id }}"
                                     wire:click="addProductItem({{ $product->id }})"
                                     class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
                                 >
@@ -301,7 +302,7 @@
                             <div class="flex items-center gap-2">
                                 <select wire:model="payments.{{ $index }}.method" class="flex-1 min-w-0 {{ $inputClass }}">
                                     @foreach ($paymentMethods as $method)
-                                        <option value="{{ $method->value }}">{{ $method->label() }}</option>
+                                        <option wire:key="payment-method-{{ $method->value }}" value="{{ $method->value }}">{{ $method->label() }}</option>
                                     @endforeach
                                 </select>
                                 <button type="button" wire:click="removePayment({{ $index }})" aria-label="Eliminar pago" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">

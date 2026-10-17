@@ -11,7 +11,7 @@
                 <div class="flex-1">
                     <h3 class="text-sm font-semibold text-white uppercase tracking-wide">Servicio mensual</h3>
                 </div>
-                <button type="button" x-on:click="open = false" class="text-white/80 hover:text-white">
+                <button type="button" x-on:click="open = false" aria-label="Cerrar" class="text-white/80 hover:text-white">
                     <x-heroicon-o-x-mark class="w-5 h-5" />
                 </button>
             </div>

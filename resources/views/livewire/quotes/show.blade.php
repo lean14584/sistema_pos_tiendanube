@@ -98,6 +98,7 @@
                 <div class="flex gap-1.5">
                     @foreach ($editableStatuses as $s)
                         <button
+                            wire:key="status-{{ $s->value }}"
                             wire:click="setStatus('{{ $s->value }}')"
                             class="px-3 py-1 rounded-full text-xs font-medium transition-colors {{ $quote->status === $s ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700' }}"
                         >

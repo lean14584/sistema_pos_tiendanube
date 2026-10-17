@@ -112,7 +112,7 @@
                 ];
             @endphp
             @foreach ($accionesTraer as $a)
-                <button wire:click="{{ $a['m'] }}" wire:loading.attr="disabled" wire:target="{{ $a['m'] }}"
+                <button wire:key="accion-{{ $a['m'] }}" wire:click="{{ $a['m'] }}" wire:loading.attr="disabled" wire:target="{{ $a['m'] }}"
                     class="flex flex-col items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60 transition-colors">
                     <x-dynamic-component :component="'heroicon-o-'.$a['i']" class="w-6 h-6 text-sky-600 dark:text-sky-400" />
                     <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ $a['l'] }}</span>

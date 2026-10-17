@@ -72,7 +72,7 @@
                         @if ($facturaOrigenCandidatas->isNotEmpty())
                             <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
                                 @foreach ($facturaOrigenCandidatas as $candidata)
-                                    <button type="button" wire:click="elegirFacturaOrigen({{ $candidata->id }})" class="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-500/10">
+                                    <button type="button" wire:key="candidata-{{ $candidata->id }}" wire:click="elegirFacturaOrigen({{ $candidata->id }})" class="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-500/10">
                                         {{ $candidata->tipo_comprobante_interno->label() }} · {{ $candidata->issue_date->format('d/m/Y') }}
                                     </button>
                                 @endforeach
@@ -87,7 +87,7 @@
                             <span class="font-medium text-amber-800 dark:text-amber-300">
                                 {{ $facturaOrigen->tipo_comprobante_interno->label() }} {{ $facturaOrigen->number }}
                             </span>
-                            <button type="button" wire:click="quitarFacturaOrigen" class="text-gray-400 hover:text-red-600">
+                            <button type="button" wire:click="quitarFacturaOrigen" aria-label="Quitar factura origen" class="text-gray-400 hover:text-red-600">
                                 <x-heroicon-o-x-mark class="w-4 h-4" />
                             </button>
                         </div>
@@ -98,7 +98,7 @@
                                     <span class="flex-1 truncate text-gray-700 dark:text-gray-300">{{ $item['description'] }}</span>
                                     <input type="number" step="0.01" min="0" wire:model.live="itemsADevolver.{{ $index }}.quantity" class="w-16 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1.5 py-1 text-right dark:text-gray-100">
                                     <span class="w-20 text-right text-gray-500 dark:text-gray-400">${{ money($item['unit_price']) }}</span>
-                                    <button type="button" wire:click="removeItemADevolver({{ $index }})" class="text-gray-300 hover:text-red-500 dark:text-gray-600">
+                                    <button type="button" wire:click="removeItemADevolver({{ $index }})" aria-label="Quitar ítem a devolver" class="text-gray-300 hover:text-red-500 dark:text-gray-600">
                                         <x-heroicon-o-x-mark class="w-3.5 h-3.5" />
                                     </button>
                                 </div>
@@ -204,6 +204,7 @@
                             @forelse ($this->barcodeResults as $product)
                                 <button
                                     type="button"
+                                    wire:key="barcode-result-{{ $product->id }}"
                                     wire:click="selectFromBarcode({{ $product->id }})"
                                     class="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-sky-50/70 dark:hover:bg-sky-500/10 border-b border-gray-50 dark:border-gray-800/60 last:border-0 transition-colors"
                                 >
@@ -256,7 +257,7 @@
                                 <span class="text-right text-base font-bold text-gray-900 dark:text-gray-100 shrink-0 sm:w-24">
                                     ${{ money($this->lineTotal($item)) }}
                                 </span>
-                                <button wire:click="removeItem({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-1">
+                                <button wire:click="removeItem({{ $index }})" aria-label="Quitar producto del carrito" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-1">
                                     <x-heroicon-o-x-mark class="w-5 h-5" />
                                 </button>
                             </div>
@@ -313,7 +314,7 @@
                                     @endforeach
                                 </select>
                                 <input type="number" min="0" step="0.01" wire:model="payments.{{ $index }}.amount" wire:keydown.enter="$refresh" placeholder="Monto" class="w-1/2 {{ $inputClass }} text-right">
-                                <button type="button" wire:click="removePayment({{ $index }})" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                <button type="button" wire:click="removePayment({{ $index }})" aria-label="Quitar medio de pago" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
                                     <x-heroicon-o-x-mark class="w-5 h-5" />
                                 </button>
                             </div>
@@ -359,7 +360,7 @@
                             <select wire:model.live="discount_id" class="flex-1 min-w-0 {{ $inputClass }}">
                                 <option value="">Sin descuento</option>
                                 @foreach ($this->discountsActivos as $discount)
-                                    <option value="{{ $discount->id }}">{{ $discount->name }} ({{ $discount->shortLabel() }})</option>
+                                    <option wire:key="discount-{{ $discount->id }}" value="{{ $discount->id }}">{{ $discount->name }} ({{ $discount->shortLabel() }})</option>
                                 @endforeach
                             </select>
                             @if ($discount_id)
@@ -397,7 +398,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <input type="number" min="0" step="0.01" wire:model.live="vale_monto" class="w-24 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-sm text-right dark:text-gray-100">
-                                        <button type="button" wire:click="quitarVale" class="text-gray-400 hover:text-red-600">
+                                        <button type="button" wire:click="quitarVale" aria-label="Quitar vale de cambio" class="text-gray-400 hover:text-red-600">
                                             <x-heroicon-o-x-mark class="w-4 h-4" />
                                         </button>
                                     </div>

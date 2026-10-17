@@ -12,6 +12,7 @@ use App\Support\CurrentSucursal;
 use App\Support\Whatsapp;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -102,8 +103,10 @@ class Account extends Component
         $payment = ClientPayment::where('client_id', $this->client->id)->whereKey($paymentId)->first();
 
         if ($payment) {
-            CashLinker::unlinkClientPayment($payment);
-            $payment->delete();
+            DB::transaction(function () use ($payment) {
+                CashLinker::unlinkClientPayment($payment);
+                $payment->delete();
+            });
         }
     }
 

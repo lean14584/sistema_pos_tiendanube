@@ -103,7 +103,7 @@
                         </thead>
                         <tbody>
                             @foreach ($sessionMovements as $m)
-                                <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                <tr wire:key="movement-{{ $m->id }}" class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                     <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $m->date->format('d/m/Y') }}</td>
                                     <td class="px-5 py-3 text-gray-700 dark:text-gray-300">{{ $m->concept }}</td>
                                     <td class="px-5 py-3 text-gray-500 dark:text-gray-400 capitalize">{{ $m->source->value }}</td>
@@ -131,7 +131,7 @@
 
                     <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
                         @foreach ($sessionMovements as $m)
-                            <div class="p-4">
+                            <div wire:key="movement-mobile-{{ $m->id }}" class="p-4">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $m->concept }}</p>

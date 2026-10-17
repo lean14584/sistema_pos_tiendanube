@@ -84,7 +84,7 @@
                 </thead>
                 <tbody>
                     @foreach ($logs as $log)
-                        <tr class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 align-top">
+                        <tr wire:key="log-{{ $log->id }}" class="border-b border-gray-50 dark:border-gray-800/60 last:border-0 align-top">
                             <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ $log->created_at->format('d/m/Y H:i') }}</td>
                             <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $log->user->name ?? 'Sistema' }}</td>
                             @if ($puedeVerTodasLasSucursales)
@@ -122,7 +122,7 @@
 
             <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
                 @foreach ($logs as $log)
-                    <div class="p-4">
+                    <div wire:key="log-mobile-{{ $log->id }}" class="p-4">
                         <div class="flex items-start justify-between gap-3">
                             <p class="text-gray-700 dark:text-gray-300">
                                 @if ($rutaRegistro($log))

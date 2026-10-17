@@ -52,6 +52,7 @@
                     @forelse ($productResults as $product)
                         <button
                             type="button"
+                            wire:key="product-result-{{ $product->id }}"
                             wire:click="selectProduct({{ $product->id }})"
                             x-on:click="open = false"
                             class="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-indigo-50/70 dark:hover:bg-indigo-500/10 border-b border-gray-50 dark:border-gray-800/60 last:border-0 transition-colors"

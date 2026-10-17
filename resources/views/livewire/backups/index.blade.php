@@ -73,7 +73,7 @@
                     </thead>
                     <tbody>
                         @foreach ($respaldos as $r)
-                            <tr class="border-t border-gray-100 dark:border-gray-800">
+                            <tr wire:key="backup-{{ $r['nombre'] }}" class="border-t border-gray-100 dark:border-gray-800">
                                 <td class="px-4 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs">{{ $r['nombre'] }}</td>
                                 <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ $r['fecha'] }}</td>
                                 <td class="px-4 py-2 text-right text-gray-600 dark:text-gray-400">{{ $r['tamano'] }}</td>

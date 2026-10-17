@@ -47,7 +47,7 @@
                                     <input type="number" step="0.01" min="0.01" wire:model="payAmount" aria-label="Monto a cobrar" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                     <select wire:model="payMethod" aria-label="Medio de pago" class="rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                         @foreach ($paymentMethods as $pm)
-                                            <option value="{{ $pm->value }}">{{ $pm->label() }}</option>
+                                            <option wire:key="payment-method-{{ $pm->value }}" value="{{ $pm->value }}">{{ $pm->label() }}</option>
                                         @endforeach
                                     </select>
                                     <button type="button" wire:click="savePayment" wire:loading.attr="disabled" wire:target="savePayment" class="rounded-md bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 text-white text-xs font-medium disabled:opacity-60">Guardar</button>

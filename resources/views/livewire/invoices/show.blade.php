@@ -206,6 +206,7 @@
             <div class="flex gap-1.5">
                 @foreach ($statuses as $s)
                     <button
+                        wire:key="status-{{ $s->value }}"
                         wire:click="setStatus('{{ $s->value }}')"
                         wire:loading.attr="disabled"
                         wire:target="setStatus"
@@ -309,7 +310,7 @@
                             <x-heroicon-o-qr-code class="w-5 h-5" />
                             <h2 class="font-semibold">Cobrar con Mercado Pago</h2>
                         </div>
-                        <button wire:click="{{ $qrState === 'waiting' ? 'cancelQrCharge' : 'closeQrModal' }}" class="text-white/80 hover:text-white">
+                        <button wire:click="{{ $qrState === 'waiting' ? 'cancelQrCharge' : 'closeQrModal' }}" aria-label="Cerrar" class="text-white/80 hover:text-white">
                             <x-heroicon-o-x-mark class="w-5 h-5" />
                         </button>
                     </div>

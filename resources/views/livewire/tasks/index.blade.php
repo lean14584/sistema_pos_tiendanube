@@ -14,7 +14,7 @@
             Todas
         </button>
         @foreach ($statuses as $s)
-            <button wire:click="$set('filter', '{{ $s->value }}')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $filter === $s->value ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800' }}">
+            <button wire:key="status-{{ $s->value }}" wire:click="$set('filter', '{{ $s->value }}')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {{ $filter === $s->value ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800' }}">
                 {{ $s->label() }}
             </button>
         @endforeach

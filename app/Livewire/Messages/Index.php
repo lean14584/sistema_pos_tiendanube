@@ -71,10 +71,20 @@ class Index extends Component
                 $q->where('sender_id', $this->with->id)->where('recipient_id', $userId);
             })->orderByDesc('created_at')->orderByDesc('id')->limit(200)->get()->reverse()->values();
 
-            Message::where('sender_id', $this->with->id)
+            // El wire:poll del hilo abierto llama acá cada 12s aunque no haya
+            // nada nuevo — el exists() evita un UPDATE de más en la mayoría
+            // de esos ticks (el cliente sigue viendo el hilo, no mandó nada).
+            $hayNoLeidos = Message::where('sender_id', $this->with->id)
                 ->where('recipient_id', $userId)
                 ->whereNull('read_at')
-                ->update(['read_at' => now()]);
+                ->exists();
+
+            if ($hayNoLeidos) {
+                Message::where('sender_id', $this->with->id)
+                    ->where('recipient_id', $userId)
+                    ->whereNull('read_at')
+                    ->update(['read_at' => now()]);
+            }
         }
 
         return view('livewire.messages.index', [

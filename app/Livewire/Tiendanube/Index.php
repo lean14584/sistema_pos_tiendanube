@@ -6,6 +6,7 @@ use App\Models\CompanySettings;
 use App\Models\Sucursal;
 use App\Services\Tiendanube\TiendanubeClient;
 use App\Services\Tiendanube\TiendanubeSync;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -96,7 +97,11 @@ class Index extends Component
             $nombre = $this->texto($store['name'] ?? 'tu tienda');
             $this->resultado = '✓ Conectado a «'.$nombre.'».';
         } catch (\Throwable $e) {
-            $this->error = 'No se pudo conectar: '.$e->getMessage();
+            // No mostrar el mensaje crudo de la excepción, aunque solo lo vea
+            // un admin — puede traer detalles de infraestructura (URLs
+            // internas, trazas) que no hace falta exponer en la UI.
+            Log::error('Tiendanube testConnection falló', ['exception' => $e]);
+            $this->error = 'No se pudo conectar con Tiendanube. Revisá el token de acceso en la configuración.';
         }
     }
 

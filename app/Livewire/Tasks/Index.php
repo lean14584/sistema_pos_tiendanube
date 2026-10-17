@@ -25,6 +25,11 @@ class Index extends Component
 
         abort_unless($user->role === Role::Admin || $task->assigned_to === $user->id, 403);
 
+        // Sin esto, un $status que no matchea ningún caso del enum explota
+        // con un ValueError sin capturar (500 feo) en vez de un 422 prolijo
+        // — el cast nativo de Eloquent a enum lo rechaza, pero recién ahí.
+        abort_unless(TaskStatus::tryFrom($status) !== null, 422);
+
         $task->update(['status' => $status]);
     }
 

@@ -241,6 +241,30 @@ class NotaCreditoTest extends TestCase
         $this->assertSame(7, $product->fresh()->stock);
     }
 
+    public function test_no_se_puede_acreditar_de_mas_manipulando_quantity_original_o_unit_price_original(): void
+    {
+        // quantity_original/unit_price_original (la base del tope de arriba)
+        // son properties públicas de Livewire: una request armada a mano
+        // podía subirlas junto con quantity/unit_price para esquivar el
+        // chequeo. save() tiene que resincronizarlas contra el InvoiceItem
+        // real antes de compararlas, ignorando el valor manipulado.
+        $fake = $this->fake();
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 10]);
+        $factura = $this->facturaEmitida($fake, $product); // 3 unidades a $1000 c/u
+
+        Livewire::actingAs($this->admin())
+            ->test('notas-credito.create', ['invoice' => $factura])
+            ->set('items.0.quantity', '20')
+            ->set('items.0.quantity_original', '20') // intento: esquivar el tope de cantidad
+            ->set('items.0.unit_price', '5000')
+            ->set('items.0.unit_price_original', '5000') // intento: esquivar el tope de precio
+            ->call('save')
+            ->assertHasErrors('items');
+
+        $this->assertDatabaseMissing('invoices', ['related_invoice_id' => $factura->id]);
+        $this->assertSame(7, $product->fresh()->stock); // no se repuso nada
+    }
+
     public function test_no_se_puede_emitir_nota_de_credito_para_una_factura_sin_cae(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);

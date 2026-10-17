@@ -48,6 +48,7 @@ class Create extends Component
         $this->invoice = $invoice;
 
         $this->items = $invoice->items->map(fn ($item) => [
+            'invoice_item_id' => $item->id,
             'product_id' => $item->product_id,
             'description' => $item->description,
             'quantity' => (string) $item->quantity,
@@ -112,8 +113,42 @@ class Create extends Component
         }
     }
 
+    /**
+     * $items es una property pública de Livewire: quantity_original y
+     * unit_price_original (la base del tope de abajo) llegan en cada request
+     * tal como las mande el cliente, sin garantía de que sigan siendo lo que
+     * mount() puso ahí. Se resincronizan acá contra el InvoiceItem real por
+     * su invoice_item_id antes de validar nada — product_id/description/
+     * quantity_original/unit_price_original/iva_rate siempre salen de la
+     * base. quantity y unit_price (lo que efectivamente se acredita, topeado
+     * más abajo contra esos *_original ya confiables) quedan tal como los
+     * cargó el usuario.
+     */
+    private function sincronizarConFacturaOriginal(): void
+    {
+        foreach ($this->items as $i => $item) {
+            $original = $this->invoice->items->firstWhere('id', (int) ($item['invoice_item_id'] ?? 0));
+
+            if (! $original) {
+                unset($this->items[$i]);
+
+                continue;
+            }
+
+            $this->items[$i]['product_id'] = $original->product_id;
+            $this->items[$i]['description'] = $original->description;
+            $this->items[$i]['quantity_original'] = (string) $original->quantity;
+            $this->items[$i]['unit_price_original'] = (string) $original->unit_price;
+            $this->items[$i]['iva_rate'] = AlicuotaIva::normalizar($original->iva_rate_efectiva);
+        }
+
+        $this->items = array_values($this->items);
+    }
+
     public function save(): void
     {
+        $this->sincronizarConFacturaOriginal();
+
         $validItems = $this->validItems();
 
         if ($validItems->isEmpty()) {

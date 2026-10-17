@@ -79,6 +79,7 @@
                     @forelse ($this->productResults as $product)
                         <button
                             type="button"
+                            wire:key="product-result-{{ $product->id }}"
                             wire:click="addProductItem({{ $product->id }})"
                             class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-indigo-50/70 dark:hover:bg-indigo-500/10 transition-colors"
                         >
