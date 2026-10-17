@@ -146,4 +146,51 @@ class CompanySettingsTest extends TestCase
 
         $this->actingAs($vendedor)->get(route('company-settings.edit'))->assertForbidden();
     }
+
+    public function test_puede_guardar_un_color_de_marca_valido(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('theme_primary_color', '#FF5733')
+            ->set('theme_secondary_color', '#00AABB')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $company = CompanySettings::current();
+        // Se normaliza a minúsculas al guardar.
+        $this->assertSame('#ff5733', $company->theme_primary_color);
+        $this->assertSame('#00aabb', $company->theme_secondary_color);
+    }
+
+    public function test_un_color_de_marca_con_formato_invalido_es_rechazado(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('theme_primary_color', 'no-es-un-hex')
+            ->call('save')
+            ->assertHasErrors('theme_primary_color');
+
+        $this->assertNull(CompanySettings::current()->theme_primary_color);
+    }
+
+    public function test_dejar_el_color_de_marca_en_blanco_vuelve_a_la_paleta_de_fabrica(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+        CompanySettings::current()->update(['theme_primary_color' => '#ff5733']);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('theme_primary_color', '')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertNull(CompanySettings::current()->theme_primary_color);
+    }
 }

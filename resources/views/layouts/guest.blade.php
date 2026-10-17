@@ -16,6 +16,7 @@
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {!! \App\Support\ThemeCss::render() !!}
 </head>
 <body class="min-h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
     {{ $slot }}

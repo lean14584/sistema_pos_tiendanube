@@ -47,6 +47,11 @@ class Edit extends Component
 
     public string $descuento_transferencia_pct = '0';
 
+    /** Vacío = paleta de fábrica (indigo/sky), sin ningún CSS extra inyectado. */
+    public string $theme_primary_color = '';
+
+    public string $theme_secondary_color = '';
+
     /** Archivo recién seleccionado, pendiente de guardar (null = no tocar el logo actual). */
     public $logo = null;
 
@@ -72,6 +77,8 @@ class Edit extends Component
         $this->barcode_scale_weight_digits = (string) $this->company->barcode_scale_weight_digits;
         $this->descuento_efectivo_pct = (string) $this->company->descuento_efectivo_pct;
         $this->descuento_transferencia_pct = (string) $this->company->descuento_transferencia_pct;
+        $this->theme_primary_color = (string) $this->company->theme_primary_color;
+        $this->theme_secondary_color = (string) $this->company->theme_secondary_color;
     }
 
     /**
@@ -125,6 +132,8 @@ class Edit extends Component
             'barcode_scale_weight_digits' => ['required_if:barcode_scale_enabled,true', 'nullable', 'integer', 'min:1', 'max:9'],
             'descuento_efectivo_pct' => ['required', 'numeric', 'min:0', 'max:100'],
             'descuento_transferencia_pct' => ['required', 'numeric', 'min:0', 'max:100'],
+            'theme_primary_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'theme_secondary_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             // 'image' de Laravel admite SVG, que puede llevar <script>
             // embebido (XSS almacenado si algún día se sirve el archivo
             // fuera de un <img>). Se restringe a los formatos rasterizados
@@ -192,6 +201,11 @@ class Edit extends Component
         if ($this->key) {
             $this->guardarArchivoAfip($this->key, config('afip.key_path'));
         }
+
+        // Vacío => null (paleta de fábrica), no cadena vacía — más prolijo
+        // en la base y ThemeCss::render() los trata igual de cualquier modo.
+        $data['theme_primary_color'] = $data['theme_primary_color'] ? strtolower($data['theme_primary_color']) : null;
+        $data['theme_secondary_color'] = $data['theme_secondary_color'] ? strtolower($data['theme_secondary_color']) : null;
 
         unset($data['logo'], $data['cert'], $data['key']);
 

@@ -232,6 +232,56 @@
                 </p>
             </div>
 
+            {{-- Sección: Apariencia --}}
+            <div
+                class="space-y-4 {{ $sectionDivider }}"
+                x-data="{ primary: @entangle('theme_primary_color'), secondary: @entangle('theme_secondary_color') }"
+            >
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="{{ $sectionTitle }}">Apariencia</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Los dos colores de marca de todo el sistema: el principal (botones, enlaces, estados activos) y el secundario (foco de los campos, acentos). Dejá en blanco para usar los colores de fábrica.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        x-on:click="primary = ''; secondary = ''"
+                        class="shrink-0 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline"
+                    >
+                        Restablecer
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="{{ $label }}">Color principal</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" x-model="primary" class="h-10 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer bg-transparent p-0.5">
+                            <input type="text" x-model="primary" maxlength="7" placeholder="#4f46e5" class="{{ $inputClass }} font-mono uppercase">
+                        </div>
+                        @error('theme_primary_color') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="{{ $label }}">Color secundario</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" x-model="secondary" class="h-10 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer bg-transparent p-0.5">
+                            <input type="text" x-model="secondary" maxlength="7" placeholder="#0ea5e9" class="{{ $inputClass }} font-mono uppercase">
+                        </div>
+                        @error('theme_secondary_color') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 px-4 py-3">
+                    <span class="text-xs text-gray-400 dark:text-gray-500">Vista previa:</span>
+                    <button type="button" class="rounded-lg px-3 py-1.5 text-sm font-semibold text-white shadow-sm" :style="`background-color: ${primary || '#4f46e5'}`">Botón</button>
+                    <span class="text-sm font-medium underline" :style="`color: ${secondary || '#0ea5e9'}`">Enlace</span>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500">
+                    Esta vista previa es solo aproximada (no genera los tintes claros/oscuros de cada tono) — el resultado final en todo el sistema se ve al guardar.
+                </p>
+            </div>
+
             <div class="flex gap-3 {{ $sectionDivider }}">
                 <button
                     type="submit"

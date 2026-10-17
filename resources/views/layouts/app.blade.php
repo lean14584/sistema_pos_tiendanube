@@ -16,6 +16,7 @@
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {!! \App\Support\ThemeCss::render() !!}
 </head>
 <body
     x-data="{ sidebarOpen: false }"
