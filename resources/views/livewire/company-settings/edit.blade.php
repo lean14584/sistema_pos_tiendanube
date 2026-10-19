@@ -28,7 +28,14 @@
         </div>
     @endif
 
-    <form wire:submit="save" class="max-w-5xl" enctype="multipart/form-data">
+    {{-- novalidate: con las pestañas, un input required nativo que queda
+         oculto (display:none vía x-show) bloquea el submit del navegador en
+         silencio — no hay forma de enfocarlo ni mostrar su globo de error
+         porque no es visible, así que el click en "Guardar cambios" no
+         dispara ni el request ni ningún aviso. La validación real ya la hace
+         el servidor (save()), que además ahora cambia de pestaña sola si el
+         error cae en una oculta (ver company-settings-tab-con-error). --}}
+    <form wire:submit="save" novalidate class="max-w-5xl" enctype="multipart/form-data">
         <div class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
 
             {{-- Navegación de pestañas: estilo subrayado minimalista (mismo
