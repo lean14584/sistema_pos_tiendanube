@@ -12,7 +12,9 @@ use App\Models\SucursalMercadoPagoConfig;
 use App\Support\ThemeCss;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -302,7 +304,18 @@ class Edit extends Component
             $rules['mp_pos_name'] = ['nullable', 'string', 'max:255'];
         }
 
-        $data = $this->validate($rules);
+        try {
+            $data = $this->validate($rules);
+        } catch (ValidationException $e) {
+            // La pantalla está dividida en pestañas y la que falla puede no
+            // ser la que el usuario tiene abierta — sin esto, el error queda
+            // en una pestaña oculta y el guardado "no hace nada" a la vista
+            // (el Alpine x-data que elige la pestaña inicial solo se evalúa
+            // una vez, al montar; un morph de Livewire no lo vuelve a correr).
+            $this->dispatch('company-settings-tab-con-error', tab: $this->primerTabConError($e->validator->errors()));
+
+            throw $e;
+        }
 
         $this->validarExtension('cert', ['crt', 'pem', 'cer']);
         $this->validarExtension('key', ['key', 'pem']);
@@ -472,9 +485,53 @@ class Edit extends Component
         File::copy($archivo->getRealPath(), $destino);
     }
 
+    /**
+     * Mapa pestaña => campos, única fuente de verdad compartida con la vista
+     * (que la usa para pintar el tabnav, el banner de errores y el punto
+     * rojo) y con primerTabConError() más abajo.
+     *
+     * @return array<string, array{label: string, icon: string, fields: array<int, string>}>
+     */
+    public function tabs(): array
+    {
+        $tabs = [
+            'general' => ['label' => 'Datos generales', 'icon' => 'building-office', 'fields' => ['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'condicion_iva', 'logo']],
+            'arca' => ['label' => 'Facturación ARCA', 'icon' => 'document-text', 'fields' => ['factura_a_habilitada', 'factura_b_habilitada', 'cert', 'key']],
+        ];
+
+        if (! config('features.multisucursal')) {
+            $tabs['sucursal'] = ['label' => 'Sucursal', 'icon' => 'building-storefront', 'fields' => ['sucursal_name', 'sucursal_razon_social', 'sucursal_active', 'puntosVenta', 'nuevoPuntoVentaNumero', 'nuevoPuntoVentaNombre']];
+            $tabs['mercadopago'] = ['label' => 'Mercado Pago', 'icon' => 'credit-card', 'fields' => ['mp_access_token', 'mp_webhook_secret', 'mp_store_external_id', 'mp_pos_external_id', 'mp_store_name', 'mp_pos_name']];
+        }
+
+        if (config('features.sell_by_weight')) {
+            $tabs['balanza'] = ['label' => 'Balanza', 'icon' => 'scale', 'fields' => ['barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits']];
+        }
+
+        $tabs['descuentos'] = ['label' => 'Descuentos', 'icon' => 'receipt-percent', 'fields' => ['descuento_efectivo_pct', 'descuento_transferencia_pct']];
+        $tabs['apariencia'] = ['label' => 'Apariencia', 'icon' => 'paint-brush', 'fields' => ['theme_primary_color', 'theme_secondary_color']];
+
+        return $tabs;
+    }
+
+    /** Primera pestaña (en el orden de tabs()) que tiene algún campo con error. */
+    private function primerTabConError(MessageBag $errors): string
+    {
+        foreach ($this->tabs() as $slug => $tab) {
+            foreach ($tab['fields'] as $field) {
+                if ($errors->has($field)) {
+                    return $slug;
+                }
+            }
+        }
+
+        return 'general';
+    }
+
     public function render()
     {
         return view('livewire.company-settings.edit', [
+            'tabs' => $this->tabs(),
             'condicionIvaOptions' => CondicionIva::cases(),
             'certCargado' => $this->certCargado(),
             'keyCargada' => $this->keyCargada(),

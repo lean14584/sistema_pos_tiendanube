@@ -5,28 +5,17 @@
     $label = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
     $fileInputClass = 'w-full text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 dark:file:bg-sky-500/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-700 dark:file:text-sky-300 hover:file:bg-sky-100 dark:hover:file:bg-sky-500/20';
 
-    // Pestañas visibles: Sucursal/Mercado Pago solo existen fusionadas acá
-    // cuando multisucursal está apagado (ver CompanySettings\Edit::mount()).
-    // Con multisucursal prendido, esos datos se siguen manejando por
-    // sucursal desde el menú "Sucursales" (sin cambios).
-    $tabs = [
-        'general' => ['label' => 'Datos generales', 'icon' => 'building-office', 'fields' => ['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'condicion_iva', 'logo']],
-        'arca' => ['label' => 'Facturación ARCA', 'icon' => 'document-text', 'fields' => ['factura_a_habilitada', 'factura_b_habilitada', 'cert', 'key']],
-    ];
-    if (! config('features.multisucursal')) {
-        $tabs['sucursal'] = ['label' => 'Sucursal', 'icon' => 'building-storefront', 'fields' => ['sucursal_name', 'sucursal_razon_social', 'sucursal_active', 'puntosVenta', 'nuevoPuntoVentaNumero', 'nuevoPuntoVentaNombre']];
-        $tabs['mercadopago'] = ['label' => 'Mercado Pago', 'icon' => 'credit-card', 'fields' => ['mp_access_token', 'mp_webhook_secret', 'mp_store_external_id', 'mp_pos_external_id', 'mp_store_name', 'mp_pos_name']];
-    }
-    if (config('features.sell_by_weight')) {
-        $tabs['balanza'] = ['label' => 'Balanza', 'icon' => 'scale', 'fields' => ['barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits']];
-    }
-    $tabs['descuentos'] = ['label' => 'Descuentos', 'icon' => 'receipt-percent', 'fields' => ['descuento_efectivo_pct', 'descuento_transferencia_pct']];
-    $tabs['apariencia'] = ['label' => 'Apariencia', 'icon' => 'paint-brush', 'fields' => ['theme_primary_color', 'theme_secondary_color']];
-
+    // $tabs viene de CompanySettings\Edit::tabs() (única fuente de verdad,
+    // compartida con primerTabConError() para el evento que cambia de
+    // pestaña en save()).
     $tabsConError = collect($tabs)->filter(fn ($tab) => collect($tab['fields'])->contains(fn ($field) => $errors->has($field)))->keys();
 @endphp
 
-<div class="p-8 max-w-6xl mx-auto" x-data="{ tab: '{{ $tabsConError->first() ?? 'general' }}' }">
+<div
+    class="p-8 max-w-6xl mx-auto"
+    x-data="{ tab: '{{ $tabsConError->first() ?? 'general' }}' }"
+    x-on:company-settings-tab-con-error.window="tab = $event.detail.tab"
+>
     <x-page-header title="Datos de la empresa" subtitle="Estos datos se usan para determinar el tipo de comprobante (Factura A/B/C) y se envían a ARCA al emitir cada factura." icon="building-office" />
 
     @if ($tabsConError->isNotEmpty())
