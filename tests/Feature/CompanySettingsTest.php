@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Client;
 use App\Models\CompanySettings;
+use App\Models\Invoice;
+use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -192,5 +195,98 @@ class CompanySettingsTest extends TestCase
             ->assertHasNoErrors();
 
         $this->assertNull(CompanySettings::current()->theme_primary_color);
+    }
+
+    /**
+     * Sin multisucursal, los datos de la única sucursal (nombre, razón
+     * social, puntos de venta, Mercado Pago) se fusionan en esta misma
+     * pantalla — ver CompanySettings\Edit::mount()/save(). sucursales.edit
+     * sigue existiendo igual (ver SucursalesTest), solo deja de ser el único
+     * lugar donde cargar esto.
+     */
+    public function test_sin_multisucursal_se_puede_editar_la_sucursal_desde_datos_de_la_empresa(): void
+    {
+        config(['features.multisucursal' => false]);
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+        $unica = tap(Sucursal::sole())->update(['razon_social' => 'Mi Empresa SRL']);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('sucursal_name', 'Casa Central')
+            ->set('mp_access_token', 'APP_USR-secreto')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $unica->refresh();
+        $this->assertSame('Casa Central', $unica->name);
+        $this->assertSame('APP_USR-secreto', $unica->mercadoPagoConfig->access_token);
+    }
+
+    public function test_con_multisucursal_prendido_no_se_valida_ni_se_pide_el_nombre_de_sucursal(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->call('save')
+            ->assertHasNoErrors();
+    }
+
+    public function test_sin_multisucursal_no_se_puede_dejar_el_nombre_de_sucursal_vacio(): void
+    {
+        config(['features.multisucursal' => false]);
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('razon_social', 'Mi Empresa S.A.')
+            ->set('sucursal_name', '')
+            ->call('save')
+            ->assertHasErrors(['sucursal_name']);
+    }
+
+    public function test_sin_multisucursal_se_puede_agregar_un_punto_de_venta_desde_datos_de_la_empresa(): void
+    {
+        config(['features.multisucursal' => false]);
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+        $unica = Sucursal::sole();
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->set('nuevoPuntoVentaNumero', '6')
+            ->set('nuevoPuntoVentaNombre', 'Online')
+            ->call('agregarPuntoVenta')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('puntos_venta', ['sucursal_id' => $unica->id, 'numero' => 6, 'nombre' => 'Online']);
+    }
+
+    public function test_sin_multisucursal_no_se_puede_borrar_un_punto_de_venta_que_ya_facturo(): void
+    {
+        config(['features.multisucursal' => false]);
+        $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
+        $unica = Sucursal::sole();
+        $pv = $unica->puntosVenta()->create(['numero' => 5, 'active' => true]);
+        $unica->puntosVenta()->create(['numero' => 6, 'active' => true]);
+
+        Invoice::create([
+            'number' => '0005-00000001',
+            'client_id' => Client::consumidorFinal()->id,
+            'sucursal_id' => $unica->id,
+            'punto_venta' => 5,
+            'issue_date' => now(),
+            'due_date' => now(),
+            'tax_rate' => 0,
+            'status' => 'draft',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test('company-settings.edit')
+            ->call('eliminarPuntoVenta', $pv->id)
+            ->assertHasErrors('puntosVenta');
+
+        $this->assertDatabaseHas('puntos_venta', ['id' => $pv->id]);
     }
 }

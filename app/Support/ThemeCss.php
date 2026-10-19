@@ -16,6 +16,20 @@ class ThemeCss
 {
     public static function render(): string
     {
+        $vars = self::vars();
+
+        return $vars === '' ? '' : "<style id=\"theme-vars\">:root{{$vars}}</style>";
+    }
+
+    /**
+     * Las variables solas (sin el wrapper <style>), para poder inyectarlas
+     * tanto en el render server-side como por JS tras guardar — ver
+     * CompanySettings\Edit::save(), que actualiza #theme-vars en caliente
+     * porque wire:navigate no gestiona <style> sueltos en el <head> (solo
+     * <link>/<script> marcados con data-navigate-track).
+     */
+    public static function vars(): string
+    {
         $company = CompanySettings::current();
         $primary = $company->theme_primary_color;
         $secondary = $company->theme_secondary_color;
@@ -26,12 +40,10 @@ class ThemeCss
 
         // Función pura del par de hex: no hace falta invalidar nada, un
         // hex distinto es automáticamente otra entrada de caché.
-        $vars = Cache::rememberForever(
+        return Cache::rememberForever(
             "theme-css:{$primary}:{$secondary}",
             fn () => self::buildVars($primary, $secondary)
         );
-
-        return "<style>:root{{$vars}}</style>";
     }
 
     private static function buildVars(?string $primary, ?string $secondary): string

@@ -3,7 +3,6 @@
     use App\Models\Message;
     use App\Models\Product;
     use App\Models\ProductBatch;
-    use App\Models\Sucursal;
     use App\Models\Task;
     use App\Support\Permissions;
 
@@ -52,18 +51,13 @@
         ['module' => 'users', 'group' => 'Equipo', 'pattern' => 'users.*', 'href' => route('users.index'), 'label' => 'Usuarios', 'icon' => 'shield-check'],
 
         ['module' => 'company-settings', 'group' => 'Configuración', 'pattern' => 'company-settings.*', 'href' => route('company-settings.edit'), 'label' => 'Datos de la empresa', 'icon' => 'building-office'],
-        // sucursales.edit siempre está registrada (ver routes/web.php), aunque
-        // multisucursal esté apagado — es donde vive el ABM de Mercado Pago de
-        // la única sucursal ("Principal"). Con multisucursal prendido, en cambio,
-        // este ítem manda al listado de sucursales, no a la edición directa.
-        [
-            'module' => 'sucursales', 'group' => 'Configuración', 'pattern' => 'sucursales.*',
-            'href' => config('features.multisucursal')
-                ? $safeRoute('sucursales.index')
-                : $safeRoute('sucursales.edit', Sucursal::query()->orderBy('id')->first()),
-            'label' => config('features.multisucursal') ? 'Sucursales' : 'Sucursal',
-            'icon' => 'building-storefront',
-        ],
+        // Con multisucursal apagado este ítem no se muestra (ver $featureGate
+        // más abajo): el ABM de la única sucursal ("Principal") — Mercado
+        // Pago, puntos de venta ARCA — vive fusionado dentro de "Datos de la
+        // empresa" (ver CompanySettings\Edit). sucursales.edit sigue
+        // registrada igual (routes/web.php) por si se accede por URL directa,
+        // simplemente no hay un ítem de menú aparte apuntando ahí.
+        ['module' => 'sucursales', 'group' => 'Configuración', 'pattern' => 'sucursales.*', 'href' => $safeRoute('sucursales.index'), 'label' => 'Sucursales', 'icon' => 'building-storefront'],
         ['module' => 'company-settings', 'group' => 'Configuración', 'pattern' => 'tiendanube.*', 'href' => $safeRoute('tiendanube.index'), 'label' => 'Tiendanube', 'icon' => 'shopping-bag'],
         ['module' => 'audit', 'group' => 'Configuración', 'pattern' => 'audit.*', 'href' => route('audit.index'), 'label' => 'Auditoría', 'icon' => 'clipboard-document-check'],
         ['module' => 'data-import', 'group' => 'Configuración', 'pattern' => 'historical-sales.*', 'href' => $safeRoute('historical-sales.index'), 'label' => 'Ventas históricas', 'icon' => 'clock'],
@@ -91,6 +85,7 @@
         'price-lists.*' => 'price_lists',
         'vencimientos.*' => 'vencimientos_finanzas',
         'historical-sales.*' => 'historical_sales',
+        'sucursales.*' => 'multisucursal',
     ];
 
     $user = auth()->user();

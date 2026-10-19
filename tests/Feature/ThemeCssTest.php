@@ -22,7 +22,7 @@ class ThemeCssTest extends TestCase
 
         $css = ThemeCss::render();
 
-        $this->assertStringContainsString('<style>', $css);
+        $this->assertStringContainsString('<style id="theme-vars">', $css);
         $this->assertStringContainsString('--color-indigo-600:', $css);
         $this->assertStringContainsString('--color-indigo-950:', $css);
         // Sin color secundario cargado, no se toca sky.

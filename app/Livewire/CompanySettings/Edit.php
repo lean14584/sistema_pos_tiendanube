@@ -3,7 +3,13 @@
 namespace App\Livewire\CompanySettings;
 
 use App\Enums\CondicionIva;
+use App\Livewire\Concerns\ShowsToasts;
 use App\Models\CompanySettings;
+use App\Models\Invoice;
+use App\Models\PuntoVenta;
+use App\Models\Sucursal;
+use App\Models\SucursalMercadoPagoConfig;
+use App\Support\ThemeCss;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -14,7 +20,7 @@ use Livewire\WithFileUploads;
 #[Layout('layouts.app')]
 class Edit extends Component
 {
-    use WithFileUploads;
+    use ShowsToasts, WithFileUploads;
 
     public CompanySettings $company;
 
@@ -60,6 +66,35 @@ class Edit extends Component
 
     public $key = null;
 
+    // --- Sucursal única + Mercado Pago (solo sin multisucursal, ver mount())
+    // Este bloque fusiona lo que antes vivía exclusivamente en
+    // Sucursales\Edit — ese componente y su ruta siguen existiendo igual
+    // (no se tocan), pero con multisucursal apagado el menú ya no linkea ahí:
+    // ahora se edita todo desde "Datos de la empresa" directamente. ---
+    public ?Sucursal $sucursal = null;
+
+    public string $sucursal_name = '';
+
+    public string $sucursal_razon_social = '';
+
+    public bool $sucursal_active = true;
+
+    public string $nuevoPuntoVentaNumero = '';
+
+    public string $nuevoPuntoVentaNombre = '';
+
+    public string $mp_access_token = '';
+
+    public string $mp_webhook_secret = '';
+
+    public string $mp_store_external_id = '';
+
+    public string $mp_pos_external_id = '';
+
+    public string $mp_store_name = '';
+
+    public string $mp_pos_name = '';
+
     public function mount(): void
     {
         $this->company = CompanySettings::current();
@@ -79,6 +114,114 @@ class Edit extends Component
         $this->descuento_transferencia_pct = (string) $this->company->descuento_transferencia_pct;
         $this->theme_primary_color = (string) $this->company->theme_primary_color;
         $this->theme_secondary_color = (string) $this->company->theme_secondary_color;
+
+        if (! config('features.multisucursal')) {
+            $this->sucursal = Sucursal::query()->orderBy('id')->first();
+
+            if ($this->sucursal) {
+                $this->sucursal_name = $this->sucursal->name;
+                $this->sucursal_razon_social = $this->sucursal->razon_social;
+                $this->sucursal_active = $this->sucursal->active;
+
+                $mp = $this->sucursal->mercadoPagoConfig;
+                // El access_token/webhook_secret NO se precargan (mismo
+                // criterio que Sucursales\Edit): un input type=password con
+                // el valor real lo mandaría en texto plano al navegador.
+                $this->mp_store_external_id = (string) ($mp->store_external_id ?? '');
+                $this->mp_pos_external_id = (string) ($mp->pos_external_id ?? '');
+                $this->mp_store_name = (string) ($mp->store_name ?? '');
+                $this->mp_pos_name = (string) ($mp->pos_name ?? '');
+            }
+        }
+    }
+
+    public function mpTokenCargado(): bool
+    {
+        return filled($this->sucursal?->mercadoPagoConfig?->access_token);
+    }
+
+    public function mpWebhookSecretCargado(): bool
+    {
+        return filled($this->sucursal?->mercadoPagoConfig?->webhook_secret);
+    }
+
+    /** Puntos de venta de la única sucursal, más nuevos primero para ver rápido lo recién agregado. */
+    public function puntosVenta()
+    {
+        return $this->sucursal?->puntosVenta()->orderByDesc('id')->get() ?? collect();
+    }
+
+    public function agregarPuntoVenta(): void
+    {
+        if (! $this->sucursal) {
+            return;
+        }
+
+        $data = $this->validate([
+            'nuevoPuntoVentaNumero' => ['required', 'integer', 'min:1', 'max:9999', 'unique:puntos_venta,numero'],
+            'nuevoPuntoVentaNombre' => ['nullable', 'string', 'max:100'],
+        ], [], ['nuevoPuntoVentaNumero' => 'número de punto de venta']);
+
+        PuntoVenta::create([
+            'sucursal_id' => $this->sucursal->id,
+            'numero' => $data['nuevoPuntoVentaNumero'],
+            'nombre' => $data['nuevoPuntoVentaNombre'] ?: null,
+            'active' => true,
+        ]);
+
+        $this->reset('nuevoPuntoVentaNumero', 'nuevoPuntoVentaNombre');
+        $this->toastSuccess('Punto de venta agregado.');
+    }
+
+    /** No deja apagar el único punto de venta activo: rompería la facturación. */
+    public function togglePuntoVenta(int $id): void
+    {
+        if (! $this->sucursal) {
+            return;
+        }
+
+        $pv = $this->sucursal->puntosVenta()->findOrFail($id);
+
+        if ($pv->active) {
+            $quedanActivos = $this->sucursal->puntosVenta()->where('active', true)->where('id', '!=', $id)->exists();
+
+            if (! $quedanActivos) {
+                $this->addError('puntosVenta', 'Tiene que quedar al menos un punto de venta activo.');
+
+                return;
+            }
+        }
+
+        $pv->update(['active' => ! $pv->active]);
+    }
+
+    /**
+     * Solo se puede borrar un punto de venta que nunca se usó (sin ninguna
+     * factura emitida con ese número) — si ya facturó algo, desactivarlo en
+     * vez de borrarlo, para no perder trazabilidad de ese historial.
+     */
+    public function eliminarPuntoVenta(int $id): void
+    {
+        if (! $this->sucursal) {
+            return;
+        }
+
+        $pv = $this->sucursal->puntosVenta()->findOrFail($id);
+
+        if ($this->sucursal->puntosVenta()->count() <= 1) {
+            $this->addError('puntosVenta', 'Tiene que quedar al menos un punto de venta.');
+
+            return;
+        }
+
+        if (Invoice::where('punto_venta', $pv->numero)->exists()) {
+            $this->addError('puntosVenta', 'Ese punto de venta ya tiene facturas emitidas: desactivalo en vez de borrarlo.');
+
+            return;
+        }
+
+        $pv->delete();
+        $this->toastSuccess('Punto de venta eliminado.');
     }
 
     /**
@@ -113,7 +256,7 @@ class Edit extends Component
 
     public function save(): void
     {
-        $data = $this->validate([
+        $rules = [
             // El CUIT no es obligatorio para guardar el resto de los datos
             // (nombre, logo, etc.) — antes lo era, y bloqueaba TODO el
             // formulario (incluida la razón social) hasta tener el trámite
@@ -143,7 +286,23 @@ class Edit extends Component
             // extensión más abajo porque su mime no es confiable.
             'cert' => ['nullable', 'file', 'max:200'],
             'key' => ['nullable', 'file', 'max:200'],
-        ]);
+        ];
+
+        // Campos de la única sucursal + Mercado Pago, fusionados en esta
+        // misma pantalla cuando multisucursal está apagado (ver mount()).
+        if (! config('features.multisucursal') && $this->sucursal) {
+            $rules['sucursal_name'] = ['required', 'string', 'max:255'];
+            $rules['sucursal_razon_social'] = ['required', 'string', 'max:255'];
+            $rules['sucursal_active'] = ['boolean'];
+            $rules['mp_access_token'] = ['nullable', 'string', 'max:255'];
+            $rules['mp_webhook_secret'] = ['nullable', 'string', 'max:500'];
+            $rules['mp_store_external_id'] = ['nullable', 'string', 'max:100'];
+            $rules['mp_pos_external_id'] = ['nullable', 'string', 'max:100'];
+            $rules['mp_store_name'] = ['nullable', 'string', 'max:255'];
+            $rules['mp_pos_name'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $data = $this->validate($rules);
 
         $this->validarExtension('cert', ['crt', 'pem', 'cer']);
         $this->validarExtension('key', ['key', 'pem']);
@@ -207,14 +366,63 @@ class Edit extends Component
         $data['theme_primary_color'] = $data['theme_primary_color'] ? strtolower($data['theme_primary_color']) : null;
         $data['theme_secondary_color'] = $data['theme_secondary_color'] ? strtolower($data['theme_secondary_color']) : null;
 
-        unset($data['logo'], $data['cert'], $data['key']);
+        if (! config('features.multisucursal') && $this->sucursal) {
+            $this->sucursal->update([
+                'name' => $data['sucursal_name'],
+                'razon_social' => $data['sucursal_razon_social'],
+                'active' => $data['sucursal_active'],
+            ]);
+
+            $hayDatosDeMp = filled($data['mp_access_token']) || filled($data['mp_webhook_secret']) || filled($data['mp_store_external_id'])
+                || filled($data['mp_pos_external_id']) || filled($data['mp_store_name']) || filled($data['mp_pos_name']);
+
+            if ($hayDatosDeMp || $this->sucursal->mercadoPagoConfig) {
+                $mpData = [
+                    'store_external_id' => $data['mp_store_external_id'] ?: null,
+                    'pos_external_id' => $data['mp_pos_external_id'] ?: null,
+                    'store_name' => $data['mp_store_name'] ?: null,
+                    'pos_name' => $data['mp_pos_name'] ?: null,
+                ];
+                // Campo vacío = "no cambiar" el token/secret ya guardado
+                // (nunca se precarga el real, ver mount()).
+                if (filled($data['mp_access_token'])) {
+                    $mpData['access_token'] = $data['mp_access_token'];
+                }
+                if (filled($data['mp_webhook_secret'])) {
+                    $mpData['webhook_secret'] = $data['mp_webhook_secret'];
+                }
+
+                SucursalMercadoPagoConfig::updateOrCreate(['sucursal_id' => $this->sucursal->id], $mpData);
+            }
+        }
+
+        unset(
+            $data['logo'], $data['cert'], $data['key'],
+            $data['sucursal_name'], $data['sucursal_razon_social'], $data['sucursal_active'],
+            $data['mp_access_token'], $data['mp_webhook_secret'], $data['mp_store_external_id'],
+            $data['mp_pos_external_id'], $data['mp_store_name'], $data['mp_pos_name'],
+        );
 
         $this->company->update($data);
         $this->logo = null;
         $this->cert = null;
         $this->key = null;
 
-        session()->flash('status', 'Datos de la empresa actualizados.');
+        $this->toastSuccess('Datos de la empresa actualizados.');
+
+        // wire:navigate no gestiona <style> sueltos en el <head> (solo
+        // <link>/<script> marcados con data-navigate-track), así que una
+        // redirección a sí misma no alcanzaría para que el cambio de color
+        // se vea sin un F5 manual. Se actualiza el tag en caliente por JS en
+        // vez de depender de eso — ver ThemeCss::vars().
+        $cssText = ':root{'.ThemeCss::vars().'}';
+        $this->js(
+            '(function () {'
+            .'var el = document.getElementById("theme-vars");'
+            .'if (! el) { el = document.createElement("style"); el.id = "theme-vars"; document.head.appendChild(el); }'
+            .'el.textContent = '.json_encode($cssText).';'
+            .'})();'
+        );
     }
 
     /**
@@ -270,6 +478,9 @@ class Edit extends Component
             'condicionIvaOptions' => CondicionIva::cases(),
             'certCargado' => $this->certCargado(),
             'keyCargada' => $this->keyCargada(),
+            'puntosVenta' => $this->puntosVenta(),
+            'mpTokenCargado' => $this->mpTokenCargado(),
+            'mpWebhookSecretCargado' => $this->mpWebhookSecretCargado(),
         ]);
     }
 }
