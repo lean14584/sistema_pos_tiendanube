@@ -425,7 +425,7 @@
                                      escucha por defecto, solo 'change' al cerrar el diálogo — con los dos
                                      handlers cubrimos cualquiera de los dos sin depender de cuál dispare cada
                                      navegador. --}}
-                                <input type="color" :value="primary" @input="primary = $event.target.value" @change="primary = $event.target.value" class="h-10 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer bg-transparent p-0.5">
+                                <input type="color" :value="primary || '#000000'" @input="primary = $event.target.value" @change="primary = $event.target.value" class="h-10 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer bg-transparent p-0.5">
                                 <input type="text" x-model="primary" maxlength="7" placeholder="#4f46e5" class="{{ $inputClass }} font-mono uppercase">
                             </div>
                             @error('theme_primary_color') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
@@ -433,7 +433,7 @@
                         <div>
                             <label class="{{ $label }}">Color secundario</label>
                             <div class="flex items-center gap-2">
-                                <input type="color" :value="secondary" @input="secondary = $event.target.value" @change="secondary = $event.target.value" class="h-10 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer bg-transparent p-0.5">
+                                <input type="color" :value="secondary || '#000000'" @input="secondary = $event.target.value" @change="secondary = $event.target.value" class="h-10 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer bg-transparent p-0.5">
                                 <input type="text" x-model="secondary" maxlength="7" placeholder="#0ea5e9" class="{{ $inputClass }} font-mono uppercase">
                             </div>
                             @error('theme_secondary_color') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
