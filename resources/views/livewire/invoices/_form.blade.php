@@ -253,7 +253,7 @@
                         <div wire:key="payment-{{ $index }}" class="flex items-center gap-2">
                             <select wire:model="payments.{{ $index }}.method" class="rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 @foreach ($paymentMethods as $method)
-                                    <option value="{{ $method->value }}">{{ $method->label() }}</option>
+                                    <option value="{{ $method->value }}" @selected(($payment['method'] ?? '') === $method->value)>{{ $method->label() }}</option>
                                 @endforeach
                             </select>
                             <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-32 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">

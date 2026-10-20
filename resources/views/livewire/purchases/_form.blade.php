@@ -302,7 +302,7 @@
                             <div class="flex items-center gap-2">
                                 <select wire:model="payments.{{ $index }}.method" class="flex-1 min-w-0 {{ $inputClass }}">
                                     @foreach ($paymentMethods as $method)
-                                        <option wire:key="payment-method-{{ $method->value }}" value="{{ $method->value }}">{{ $method->label() }}</option>
+                                        <option wire:key="payment-method-{{ $method->value }}" value="{{ $method->value }}" @selected(($payment['method'] ?? '') === $method->value)>{{ $method->label() }}</option>
                                     @endforeach
                                 </select>
                                 <button type="button" wire:click="removePayment({{ $index }})" aria-label="Eliminar pago" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
