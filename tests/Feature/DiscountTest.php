@@ -101,7 +101,7 @@ class DiscountTest extends TestCase
         // $1000 - 15% = $850
         $this->assertEqualsWithDelta(850.0, $pos->instance()->total(), 0.01);
 
-        $pos->call('addPayment')->set('payments.0.method', 'efectivo')->set('printOnSale', false)->call('cobrar')->assertHasNoErrors();
+        $pos->set('stagingMethod', 'efectivo')->set('stagingAmount', '850')->call('addPayment')->set('printOnSale', false)->call('cobrar')->assertHasNoErrors();
 
         $this->assertDatabaseHas('invoice_items', ['description' => 'Ventilador', 'discount_percent' => 15]);
     }
@@ -120,7 +120,7 @@ class DiscountTest extends TestCase
         // $1000 - $200 fijos = $800
         $this->assertEqualsWithDelta(800.0, $pos->instance()->total(), 0.01);
 
-        $pos->call('addPayment')->set('payments.0.method', 'efectivo')->set('printOnSale', false)->call('cobrar')->assertHasNoErrors();
+        $pos->set('stagingMethod', 'efectivo')->set('stagingAmount', '800')->call('addPayment')->set('printOnSale', false)->call('cobrar')->assertHasNoErrors();
 
         $this->assertDatabaseHas('invoice_items', ['description' => 'Termo', 'discount_percent' => 20]);
     }
@@ -188,8 +188,8 @@ class DiscountTest extends TestCase
         $pos = Livewire::actingAs($admin)->test('pos.index')
             ->call('addProduct', $product->id)
             ->set('discount_id', $discount->id)
-            ->call('addPayment')
-            ->set('payments.0.method', 'efectivo');
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '850')
+            ->call('addPayment');
 
         // Mis Descuentos ya aplico 15% ($1000 -> $850, ver total()). El pago
         // en efectivo NO deberia restar otro 15% encima de eso.
@@ -238,10 +238,10 @@ class DiscountTest extends TestCase
         $pos = Livewire::actingAs($admin)->test('pos.index')
             ->call('addProduct', $product->id)
             ->set('discount_id', $discount->id)
-            ->call('addPayment')
-            ->set('payments.0.method', 'efectivo');
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '20100')
+            ->call('addPayment');
 
-        // $26800 - 25% = $20100, pago prellenado cubre el 100%.
+        // $26800 - 25% = $20100, pago cubre el 100%.
         $this->assertEqualsWithDelta(20100.0, $pos->instance()->total(), 0.01);
         $this->assertEqualsWithDelta(20100.0, (float) $pos->get('payments.0.amount'), 0.01);
 
@@ -265,9 +265,8 @@ class DiscountTest extends TestCase
         $pos = Livewire::actingAs($admin)->test('pos.index')
             ->call('addProduct', $product->id)
             ->set('discount_id', $discount->id)
-            ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
-            ->set('payments.0.amount', '10000');
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '10000')
+            ->call('addPayment');
 
         $pos->set('discount_id', null);
 

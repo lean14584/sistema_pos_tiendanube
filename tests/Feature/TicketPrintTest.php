@@ -112,8 +112,8 @@ class TicketPrintTest extends TestCase
         $pos = Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '1000')
             ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', true)
             ->call('cobrar');
 
@@ -135,8 +135,8 @@ class TicketPrintTest extends TestCase
         $pos = Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '1000')
             ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar');
 
@@ -204,8 +204,8 @@ class TicketPrintTest extends TestCase
         $pos = Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '1000')
             ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', true)
             ->set('printExchangeSlip', true)
             ->call('cobrar');
@@ -229,8 +229,8 @@ class TicketPrintTest extends TestCase
         $pos = Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '1000')
             ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', true)
             ->call('cobrar');
 

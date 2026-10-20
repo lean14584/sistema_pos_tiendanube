@@ -179,8 +179,8 @@ class PosTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pos.index')
             ->set('barcode', '2000023003505')->call('addByBarcode')
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '700')
             ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar');
 
@@ -219,8 +219,8 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->call('addProduct', $product->id)
             ->call('addProduct', $product->id) // cantidad 2
-            ->call('addPayment') // prellena el monto con el total (1000), sin medio elegido
-            ->set('payments.0.method', 'efectivo')
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '1000') // total 1000
+            ->call('addPayment')
             ->set('printOnSale', false)
             ->call('cobrar');
 
@@ -244,8 +244,8 @@ class PosTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
-            ->call('addPayment') // prellena con el total real (500) antes de manipular el precio
-            ->set('payments.0.method', 'efectivo')
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '500') // total real, antes de manipular el precio
+            ->call('addPayment')
             ->set('cart.0.unit_price', 0.01) // intento de manipulación
             ->set('printOnSale', false)
             ->call('cobrar');
@@ -269,8 +269,8 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->call('addProduct', $product->id)
             ->set('tipo_comprobante_interno', 'devolucion')
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '500')
             ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar');
 
@@ -409,8 +409,8 @@ class PosTest extends TestCase
             ->set('numeroFacturaOrigen', $original->number)
             ->call('buscarFacturaOrigen')
             ->call('addProduct', $productoNuevo->id) // carrito: $1500
-            ->call('addPayment') // prellena con la diferencia: 1500 - 1000 = 500
-            ->set('payments.0.method', 'efectivo')
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '500') // diferencia: 1500 - 1000
+            ->call('addPayment')
             ->set('printOnSale', false)
             ->call('cobrar');
 
@@ -541,8 +541,8 @@ class PosTest extends TestCase
             ->set('vale_codigo', $voucher->code)
             ->call('buscarVale')
             ->assertSet('vale_monto', '400')
-            ->call('addPayment') // prellena con lo que falta después del vale: 200
-            ->set('payments.0.method', 'efectivo')
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '200') // falta después del vale
+            ->call('addPayment')
             ->set('printOnSale', false)
             ->call('cobrar');
 
@@ -583,8 +583,8 @@ class PosTest extends TestCase
         $component = Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '500')
             ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false);
 
         $component->call('cobrar')->assertHasNoErrors();
@@ -602,7 +602,6 @@ class PosTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
-            ->call('addPayment')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasErrors('cart');
@@ -623,9 +622,8 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->set('client_id', $cliente->id)
             ->call('addProduct', $product->id) // total 1000
-            ->call('addPayment') // prellena 1000, sin medio elegido
-            ->set('payments.0.method', 'efectivo')
-            ->set('payments.0.amount', '600') // paga solo 600
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '600') // paga solo 600
+            ->call('addPayment')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();
@@ -662,11 +660,10 @@ class PosTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id) // total 10000
-            ->call('addPayment') // prellena el monto con 10000, sin medio elegido
-            ->set('payments.0.method', 'tarjeta')
-            ->set('payments.0.amount', '5000')
-            ->call('addPayment') // prellena el segundo con el saldo (5000), sin medio elegido
-            ->set('payments.1.method', 'efectivo')
+            ->set('stagingMethod', 'tarjeta')->set('stagingAmount', '5000')
+            ->call('addPayment')
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '5000') // saldo restante
+            ->call('addPayment')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();
@@ -700,9 +697,8 @@ class PosTest extends TestCase
             ->test('pos.index')
             ->set('client_id', $cliente->id)
             ->call('addProduct', $product->id) // total 1000
-            ->call('addPayment') // prellena 1000, sin medio elegido
-            ->set('payments.0.method', 'efectivo')
-            ->set('payments.0.amount', '600') // paga solo 600, quedan 400 en cta cte
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '600') // paga solo 600, quedan 400 en cta cte
+            ->call('addPayment')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();
@@ -725,8 +721,8 @@ class PosTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
+            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '10000')
             ->call('addPayment')
-            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();
@@ -737,7 +733,7 @@ class PosTest extends TestCase
         $this->assertDatabaseHas('invoice_payments', ['method' => 'efectivo', 'amount' => 10000]);
     }
 
-    public function test_agregar_medio_de_pago_no_precarga_ninguno_y_el_descuento_se_ve_al_elegirlo(): void
+    public function test_el_medio_en_preparacion_arranca_vacio_y_el_descuento_se_ve_al_elegirlo(): void
     {
         $admin = $this->admin();
         CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
@@ -747,22 +743,58 @@ class PosTest extends TestCase
 
         $pos = Livewire::actingAs($admin)
             ->test('pos.index')
-            ->call('addProduct', $product->id)
-            ->call('addPayment');
+            ->call('addProduct', $product->id);
 
         // Sin medio elegido todavía: no hay descuento que mostrar.
-        $this->assertSame('', $pos->get('payments.0.method'));
-        $this->assertSame(0.0, $pos->instance()->paymentDiscountPct($pos->get('payments.0')));
+        $this->assertSame('', $pos->get('stagingMethod'));
+        $staged = ['method' => $pos->get('stagingMethod'), 'amount' => '1000'];
+        $this->assertSame(0.0, $pos->instance()->paymentDiscountPct($staged));
 
         // Al elegir un medio con descuento configurado, se ve al toque (sin
-        // tener que tocar el monto ni cobrar).
-        $pos->set('payments.0.method', 'efectivo');
-        $this->assertEquals(10.0, $pos->instance()->paymentDiscountPct($pos->get('payments.0')));
-        $this->assertEqualsWithDelta(900.0, $pos->instance()->montoRealPago($pos->get('payments.0')), 0.01);
+        // tener que agregarlo a la lista ni cobrar).
+        $pos->set('stagingMethod', 'efectivo');
+        $staged = ['method' => $pos->get('stagingMethod'), 'amount' => '1000'];
+        $this->assertEquals(10.0, $pos->instance()->paymentDiscountPct($staged));
+        $this->assertEqualsWithDelta(900.0, $pos->instance()->montoRealPago($staged), 0.01);
     }
 
-    public function test_cobrar_con_monto_cargado_y_sin_medio_de_pago_elegido_es_rechazado(): void
+    public function test_addpayment_sin_medio_elegido_no_agrega_nada_y_marca_error(): void
     {
+        $admin = $this->admin();
+        $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->set('stagingAmount', '1000')
+            ->call('addPayment');
+
+        $pos->assertHasErrors('stagingMethod');
+        $this->assertSame([], $pos->get('payments'));
+    }
+
+    public function test_addpayment_con_monto_cero_no_agrega_nada_y_marca_error(): void
+    {
+        $admin = $this->admin();
+        $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->set('stagingMethod', 'efectivo')
+            ->set('stagingAmount', '0')
+            ->call('addPayment');
+
+        $pos->assertHasErrors('stagingAmount');
+        $this->assertSame([], $pos->get('payments'));
+    }
+
+    public function test_cobrar_con_un_pago_sin_medio_valido_es_rechazado(): void
+    {
+        // Defensa en profundidad: addPayment() ya no deja crear un pago sin
+        // medio (ver test_addpayment_sin_medio_elegido_...), pero cobrar()
+        // igual valida cada entrada de $payments por si llega manipulada
+        // (ej. devtools) sin pasar por addPayment().
         $admin = $this->admin();
         CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
         $product = Product::create(['name' => 'Producto', 'price' => 1000, 'iva_rate' => 0, 'stock' => 5]);
@@ -770,7 +802,7 @@ class PosTest extends TestCase
         Livewire::actingAs($admin)
             ->test('pos.index')
             ->call('addProduct', $product->id)
-            ->call('addPayment') // queda con method '' y amount prellenado
+            ->set('payments', [['method' => '', 'amount' => '1000']])
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasErrors('payments');
@@ -826,21 +858,19 @@ class PosTest extends TestCase
         $this->assertCount(0, $pos->instance()->barcodeResults());
     }
 
-    public function test_actualizar_un_pago_ya_eliminado_no_deja_una_entrada_corrupta(): void
+    public function test_un_update_a_un_indice_de_payments_incompleto_no_deja_una_entrada_corrupta(): void
     {
         // Mismo mecanismo que rompió Products\Labels en producción
-        // (2026-09-25): wire:model.live="payments.{i}.amount" vive en el
-        // mismo renglón que el botón de quitar. Si un update de monto en
-        // vuelo llega después de eliminar esa fila (y el array se reindexó
-        // con array_values()), Livewire puede reconstruir una entrada
-        // incompleta — acá se simula eliminando y después actualizando el
-        // mismo índice.
+        // (2026-09-25): si llega un update de un índice de $payments que no
+        // tiene las dos claves completas (ej. una fila se eliminó y el
+        // array se reindexó mientras un update de otra propiedad seguía en
+        // vuelo), Livewire puede reconstruir una entrada incompleta. El
+        // hook updated() la descarta — se simula seteando directo un índice
+        // con una sola clave, sin pasar por addPayment()/removePayment().
         $admin = $this->admin();
 
         $component = Livewire::actingAs($admin)
             ->test('pos.index')
-            ->call('addPayment')
-            ->call('removePayment', 0)
             ->set('payments.0.amount', '500');
 
         $component->assertOk();

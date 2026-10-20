@@ -54,6 +54,11 @@ class Index extends Component
     /** @var array<int, array{method: string, amount: string}> */
     public array $payments = [];
 
+    /** Medio/monto "en preparación", todavía no agregados a $payments — ver addPayment(). */
+    public string $stagingMethod = '';
+
+    public string $stagingAmount = '';
+
     public bool $printOnSale = true;
 
     /** Si está tildado, al final del ticket normal se agrega un cupón de
@@ -720,20 +725,42 @@ class Index extends Component
     }
 
     /**
-     * Agrega una línea de pago con el saldo que falta cubrir prellenado (así
-     * el caso típico de pago completo es un solo toque de método + cobrar),
-     * pero SIN medio de pago elegido — si hay descuento configurado por
-     * medio, no queremos aplicarlo solo porque "efectivo" venía por defecto
-     * sin que el cajero lo haya tocado.
+     * Agrega a $payments el medio/monto cargados en los campos "en
+     * preparación" (stagingMethod/stagingAmount) y los limpia para el
+     * próximo. Un solo select + un solo input reutilizados para cada pago
+     * (en vez de un renglón editable por cada medio ya cargado) — evita
+     * tener N selects con wire:model simultáneos en la página, que en
+     * algunos navegadores podían dejar de responder a clicks posteriores
+     * tras varios repintados seguidos. Los pagos ya agregados se muestran
+     * como lista de solo lectura (ver removePayment()), sin ningún control
+     * editable propio.
      */
     public function addPayment(): void
     {
-        $faltante = round($this->objetivoACobrar() - $this->paymentsTotal() - $this->valeMontoPendiente(), 2);
+        $method = PaymentMethod::tryFrom($this->stagingMethod);
+
+        if (! $method) {
+            $this->addError('stagingMethod', 'Elegí un medio de pago.');
+
+            return;
+        }
+
+        $amount = round((float) str_replace(',', '.', $this->stagingAmount), 2);
+
+        if ($amount <= 0) {
+            $this->addError('stagingAmount', 'Ingresá un monto mayor a 0.');
+
+            return;
+        }
 
         $this->payments[] = [
-            'method' => '',
-            'amount' => $faltante > 0 ? (string) $faltante : '0',
+            'method' => $this->stagingMethod,
+            'amount' => (string) $amount,
         ];
+
+        $faltante = round($this->objetivoACobrar() - $this->paymentsTotal() - $this->valeMontoPendiente(), 2);
+        $this->stagingMethod = '';
+        $this->stagingAmount = $faltante > 0 ? (string) $faltante : '';
     }
 
     /** Lo que hay que cubrir con pagos + vale: la diferencia neta de crédito en un cambio, o el total normal. */
