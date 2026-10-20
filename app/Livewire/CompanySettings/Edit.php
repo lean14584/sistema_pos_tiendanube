@@ -428,12 +428,24 @@ class Edit extends Component
         // redirección a sí misma no alcanzaría para que el cambio de color
         // se vea sin un F5 manual. Se actualiza el tag en caliente por JS en
         // vez de depender de eso — ver ThemeCss::vars().
+        //
+        // Se saca el <style> viejo y se mete uno nuevo en vez de mutar el
+        // textContent del existente: cuando una variable pasa de "nunca
+        // definida en este tag" a "definida" (ej. la primera vez que se
+        // carga theme_primary_color, con el secundario ya cargado de antes),
+        // mutar el nodo existente no siempre repinta los elementos que ya
+        // estaban usando el valor de fábrica — eliminar y volver a insertar
+        // fuerza un parseo de hoja de estilos limpio.
         $cssText = ':root{'.ThemeCss::vars().'}';
         $this->js(
             '(function () {'
-            .'var el = document.getElementById("theme-vars");'
-            .'if (! el) { el = document.createElement("style"); el.id = "theme-vars"; document.head.appendChild(el); }'
+            .'var old = document.getElementById("theme-vars");'
+            .'if (old) { old.remove(); }'
+            .'var el = document.createElement("style");'
+            .'el.id = "theme-vars";'
             .'el.textContent = '.json_encode($cssText).';'
+            .'document.head.appendChild(el);'
+            .'void document.body.offsetHeight;'
             .'})();'
         );
     }
