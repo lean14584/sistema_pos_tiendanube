@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\Role;
 use App\Models\CashSession;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\Sucursal;
@@ -79,7 +80,7 @@ class PromotionTest extends TestCase
         // 2 unidades con 2x1 -> se paga 1 = $100
         $this->assertEqualsWithDelta(100.0, $pos->instance()->total(), 0.01);
 
-        $pos->set('stagingMethod', 'efectivo')->set('stagingAmount', '100')->call('addPayment')->set('printOnSale', false)->call('cobrar')->assertHasNoErrors();
+        $pos->call('addPayment')->set('payments.0.method', 'efectivo')->set('printOnSale', false)->call('cobrar')->assertHasNoErrors();
 
         // El ítem quedó con 50% de descuento (1 de 2 gratis).
         $this->assertDatabaseHas('invoice_items', ['description' => 'Alfajor', 'discount_percent' => 50]);

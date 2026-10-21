@@ -32,8 +32,8 @@ class PosTipoComprobanteTest extends TestCase
         Livewire::actingAs($admin)->test('pos.index')
             ->call('addProduct', $product->id)
             ->set('tipo_comprobante_interno', TipoComprobanteInterno::RemitoX->value)
-            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '500')
             ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();
@@ -52,8 +52,8 @@ class PosTipoComprobanteTest extends TestCase
         // Sin tocar el tipo: cae al predeterminado (Factura B con la config por defecto).
         Livewire::actingAs($admin)->test('pos.index')
             ->call('addProduct', $product->id)
-            ->set('stagingMethod', 'efectivo')->set('stagingAmount', '500')
             ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
             ->set('printOnSale', false)
             ->call('cobrar')
             ->assertHasNoErrors();

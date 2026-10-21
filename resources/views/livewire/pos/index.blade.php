@@ -286,58 +286,50 @@
 
                 {{-- Sección: Medios de pago --}}
                 <div class="space-y-3">
-                    <h3 class="{{ $sectionTitle }}">Medios de pago</h3>
+                    <div class="flex items-center justify-between">
+                        <h3 class="{{ $sectionTitle }}">Medios de pago</h3>
+                        <button type="button" wire:click="addPayment" class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 px-3 py-1.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98] transition-all">
+                            <x-heroicon-o-plus class="w-4 h-4" /> Agregar
+                        </button>
+                    </div>
 
                     {{--
-                        Un solo select + un solo input "en preparación"
-                        (stagingMethod/stagingAmount), reutilizados para cada
-                        pago que se agrega a la lista de abajo — en vez de un
-                        renglón editable por cada medio ya cargado (diseño
-                        anterior). Con varios <select> con wire:model activos
-                        a la vez en la misma pantalla, en Firefox, después de
-                        unos cuantos repintados seguidos, los clicks en
-                        "Agregar"/"Cobrar" dejaban de responder (bug real,
-                        reproducido 2026-10-20). Con un solo par de campos
-                        reutilizado y los pagos ya cargados mostrados de solo
-                        lectura (sin ningún wire:model propio, solo un botón
-                        de borrar), baja mucho la cantidad de controles
-                        interactivos vivos en la pantalla a la vez.
+                        Medio y monto comparten renglón al 50/50, con un botón
+                        "Cargar" explícito ABAJO (ancho completo): antes method/
+                        amount quedaban en dos líneas y se guardaban solos apenas
+                        se tipeaba (wire:model.live), sin ningún aviso de que ya
+                        había quedado cargado - el cajero no sabía si hacía falta
+                        tocar Enter o no. Ahora quedan "deferred" (wire:model sin
+                        .live) y recién se sincronizan al tocar "Cargar" (o Enter,
+                        wire:keydown.enter en el input), que es además la señal
+                        visual de que el pago quedó tomado.
                     --}}
-                    <div class="flex items-center gap-2">
-                        <select wire:model="stagingMethod" class="w-1/2 {{ $inputClass }}">
-                            <option value="">Elegí un medio</option>
-                            @foreach ($paymentMethods as $method)
-                                <option value="{{ $method->value }}">{{ $method->label() }}</option>
-                            @endforeach
-                        </select>
-                        <input type="number" min="0" step="0.01" wire:model="stagingAmount" wire:keydown.enter="addPayment" placeholder="Monto" class="w-1/2 {{ $inputClass }} text-right">
-                    </div>
-                    @error('stagingMethod') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                    @error('stagingAmount') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-
-                    <button type="button" wire:click="addPayment" class="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 px-3 py-1.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98] transition-all">
-                        <x-heroicon-o-plus class="w-4 h-4" /> Agregar a la lista
-                    </button>
-
                     @forelse ($payments as $index => $payment)
-                        <div wire:key="pay-{{ $index }}" class="flex items-center justify-between gap-2 rounded-lg bg-gray-50 dark:bg-gray-800/60 px-3 py-2 text-sm">
-                            <span class="text-gray-700 dark:text-gray-200">
-                                {{ collect($paymentMethods)->first(fn ($m) => $m->value === $payment['method'])?->label() ?? $payment['method'] }}
-                                <span class="font-semibold">${{ money((float) $payment['amount']) }}</span>
-                                @if ($this->paymentDiscountPct($payment) > 0)
-                                    <span class="block text-xs text-emerald-600 dark:text-emerald-400">
-                                        -{{ rtrim(rtrim(number_format($this->paymentDiscountPct($payment), 2), '0'), '.') }}% → cobrás ${{ money($this->montoRealPago($payment)) }}
-                                    </span>
-                                @endif
-                            </span>
-                            <button type="button" wire:click="removePayment({{ $index }})" aria-label="Quitar medio de pago" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
-                                <x-heroicon-o-x-mark class="w-5 h-5" />
+                        <div wire:key="pay-{{ $index }}" class="space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <select wire:model="payments.{{ $index }}.method" class="w-1/2 {{ $inputClass }}">
+                                    <option value="">Elegí un medio</option>
+                                    @foreach ($paymentMethods as $method)
+                                        <option value="{{ $method->value }}">{{ $method->label() }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="number" min="0" step="0.01" wire:model="payments.{{ $index }}.amount" wire:keydown.enter="$refresh" placeholder="Monto" class="w-1/2 {{ $inputClass }} text-right">
+                                <button type="button" wire:click="removePayment({{ $index }})" aria-label="Quitar medio de pago" class="shrink-0 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                    <x-heroicon-o-x-mark class="w-5 h-5" />
+                                </button>
+                            </div>
+                            <button type="button" wire:click="$refresh" class="w-full rounded-lg bg-sky-600 hover:bg-sky-700 px-3 py-1.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98] transition-all">
+                                Cargar
                             </button>
+                            @if ($this->paymentDiscountPct($payment) > 0 && (float) ($payment['amount'] ?? 0) > 0)
+                                <p class="text-xs text-emerald-600 dark:text-emerald-400 text-right">
+                                    -{{ rtrim(rtrim(number_format($this->paymentDiscountPct($payment), 2), '0'), '.') }}% → cobrás ${{ money($this->montoRealPago($payment)) }}
+                                </p>
+                            @endif
                         </div>
                     @empty
                         <p class="text-xs text-gray-400 dark:text-gray-500">Sin pago cargado: la venta queda como saldo en la cuenta corriente del cliente.</p>
                     @endforelse
-                    @error('payments') <p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
 
                     @if (count($payments) > 0)
                         <div class="flex items-center justify-between text-sm pt-1">
