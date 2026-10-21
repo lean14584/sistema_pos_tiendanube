@@ -107,7 +107,7 @@
         @if (count($selected) > 0)
             <div class="flex flex-wrap items-center gap-2 mb-4">
                 @foreach ($selected as $id => $row)
-                    <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-800 pl-3 pr-1.5 py-1 text-sm text-gray-700 dark:text-gray-200">
+                    <span wire:key="selected-{{ $id }}" class="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-800 pl-3 pr-1.5 py-1 text-sm text-gray-700 dark:text-gray-200">
                         {{ $row['name'] }}
                         <input type="number" min="1" wire:model.live="selected.{{ $id }}.qty" class="w-14 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-1.5 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500">
                         <button type="button" wire:click="removeProduct({{ $id }})" aria-label="Quitar {{ $row['name'] }}" class="text-gray-400 hover:text-red-500">✕</button>
@@ -139,7 +139,7 @@
             @unless ($modoEtiquetadora) style="grid-template-columns: repeat({{ $columns }}, minmax(0, 1fr));" @endunless
         >
             @foreach ($labels as $label)
-                <div class="label-cell flex flex-col items-center text-center bg-white dark:bg-gray-900 {{ $modoEtiquetadora ? 'justify-start px-1 py-1' : 'justify-center rounded border border-gray-300 dark:border-gray-700 px-2 py-3' }}">
+                <div wire:key="label-{{ $label['sku'] }}-{{ $loop->index }}" class="label-cell flex flex-col items-center text-center bg-white dark:bg-gray-900 {{ $modoEtiquetadora ? 'justify-start px-1 py-1' : 'justify-center rounded border border-gray-300 dark:border-gray-700 px-2 py-3' }}">
                     @if ($showCompany)
                         <span class="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 truncate w-full">{{ $companyName }}</span>
                     @endif

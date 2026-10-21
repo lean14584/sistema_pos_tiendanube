@@ -48,7 +48,11 @@ class ProductBatch extends Model
 
     public function scopeExpiringWithin(Builder $query, int $days): Builder
     {
-        return $query->whereDate('expiration_date', '<=', now()->addDays($days)->toDateString());
+        // Sin whereDate(): expiration_date ya es una columna DATE pura, y
+        // envolverla en DATE(...) impide usar el índice compuesto
+        // (sucursal_id, expiration_date) - mismo criterio que SalesReport/
+        // LibroIvaCalculator, que evitan whereDate() a propósito.
+        return $query->where('expiration_date', '<=', now()->addDays($days)->toDateString());
     }
 
     protected function diasParaVencer(): Attribute

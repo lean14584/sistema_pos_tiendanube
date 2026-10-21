@@ -28,7 +28,10 @@ class Suggestions extends Component
         $soldQuantities = InvoiceItem::query()
             ->whereNotNull('product_id')
             ->whereHas('invoice', fn ($q) => $q->whereNot('status', 'draft')
-                ->whereDate('issue_date', '>=', $since)
+                // Sin whereDate(): issue_date ya es DATE, envolverla en
+                // DATE(...) impide usar el índice - mismo criterio que
+                // SalesReport/LibroIvaCalculator.
+                ->where('issue_date', '>=', $since->toDateString())
                 ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId)))
             ->selectRaw('product_id, SUM(quantity) as total_qty')
             ->groupBy('product_id')
