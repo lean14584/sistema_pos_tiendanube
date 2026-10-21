@@ -41,8 +41,12 @@ class LibroIvaExportController extends Controller
             // período quedó con una alícuota de IVA no estándar (dato
             // migrado/importado) — mismo criterio que
             // AfipSoapGateway::alicuotaIdPorTasa() al emitir a ARCA: mejor
-            // un 422 con el detalle que un 500 crudo.
-            abort(422, $e->getMessage());
+            // un 422 con el detalle que un 500 crudo. abort(422, mensaje) no
+            // sirve acá: sin una vista resources/views/errors/422.blade.php
+            // propia, Laravel oculta el mensaje en producción (APP_DEBUG=false)
+            // y muestra la página genérica de Symfony — pasarle la Response ya
+            // armada evita por completo la resolución de vista.
+            abort(response($e->getMessage(), 422));
         }
 
         $zipPath = tempnam(sys_get_temp_dir(), 'libro-iva-').'.zip';
