@@ -75,7 +75,7 @@
                                         <input type="number" min="0" step="0.01" wire:model="items.{{ $index }}.unit_price" class="{{ $cellInputClass }}">
                                     </td>
                                     <td class="px-4 py-2">
-                                        <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="{{ $cellInputClass }} text-right">
+                                        <input type="number" min="0" max="100" step="0.01" wire:model.blur="items.{{ $index }}.discount" class="{{ $cellInputClass }} text-right">
                                     </td>
                                     <td class="px-4 py-2 text-right text-gray-700 dark:text-gray-300">
                                         ${{ money((float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100)) }}
@@ -111,7 +111,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs text-gray-400 dark:text-gray-500 mb-0.5">Desc %</label>
-                                        <input type="number" min="0" max="100" step="0.01" wire:model.live="items.{{ $index }}.discount" class="{{ $cellInputClass }} text-right">
+                                        <input type="number" min="0" max="100" step="0.01" wire:model.blur="items.{{ $index }}.discount" class="{{ $cellInputClass }} text-right">
                                     </div>
                                 </div>
                                 <div class="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 pt-1">

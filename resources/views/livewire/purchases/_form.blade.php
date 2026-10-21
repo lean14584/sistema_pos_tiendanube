@@ -270,7 +270,7 @@
                             </div>
                             <input
                                 type="number" min="0" step="0.01"
-                                wire:model.live="taxes.{{ $index }}.amount"
+                                wire:model.blur="taxes.{{ $index }}.amount"
                                 placeholder="Monto"
                                 class="w-full {{ $inputClass }} text-right"
                             >
@@ -309,7 +309,7 @@
                                     <x-heroicon-o-trash class="w-4 h-4" />
                                 </button>
                             </div>
-                            <input type="number" min="0" step="0.01" wire:model.live="payments.{{ $index }}.amount" class="w-full {{ $inputClass }} text-right">
+                            <input type="number" min="0" step="0.01" wire:model.blur="payments.{{ $index }}.amount" class="w-full {{ $inputClass }} text-right">
                         </div>
                     @endforeach
                 </div>
