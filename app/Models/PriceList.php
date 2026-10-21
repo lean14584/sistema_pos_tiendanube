@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Lista de precios: un ajuste porcentual sobre el precio base del producto.
@@ -42,5 +44,24 @@ class PriceList extends Model
     {
         return static::query()->where('is_default', true)->first()
             ?? static::query()->active()->orderBy('id')->first();
+    }
+
+    /**
+     * Igual que active()->orderBy('name')->get(), pero cacheada 60s — mismo
+     * patrón que Sucursal::activasParaSelectCached()/Category::forSelectCached().
+     * Se repetía sin cachear en 8 render() distintos (POS, Invoices, Quotes,
+     * Products\Labels, Clients), incluyendo pantallas de alta frecuencia.
+     *
+     * @return Collection<int, object{id: int, name: string, adjustment_percent: string}>
+     */
+    public static function activasParaSelectCached(): Collection
+    {
+        $json = Cache::remember(
+            'price-lists:activas-select-list-v1',
+            now()->addSeconds(60),
+            fn () => self::active()->orderBy('name')->get(['id', 'name', 'adjustment_percent'])->toJson(),
+        );
+
+        return collect(json_decode($json));
     }
 }

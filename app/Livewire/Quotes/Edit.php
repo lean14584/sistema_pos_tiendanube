@@ -271,7 +271,7 @@ class Edit extends Component
         return view('livewire.quotes.edit', [
             'clients' => Client::forSelectCached(),
             'statuses' => QuoteStatus::editable(),
-            'priceLists' => PriceList::active()->orderBy('name')->get(),
+            'priceLists' => PriceList::activasParaSelectCached(),
         ]);
     }
 }

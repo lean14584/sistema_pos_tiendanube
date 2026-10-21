@@ -121,7 +121,7 @@ class Index extends Component
         $sucursalId = CurrentSucursal::id();
 
         return $sucursalId
-            ? PuntoVenta::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get()
+            ? PuntoVenta::activosParaSucursalCached($sucursalId)
             : collect();
     }
 
@@ -129,7 +129,7 @@ class Index extends Component
     #[Computed]
     public function discountsActivos()
     {
-        return Discount::query()->activeNow()->orderBy('name')->get();
+        return Discount::activosParaSelectCached();
     }
 
     /** Lista de precios vigente. null = precio base (sin ajuste). */
@@ -394,7 +394,7 @@ class Index extends Component
         }
 
         $conPromoPropia = $this->promoMap->keys()->all();
-        $groups = PromotionGroup::activeNow()->with('products:id')->get();
+        $groups = PromotionGroup::activosConProductosCached();
 
         $alloc = [];
         foreach ($groups as $group) {
@@ -1440,7 +1440,7 @@ class Index extends Component
         return view('livewire.pos.index', [
             'paymentMethods' => PaymentMethod::cases(),
             'clients' => Client::forSelectCached(),
-            'priceLists' => config('features.price_lists') ? PriceList::active()->orderBy('name')->get() : collect(),
+            'priceLists' => config('features.price_lists') ? PriceList::activasParaSelectCached() : collect(),
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
         ]);
     }

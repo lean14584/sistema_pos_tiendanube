@@ -43,7 +43,7 @@ class Show extends Component
         $sucursalId = CurrentSucursal::id();
 
         return $sucursalId
-            ? PuntoVenta::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get()
+            ? PuntoVenta::activosParaSucursalCached($sucursalId)
             : collect();
     }
 

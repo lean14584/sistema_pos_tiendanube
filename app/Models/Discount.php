@@ -6,7 +6,9 @@ use App\Concerns\Auditable;
 use App\Enums\DiscountType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Descuento manual ("Mis Descuentos") que el cajero elige en el POS para
@@ -48,5 +50,21 @@ class Discount extends Model
             DiscountType::Percent => '-'.rtrim(rtrim(number_format((float) $this->value, 2), '0'), '.').'%',
             DiscountType::Fixed => '-$'.number_format((float) $this->value, 0, ',', '.'),
         };
+    }
+
+    /**
+     * Igual que activeNow()->orderBy('name')->get(), cacheada 60s — el
+     * selector "Mis Descuentos" del POS es un #[Computed], así que Livewire
+     * solo memoiza dentro del mismo render y vuelve a pegarle a la DB en
+     * cada round-trip (cada click del carrito). Se cachea la Collection de
+     * modelos tal cual (no JSON) porque la vista llama $discount->shortLabel().
+     */
+    public static function activosParaSelectCached(): Collection
+    {
+        return Cache::remember(
+            'discounts:activos-select-list-v1',
+            now()->addSeconds(60),
+            fn () => self::query()->activeNow()->orderBy('name')->get(),
+        );
     }
 }

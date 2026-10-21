@@ -94,7 +94,7 @@ class Create extends Component
         $sucursalId = CurrentSucursal::id();
 
         return $sucursalId
-            ? PuntoVenta::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get()
+            ? PuntoVenta::activosParaSucursalCached($sucursalId)
             : collect();
     }
 
@@ -350,7 +350,7 @@ class Create extends Component
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'tipoComprobanteInternoOptions' => CompanySettings::current()->tiposComprobanteSeleccionables(),
-            'priceLists' => config('features.price_lists') ? PriceList::active()->orderBy('name')->get() : collect(),
+            'priceLists' => config('features.price_lists') ? PriceList::activasParaSelectCached() : collect(),
             'esNotaCredito' => false,
             'ocultarIva' => CompanySettings::current()->debeOcultarIvaPorItem(),
         ]);

@@ -45,7 +45,7 @@ class Create extends Component
     public function render()
     {
         return view('livewire.tasks.create', [
-            'users' => User::where('id', '!=', Auth::id())->where('active', true)->orderBy('name')->get(),
+            'users' => User::activosParaSelectCached()->reject(fn ($u) => $u->id === Auth::id()),
         ]);
     }
 }

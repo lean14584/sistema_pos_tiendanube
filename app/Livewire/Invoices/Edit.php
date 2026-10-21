@@ -342,7 +342,7 @@ class Edit extends Component
             'statuses' => InvoiceStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
             'tipoComprobanteInternoOptions' => $opciones,
-            'priceLists' => config('features.price_lists') ? PriceList::active()->orderBy('name')->get() : collect(),
+            'priceLists' => config('features.price_lists') ? PriceList::activasParaSelectCached() : collect(),
             'esNotaCredito' => $this->invoice->related_invoice_id !== null,
             'ocultarIva' => CompanySettings::current()->debeOcultarIvaPorItem(),
         ]);

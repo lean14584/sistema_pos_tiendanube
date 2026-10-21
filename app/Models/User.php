@@ -8,11 +8,13 @@ use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Cache;
 
 #[Fillable(['name', 'username', 'email', 'password', 'role', 'active', 'sucursal_id'])]
 #[Hidden(['password', 'remember_token'])]
@@ -75,5 +77,20 @@ class User extends Authenticatable
     public function puedeEliminar(): bool
     {
         return $this->esAdminGlobal() || $this->esEncargado();
+    }
+
+    /**
+     * Usuarios activos, cacheados 60s — se repetía sin cachear en cada
+     * render() de Tasks\Create. Trae solo id/name/role (sin password) y
+     * deja afuera del caché la exclusión del usuario actual (depende de
+     * quién esté mirando), que el caller debe aplicar en memoria.
+     */
+    public static function activosParaSelectCached(): Collection
+    {
+        return Cache::remember(
+            'users:activos-select-list-v1',
+            now()->addSeconds(60),
+            fn () => self::where('active', true)->orderBy('name')->get(['id', 'name', 'role']),
+        );
     }
 }

@@ -173,9 +173,15 @@ class Edit extends Component
         }
     }
 
+    /**
+     * Memoizadas por request (mismo criterio que
+     * Pos\Index::totalSinDescuentoGlobal(): $this->items/taxes/payments no
+     * cambian a mitad de un render) — remaining()/total() se llaman varias
+     * veces en el mismo render de la vista (ej. en más de un @if).
+     */
     public function subtotal(): float
     {
-        return collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']);
+        return once(fn () => collect($this->items)->sum(fn ($item) => (float) $item['quantity'] * (float) $item['unit_price']));
     }
 
     public function taxAmount(): float
@@ -185,7 +191,7 @@ class Edit extends Component
 
     public function percepcionesTotal(): float
     {
-        return collect($this->taxes)->sum(fn ($t) => (float) ($t['amount'] ?? 0));
+        return once(fn () => collect($this->taxes)->sum(fn ($t) => (float) ($t['amount'] ?? 0)));
     }
 
     public function addTax(): void
@@ -210,7 +216,7 @@ class Edit extends Component
 
     public function paidTotal(): float
     {
-        return collect($this->payments)->sum(fn ($p) => (float) $p['amount']);
+        return once(fn () => collect($this->payments)->sum(fn ($p) => (float) $p['amount']));
     }
 
     public function remaining(): float

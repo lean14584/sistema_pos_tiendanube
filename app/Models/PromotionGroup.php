@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Cache;
 
 #[Fillable(['name', 'buy_qty', 'pay_qty', 'active', 'starts_at', 'ends_at'])]
 class PromotionGroup extends Model
@@ -42,5 +44,22 @@ class PromotionGroup extends Model
     public function shortLabel(): string
     {
         return "{$this->buy_qty}x{$this->pay_qty} familia";
+    }
+
+    /**
+     * Igual que activeNow()->with('products:id')->get(), cacheada 60s —
+     * Pos\Index::groupAllocations() es un #[Computed] que la resuelve en
+     * cada click del carrito (agregar producto, +/-, etc.), no solo al
+     * cargar la pantalla. El cómputo por carrito (foreach sobre $lines)
+     * sigue sin cachear, solo la query de grupos+productos, que no cambia
+     * salvo que alguien edite "Mis Descuentos por familia".
+     */
+    public static function activosConProductosCached(): Collection
+    {
+        return Cache::remember(
+            'promotion-groups:activos-con-productos-v1',
+            now()->addSeconds(60),
+            fn () => self::activeNow()->with('products:id')->get(),
+        );
     }
 }

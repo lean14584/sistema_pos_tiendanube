@@ -28,10 +28,17 @@ trait CalculatesInvoiceTotals
      * ítem contaba para el total mostrado pero al guardar se descartaba en
      * silencio, dejando el comprobante persistido con un total menor a lo
      * cobrado/acreditado.
+     *
+     * Memoizada por request (mismo criterio que
+     * Pos\Index::totalSinDescuentoGlobal(): $this->items no cambia a mitad
+     * de un render): subtotal()/netoGravado()/netoExento()/taxAmount()/
+     * total() llaman esto, y la vista a su vez llama varias de esas 2-3
+     * veces en el mismo render (ej. remaining() = total() - paidTotal(),
+     * usado en más de un @if de la misma pantalla).
      */
     private function validItems(): \Illuminate\Support\Collection
     {
-        return collect($this->items)->filter(fn ($item) => trim($item['description'] ?? '') !== '');
+        return once(fn () => collect($this->items)->filter(fn ($item) => trim($item['description'] ?? '') !== ''));
     }
 
     public function subtotal(): float

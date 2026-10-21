@@ -59,7 +59,7 @@ class Create extends Component
         return view('livewire.clients.create', [
             'condicionIvaOptions' => CondicionIva::cases(),
             'tipoDocumentoOptions' => TipoDocumento::cases(),
-            'priceLists' => \App\Models\PriceList::active()->orderBy('name')->get(),
+            'priceLists' => \App\Models\PriceList::activasParaSelectCached(),
             'phoneRequired' => config('features.client_phone_required'),
         ]);
     }

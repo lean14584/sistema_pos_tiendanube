@@ -241,7 +241,7 @@ class Labels extends Component
         return view('livewire.products.labels', [
             'labels' => $this->labels(),
             'categories' => Category::forSelectCached(),
-            'priceLists' => PriceList::active()->orderBy('name')->get(),
+            'priceLists' => PriceList::activasParaSelectCached(),
             'companyName' => CompanySettings::current()->display_name,
         ]);
     }

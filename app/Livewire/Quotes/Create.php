@@ -285,7 +285,7 @@ class Create extends Component
         return view('livewire.quotes.create', [
             'clients' => Client::forSelectCached(),
             'statuses' => QuoteStatus::editable(),
-            'priceLists' => config('features.price_lists') ? PriceList::active()->orderBy('name')->get() : collect(),
+            'priceLists' => config('features.price_lists') ? PriceList::activasParaSelectCached() : collect(),
         ]);
     }
 }
