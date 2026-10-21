@@ -96,7 +96,7 @@
                             @foreach ($itemsADevolver as $index => $item)
                                 <div wire:key="devolver-{{ $index }}" class="flex items-center gap-2 text-xs">
                                     <span class="flex-1 truncate text-gray-700 dark:text-gray-300">{{ $item['description'] }}</span>
-                                    <input type="number" step="0.01" min="0" wire:model.live="itemsADevolver.{{ $index }}.quantity" class="w-16 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1.5 py-1 text-right dark:text-gray-100">
+                                    <input type="number" step="0.01" min="0" wire:model.blur="itemsADevolver.{{ $index }}.quantity" class="w-16 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1.5 py-1 text-right dark:text-gray-100">
                                     <span class="w-20 text-right text-gray-500 dark:text-gray-400">${{ money($item['unit_price']) }}</span>
                                     <button type="button" wire:click="removeItemADevolver({{ $index }})" aria-label="Quitar ítem a devolver" class="text-gray-300 hover:text-red-500 dark:text-gray-600">
                                         <x-heroicon-o-x-mark class="w-3.5 h-3.5" />
