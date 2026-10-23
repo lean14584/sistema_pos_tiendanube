@@ -183,7 +183,7 @@ class AuditLogTest extends TestCase
 
     public function test_emitir_a_afip_genera_un_log_de_actualizacion_con_el_cae(): void
     {
-        $fake = new FakeAfipGateway();
+        $fake = new FakeAfipGateway;
         $this->app->instance(AfipGatewayInterface::class, $fake);
 
         CompanySettings::current()->update(['condicion_iva' => 'responsable_inscripto', 'punto_venta' => 1]);

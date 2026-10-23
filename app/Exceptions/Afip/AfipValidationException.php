@@ -10,6 +10,4 @@ use RuntimeException;
  * a un cliente sin CUIT). Distinta de AfipRejectedException (eso es un
  * rechazo explícito de AFIP) y de AfipConnectionException (falla de red).
  */
-class AfipValidationException extends RuntimeException
-{
-}
+class AfipValidationException extends RuntimeException {}

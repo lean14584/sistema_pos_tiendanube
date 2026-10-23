@@ -2,8 +2,9 @@
 
 namespace App\Services\Afip;
 
-use App\Enums\TipoComprobante;
 use App\Enums\TipoDocumento;
+use App\Exceptions\Afip\AfipConnectionException;
+use App\Exceptions\Afip\AfipRejectedException;
 use App\Exceptions\Afip\AfipValidationException;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
@@ -19,14 +20,12 @@ use RuntimeException;
  */
 class InvoiceCaeEmitter
 {
-    public function __construct(private readonly AfipGatewayInterface $gateway)
-    {
-    }
+    public function __construct(private readonly AfipGatewayInterface $gateway) {}
 
     /**
-     * @throws \App\Exceptions\Afip\AfipConnectionException
-     * @throws \App\Exceptions\Afip\AfipRejectedException
-     * @throws \App\Exceptions\Afip\AfipValidationException
+     * @throws AfipConnectionException
+     * @throws AfipRejectedException
+     * @throws AfipValidationException
      */
     public function emit(Invoice $invoice): Invoice
     {
@@ -88,7 +87,7 @@ class InvoiceCaeEmitter
 
         $cbteNro = null;
 
-        $caeResponse = $lock->block(10, function () use ($invoice, $company, $puntoVenta, $tipoComprobante, $condicionIvaReceptorId, $comprobanteAsociado, &$cbteNro) {
+        $caeResponse = $lock->block(10, function () use ($invoice, $puntoVenta, $tipoComprobante, $condicionIvaReceptorId, $comprobanteAsociado, &$cbteNro) {
             // Re-chequeo por si otra request emitió esta misma factura
             // mientras esperábamos el lock.
             if ($invoice->fresh()->cae !== null) {

@@ -28,7 +28,7 @@ class NotaCreditoTest extends TestCase
 
     private function fake(): FakeAfipGateway
     {
-        $fake = new FakeAfipGateway();
+        $fake = new FakeAfipGateway;
         $this->app->instance(AfipGatewayInterface::class, $fake);
 
         return $fake;

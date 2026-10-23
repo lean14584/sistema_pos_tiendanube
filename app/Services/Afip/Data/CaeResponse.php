@@ -14,6 +14,5 @@ final readonly class CaeResponse
         public Carbon $caeVencimiento,
         public array $observaciones = [],
         public array $raw = [],
-    ) {
-    }
+    ) {}
 }

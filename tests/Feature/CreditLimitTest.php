@@ -82,7 +82,7 @@ class CreditLimitTest extends TestCase
         $this->assertEquals(1, Invoice::count());
     }
 
-    public function test_excesoDeCredito_considera_el_saldo_previo(): void
+    public function test_exceso_de_credito_considera_el_saldo_previo(): void
     {
         $client = Client::create(['name' => 'C', 'email' => 'c@test.com', 'credit_limit' => 10000]);
         // Saldo previo de 7000 (factura impaga).

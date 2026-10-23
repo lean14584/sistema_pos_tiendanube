@@ -5,6 +5,7 @@ namespace App\Livewire\Clients;
 use App\Enums\CondicionIva;
 use App\Enums\TipoDocumento;
 use App\Models\Client;
+use App\Models\PriceList;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -75,7 +76,7 @@ class Edit extends Component
         return view('livewire.clients.edit', [
             'condicionIvaOptions' => CondicionIva::cases(),
             'tipoDocumentoOptions' => TipoDocumento::cases(),
-            'priceLists' => \App\Models\PriceList::activasParaSelectCached(),
+            'priceLists' => PriceList::activasParaSelectCached(),
             'phoneRequired' => config('features.client_phone_required'),
         ]);
     }

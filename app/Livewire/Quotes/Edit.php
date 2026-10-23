@@ -3,19 +3,20 @@
 namespace App\Livewire\Quotes;
 
 use App\Enums\QuoteStatus;
+use App\Livewire\Quotes\Concerns\ManagesQuoteLines;
 use App\Models\Client;
 use App\Models\PriceList;
-use App\Models\Product;
 use App\Models\Quote;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
 class Edit extends Component
 {
+    use ManagesQuoteLines;
+
     public Quote $quote;
 
     /**
@@ -66,143 +67,6 @@ class Edit extends Component
         ])->all();
     }
 
-    public function currentPriceList(): ?PriceList
-    {
-        return $this->price_list_id ? PriceList::find($this->price_list_id) : null;
-    }
-
-    public function updatedClientId($value): void
-    {
-        $client = Client::find($value);
-        $this->price_list_id = $client?->price_list_id;
-        $this->repriceItems();
-    }
-
-    public function updatedPriceListId(): void
-    {
-        $this->repriceItems();
-    }
-
-    #[Computed]
-    public function clientResults()
-    {
-        $term = trim($this->clientQuery);
-
-        if ($term === '') {
-            return collect();
-        }
-
-        return Client::where('name', 'like', "%{$term}%")
-            ->orWhere('phone', 'like', "%{$term}%")
-            ->limit(8)
-            ->get();
-    }
-
-    public function selectClient(int $clientId): void
-    {
-        $this->clientQuery = '';
-        $this->client_id = (string) $clientId;
-        $this->updatedClientId($clientId);
-    }
-
-    private function repriceItems(): void
-    {
-        $list = $this->currentPriceList();
-        $productIds = collect($this->items)->pluck('product_id')->filter()->unique()->all();
-        $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
-
-        foreach ($this->items as $i => $item) {
-            if (! empty($item['product_id']) && ($product = $products->get($item['product_id']))) {
-                $this->items[$i]['unit_price'] = (string) $product->priceForList($list);
-            }
-        }
-    }
-
-    private function lineNeto(array $item): float
-    {
-        return (float) $item['quantity'] * (float) $item['unit_price'] * (1 - (float) ($item['discount'] ?? 0) / 100);
-    }
-
-    #[Computed]
-    public function productResults()
-    {
-        $term = trim($this->productQuery);
-
-        if ($term === '') {
-            return collect();
-        }
-
-        return Product::where('name', 'like', "%{$term}%")
-            ->orWhere('sku', 'like', "%{$term}%")
-            ->limit(8)
-            ->get();
-    }
-
-    public function addProductItem(int $productId): void
-    {
-        $product = Product::findOrFail($productId);
-
-        $this->items[] = [
-            'product_id' => $product->id,
-            'description' => $product->name,
-            'quantity' => '1',
-            'unit_price' => (string) $product->priceForList($this->currentPriceList()),
-            'discount' => '0',
-        ];
-
-        $this->productQuery = '';
-    }
-
-    public function addFreeformItem(): void
-    {
-        $this->items[] = [
-            'product_id' => null,
-            'description' => '',
-            'quantity' => '1',
-            'unit_price' => '0',
-            'discount' => '0',
-        ];
-    }
-
-    public function removeItem(int $index): void
-    {
-        unset($this->items[$index]);
-        $this->items = array_values($this->items);
-    }
-
-    /**
-     * `wire:model.live` de "discount" vive en el mismo renglón que el botón
-     * de "quitar" — un update en vuelo puede dejar una entrada a medio
-     * construir tras un borrado + reindexado por `array_values()`, mismo
-     * mecanismo que rompió `Products\Labels` en producción. Se descarta
-     * cualquier entrada incompleta en vez de arriesgar un presupuesto con un
-     * ítem a medio llenar.
-     */
-    public function updated(string $name): void
-    {
-        if (str_starts_with($name, 'items.')) {
-            $this->items = array_values(array_filter(
-                $this->items,
-                fn (array $i) => isset($i['description'], $i['quantity'], $i['unit_price'], $i['discount'])
-            ));
-        }
-    }
-
-    public function subtotal(): float
-    {
-        return collect($this->items)->sum(fn ($item) => $this->lineNeto($item));
-    }
-
-    public function taxAmount(): float
-    {
-        return $this->subtotal() * ((float) $this->tax_rate / 100);
-    }
-
-    public function total(): float
-    {
-        return $this->subtotal() + $this->taxAmount();
-    }
-
     public function save(): void
     {
         Cache::lock('quotes:edit:'.$this->quote->id, 10)->block(5, fn () => $this->saveInterno());
@@ -225,6 +89,8 @@ class Edit extends Component
             'tax_rate' => ['required', 'numeric', 'min:0'],
             'status' => ['required'],
             'notes' => ['nullable', 'string'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.discount' => ['nullable', 'numeric', 'between:0,100'],
         ]);
 

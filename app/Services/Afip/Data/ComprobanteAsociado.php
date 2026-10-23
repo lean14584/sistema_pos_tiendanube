@@ -14,6 +14,5 @@ final readonly class ComprobanteAsociado
         public TipoComprobante $tipo,
         public int $puntoVenta,
         public int $numero,
-    ) {
-    }
+    ) {}
 }

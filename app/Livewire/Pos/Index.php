@@ -6,6 +6,7 @@ use App\Enums\AlicuotaIva;
 use App\Enums\DiscountType;
 use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
+use App\Exceptions\InsufficientStockException;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Discount;
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
@@ -71,10 +73,19 @@ class Index extends Component
 
     public string $numeroFacturaOrigen = '';
 
-    /** Factura/remito original del que se están devolviendo ítems, o null. */
+    /**
+     * Factura/remito original del que se están devolviendo ítems, o null.
+     * #[Locked]: solo se asigna desde cargarFacturaOrigen()/quitarFacturaOrigen()
+     * (server-side, tras validar el número buscado) — sin esto, una request
+     * armada a mano al endpoint de Livewire podía pisar este property con el
+     * id de CUALQUIER Invoice (de otro cliente, otra sucursal) y usarlo como
+     * base de un "cambio" sin haber pasado por ninguna búsqueda real.
+     */
+    #[Locked]
     public ?Invoice $facturaOrigen = null;
 
     /** Cuando el número ingresado matchea más de un comprobante (mismo número, distinto tipo). */
+    #[Locked]
     public Collection $facturaOrigenCandidatas;
 
     /** @var array<int, array{product_id: ?int, description: string, quantity: string, unit_price: string, iva_rate: string}> */
@@ -86,6 +97,11 @@ class Index extends Component
 
     public string $vale_monto = '';
 
+    /**
+     * #[Locked]: mismo criterio que $facturaOrigen — solo buscarVale()/
+     * quitarVale() lo asignan, nunca directamente desde el cliente.
+     */
+    #[Locked]
     public ?Voucher $valeEncontrado = null;
 
     // --- Mis Descuentos (descuento manual global de la venta) ---
@@ -1073,6 +1089,20 @@ class Index extends Component
         $this->sincronizarCartConCatalogo();
         $this->sincronizarItemsADevolverConFacturaOrigen();
 
+        // quantity y discount sí son legítimamente editables por el cajero
+        // (ver sincronizarCartConCatalogo), pero eso significa que llegan tal
+        // cual las mande el cliente — sin este validate(), una request armada
+        // a mano podía poner una quantity negativa: cobra de menos (o $0) y
+        // además invierte el signo del ajuste de stock en StockAdjuster::apply()
+        // (en vez de descontar, suma).
+        $this->validate([
+            'cart.*.quantity' => ['required', 'numeric', 'min:0.001'],
+            'cart.*.discount' => ['nullable', 'numeric', 'between:0,100'],
+            // min:0 (no 0.001) porque el input real tiene min="0" en el HTML:
+            // 0 es "no devolver este ítem", no un error de carga.
+            'itemsADevolver.*.quantity' => ['numeric', 'min:0'],
+        ]);
+
         $modoCambio = $this->itemsADevolver !== [];
 
         // El input de cantidad a devolver solo tiene un `min="0"` en el
@@ -1204,121 +1234,133 @@ class Index extends Component
         $itemsADevolverSnapshot = $this->itemsADevolver;
         $descuentoEspecialMonto = $this->descuentoManualMontoNeto();
 
-        $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use (
-            $tipo, $clientId, $status, $puntoVentaNumero, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago,
-            $modoCambio, $creditoTotal, $cartTotal, $facturaOrigenSnapshot, $itemsADevolverSnapshot,
-            $valeMonto, $voucherAplicado, $descuentoEspecialMonto,
-        ) {
-            $invoice = Invoice::create([
-                'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
-                'client_id' => $clientId,
-                'punto_venta' => $puntoVentaNumero,
-                'tipo_comprobante_interno' => $tipo,
-                'issue_date' => now()->toDateString(),
-                'due_date' => now()->toDateString(),
-                'tax_rate' => 0,
-                'status' => $status,
-                'descuento_especial_monto' => $descuentoEspecialMonto,
-            ]);
-
-            foreach ($this->cart as $item) {
-                $invoice->items()->create([
-                    'product_id' => $item['product_id'],
-                    'description' => $item['description'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    // Descuento manual + promoción de la línea, combinado con
-                    // el descuento por medio de pago (si corresponde).
-                    'discount_percent' => $this->componerDescuentos($this->lineDiscountPct($item), $descuentoPctPagoGlobal),
-                    'iva_rate' => $item['iva_rate'],
+        try {
+            $invoice = InvoiceNumberGenerator::withLock($tipo->value, fn () => DB::transaction(function () use (
+                $tipo, $clientId, $status, $puntoVentaNumero, $descuentoPctPagoGlobal, $aplicaDescuentoPorMedioDePago,
+                $modoCambio, $creditoTotal, $cartTotal, $facturaOrigenSnapshot, $itemsADevolverSnapshot,
+                $valeMonto, $voucherAplicado, $descuentoEspecialMonto,
+            ) {
+                $invoice = Invoice::create([
+                    'number' => InvoiceNumberGenerator::next($tipo->value, null, $puntoVentaNumero),
+                    'client_id' => $clientId,
+                    'punto_venta' => $puntoVentaNumero,
+                    'tipo_comprobante_interno' => $tipo,
+                    'issue_date' => now()->toDateString(),
+                    'due_date' => now()->toDateString(),
+                    'tax_rate' => 0,
+                    'status' => $status,
+                    'descuento_especial_monto' => $descuentoEspecialMonto,
                 ]);
-            }
 
-            StockAdjuster::apply($this->cart, $tipo->stockSign());
-
-            $devolucionInvoice = null;
-
-            if ($modoCambio) {
-                // Línea sintética negativa: así $invoice->total (ver
-                // HasBillingTotals) ya sale neto del crédito, sin tocar la
-                // lógica de cta cte / límite de crédito / saldo que confía
-                // en ese accessor en todos lados.
-                $montoAplicado = min($creditoTotal, $cartTotal);
-
-                if ($montoAplicado > 0) {
+                foreach ($this->cart as $item) {
                     $invoice->items()->create([
-                        'product_id' => null,
-                        'description' => 'Crédito por devolución'.($facturaOrigenSnapshot ? " {$facturaOrigenSnapshot->number}" : ''),
-                        'quantity' => 1,
-                        'unit_price' => -$montoAplicado,
-                        'discount_percent' => 0,
-                        'iva_rate' => 0,
+                        'product_id' => $item['product_id'],
+                        'description' => $item['description'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        // Descuento manual + promoción de la línea, combinado con
+                        // el descuento por medio de pago (si corresponde).
+                        'discount_percent' => $this->componerDescuentos($this->lineDiscountPct($item), $descuentoPctPagoGlobal),
+                        'iva_rate' => $item['iva_rate'],
                     ]);
                 }
 
-                // Devolución hermana: repone stock de lo devuelto. Sin pagos
-                // propios — la resolución financiera de la diferencia vive
-                // toda en la Venta de arriba (o en el vale, si sobra).
-                $devolucionInvoice = InvoiceNumberGenerator::withLock(
-                    TipoComprobanteInterno::Devolucion->value,
-                    fn () => $this->crearInvoiceDevolucion($facturaOrigenSnapshot, $itemsADevolverSnapshot, $puntoVentaNumero, $clientId),
-                    null,
-                    $puntoVentaNumero,
-                );
+                // apply() ya valida stock suficiente internamente cuando el
+                // signo es -1 (ver StockAdjuster) — el lock de ProductStock que
+                // toma ese chequeo se sostiene hasta el final de esta misma
+                // transacción, así que dos cobros simultáneos del mismo
+                // producto en poco stock quedan serializados acá, no solo por
+                // el lock de (sucursal, usuario) de cobrar().
+                StockAdjuster::apply($this->cart, $tipo->stockSign());
 
-                $invoice->update(['cambio_devolucion_id' => $devolucionInvoice->id]);
-            }
+                $devolucionInvoice = null;
 
-            foreach ($this->payments as $payment) {
-                if ((float) $payment['amount'] > 0) {
-                    // Se guarda el monto REAL cobrado (con el descuento del
-                    // medio de pago ya aplicado) solo cuando ese descuento
-                    // efectivamente corresponde (venta pagada por completo);
-                    // si queda saldo en cuenta corriente, el pago se registra
-                    // tal cual se tipeó, a precio de lista.
-                    $created = $invoice->payments()->create([
-                        'method' => $payment['method'],
-                        'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
-                        // Cuánto se descontó de ESTE pago puntual por el
-                        // descuento de medio de pago — para mostrarlo como
-                        // línea separada en el ticket (ver
-                        // TicketPrinterService::armarPagos()).
-                        'discount_amount' => $aplicaDescuentoPorMedioDePago
-                            ? round((float) $payment['amount'] - $this->montoRealPago($payment), 2)
-                            : 0,
+                if ($modoCambio) {
+                    // Línea sintética negativa: así $invoice->total (ver
+                    // HasBillingTotals) ya sale neto del crédito, sin tocar la
+                    // lógica de cta cte / límite de crédito / saldo que confía
+                    // en ese accessor en todos lados.
+                    $montoAplicado = min($creditoTotal, $cartTotal);
+
+                    if ($montoAplicado > 0) {
+                        $invoice->items()->create([
+                            'product_id' => null,
+                            'description' => 'Crédito por devolución'.($facturaOrigenSnapshot ? " {$facturaOrigenSnapshot->number}" : ''),
+                            'quantity' => 1,
+                            'unit_price' => -$montoAplicado,
+                            'discount_percent' => 0,
+                            'iva_rate' => 0,
+                        ]);
+                    }
+
+                    // Devolución hermana: repone stock de lo devuelto. Sin pagos
+                    // propios — la resolución financiera de la diferencia vive
+                    // toda en la Venta de arriba (o en el vale, si sobra).
+                    $devolucionInvoice = InvoiceNumberGenerator::withLock(
+                        TipoComprobanteInterno::Devolucion->value,
+                        fn () => $this->crearInvoiceDevolucion($facturaOrigenSnapshot, $itemsADevolverSnapshot, $puntoVentaNumero, $clientId),
+                        null,
+                        $puntoVentaNumero,
+                    );
+
+                    $invoice->update(['cambio_devolucion_id' => $devolucionInvoice->id]);
+                }
+
+                foreach ($this->payments as $payment) {
+                    if ((float) $payment['amount'] > 0) {
+                        // Se guarda el monto REAL cobrado (con el descuento del
+                        // medio de pago ya aplicado) solo cuando ese descuento
+                        // efectivamente corresponde (venta pagada por completo);
+                        // si queda saldo en cuenta corriente, el pago se registra
+                        // tal cual se tipeó, a precio de lista.
+                        $created = $invoice->payments()->create([
+                            'method' => $payment['method'],
+                            'amount' => $aplicaDescuentoPorMedioDePago ? $this->montoRealPago($payment) : $payment['amount'],
+                            // Cuánto se descontó de ESTE pago puntual por el
+                            // descuento de medio de pago — para mostrarlo como
+                            // línea separada en el ticket (ver
+                            // TicketPrinterService::armarPagos()).
+                            'discount_amount' => $aplicaDescuentoPorMedioDePago
+                                ? round((float) $payment['amount'] - $this->montoRealPago($payment), 2)
+                                : 0,
+                        ]);
+
+                        // Una Devolución es plata que SALE de la caja, no que
+                        // entra — a diferencia de una venta normal. Mismo
+                        // criterio que Invoices\Create::save().
+                        $tipo === TipoComprobanteInterno::Devolucion
+                            ? CashLinker::linkInvoiceRefund($invoice, $created)
+                            : CashLinker::linkInvoicePayment($invoice, $created);
+                    }
+                }
+
+                if ($valeMonto > 0 && $voucherAplicado) {
+                    $voucherAplicado->redeem($valeMonto);
+                    $invoice->payments()->create([
+                        'method' => PaymentMethod::Otro,
+                        'amount' => $valeMonto,
+                        'voucher_id' => $voucherAplicado->id,
                     ]);
-
-                    // Una Devolución es plata que SALE de la caja, no que
-                    // entra — a diferencia de una venta normal. Mismo
-                    // criterio que Invoices\Create::save().
-                    $tipo === TipoComprobanteInterno::Devolucion
-                        ? CashLinker::linkInvoiceRefund($invoice, $created)
-                        : CashLinker::linkInvoicePayment($invoice, $created);
+                    // Sin CashLinker acá: canjear un vale no mete plata física en
+                    // la caja, es una obligación que ya se había asumido cuando
+                    // se emitió.
                 }
-            }
 
-            if ($valeMonto > 0 && $voucherAplicado) {
-                $voucherAplicado->redeem($valeMonto);
-                $invoice->payments()->create([
-                    'method' => PaymentMethod::Otro,
-                    'amount' => $valeMonto,
-                    'voucher_id' => $voucherAplicado->id,
-                ]);
-                // Sin CashLinker acá: canjear un vale no mete plata física en
-                // la caja, es una obligación que ya se había asumido cuando
-                // se emitió.
-            }
-
-            $voucherEmitido = null;
-            if ($modoCambio) {
-                $sobrante = max(0, round($creditoTotal - $cartTotal, 2));
-                if ($sobrante > 0) {
-                    $voucherEmitido = Voucher::emitir($sobrante, CurrentSucursal::id(), $devolucionInvoice);
+                $voucherEmitido = null;
+                if ($modoCambio) {
+                    $sobrante = max(0, round($creditoTotal - $cartTotal, 2));
+                    if ($sobrante > 0) {
+                        $voucherEmitido = Voucher::emitir($sobrante, CurrentSucursal::id(), $devolucionInvoice);
+                    }
                 }
-            }
 
-            return [$invoice, $voucherEmitido];
-        }), null, $puntoVentaNumero);
+                return [$invoice, $voucherEmitido];
+            }), null, $puntoVentaNumero);
+        } catch (InsufficientStockException $e) {
+            $this->addError('cart', $e->getMessage());
+
+            return;
+        }
 
         [$invoice, $voucherEmitido] = $invoice;
 

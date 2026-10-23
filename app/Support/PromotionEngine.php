@@ -36,7 +36,7 @@ class PromotionEngine
      * Devuelve el descuento en pesos asignado a cada producto.
      *
      * @param  array<int, array{product_id:int, quantity:int, unit_price:float}>  $lines
-     * @return array<int, float>  product_id => descuento en pesos
+     * @return array<int, float> product_id => descuento en pesos
      */
     public static function groupDiscount(int $buy, int $pay, array $lines): array
     {

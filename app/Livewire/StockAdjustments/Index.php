@@ -8,8 +8,10 @@ use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\StockAdjustment;
 use App\Support\CurrentSucursal;
+use App\Support\Permissions;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -20,8 +22,8 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    use WithPagination;
     use ScopedToSucursal;
+    use WithPagination;
 
     public string $product_id = '';
 
@@ -125,6 +127,12 @@ class Index extends Component
 
     public function save(): void
     {
+        // Defensa en profundidad: la ruta ya exige module:stock-adjustments
+        // (y Livewire la revalida en cada acción, ver AppServiceProvider), pero
+        // un ajuste de stock cambia stock real — vale la pena no depender de
+        // una sola capa, igual criterio que Products\Index::canManageProducts.
+        abort_unless(Permissions::canAccess(Auth::user()->role, 'stock-adjustments'), 403);
+
         $this->validate();
 
         $sucursalId = CurrentSucursal::id();

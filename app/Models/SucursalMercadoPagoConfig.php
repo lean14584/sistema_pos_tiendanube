@@ -27,6 +27,11 @@ class SucursalMercadoPagoConfig extends Model
             'store_lng' => 'float',
             'category' => 'integer',
             'collector_id' => 'integer',
+            // Secretos reales de Mercado Pago — antes quedaban en texto
+            // plano en la base (ver migración que re-encripta las filas
+            // existentes al agregar este cast).
+            'access_token' => 'encrypted',
+            'webhook_secret' => 'encrypted',
         ];
     }
 

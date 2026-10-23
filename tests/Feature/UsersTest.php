@@ -28,7 +28,7 @@ class UsersTest extends TestCase
             ->test('users.create')
             ->set('name', 'Juana Pérez')
             ->set('username', 'jperez')
-            ->set('password', 'secret12')
+            ->set('password', 'Secret12')
             ->set('role', 'vendedor')
             ->set('sucursal_id', (string) $sucursal->id)
             ->call('save')
@@ -43,7 +43,7 @@ class UsersTest extends TestCase
             ->test('users.create')
             ->set('name', 'Juana Pérez')
             ->set('username', 'jperez2')
-            ->set('password', 'secret12')
+            ->set('password', 'Secret12')
             ->set('role', 'vendedor')
             ->call('save')
             ->assertHasErrors(['sucursal_id' => 'required']);
@@ -52,7 +52,7 @@ class UsersTest extends TestCase
             ->test('users.create')
             ->set('name', 'Admin Nuevo')
             ->set('username', 'anuevo')
-            ->set('password', 'secret12')
+            ->set('password', 'Secret12')
             ->set('role', 'admin')
             ->call('save')
             ->assertHasNoErrors();
@@ -68,7 +68,7 @@ class UsersTest extends TestCase
             ->test('users.create')
             ->set('name', 'Otro')
             ->set('username', 'jperez')
-            ->set('password', 'secret12')
+            ->set('password', 'Secret12')
             ->call('save')
             ->assertHasErrors(['username' => 'unique']);
     }

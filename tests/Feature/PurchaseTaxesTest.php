@@ -68,7 +68,13 @@ class PurchaseTaxesTest extends TestCase
     public function test_editar_una_compra_reemplaza_sus_percepciones(): void
     {
         $provider = Provider::create(['name' => 'Proveedor 1']);
-        $product = Product::create(['name' => 'Mercadería', 'price' => 1000, 'stock' => 0]);
+        // stock => 1 (no 0): esta compra ya tiene su ítem creado directo por
+        // Eloquent, sin pasar por Purchases\Create::save() (que es lo que en
+        // la vida real incrementa el stock) — Purchases\Edit::save() revierte
+        // y reaplica el delta de stock de este ítem al guardar, así que el
+        // fixture tiene que reflejar que esa unidad "ya está" en stock, igual
+        // que pasaría con el flujo real.
+        $product = Product::create(['name' => 'Mercadería', 'price' => 1000, 'stock' => 1]);
 
         $purchase = Purchase::create([
             'number' => 'COM-9001', 'provider_id' => $provider->id, 'tax_rate' => 0,

@@ -3,6 +3,8 @@
 namespace App\Services\Afip;
 
 use App\Enums\TipoComprobante;
+use App\Exceptions\Afip\AfipConnectionException;
+use App\Exceptions\Afip\AfipRejectedException;
 use App\Services\Afip\Data\CaeRequest;
 use App\Services\Afip\Data\CaeResponse;
 
@@ -15,8 +17,8 @@ interface AfipGatewayInterface
     public function getLastVoucherNumber(int $puntoVenta, TipoComprobante $tipo): int;
 
     /**
-     * @throws \App\Exceptions\Afip\AfipConnectionException
-     * @throws \App\Exceptions\Afip\AfipRejectedException
+     * @throws AfipConnectionException
+     * @throws AfipRejectedException
      */
     public function requestCae(CaeRequest $request): CaeResponse;
 }

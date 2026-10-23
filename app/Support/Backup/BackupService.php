@@ -88,7 +88,7 @@ class BackupService
     private function zipDbYUploads(string $dbFilePath, string $nombreEnZip): string
     {
         $zipPath = tempnam(sys_get_temp_dir(), 'backup-').'.zip';
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         $zip->addFile($dbFilePath, $nombreEnZip);
 

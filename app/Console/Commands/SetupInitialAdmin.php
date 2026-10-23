@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * Crea el primer usuario administrador en una instalación nueva. A
@@ -30,14 +31,14 @@ class SetupInitialAdmin extends Command
 
         $name = $this->ask('Nombre completo');
         $username = $this->ask('Usuario para iniciar sesión');
-        $password = $this->secret('Contraseña (mínimo 8 caracteres)');
+        $password = $this->secret('Contraseña (mínimo 8 caracteres, con mayúscula, minúscula y número)');
 
         $validator = Validator::make(
             ['name' => $name, 'username' => $username, 'password' => $password],
             [
                 'name' => ['required', 'string', 'max:255'],
                 'username' => ['required', 'string', 'max:255'],
-                'password' => ['required', 'string', 'min:8'],
+                'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()],
             ]
         );
 

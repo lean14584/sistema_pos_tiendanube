@@ -229,6 +229,32 @@ class PosTest extends TestCase
         $this->assertDatabaseHas('cash_movements', ['type' => 'ingreso', 'amount' => 1000, 'source' => 'venta']);
     }
 
+    /**
+     * SEGURIDAD: antes de este chequeo, cobrar no validaba stock disponible
+     * en absoluto — se podía vender cualquier cantidad de cualquier
+     * producto y `products.stock` quedaba negativo sin ningún aviso.
+     */
+    public function test_no_se_puede_cobrar_mas_cantidad_que_el_stock_disponible(): void
+    {
+        $admin = $this->admin();
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $product = Product::create(['name' => 'Alfajor', 'price' => 500, 'iva_rate' => 0, 'stock' => 1]);
+
+        Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addProduct', $product->id) // cantidad 2, solo hay 1 en stock
+            ->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->set('printOnSale', false)
+            ->call('cobrar')
+            ->assertHasErrors('cart');
+
+        $this->assertDatabaseMissing('invoices', ['status' => 'paid']);
+        $this->assertEquals(1, $product->fresh()->stock, 'El stock no debería tocarse si la venta se rechaza.');
+    }
+
     public function test_no_se_puede_vender_manipulando_el_precio_del_carrito(): void
     {
         // $cart es una property pública de Livewire: una request armada a

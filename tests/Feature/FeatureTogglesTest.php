@@ -199,7 +199,7 @@ class FeatureTogglesTest extends TestCase
             ->assertDontSeeHtml('Elegir sucursal...')
             ->set('name', 'Juana Pérez')
             ->set('username', 'jperez')
-            ->set('password', 'password123')
+            ->set('password', 'Password123')
             ->set('role', Role::Vendedor->value)
             ->call('save')
             ->assertHasNoErrors();

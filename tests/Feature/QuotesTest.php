@@ -77,10 +77,50 @@ class QuotesTest extends TestCase
         $this->assertSame(0, Quote::count());
     }
 
+    /**
+     * SEGURIDAD: antes `items.*.unit_price`/`items.*.quantity` no tenían
+     * ninguna regla de validación (solo `discount` se validaba) — un payload
+     * Livewire manipulado desde devtools podía mandar un precio negativo o
+     * basura, que se guardaba tal cual y luego pasaba intacto a una factura
+     * real al convertir el presupuesto con "mantener precios" (ver
+     * test_convert_to_invoice_keeps_price_when_keep_mode).
+     */
+    public function test_un_precio_negativo_manipulado_no_se_puede_guardar(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Servicio X', 'price' => 200]);
+
+        Livewire::actingAs($this->admin())
+            ->test('quotes.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.unit_price', '-999')
+            ->call('save')
+            ->assertHasErrors(['items.0.unit_price']);
+
+        $this->assertSame(0, Quote::count());
+    }
+
+    public function test_una_cantidad_manipulada_no_numerica_no_se_puede_guardar(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $product = Product::create(['name' => 'Servicio X', 'price' => 200]);
+
+        Livewire::actingAs($this->admin())
+            ->test('quotes.create')
+            ->set('client_id', (string) $client->id)
+            ->call('addProductItem', $product->id)
+            ->set('items.0.quantity', 'no-es-un-numero')
+            ->call('save')
+            ->assertHasErrors(['items.0.quantity']);
+
+        $this->assertSame(0, Quote::count());
+    }
+
     public function test_convert_to_invoice_keeps_price_when_keep_mode(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
-        $product = Product::create(['name' => 'Servicio X', 'price' => 500]);
+        $product = Product::create(['name' => 'Servicio X', 'price' => 500, 'stock' => 10]);
 
         $quote = Quote::create([
             'number' => 'PRE-0001', 'client_id' => $client->id,
@@ -136,7 +176,7 @@ class QuotesTest extends TestCase
     public function test_convert_to_invoice_updates_price_when_update_mode(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
-        $product = Product::create(['name' => 'Servicio X', 'price' => 500]);
+        $product = Product::create(['name' => 'Servicio X', 'price' => 500, 'stock' => 10]);
 
         $quote = Quote::create([
             'number' => 'PRE-0001', 'client_id' => $client->id,

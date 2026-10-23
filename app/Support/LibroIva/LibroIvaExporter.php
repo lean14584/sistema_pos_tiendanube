@@ -3,6 +3,7 @@
 namespace App\Support\LibroIva;
 
 use App\Support\Afip\AlicuotaResolver;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -55,8 +56,7 @@ final class LibroIvaExporter
     {
         return $rows
             ->flatMap(fn (LibroIvaRow $row) => array_map(
-                fn (LibroIvaAlicuota $a) =>
-                    self::numZero((string) $row->tipoComprobante->value, 3).
+                fn (LibroIvaAlicuota $a) => self::numZero((string) $row->tipoComprobante->value, 3).
                     self::numZero((string) $row->puntoVenta, 5).
                     self::numZero((string) $row->numeroComprobante, 20).
                     self::importe($a->netoGravado, 15).
@@ -103,8 +103,7 @@ final class LibroIvaExporter
     {
         return $rows
             ->flatMap(fn (LibroIvaRow $row) => array_map(
-                fn (LibroIvaAlicuota $a) =>
-                    self::numZero((string) $row->tipoComprobante->value, 3).
+                fn (LibroIvaAlicuota $a) => self::numZero((string) $row->tipoComprobante->value, 3).
                     self::numZero((string) $row->puntoVenta, 5).
                     self::numZero((string) $row->numeroComprobante, 20).
                     self::numZero((string) $row->codigoDocumento, 2).
@@ -129,7 +128,7 @@ final class LibroIvaExporter
         return $lineas->isEmpty() ? '' : $lineas->implode(self::EOL).self::EOL;
     }
 
-    private static function fecha(\Illuminate\Support\Carbon $fecha): string
+    private static function fecha(Carbon $fecha): string
     {
         return $fecha->format('Ymd');
     }

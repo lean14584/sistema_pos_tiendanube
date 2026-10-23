@@ -34,7 +34,7 @@ class BackupServiceTest extends TestCase
             touch($f, now()->addMinutes($i)->timestamp);
         }
 
-        $borrados = (new BackupService())->rotar($this->dir, 2);
+        $borrados = (new BackupService)->rotar($this->dir, 2);
 
         $this->assertSame(3, $borrados);
         $restantes = glob($this->dir.DIRECTORY_SEPARATOR.'respaldo-*.zip');
@@ -49,7 +49,7 @@ class BackupServiceTest extends TestCase
     {
         file_put_contents($this->dir.DIRECTORY_SEPARATOR.'respaldo-demo-1.zip', 'x');
 
-        $this->assertSame(0, (new BackupService())->rotar($this->dir, 0));
+        $this->assertSame(0, (new BackupService)->rotar($this->dir, 0));
         $this->assertCount(1, glob($this->dir.DIRECTORY_SEPARATOR.'respaldo-*.zip'));
     }
 }

@@ -12,6 +12,7 @@ use App\Models\Purchase;
 use App\Models\Quote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class SmokeTest extends TestCase
@@ -79,7 +80,7 @@ class SmokeTest extends TestCase
 
         $this->get('/')->assertRedirect(route('login'));
 
-        \Livewire\Livewire::test('auth.login')
+        Livewire::test('auth.login')
             ->set('username', 'smoketest')
             ->set('password', 'secret123')
             ->call('submit')

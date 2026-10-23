@@ -20,14 +20,14 @@ class VoucherTest extends TestCase
         $this->assertSame('500.00', (string) $voucher->balance);
     }
 
-    public function test_porCodigo_encuentra_sin_importar_mayusculas_ni_espacios(): void
+    public function test_por_codigo_encuentra_sin_importar_mayusculas_ni_espacios(): void
     {
         $voucher = Voucher::emitir(300);
 
         $this->assertSame($voucher->id, Voucher::porCodigo(' '.strtolower($voucher->code).' ')?->id);
     }
 
-    public function test_porCodigo_devuelve_null_si_no_existe(): void
+    public function test_por_codigo_devuelve_null_si_no_existe(): void
     {
         $this->assertNull(Voucher::porCodigo('NOEXISTE'));
     }

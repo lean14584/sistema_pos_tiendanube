@@ -7,6 +7,7 @@ use App\Livewire\CanonMensualModal;
 use App\Models\CanonPago;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -174,7 +175,7 @@ class CanonMensualModalTest extends TestCase
         $this->travelTo(now()->setDay(10));
 
         Http::fake([
-            'api.mercadopago.com/checkout/preferences*' => fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout'),
+            'api.mercadopago.com/checkout/preferences*' => fn () => throw new ConnectionException('timeout'),
         ]);
 
         Livewire::actingAs($this->admin())

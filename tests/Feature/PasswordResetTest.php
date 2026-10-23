@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
-use App\Models\User;
 use App\Models\Sucursal;
+use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -57,12 +57,12 @@ class PasswordResetTest extends TestCase
 
         Livewire::test('auth.reset-password', ['token' => $token])
             ->set('email', 'cajero@example.com')
-            ->set('password', 'nueva12345')
-            ->set('password_confirmation', 'nueva12345')
+            ->set('password', 'Nueva12345')
+            ->set('password_confirmation', 'Nueva12345')
             ->call('submit')
             ->assertRedirect(route('login'));
 
-        $this->assertTrue(Hash::check('nueva12345', $user->fresh()->password));
+        $this->assertTrue(Hash::check('Nueva12345', $user->fresh()->password));
     }
 
     public function test_resetear_con_token_invalido_no_cambia_nada(): void
@@ -75,8 +75,8 @@ class PasswordResetTest extends TestCase
 
         Livewire::test('auth.reset-password', ['token' => 'token-inventado'])
             ->set('email', 'cajero2@example.com')
-            ->set('password', 'nueva12345')
-            ->set('password_confirmation', 'nueva12345')
+            ->set('password', 'Nueva12345')
+            ->set('password_confirmation', 'Nueva12345')
             ->call('submit')
             ->assertSet('error', fn ($error) => $error !== '');
 
@@ -92,7 +92,7 @@ class PasswordResetTest extends TestCase
             ->test('users.create')
             ->set('name', 'Uno')
             ->set('username', 'uno')
-            ->set('password', 'password123')
+            ->set('password', 'Password123')
             ->set('role', 'cajero')
             ->set('sucursal_id', (string) $sucursal->id)
             ->call('save')
@@ -102,7 +102,7 @@ class PasswordResetTest extends TestCase
             ->test('users.create')
             ->set('name', 'Dos')
             ->set('username', 'dos')
-            ->set('password', 'password123')
+            ->set('password', 'Password123')
             ->set('role', 'cajero')
             ->set('sucursal_id', (string) $sucursal->id)
             ->call('save')

@@ -141,8 +141,14 @@ class Index extends Component
         // chequeo es solo para dar feedback rápido por campo; el que de
         // verdad importa es el de adentro de la transacción, con el stock
         // lockeado.
+        $productIds = collect($this->items)->pluck('product_id')->filter()->unique()->all();
+        $products = Product::whereIn('id', $productIds)
+            ->with(['stocks' => fn ($q) => $q->where('sucursal_id', $fromId)])
+            ->get()
+            ->keyBy('id');
+
         foreach ($this->items as $index => $item) {
-            $product = Product::find($item['product_id']);
+            $product = $products->get($item['product_id']);
             $disponible = $product?->stockEnSucursal($fromId) ?? 0;
 
             if ((int) $item['quantity'] > $disponible) {

@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\Role;
 use App\Models\CashSession;
-use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\Sucursal;

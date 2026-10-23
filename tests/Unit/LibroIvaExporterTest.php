@@ -71,7 +71,7 @@ class LibroIvaExporterTest extends TestCase
     {
         // Sin registros el archivo debe quedar vacío (0 bytes), no un CRLF
         // suelto que ARCA leería como un registro en blanco inválido.
-        $vacio = new Collection();
+        $vacio = new Collection;
 
         $this->assertSame('', LibroIvaExporter::ventasCbte($vacio));
         $this->assertSame('', LibroIvaExporter::ventasAlicuotas($vacio));

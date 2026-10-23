@@ -99,7 +99,12 @@ class PurchaseSucursalScopeTest extends TestCase
         $admin = User::factory()->create(['role' => Role::Admin, 'active' => true]);
 
         $purchase = $this->purchaseEn($centro);
-        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 0]);
+        // stock => 1 (no 0): el ítem se crea directo por Eloquent, sin pasar
+        // por Purchases\Create::save() (que en la vida real incrementa el
+        // stock) — Purchases\Edit::save() revierte y reaplica el delta de
+        // stock de este ítem al guardar, así que el fixture tiene que
+        // reflejar que esa unidad "ya está" en stock.
+        $product = Product::create(['name' => 'Notebook', 'price' => 1000, 'stock' => 1]);
         $purchase->items()->create(['product_id' => $product->id, 'description' => 'Notebook', 'quantity' => 1, 'unit_price' => 1000]);
 
         // El admin tiene su caja abierta en CENTRO (la sucursal de la

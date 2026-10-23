@@ -2,13 +2,82 @@
 
 namespace App\Support;
 
+use App\Exceptions\InsufficientStockException;
 use App\Models\Product;
 use App\Models\ProductStock;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
 class StockAdjuster
 {
+    /**
+     * Verifica que haya stock suficiente para descontar $items, bloqueando
+     * (lockForUpdate) la fila de `products` de cada uno involucrado. Tiene
+     * que llamarse DENTRO de la misma transacción de base de datos que
+     * después descuenta ese stock — fuera de una transacción, lockForUpdate()
+     * no sirve de nada y dos cobros simultáneos del mismo producto podrían
+     * pasar los dos el chequeo.
+     *
+     * Chequea contra `products.stock` (el total de la empresa, no el de una
+     * sucursal puntual — ver Product::stockEnSucursal()) a propósito: es la
+     * única cifra que apply() mantiene siempre consistente en cualquier
+     * instalación, tenga o no cargado el detalle por sucursal en
+     * `product_stocks` (ej. un producto creado antes de usar sucursales, o
+     * en los tests, nunca tiene fila ahí y leería 0 aunque sí haya stock
+     * real). No evita vender de la sucursal equivocada en un negocio
+     * multi-sucursal, pero sí evita vender lo que no existe en absoluto.
+     *
+     * Lanza InsufficientStockException (no devuelve bool) para que quien
+     * llama no pueda "olvidarse" de chequear el resultado. Público además de
+     * usarse desde apply(): algún caller puede querer chequear ANTES de abrir
+     * la transacción (ej. para mostrar el error sin haber tocado nada).
+     */
+    public static function assertSufficientStock(iterable $items): void
+    {
+        $items = collect($items)->filter(fn ($item) => ! empty($item['product_id'] ?? null));
+
+        // Mismo criterio que apply(): lo que se vende por peso no lleva
+        // control de stock.
+        $pesables = Product::whereIn('id', $items->pluck('product_id')->unique())
+            ->where('sold_by_weight', true)
+            ->pluck('id')
+            ->all();
+
+        $necesario = $items
+            ->reject(fn ($item) => in_array($item['product_id'], $pesables, true))
+            ->groupBy('product_id')
+            ->map(fn (Collection $group) => $group->sum('quantity'));
+
+        self::assertAvailable($necesario);
+    }
+
+    /**
+     * $necesario ya viene agrupado por product_id (sin los pesables) — lo
+     * usan tanto assertSufficientStock() (chequeo standalone) como apply()
+     * (chequeo inline antes de descontar, reusando el mismo groupBy que ya
+     * hizo para calcular los deltas, sin recalcular pesables ni traer los
+     * productos de a uno).
+     */
+    private static function assertAvailable(Collection $necesario): void
+    {
+        if ($necesario->isEmpty()) {
+            return;
+        }
+
+        $products = Product::whereIn('id', $necesario->keys())->lockForUpdate()->get()->keyBy('id');
+
+        foreach ($necesario as $productId => $cantidad) {
+            $product = $products->get($productId);
+
+            if ($product && $product->stock < $cantidad) {
+                throw new InsufficientStockException(
+                    "No queda stock suficiente de \"{$product->name}\" (disponible: {$product->stock}, se intenta vender: {$cantidad})."
+                );
+            }
+        }
+    }
+
     /**
      * Apply a stock delta for a set of purchase items ({product_id, quantity} shaped).
      * $sign is 1 to add stock (purchase created) or -1 to remove it (purchase deleted/reverted).
@@ -18,6 +87,14 @@ class StockAdjuster
      * así los ~10 lugares que ya llamaban a apply() (Ventas, Compras, Notas
      * de Crédito, Presupuestos) quedan sucursal-aware sin tener que tocarlos
      * uno por uno.
+     *
+     * Con $sign === -1 (se va a descontar stock), valida ACÁ ADENTRO que haya
+     * suficiente antes de tocar nada — así los ~12 call sites que descuentan
+     * stock (Ventas, facturación manual, conversión de Presupuesto a venta,
+     * Notas de Crédito, reversión de Compras) quedan protegidos contra stock
+     * negativo sin tener que agregar el chequeo en cada uno por separado (ver
+     * assertSufficientStock(), que hacía justo esto pero solo se llamaba
+     * desde el POS).
      */
     public static function apply(iterable $items, int $sign, ?int $sucursalId = null): void
     {
@@ -35,6 +112,10 @@ class StockAdjuster
             ->reject(fn ($item) => in_array($item['product_id'], $pesables, true))
             ->groupBy('product_id')
             ->map(fn (Collection $group) => $group->sum('quantity') * $sign);
+
+        if ($sign === -1) {
+            self::assertAvailable($deltas->map(fn ($delta) => -$delta));
+        }
 
         foreach ($deltas as $productId => $delta) {
             if ($delta !== 0) {
@@ -77,7 +158,7 @@ class StockAdjuster
         if ($affected === 0) {
             try {
                 ProductStock::create(['product_id' => $productId, 'sucursal_id' => $sucursalId, 'stock' => $delta]);
-            } catch (\Illuminate\Database\QueryException) {
+            } catch (QueryException) {
                 // Carrera: otro request creó la fila de product_stocks justo
                 // antes (misma sucursal, mismo producto, primer movimiento).
                 // Reintenta como update ahora que ya existe.

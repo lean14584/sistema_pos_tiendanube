@@ -16,7 +16,7 @@ class SetupInitialAdminTest extends TestCase
         $this->artisan('app:setup-admin')
             ->expectsQuestion('Nombre completo', 'Leandro')
             ->expectsQuestion('Usuario para iniciar sesión', 'leandro')
-            ->expectsQuestion('Contraseña (mínimo 8 caracteres)', 'password123')
+            ->expectsQuestion('Contraseña (mínimo 8 caracteres, con mayúscula, minúscula y número)', 'Password123')
             ->assertExitCode(0);
 
         $user = User::where('username', 'leandro')->first();

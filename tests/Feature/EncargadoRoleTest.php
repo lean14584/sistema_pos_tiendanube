@@ -54,7 +54,7 @@ class EncargadoRoleTest extends TestCase
             ->test('users.create')
             ->set('name', 'Nuevo Vendedor')
             ->set('username', 'nvendedor')
-            ->set('password', 'secret12')
+            ->set('password', 'Secret12')
             ->set('role', 'vendedor')
             // Intenta forzar la otra sucursal desde el cliente.
             ->set('sucursal_id', (string) $otra->id)
@@ -73,7 +73,7 @@ class EncargadoRoleTest extends TestCase
             ->test('users.create')
             ->set('name', 'Intento Admin')
             ->set('username', 'intentoadmin')
-            ->set('password', 'secret12')
+            ->set('password', 'Secret12')
             ->set('role', 'admin')
             ->call('save')
             ->assertHasErrors(['role']);

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,7 +40,7 @@ class AuditIndexTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test('audit.index')
-            ->set('modelo', \App\Models\Invoice::class)
+            ->set('modelo', Invoice::class)
             ->assertDontSee('Notebook');
     }
 }

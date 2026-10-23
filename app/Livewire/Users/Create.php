@@ -7,6 +7,7 @@ use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -49,7 +50,7 @@ class Create extends Component
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()],
             'role' => ['required', Rule::enum(Role::class)],
             // Un admin es global (no pertenece a una sucursal); el resto sí
             // necesita una, pero solo si el cliente usa multisucursal — con

@@ -13,7 +13,6 @@ use App\Services\Afip\InvoiceCaeEmitter;
 use App\Support\LibroIva\LibroIvaCalculator;
 use App\Support\LibroIva\LibroIvaExporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Collection;
 use Tests\Fakes\FakeAfipGateway;
 use Tests\TestCase;
 
@@ -64,7 +63,7 @@ class IvaPorItemTest extends TestCase
 
     public function test_la_emision_a_afip_manda_una_alicuota_por_tasa(): void
     {
-        $fake = new FakeAfipGateway();
+        $fake = new FakeAfipGateway;
         $this->app->instance(AfipGatewayInterface::class, $fake);
         CompanySettings::current()->update(['condicion_iva' => 'responsable_inscripto', 'punto_venta' => 1]);
 
@@ -80,7 +79,7 @@ class IvaPorItemTest extends TestCase
 
     public function test_el_libro_iva_desglosa_dos_lineas_de_alicuota(): void
     {
-        $fake = new FakeAfipGateway();
+        $fake = new FakeAfipGateway;
         $this->app->instance(AfipGatewayInterface::class, $fake);
         CompanySettings::current()->update(['condicion_iva' => 'responsable_inscripto', 'punto_venta' => 1]);
         app(InvoiceCaeEmitter::class)->emit($this->facturaMixta());
@@ -105,7 +104,7 @@ class IvaPorItemTest extends TestCase
 
     public function test_el_resumen_por_alicuota_agrupa_varias_facturas(): void
     {
-        $fake = new FakeAfipGateway();
+        $fake = new FakeAfipGateway;
         $this->app->instance(AfipGatewayInterface::class, $fake);
         CompanySettings::current()->update(['condicion_iva' => 'responsable_inscripto', 'punto_venta' => 1]);
         app(InvoiceCaeEmitter::class)->emit($this->facturaMixta());

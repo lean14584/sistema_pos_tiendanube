@@ -45,8 +45,7 @@ class InvoiceEmailTest extends TestCase
             ->test('invoices.show', ['invoice' => $invoice])
             ->call('enviarPorEmail');
 
-        Mail::assertSent(InvoiceMail::class, fn (InvoiceMail $mail) =>
-            $mail->hasTo('cliente@test.com') && $mail->invoice->is($invoice)
+        Mail::assertSent(InvoiceMail::class, fn (InvoiceMail $mail) => $mail->hasTo('cliente@test.com') && $mail->invoice->is($invoice)
         );
     }
 

@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Concerns;
 
+use Illuminate\Support\Collection;
+
 /**
  * Cálculo de neto/IVA/total sobre un array de ítems en memoria. Compartido
  * por Invoices\Concerns\ManagesInvoiceLines y NotasCredito\Create — antes
@@ -36,7 +38,7 @@ trait CalculatesInvoiceTotals
      * veces en el mismo render (ej. remaining() = total() - paidTotal(),
      * usado en más de un @if de la misma pantalla).
      */
-    private function validItems(): \Illuminate\Support\Collection
+    private function validItems(): Collection
     {
         return once(fn () => collect($this->items)->filter(fn ($item) => trim($item['description'] ?? '') !== ''));
     }

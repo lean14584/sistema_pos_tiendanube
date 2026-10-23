@@ -35,7 +35,7 @@ class LibroIvaTest extends TestCase
 
     private function emitirFacturaFiscal(): Invoice
     {
-        $this->app->instance(AfipGatewayInterface::class, new FakeAfipGateway());
+        $this->app->instance(AfipGatewayInterface::class, new FakeAfipGateway);
 
         CompanySettings::current()->update(['condicion_iva' => 'responsable_inscripto', 'punto_venta' => 1]);
 
@@ -240,7 +240,7 @@ class LibroIvaTest extends TestCase
         $this->assertStringContainsString('.zip', $response->headers->get('content-disposition'));
 
         $path = $response->getFile()->getPathname();
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $zip->open($path);
 
         $names = [];

@@ -51,7 +51,7 @@ class LibroIvaExportController extends Controller
 
         $zipPath = tempnam(sys_get_temp_dir(), 'libro-iva-').'.zip';
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         foreach ($files as $name => $content) {
             $zip->addFromString($name, $content);

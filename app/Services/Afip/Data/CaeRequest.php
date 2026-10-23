@@ -10,7 +10,7 @@ final readonly class CaeRequest
      * @param  float  $impNeto  Neto gravado (base de las alícuotas de IVA).
      * @param  float  $impOpEx  Importe de operaciones exentas / no gravadas.
      * @param  array<int, array{tasa: float, baseImp: float, importe: float}>  $alicuotas
-     *         Desglose del IVA por alícuota (solo gravadas). Vacío si no hay IVA.
+     *                                                                                     Desglose del IVA por alícuota (solo gravadas). Vacío si no hay IVA.
      */
     public function __construct(
         public int $puntoVenta,
@@ -26,6 +26,5 @@ final readonly class CaeRequest
         public array $alicuotas = [],
         public int $concepto = 1, // Productos — único concepto soportado hoy
         public ?ComprobanteAsociado $comprobanteAsociado = null,
-    ) {
-    }
+    ) {}
 }

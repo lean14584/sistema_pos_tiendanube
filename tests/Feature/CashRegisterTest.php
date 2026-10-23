@@ -3,12 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\CashMovement;
 use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\ClientPayment;
 use App\Models\Product;
 use App\Models\Provider;
-use App\Models\ProviderPayment;
 use App\Models\Sucursal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -99,7 +99,7 @@ class CashRegisterTest extends TestCase
             ->set('amount', '500')
             ->call('addPayment');
 
-        $this->assertEquals(0, \App\Models\CashMovement::count());
+        $this->assertEquals(0, CashMovement::count());
     }
 
     public function test_deleting_client_payment_removes_linked_cash_movement(): void
@@ -114,13 +114,13 @@ class CashRegisterTest extends TestCase
             ->call('addPayment');
 
         $payment = ClientPayment::first();
-        $this->assertEquals(1, \App\Models\CashMovement::count());
+        $this->assertEquals(1, CashMovement::count());
 
         Livewire::actingAs($admin)
             ->test('clients.account', ['client' => $client])
             ->call('deletePayment', $payment->id);
 
-        $this->assertEquals(0, \App\Models\CashMovement::count());
+        $this->assertEquals(0, CashMovement::count());
     }
 
     public function test_manual_movement_can_be_deleted_from_the_open_session(): void
@@ -190,7 +190,7 @@ class CashRegisterTest extends TestCase
         $admin = $this->admin();
         CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
-        $product = Product::create(['name' => 'Servicio', 'price' => 800, 'iva_rate' => 0]);
+        $product = Product::create(['name' => 'Servicio', 'price' => 800, 'iva_rate' => 0, 'stock' => 10]);
 
         Livewire::actingAs($admin)
             ->test('invoices.create')
