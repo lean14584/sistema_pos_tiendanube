@@ -29,6 +29,13 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*'),
         );
 
-        // Sin SENTRY_LARAVEL_DSN en el .env, Sentry queda inactivo (no manda nada).
-        Integration::handles($exceptions);
+        // Sin SENTRY_LARAVEL_DSN en el .env, Sentry queda inactivo (no manda
+        // nada) — pero esta llamada solo es segura si el paquete
+        // sentry/sentry-laravel está instalado en el vendor/ de ESTE hosting
+        // puntual. No todos los despliegues lo tienen (se agregó en un commit
+        // posterior al último deploy de alguno de ellos), y sin este guard
+        // tira "Class not found" en cada request, incluso con Sentry inactivo.
+        if (class_exists(Integration::class)) {
+            Integration::handles($exceptions);
+        }
     })->create();
