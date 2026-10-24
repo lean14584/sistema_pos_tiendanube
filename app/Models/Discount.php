@@ -56,15 +56,22 @@ class Discount extends Model
      * Igual que activeNow()->orderBy('name')->get(), cacheada 60s — el
      * selector "Mis Descuentos" del POS es un #[Computed], así que Livewire
      * solo memoiza dentro del mismo render y vuelve a pegarle a la DB en
-     * cada round-trip (cada click del carrito). Se cachea la Collection de
-     * modelos tal cual (no JSON) porque la vista llama $discount->shortLabel().
+     * cada round-trip (cada click del carrito). Hace falta la Collection de
+     * modelos (la vista llama $discount->shortLabel()), pero se cachea
+     * `toArray()` y se reconstruye al leer — NUNCA el objeto Eloquent tal
+     * cual con el driver `database`: `serialize()` puede corromperse en el
+     * charset utf8mb4 de `cache.value` y romper el "Return value must be of
+     * type Collection" en la próxima lectura (ver el mismo fix en
+     * PuntoVenta::activosParaSucursalCached()).
      */
     public static function activosParaSelectCached(): Collection
     {
-        return Cache::remember(
-            'discounts:activos-select-list-v1',
+        $rows = Cache::remember(
+            'discounts:activos-select-list-v2',
             now()->addSeconds(60),
-            fn () => self::query()->activeNow()->orderBy('name')->get(),
+            fn () => self::query()->activeNow()->orderBy('name')->get()->toArray(),
         );
+
+        return self::hydrate($rows);
     }
 }

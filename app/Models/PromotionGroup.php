@@ -53,13 +53,34 @@ class PromotionGroup extends Model
      * cargar la pantalla. El cómputo por carrito (foreach sobre $lines)
      * sigue sin cachear, solo la query de grupos+productos, que no cambia
      * salvo que alguien edite "Mis Descuentos por familia".
+     *
+     * Se cachea `toArray()` (incluye la relación `products` ya cargada,
+     * como array de arrays) en vez de la Collection de modelos tal cual:
+     * con el driver `database`, serializar un objeto Eloquent completo
+     * puede corromperse en el charset utf8mb4 de la columna `cache.value` y
+     * romper "Return value must be of type Collection" en la próxima
+     * lectura (ver el mismo fix en PuntoVenta::activosParaSucursalCached()).
+     * products:id va aparte y se reconstruye como relación manualmente,
+     * porque hydrate() solo repone atributos propios, no relaciones.
      */
     public static function activosConProductosCached(): Collection
     {
-        return Cache::remember(
-            'promotion-groups:activos-con-productos-v1',
+        $rows = Cache::remember(
+            'promotion-groups:activos-con-productos-v2',
             now()->addSeconds(60),
-            fn () => self::activeNow()->with('products:id')->get(),
+            fn () => self::activeNow()->with('products:id')->get()->toArray(),
         );
+
+        $productRowsByGroup = array_column($rows, 'products');
+        $baseRows = array_map(function (array $row) {
+            unset($row['products']);
+
+            return $row;
+        }, $rows);
+
+        $groups = self::hydrate($baseRows)->values();
+        $groups->each(fn (self $group, int $i) => $group->setRelation('products', Product::hydrate($productRowsByGroup[$i] ?? [])));
+
+        return $groups;
     }
 }

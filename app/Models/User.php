@@ -84,13 +84,21 @@ class User extends Authenticatable
      * render() de Tasks\Create. Trae solo id/name/role (sin password) y
      * deja afuera del caché la exclusión del usuario actual (depende de
      * quién esté mirando), que el caller debe aplicar en memoria.
+     *
+     * Se cachea `toArray()`, no la Collection de modelos tal cual: con el
+     * driver `database`, serializar un objeto Eloquent puede corromperse en
+     * el charset utf8mb4 de `cache.value` y romper "Return value must be of
+     * type Collection" en la próxima lectura (ver el mismo fix en
+     * PuntoVenta::activosParaSucursalCached()).
      */
     public static function activosParaSelectCached(): Collection
     {
-        return Cache::remember(
-            'users:activos-select-list-v1',
+        $rows = Cache::remember(
+            'users:activos-select-list-v2',
             now()->addSeconds(60),
-            fn () => self::where('active', true)->orderBy('name')->get(['id', 'name', 'role']),
+            fn () => self::where('active', true)->orderBy('name')->get(['id', 'name', 'role'])->toArray(),
         );
+
+        return self::hydrate($rows);
     }
 }

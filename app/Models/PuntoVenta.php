@@ -44,15 +44,25 @@ class PuntoVenta extends Model
      * cada round-trip de Livewire (cada click) en Pos\Index,
      * Invoices\Create y Quotes\Show, no solo en la carga de página. A
      * diferencia de los demás *ParaSelectCached() del código (que cachean
-     * JSON de id/name), acá se cachea la Collection de modelos tal cual
-     * porque la vista llama $pv->label(), no solo propiedades.
+     * JSON de id/name), acá hace falta la Collection de modelos (la vista
+     * llama $pv->label(), no solo propiedades) — pero NUNCA cachear el
+     * objeto Eloquent tal cual con el driver `database`: `serialize()`
+     * puede meter bytes que el charset utf8mb4 de la columna `cache.value`
+     * corrompe en el INSERT sin avisar, y la lectura siguiente revienta con
+     * "Return value must be of type Collection, __PHP_Incomplete_Class
+     * returned" (pasó en producción, 100% reproducible, no era un caché
+     * viejo). Se cachea `toArray()` (solo escalares, serializa siempre
+     * limpio) y se reconstruyen los modelos reales al leer — mismo patrón
+     * que ya usa LibroIvaCalculator para este problema.
      */
     public static function activosParaSucursalCached(int $sucursalId): Collection
     {
-        return Cache::remember(
-            "puntos-venta:activos:{$sucursalId}:v1",
+        $rows = Cache::remember(
+            "puntos-venta:activos:{$sucursalId}:v2",
             now()->addSeconds(60),
-            fn () => self::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get(),
+            fn () => self::where('sucursal_id', $sucursalId)->where('active', true)->orderBy('id')->get()->toArray(),
         );
+
+        return self::hydrate($rows);
     }
 }
