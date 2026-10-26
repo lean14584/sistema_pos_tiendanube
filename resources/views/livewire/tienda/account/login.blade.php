@@ -1,5 +1,5 @@
 <div class="container py-5">
-    <div class="mx-auto py-4" style="max-width: 400px;">
+    <div class="tn-card mx-auto p-4 p-md-5" style="max-width: 420px;">
         <h1 class="h3 mb-4">Ingresar</h1>
 
         @if (session('status'))
@@ -8,11 +8,11 @@
 
         <form wire:submit="submit">
             <div class="mb-3">
-                <label class="form-label small fw-bold">Email</label>
+                <label class="form-label small">Email</label>
                 <input type="email" wire:model="email" autofocus class="form-control">
             </div>
             <div class="mb-3">
-                <label class="form-label small fw-bold">Contraseña</label>
+                <label class="form-label small">Contraseña</label>
                 <input type="password" wire:model="password" class="form-control">
             </div>
 

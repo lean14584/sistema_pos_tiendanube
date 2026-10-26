@@ -374,6 +374,46 @@
                     </div>
                 @endif
 
+                {{-- Pestaña: Tienda Online --}}
+                <div x-show="tab === 'tienda_online'" x-cloak class="space-y-4">
+                    <div>
+                        <h3 class="{{ $sectionTitle }}">Tienda Online</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Catálogo público de venta online (/tienda), con el mismo stock y precios que el POS. Apagada por defecto.
+                        </p>
+                    </div>
+
+                    <label class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 px-4 py-3 cursor-pointer">
+                        <span>
+                            <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">Activar tienda online</span>
+                            <span class="block text-xs text-gray-400 dark:text-gray-500">Publica el catálogo en /tienda para que cualquiera pueda entrar a comprar.</span>
+                        </span>
+                        <input type="checkbox" wire:model.live="tienda_online_habilitada" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-sky-600 focus:ring-sky-500">
+                    </label>
+
+                    @if ($tienda_online_habilitada)
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="{{ $label }}">Sucursal de la tienda</label>
+                                <select wire:model="tienda_online_sucursal_id" class="{{ $inputClass }}">
+                                    <option value="">La primera sucursal (por defecto)</option>
+                                    @foreach ($sucursales as $suc)
+                                        <option value="{{ $suc->id }}">{{ $suc->name }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">De qué sucursal lee el stock y el precio el catálogo público.</p>
+                                @error('tienda_online_sucursal_id') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="{{ $label }}">Reserva de stock (minutos)</label>
+                                <input type="number" min="1" max="1440" wire:model="tienda_online_reserva_minutos" class="{{ $inputClass }}">
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Cuánto tiempo se guarda el stock de un pedido mientras se confirma el pago.</p>
+                                @error('tienda_online_reserva_minutos') <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
                 {{-- Pestaña: Descuentos por medio de pago --}}
                 <div x-show="tab === 'descuentos'" x-cloak class="space-y-4">
                     <p class="text-sm text-gray-500 dark:text-gray-400">

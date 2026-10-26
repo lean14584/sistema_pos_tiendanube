@@ -60,6 +60,12 @@ class Edit extends Component
 
     public string $theme_secondary_color = '';
 
+    public bool $tienda_online_habilitada = false;
+
+    public string $tienda_online_sucursal_id = '';
+
+    public string $tienda_online_reserva_minutos = '15';
+
     /** Archivo recién seleccionado, pendiente de guardar (null = no tocar el logo actual). */
     public $logo = null;
 
@@ -116,6 +122,9 @@ class Edit extends Component
         $this->descuento_transferencia_pct = (string) $this->company->descuento_transferencia_pct;
         $this->theme_primary_color = (string) $this->company->theme_primary_color;
         $this->theme_secondary_color = (string) $this->company->theme_secondary_color;
+        $this->tienda_online_habilitada = $this->company->tienda_online_habilitada;
+        $this->tienda_online_sucursal_id = (string) ($this->company->tienda_online_sucursal_id ?? '');
+        $this->tienda_online_reserva_minutos = (string) $this->company->tienda_online_reserva_minutos;
 
         if (! config('features.multisucursal')) {
             $this->sucursal = Sucursal::query()->orderBy('id')->first();
@@ -279,6 +288,9 @@ class Edit extends Component
             'descuento_transferencia_pct' => ['required', 'numeric', 'min:0', 'max:100'],
             'theme_primary_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'theme_secondary_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'tienda_online_habilitada' => ['boolean'],
+            'tienda_online_sucursal_id' => ['nullable', 'exists:sucursales,id'],
+            'tienda_online_reserva_minutos' => ['required', 'integer', 'min:1', 'max:1440'],
             // 'image' de Laravel admite SVG, que puede llevar <script>
             // embebido (XSS almacenado si algún día se sirve el archivo
             // fuera de un <img>). Se restringe a los formatos rasterizados
@@ -378,6 +390,7 @@ class Edit extends Component
         // en la base y ThemeCss::render() los trata igual de cualquier modo.
         $data['theme_primary_color'] = $data['theme_primary_color'] ? strtolower($data['theme_primary_color']) : null;
         $data['theme_secondary_color'] = $data['theme_secondary_color'] ? strtolower($data['theme_secondary_color']) : null;
+        $data['tienda_online_sucursal_id'] = $data['tienda_online_sucursal_id'] !== '' ? $data['tienda_online_sucursal_id'] : null;
 
         if (! config('features.multisucursal') && $this->sucursal) {
             $this->sucursal->update([
@@ -520,6 +533,7 @@ class Edit extends Component
             $tabs['balanza'] = ['label' => 'Balanza', 'icon' => 'scale', 'fields' => ['barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits']];
         }
 
+        $tabs['tienda_online'] = ['label' => 'Tienda Online', 'icon' => 'shopping-bag', 'fields' => ['tienda_online_habilitada', 'tienda_online_sucursal_id', 'tienda_online_reserva_minutos']];
         $tabs['descuentos'] = ['label' => 'Descuentos', 'icon' => 'receipt-percent', 'fields' => ['descuento_efectivo_pct', 'descuento_transferencia_pct']];
         $tabs['apariencia'] = ['label' => 'Apariencia', 'icon' => 'paint-brush', 'fields' => ['theme_primary_color', 'theme_secondary_color']];
 
@@ -550,6 +564,7 @@ class Edit extends Component
             'puntosVenta' => $this->puntosVenta(),
             'mpTokenCargado' => $this->mpTokenCargado(),
             'mpWebhookSecretCargado' => $this->mpWebhookSecretCargado(),
+            'sucursales' => Sucursal::orderBy('name')->get(['id', 'name']),
         ]);
     }
 }
