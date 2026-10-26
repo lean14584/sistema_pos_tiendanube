@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureModuleAccess;
+use App\Http\Middleware\EnsureTiendaOnlineHabilitada;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,12 +17,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'module' => EnsureModuleAccess::class,
+            'tienda.enabled' => EnsureTiendaOnlineHabilitada::class,
         ]);
 
         // Mercado Pago y Tiendanube llaman a estos endpoints sin token CSRF.
         $middleware->validateCsrfTokens(except: [
             'mp/webhook',
             'tiendanube/webhook',
+            'tienda/mp/webhook',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

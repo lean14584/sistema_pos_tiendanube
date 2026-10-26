@@ -8,8 +8,10 @@ use App\Concerns\HasOverdueStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
+use App\Observers\InvoiceObserver;
 use App\Support\CurrentSucursal;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -20,8 +22,9 @@ use Illuminate\Support\Collection;
 #[Fillable([
     'number', 'client_id', 'sucursal_id', 'punto_venta', 'issue_date', 'due_date', 'tax_rate', 'notes', 'status',
     'tipo_comprobante_interno', 'related_invoice_id', 'remito_id', 'cambio_devolucion_id', 'afecta_stock', 'mp_external_reference',
-    'tiendanube_order_id', 'descuento_especial_monto',
+    'tiendanube_order_id', 'tienda_pedido_id', 'descuento_especial_monto',
 ])]
+#[ObservedBy(InvoiceObserver::class)]
 class Invoice extends Model
 {
     use Auditable, HasBillingTotals, HasOverdueStatus;
@@ -160,6 +163,12 @@ class Invoice extends Model
     public function remito(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'remito_id');
+    }
+
+    /** Pedido de la tienda online que generó esta factura/remito, si vino de ahí. */
+    public function tiendaPedido(): BelongsTo
+    {
+        return $this->belongsTo(TiendaPedido::class);
     }
 
     /**

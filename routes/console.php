@@ -14,3 +14,9 @@ Artisan::command('inspire', function () {
 Schedule::command('backup:run')
     ->dailyAt(config('backups.daily_at', '23:30'))
     ->withoutOverlapping();
+
+// Libera el stock de pedidos web cuya reserva venció sin pagarse (ver
+// CompanySettings::tienda_online_reserva_minutos).
+Schedule::command('tienda:release-expired-pedidos')
+    ->everyMinute()
+    ->withoutOverlapping();

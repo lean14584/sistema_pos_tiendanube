@@ -73,6 +73,11 @@ use App\Livewire\Sucursales\Create as SucursalCreate;
 use App\Livewire\Sucursales\Edit as SucursalEdit;
 use App\Livewire\Sucursales\Index as SucursalIndex;
 use App\Livewire\Tasks\Create as TaskCreate;
+use App\Livewire\Tienda\Cart as TiendaCart;
+use App\Livewire\Tienda\Catalog as TiendaCatalog;
+use App\Livewire\Tienda\Checkout as TiendaCheckout;
+use App\Livewire\Tienda\OrderStatus as TiendaOrderStatus;
+use App\Livewire\Tienda\ProductDetail as TiendaProductDetail;
 use App\Livewire\Tasks\Index as TaskIndex;
 use App\Livewire\Users\Create as UserCreate;
 use App\Livewire\Users\Edit as UserEdit;
@@ -101,6 +106,18 @@ Route::post('/tiendanube/webhook', TiendanubeWebhookController::class)->middlewa
 // de ese local — sin esto, mostraba el stock agregado de TODAS las
 // sucursales (ver Kiosk::search()).
 Route::get('/precios/{sucursal?}', Kiosk::class)->name('precios');
+
+// Tienda online pública: mismo Product/Category/stock que el POS, sin paso
+// de sincronización. Apagada por defecto por cliente (tienda.enabled lee
+// CompanySettings::current()->tienda_online_habilitada y devuelve 404 si
+// no está prendida — ver EnsureTiendaOnlineHabilitada).
+Route::middleware('tienda.enabled')->prefix('tienda')->name('tienda.')->group(function () {
+    Route::get('/', TiendaCatalog::class)->name('catalog');
+    Route::get('/producto/{product}', TiendaProductDetail::class)->name('product');
+    Route::get('/carrito', TiendaCart::class)->name('cart');
+    Route::get('/checkout', TiendaCheckout::class)->name('checkout');
+    Route::get('/pedido/{token}', TiendaOrderStatus::class)->name('order-status');
+});
 
 // Ticket ESC/POS para el agente de impresión local (ver pos-print-agent/):
 // sin auth porque el agente no tiene sesión de navegador. La URL firmada

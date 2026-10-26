@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'factura_c_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'tiendanube_sucursal_id', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits', 'descuento_efectivo_pct', 'descuento_transferencia_pct', 'theme_primary_color', 'theme_secondary_color'])]
+#[Fillable(['cuit', 'razon_social', 'nombre_fantasia', 'domicilio', 'logo_path', 'condicion_iva', 'factura_a_habilitada', 'factura_b_habilitada', 'factura_c_habilitada', 'tiendanube_store_id', 'tiendanube_token', 'tiendanube_webhook_secret', 'tiendanube_sucursal_id', 'barcode_scale_enabled', 'barcode_scale_prefix', 'barcode_scale_code_digits', 'barcode_scale_weight_digits', 'descuento_efectivo_pct', 'descuento_transferencia_pct', 'theme_primary_color', 'theme_secondary_color', 'tienda_online_habilitada', 'tienda_online_sucursal_id', 'tienda_online_reserva_minutos'])]
 class CompanySettings extends Model
 {
     use Auditable;
@@ -26,6 +26,11 @@ class CompanySettings extends Model
         return $this->belongsTo(Sucursal::class, 'tiendanube_sucursal_id');
     }
 
+    public function tiendaOnlineSucursal(): BelongsTo
+    {
+        return $this->belongsTo(Sucursal::class, 'tienda_online_sucursal_id');
+    }
+
     protected function casts(): array
     {
         return [
@@ -38,7 +43,19 @@ class CompanySettings extends Model
             'barcode_scale_weight_digits' => 'integer',
             'descuento_efectivo_pct' => 'decimal:2',
             'descuento_transferencia_pct' => 'decimal:2',
+            'tienda_online_habilitada' => 'boolean',
+            'tienda_online_reserva_minutos' => 'integer',
         ];
+    }
+
+    /**
+     * Sucursal cuyo stock/precio ve el storefront público. Nullable en DB:
+     * si el admin todavía no eligió ninguna, cae a la primera sucursal —
+     * mismo criterio de red de seguridad que CurrentSucursal/TiendanubeSync.
+     */
+    public function tiendaOnlineSucursalId(): ?int
+    {
+        return $this->tienda_online_sucursal_id ?? Sucursal::orderBy('id')->value('id');
     }
 
     /**
