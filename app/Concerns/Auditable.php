@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Support\CurrentSucursal;
 use BackedEnum;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Registra altas/bajas/modificaciones en audit_logs. Se apoya en los
@@ -105,7 +106,12 @@ trait Auditable
     private function writeAuditLog(string $event, array $changes): void
     {
         AuditLog::create([
-            'user_id' => auth()->id(),
+            // Guard explícito a propósito: audit_logs.user_id tiene FK a
+            // `users` (staff). Esto siempre fue el guard `web` de facto —
+            // ahora que existe un segundo guard (`customer`, ver la tienda
+            // online), ser explícito evita atribuir una auditoría a un
+            // cliente cuyo id ni siquiera existe en `users`.
+            'user_id' => Auth::guard('web')->id(),
             'sucursal_id' => CurrentSucursal::id(),
             'auditable_type' => static::class,
             'auditable_id' => $this->getKey(),

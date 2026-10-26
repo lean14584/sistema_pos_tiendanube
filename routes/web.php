@@ -17,6 +17,7 @@ use App\Http\Controllers\StockTransferPdfController;
 use App\Http\Controllers\TicketEscPosController;
 use App\Http\Controllers\TicketImageController;
 use App\Http\Controllers\TicketPrintController;
+use App\Http\Controllers\TiendaLogoutController;
 use App\Http\Controllers\TiendanubeWebhookController;
 use App\Livewire\Audit\Index as AuditIndex;
 use App\Livewire\Auth\ForgotPassword;
@@ -73,6 +74,11 @@ use App\Livewire\Sucursales\Create as SucursalCreate;
 use App\Livewire\Sucursales\Edit as SucursalEdit;
 use App\Livewire\Sucursales\Index as SucursalIndex;
 use App\Livewire\Tasks\Create as TaskCreate;
+use App\Livewire\Tienda\Account\ForgotPassword as TiendaAccountForgotPassword;
+use App\Livewire\Tienda\Account\Login as TiendaAccountLogin;
+use App\Livewire\Tienda\Account\Orders as TiendaAccountOrders;
+use App\Livewire\Tienda\Account\Register as TiendaAccountRegister;
+use App\Livewire\Tienda\Account\ResetPassword as TiendaAccountResetPassword;
 use App\Livewire\Tienda\Cart as TiendaCart;
 use App\Livewire\Tienda\Catalog as TiendaCatalog;
 use App\Livewire\Tienda\Checkout as TiendaCheckout;
@@ -117,6 +123,22 @@ Route::middleware('tienda.enabled')->prefix('tienda')->name('tienda.')->group(fu
     Route::get('/carrito', TiendaCart::class)->name('cart');
     Route::get('/checkout', TiendaCheckout::class)->name('checkout');
     Route::get('/pedido/{token}', TiendaOrderStatus::class)->name('order-status');
+
+    // Cuenta de cliente (guard `customer`, independiente del guard `web` de
+    // staff — ver app/Models/Customer.php y config/auth.php).
+    Route::prefix('cuenta')->name('account.')->group(function () {
+        Route::middleware('guest:customer')->group(function () {
+            Route::get('/ingresar', TiendaAccountLogin::class)->name('login');
+            Route::get('/registro', TiendaAccountRegister::class)->name('register');
+            Route::get('/olvide-password', TiendaAccountForgotPassword::class)->name('forgot-password');
+            Route::get('/reset-password/{token}', TiendaAccountResetPassword::class)->name('reset-password');
+        });
+
+        Route::middleware('auth:customer')->group(function () {
+            Route::post('/salir', TiendaLogoutController::class)->name('logout');
+            Route::get('/pedidos', TiendaAccountOrders::class)->name('orders');
+        });
+    });
 });
 
 // Ticket ESC/POS para el agente de impresión local (ver pos-print-agent/):

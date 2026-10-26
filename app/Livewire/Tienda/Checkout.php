@@ -12,6 +12,7 @@ use App\Services\MercadoPago\MercadoPagoCheckoutProService;
 use App\Support\InvoiceNumberGenerator;
 use App\Support\StockAdjuster;
 use App\Support\TiendaCart;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -35,6 +36,16 @@ class Checkout extends Component
     public string $customer_email = '';
 
     public string $customer_phone = '';
+
+    /** Si hay un cliente logueado, precarga sus datos (los puede seguir editando). */
+    public function mount(): void
+    {
+        if ($customer = Auth::guard('customer')->user()) {
+            $this->customer_name = $customer->name;
+            $this->customer_email = $customer->email;
+            $this->customer_phone = (string) $customer->phone;
+        }
+    }
 
     protected function rules(): array
     {
@@ -129,6 +140,7 @@ class Checkout extends Component
 
                     $pedido = TiendaPedido::create([
                         'token' => $token,
+                        'customer_id' => Auth::guard('customer')->id(),
                         'invoice_id' => $invoice->id,
                         'sucursal_id' => $sucursalId,
                         'status' => 'pending_payment',

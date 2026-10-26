@@ -30,7 +30,11 @@ class CurrentSucursal
     // producción bajo Octane, que sí reusa el proceso entre requests).
     public static function id(): ?int
     {
-        $user = Auth::user();
+        // Guard explícito: "sucursal activa" es un concepto de staff. Ahora
+        // que existe un segundo guard (`customer`, tienda online), un
+        // cliente logueado no debe pisar esta resolución — ver el mismo
+        // criterio en Concerns\Auditable::writeAuditLog().
+        $user = Auth::guard('web')->user();
 
         if ($user?->sucursal_id) {
             return $user->sucursal_id;

@@ -26,6 +26,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'tiendanube/webhook',
             'tienda/mp/webhook',
         ]);
+
+        // auth:customer (guard de la tienda) tiene que mandar al login de la
+        // tienda, no al del panel de staff — el redirect por defecto de
+        // Laravel ignora el guard y siempre apunta a la ruta `login`.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('tienda/*')
+            ? route('tienda.account.login')
+            : route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
