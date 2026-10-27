@@ -59,10 +59,18 @@ class Catalog extends Component
             ->when($this->sort === 'recientes', fn ($q) => $q->latest('id'))
             ->paginate(20);
 
+        $mostrandoHome = $this->query === '' && ! $this->categoryId;
+
+        $destacados = $mostrandoHome
+            ? Product::with(['category', 'stocks' => fn ($q) => $q->where('sucursal_id', $sucursalId)])
+                ->latest('id')->limit(10)->get()
+            : collect();
+
         return view('livewire.tienda.catalog', [
             'products' => $products,
             'categories' => Category::forSelectCached(),
             'sucursalId' => $sucursalId,
+            'destacados' => $destacados,
         ]);
     }
 }

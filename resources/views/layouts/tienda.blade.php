@@ -23,7 +23,7 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
     <title>@yield('title', 'Tienda') · {{ $tnCompany->display_name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,600&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
     <style>
         :root {
             {!! $tnVars !!}
@@ -32,6 +32,7 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             --tn-line: #E7EAF1;
             --tn-muted: #6B7280;
             --font: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            --font-display: 'Fraunces', Georgia, serif;
         }
 
         * { box-sizing: border-box; }
@@ -44,7 +45,7 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             -webkit-font-smoothing: antialiased;
         }
 
-        h1, h2, h3, .tn-display { font-family: var(--font); font-weight: 800; letter-spacing: -.02em; }
+        h1, h2, h3, .tn-display { font-family: var(--font-display); font-weight: 700; letter-spacing: -.01em; }
 
         a { color: var(--tn-700); text-decoration: none; }
         a:hover { color: var(--tn-800); }
@@ -141,7 +142,8 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
         .tn-ribbon-urgent { background: #FDECEC; color: #B3261E; }
         .tn-ribbon-off { background: rgba(20,24,31,.75); color: #fff; }
 
-        .tn-price { font-family: var(--font); font-weight: 800; color: var(--tn-ink); }
+        .tn-price { font-family: var(--font-display); font-weight: 700; color: var(--tn-ink); }
+        .tn-price-currency { font-family: var(--font); font-size: .5em; font-weight: 700; color: var(--tn-muted); margin-right: .2em; vertical-align: .15em; }
 
         .form-control, .form-select {
             border-color: var(--tn-line); border-radius: 10px; font-family: var(--font);
@@ -175,7 +177,7 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             background: color-mix(in srgb, var(--tn-acc-400) 55%, transparent);
             top: -140px; right: -100px; filter: blur(5px);
         }
-        .tn-hero-title { font-size: 2.1rem; font-weight: 800; position: relative; z-index: 1; margin-bottom: .4rem; }
+        .tn-hero-title { font-family: var(--font-display); font-size: 2.3rem; font-weight: 700; position: relative; z-index: 1; margin-bottom: .4rem; }
         @media (min-width: 768px) { .tn-hero-title { font-size: 2.6rem; } }
         .tn-hero-sub { opacity: .92; position: relative; z-index: 1; font-size: 1.02rem; max-width: 520px; }
 
@@ -191,10 +193,14 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             padding: .5rem 0;
         }
         .tn-trust-item {
-            display: flex; align-items: center; gap: .5rem;
+            display: flex; align-items: center; gap: .6rem;
             font-size: .85rem; font-weight: 600; color: var(--tn-muted);
         }
-        .tn-trust-item i { color: var(--tn-600); font-size: .95rem; }
+        .tn-trust-item .tn-trust-icon {
+            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--tn-500) 14%, white); color: var(--tn-700); font-size: .85rem;
+        }
 
         /* ---------- Breadcrumb ---------- */
         .tn-breadcrumb { font-size: .85rem; color: var(--tn-muted); margin-bottom: 1.25rem; }
@@ -229,6 +235,32 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             background: color-mix(in srgb, var(--tn-500) 14%, white); color: var(--tn-700); font-size: 1.1rem;
         }
         .tn-cat-tile-name { font-weight: 700; font-size: .85rem; }
+
+        /* ---------- Product image placeholder (sin foto) ---------- */
+        .tn-media-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .tn-media-ph i { font-size: 2.4rem; color: rgba(20,24,31,.3); }
+        .tn-media-ph-lg i { font-size: 4rem; }
+
+        /* ---------- Destacados (scroll horizontal) ---------- */
+        .tn-destacados-scroll {
+            display: flex; gap: 1rem; overflow-x: auto; padding: .25rem .25rem 1rem;
+            scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+        }
+        .tn-destacados-scroll::-webkit-scrollbar { height: 6px; }
+        .tn-destacados-scroll::-webkit-scrollbar-thumb { background: var(--tn-line); border-radius: 999px; }
+        .tn-destacados-card { flex: 0 0 170px; scroll-snap-align: start; }
+        @media (min-width: 768px) { .tn-destacados-card { flex-basis: 200px; } }
+
+        /* ---------- Barra fija de compra (mobile) ---------- */
+        .tn-sticky-cta {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030;
+            background: #fff; border-top: 1px solid var(--tn-line);
+            box-shadow: 0 -6px 20px rgba(20,24,31,.1);
+            padding: .7rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        }
+        @media (min-width: 768px) { .tn-sticky-cta { display: none !important; } }
+        .tn-sticky-cta-pad { padding-bottom: 0; }
+        @media (max-width: 767.98px) { .tn-sticky-cta-pad { padding-bottom: 86px; } }
 
         /* ---------- Footer ---------- */
         footer.tn-footer {

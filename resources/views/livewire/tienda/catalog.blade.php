@@ -1,5 +1,16 @@
 <div class="container py-4 py-md-5">
 
+    @php
+        $tnPh = [
+            ['bg' => 'linear-gradient(135deg, #FDE8E8, #FBD4D4)', 'icon' => 'fa-cookie-bite'],
+            ['bg' => 'linear-gradient(135deg, #E8F3FD, #D2E6FB)', 'icon' => 'fa-wine-bottle'],
+            ['bg' => 'linear-gradient(135deg, #E9F9EE, #D2F0DC)', 'icon' => 'fa-leaf'],
+            ['bg' => 'linear-gradient(135deg, #FDF3E3, #FBE6C0)', 'icon' => 'fa-mug-hot'],
+            ['bg' => 'linear-gradient(135deg, #F3E9FD, #E5D3FB)', 'icon' => 'fa-soap'],
+            ['bg' => 'linear-gradient(135deg, #E9FDFB, #CFF5EF)', 'icon' => 'fa-box-open'],
+        ];
+    @endphp
+
     @if($query === '' && ! $categoryId)
         <div class="tn-hero mb-3">
             <div class="tn-hero-title">Todo lo que buscás,<br>a un clic de distancia</div>
@@ -14,15 +25,15 @@
 
         <div class="tn-trustbar mb-5">
             <div class="tn-trust-item">
-                <i class="fas fa-boxes-stacked"></i>
+                <span class="tn-trust-icon"><i class="fas fa-boxes-stacked"></i></span>
                 <span>Stock real, al segundo</span>
             </div>
             <div class="tn-trust-item">
-                <i class="fas fa-lock"></i>
+                <span class="tn-trust-icon"><i class="fas fa-lock"></i></span>
                 <span>Pago seguro con Mercado Pago</span>
             </div>
             <div class="tn-trust-item">
-                <i class="fas fa-shop"></i>
+                <span class="tn-trust-icon"><i class="fas fa-shop"></i></span>
                 <span>Mismo precio que en el local</span>
             </div>
         </div>
@@ -39,6 +50,33 @@
                                 <div class="tn-cat-tile-name text-truncate">{{ $cat->name }}</div>
                             </button>
                         </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        @if($destacados->isNotEmpty())
+            <div class="mb-5">
+                <h2 class="h5 mb-3">Recién llegados</h2>
+                <div class="tn-destacados-scroll">
+                    @foreach($destacados as $item)
+                        @php $ph = $tnPh[$item->id % count($tnPh)]; $dstock = $item->stockEnSucursal($sucursalId); @endphp
+                        <a href="{{ route('tienda.product', $item) }}" class="text-decoration-none tn-card tn-destacados-card">
+                            <div class="tn-card-media {{ $dstock <= 0 ? 'tn-card-media-out' : '' }}" style="aspect-ratio: 1; background: var(--tn-paper);">
+                                @if($item->imageUrl())
+                                    <img src="{{ $item->imageUrl() }}" alt="{{ $item->name }}" loading="lazy" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                @else
+                                    <div class="tn-media-ph" style="background: {{ $ph['bg'] }};"><i class="fas {{ $ph['icon'] }}"></i></div>
+                                @endif
+                                @if($dstock <= 0)
+                                    <span class="tn-ribbon tn-ribbon-off">Sin stock</span>
+                                @endif
+                            </div>
+                            <div class="p-3">
+                                <div style="color: var(--tn-ink); font-weight: 700; font-size: .88rem; line-height: 1.3;" class="text-truncate">{{ $item->name }}</div>
+                                <div class="tn-price" style="font-size: 1.2rem;"><span class="tn-price-currency">$</span>{{ number_format((float) $item->price, 2, ',', '.') }}</div>
+                            </div>
+                        </a>
                     @endforeach
                 </div>
             </div>
@@ -88,14 +126,14 @@
 
             <div class="row g-3 g-md-4">
                 @forelse($products as $item)
-                    @php $stock = $item->stockEnSucursal($sucursalId); @endphp
+                    @php $stock = $item->stockEnSucursal($sucursalId); $ph = $tnPh[$item->id % count($tnPh)]; @endphp
                     <div class="col-6 col-md-4 col-lg-3">
                         <a href="{{ route('tienda.product', $item) }}" class="text-decoration-none d-block tn-card h-100">
-                            <div class="tn-card-media {{ $stock <= 0 ? 'tn-card-media-out' : '' }}" style="aspect-ratio: 1; background: var(--tn-paper); padding: 1.5rem;">
+                            <div class="tn-card-media {{ $stock <= 0 ? 'tn-card-media-out' : '' }}" style="aspect-ratio: 1; background: var(--tn-paper); {{ $item->imageUrl() ? 'padding: 1.5rem;' : '' }}">
                                 @if($item->imageUrl())
                                     <img src="{{ $item->imageUrl() }}" alt="{{ $item->name }}" loading="lazy" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                 @else
-                                    <i class="fas fa-basket-shopping" style="font-size: 2.4rem; color: var(--tn-line);"></i>
+                                    <div class="tn-media-ph" style="background: {{ $ph['bg'] }};"><i class="fas {{ $ph['icon'] }}"></i></div>
                                 @endif
 
                                 @if($stock <= 0)
@@ -110,7 +148,7 @@
                                     {{ $item->name }}
                                 </div>
                                 <div class="d-flex align-items-baseline justify-content-between">
-                                    <div class="tn-price" style="font-size: 1.35rem;">$ {{ number_format((float) $item->price, 2, ',', '.') }}</div>
+                                    <div class="tn-price" style="font-size: 1.35rem;"><span class="tn-price-currency">$</span>{{ number_format((float) $item->price, 2, ',', '.') }}</div>
                                     @if($stock > 0 && $stock <= 10)
                                         <span style="font-size: .72rem; font-weight: 700; color: #B3261E;">Quedan {{ $stock }}</span>
                                     @endif
