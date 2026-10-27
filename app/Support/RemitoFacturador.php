@@ -76,6 +76,16 @@ class RemitoFacturador
                     ]);
                 }
 
+                // Se mueven (no se duplican) los pagos ya registrados en el
+                // remito — hoy esto solo pasa con el pago de Mercado Pago de
+                // la tienda online (ver MercadoPagoPaymentApplier::apply(),
+                // que corre sobre el remito antes de que este Observer lo
+                // convierta). Sin esto, el pago quedaba huérfano en un
+                // comprobante superado que nadie vuelve a mirar, y la
+                // factura resultante aparecía sin medio de pago en
+                // Invoices\Show.
+                $remito->payments()->update(['invoice_id' => $factura->id]);
+
                 return $factura;
             }), null, $puntoVentaNumero);
         });

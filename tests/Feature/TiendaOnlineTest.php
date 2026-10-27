@@ -323,6 +323,14 @@ class TiendaOnlineTest extends TestCase
         // termina indistinguible de una del POS en Informes/Dashboard.
         $this->assertSame($pedido->id, $factura->tienda_pedido_id);
         $this->assertTrue($factura->esDeTiendaOnline());
+
+        // El pago de Mercado Pago lo registra MercadoPagoPaymentApplier
+        // sobre el remito original (ver su comentario) — sin arrastrarlo a
+        // la factura resultante, el staff la veía sin ningún medio de pago
+        // en Invoices\Show (ver RemitoFacturador::facturar()).
+        $this->assertSame(0, $remito->fresh()->payments()->count());
+        $this->assertSame(1, $factura->fresh()->payments()->count());
+        $this->assertSame('mercadopago', $factura->fresh()->payments->first()->method->value);
     }
 
     public function test_mercadopago_webhook_leaves_remito_as_is_when_no_fiscal_type_enabled(): void

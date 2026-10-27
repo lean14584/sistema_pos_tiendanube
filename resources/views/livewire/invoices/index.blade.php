@@ -77,7 +77,9 @@
                                     @endif
                                 </p>
                             </td>
-                            <td class="px-5 py-3 text-gray-700 dark:text-gray-300">{{ $invoice->client->name ?? 'Cliente desconocido' }}</td>
+                            <td class="px-5 py-3 text-gray-700 dark:text-gray-300">
+                                {{ $invoice->esDeTiendaOnline() ? ($invoice->tiendaPedido->customer_name ?? $invoice->client->name) : ($invoice->client->name ?? 'Cliente desconocido') }}
+                            </td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $invoice->issue_date->format('d/m/Y') }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $invoice->due_date->format('d/m/Y') }}</td>
                             <td class="px-5 py-3"><x-status-badge :status="$invoice->effective_status" /></td>
@@ -107,7 +109,9 @@
                                         </span>
                                     @endif
                                 </p>
-                                <p class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $invoice->client->name ?? 'Cliente desconocido' }}</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                    {{ $invoice->esDeTiendaOnline() ? ($invoice->tiendaPedido->customer_name ?? $invoice->client->name) : ($invoice->client->name ?? 'Cliente desconocido') }}
+                                </p>
                             </div>
                             <x-status-badge :status="$invoice->effective_status" />
                         </div>

@@ -312,6 +312,38 @@ class InvoicesTest extends TestCase
             ->assertDontSee('Online');
     }
 
+    public function test_invoices_index_y_show_muestran_el_comprador_real_de_tienda_online(): void
+    {
+        // El checkout de la tienda siempre factura a Consumidor Final (ver
+        // Tienda\Checkout::confirmar()) — sin esto, el listado y el detalle
+        // mostraban "Consumidor Final" en vez del comprador real, que sí se
+        // pidió en el checkout y queda guardado en TiendaPedido.
+        $consumidorFinal = Client::create(['name' => 'Consumidor Final', 'email' => 'cf@test.com']);
+
+        $pedido = TiendaPedido::create([
+            'token' => 'tok-buyer-1', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'paid',
+            'customer_name' => 'Rocío Fernández', 'customer_email' => 'rocio@example.com', 'customer_phone' => '2984000000',
+            'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+        ]);
+        $invoice = Invoice::create([
+            'number' => 'FAC-7003', 'client_id' => $consumidorFinal->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+            'tienda_pedido_id' => $pedido->id,
+        ]);
+
+        Livewire::actingAs($this->admin())->test('invoices.index')
+            ->assertSee('Rocío Fernández')
+            ->assertDontSee('Consumidor Final');
+
+        Livewire::actingAs($this->admin())->test('invoices.show', ['invoice' => $invoice])
+            ->assertSee('Rocío Fernández')
+            ->assertSee('rocio@example.com')
+            ->assertSee('2984000000')
+            // El nombre fiscal sigue ahí (ver Facturado a), solo se agrega
+            // el comprador real al lado, no se reemplaza el dato fiscal.
+            ->assertSee('Consumidor Final');
+    }
+
     public function test_invoices_index_paginates_instead_of_loading_everything(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);

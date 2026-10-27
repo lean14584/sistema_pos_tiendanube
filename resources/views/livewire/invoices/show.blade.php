@@ -231,6 +231,16 @@
                 @if ($invoice->client->address)<p class="text-sm text-gray-500 dark:text-gray-400">{{ $invoice->client->address }}</p>@endif
                 @if ($invoice->client->tax_id)<p class="text-sm text-gray-500 dark:text-gray-400">ID fiscal: {{ $invoice->client->tax_id }}</p>@endif
             </div>
+            @if ($invoice->esDeTiendaOnline() && $invoice->tiendaPedido)
+                <div>
+                    <p class="text-xs uppercase text-gray-400 dark:text-gray-500 mb-1 flex items-center gap-1">
+                        <x-heroicon-o-shopping-bag class="w-3.5 h-3.5" /> Comprador (tienda online)
+                    </p>
+                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ $invoice->tiendaPedido->customer_name }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $invoice->tiendaPedido->customer_email }}</p>
+                    @if ($invoice->tiendaPedido->customer_phone)<p class="text-sm text-gray-500 dark:text-gray-400">{{ $invoice->tiendaPedido->customer_phone }}</p>@endif
+                </div>
+            @endif
         </div>
 
         <div class="overflow-x-auto">

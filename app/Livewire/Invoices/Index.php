@@ -40,7 +40,7 @@ class Index extends Component
             ? ($this->sucursal_id !== '' ? (int) $this->sucursal_id : null)
             : CurrentSucursal::id();
 
-        $invoices = Invoice::with('client', 'items')
+        $invoices = Invoice::with('client', 'items', 'tiendaPedido')
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->when($this->filter !== 'all', fn ($q) => $q->withEffectiveStatus($this->filter))
             ->when($this->query !== '', function ($q) {

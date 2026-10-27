@@ -310,7 +310,7 @@ class Show extends Component
 
     public function render()
     {
-        $this->invoice->load('client', 'items', 'payments', 'relatedInvoice', 'creditNotes', 'facturasDelRemito');
+        $this->invoice->load('client', 'items', 'payments', 'relatedInvoice', 'creditNotes', 'facturasDelRemito', 'tiendaPedido');
 
         return view('livewire.invoices.show', [
             'statuses' => InvoiceStatus::cases(),
