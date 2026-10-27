@@ -94,6 +94,8 @@ class Dashboard extends Component
             'maxCategory' => collect($agg['byCategory'])->max('total') ?? 0,
             'byMethod' => collect($agg['byMethod']),
             'maxMethod' => collect($agg['byMethod'])->max('total') ?? 0,
+            'byChannel' => collect($agg['byChannel']),
+            'maxChannel' => collect($agg['byChannel'])->max('total') ?? 0,
             'bySucursal' => collect($agg['bySucursal']),
             'maxSucursal' => collect($agg['bySucursal'])->max('total') ?? 0,
             'puedeVerTodasLasSucursales' => $this->puedeVerTodasLasSucursales(),
@@ -191,6 +193,7 @@ class Dashboard extends Component
             'availableYears' => $availableYears->all(),
             'byCategory' => $anio['byCategory']->take(5)->all(),
             'byMethod' => $anio['byMethod']->all(),
+            'byChannel' => $anio['byChannel']->all(),
             'bySucursal' => $anio['bySucursal']->all(),
         ];
     }

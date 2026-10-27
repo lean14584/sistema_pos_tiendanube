@@ -50,6 +50,12 @@ class RemitoFacturador
                     'punto_venta' => $puntoVentaNumero,
                     'tipo_comprobante_interno' => $tipo,
                     'remito_id' => $remito->id,
+                    // Se arrastra del remito para que la factura resultante
+                    // siga identificable como venta de la tienda online en
+                    // Informes/Dashboard y en CashLinker — sin esto, una vez
+                    // convertido el remito en factura se perdía la marca de
+                    // origen (ver Invoice::esDeTiendaOnline()).
+                    'tienda_pedido_id' => $remito->tienda_pedido_id,
                     'issue_date' => now()->toDateString(),
                     'due_date' => now()->addDays(15)->toDateString(),
                     'tax_rate' => 0,

@@ -204,6 +204,17 @@ class Invoice extends Model
     }
 
     /**
+     * True si esta venta se originó en el checkout de la tienda online (ver
+     * Livewire\Tienda\Checkout), no en el POS. Usado para distinguir el
+     * canal en Informes/Dashboard y para que el pago nunca se anote en el
+     * arqueo de caja de un cajero físico (ver CashLinker::linkInvoicePayment).
+     */
+    public function esDeTiendaOnline(): bool
+    {
+        return $this->tienda_pedido_id !== null;
+    }
+
+    /**
      * +1 si este comprobante suma a la deuda del cliente (Factura, Remito),
      * -1 si la reduce (Nota de Crédito, Devolución). Usado por
      * Client::debitLines() para que el saldo de cuenta corriente no sume

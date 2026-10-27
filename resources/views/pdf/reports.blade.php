@@ -133,6 +133,16 @@
             </tr>
         </table>
 
+        <h2>Canal de venta</h2>
+        <table class="data">
+            <thead><tr><th>Canal</th><th class="r">Ventas</th><th class="r">Total</th></tr></thead>
+            <tbody>
+                @foreach ($byChannel as $r)
+                    <tr><td>{{ $r['label'] }}</td><td class="r">{{ $r['count'] }}</td><td class="r">${{ money($r['total']) }}</td></tr>
+                @endforeach
+            </tbody>
+        </table>
+
         <table class="two-col">
             <tr>
                 <td>

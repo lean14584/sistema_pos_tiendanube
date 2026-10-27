@@ -68,7 +68,14 @@
                                 {{-- La numeración es por tipo de comprobante (ver InvoiceNumberGenerator):
                                      una Factura B y un Remito X pueden compartir el mismo número, igual
                                      que en AFIP — por eso el tipo se muestra siempre junto al número. --}}
-                                <p class="text-xs text-gray-400 dark:text-gray-500">{{ $invoice->tipo_comprobante_interno->label() }}</p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                                    {{ $invoice->tipo_comprobante_interno->label() }}
+                                    @if ($invoice->esDeTiendaOnline())
+                                        <span class="inline-flex items-center gap-0.5 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 px-1.5 py-0.5 text-[10px] font-semibold">
+                                            <x-heroicon-o-shopping-bag class="w-2.5 h-2.5" /> Online
+                                        </span>
+                                    @endif
+                                </p>
                             </td>
                             <td class="px-5 py-3 text-gray-700 dark:text-gray-300">{{ $invoice->client->name ?? 'Cliente desconocido' }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $invoice->issue_date->format('d/m/Y') }}</td>
@@ -92,7 +99,14 @@
                         <div class="flex items-start justify-between gap-3 mb-2">
                             <div class="min-w-0">
                                 <p class="font-medium text-indigo-600 dark:text-indigo-400">{{ $invoice->number }}</p>
-                                <p class="text-xs text-gray-400 dark:text-gray-500">{{ $invoice->tipo_comprobante_interno->label() }}</p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                                    {{ $invoice->tipo_comprobante_interno->label() }}
+                                    @if ($invoice->esDeTiendaOnline())
+                                        <span class="inline-flex items-center gap-0.5 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 px-1.5 py-0.5 text-[10px] font-semibold">
+                                            <x-heroicon-o-shopping-bag class="w-2.5 h-2.5" /> Online
+                                        </span>
+                                    @endif
+                                </p>
                                 <p class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $invoice->client->name ?? 'Cliente desconocido' }}</p>
                             </div>
                             <x-status-badge :status="$invoice->effective_status" />

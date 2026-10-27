@@ -116,6 +116,13 @@ class ReportsExportController extends Controller
             }
             $row([]);
 
+            $row(['Ventas por canal']);
+            $row(['Canal', 'Ventas', 'Total']);
+            foreach ($data['byChannel'] as $r) {
+                $row([$r['label'], $r['count'], $money($r['total'])]);
+            }
+            $row([]);
+
             $row(['Ventas por medio de pago']);
             $row(['Medio', 'Total']);
             foreach ($data['byMethod'] as $r) {

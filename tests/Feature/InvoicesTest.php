@@ -9,6 +9,7 @@ use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Sucursal;
+use App\Models\TiendaPedido;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -275,6 +276,40 @@ class InvoicesTest extends TestCase
         } finally {
             Storage::disk('public')->delete($logoPath);
         }
+    }
+
+    public function test_invoices_index_marca_las_ventas_de_tienda_online(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $local = Invoice::create([
+            'number' => 'FAC-7001', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+
+        $pedido = TiendaPedido::create([
+            'token' => 'tok-index-1', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'paid',
+            'customer_name' => 'Cliente online', 'customer_email' => 'online@test.com',
+            'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+        ]);
+        $online = Invoice::create([
+            'number' => 'FAC-7002', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+            'tienda_pedido_id' => $pedido->id,
+        ]);
+
+        Livewire::actingAs($this->admin())->test('invoices.index')
+            ->assertSee('FAC-7001')
+            ->assertSee('FAC-7002')
+            ->assertSee('Online');
+
+        // Sin ninguna venta de tienda online en el listado, no debería
+        // aparecer ningún badge "Online" — confirma que no se muestra
+        // para cualquier factura, solo para las que vinieron de la tienda.
+        $online->delete();
+        Livewire::actingAs($this->admin())->test('invoices.index')
+            ->assertSee('FAC-7001')
+            ->assertDontSee('Online');
     }
 
     public function test_invoices_index_paginates_instead_of_loading_everything(): void

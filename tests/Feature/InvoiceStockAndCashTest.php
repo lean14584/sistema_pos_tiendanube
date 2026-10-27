@@ -73,6 +73,38 @@ class InvoiceStockAndCashTest extends TestCase
         $this->assertSame(0, CashMovement::count());
     }
 
+    /**
+     * El webhook de Mercado Pago que paga un pedido de la tienda online ya
+     * no tiene sesión de staff autenticada, así que hoy esto no pasa "por
+     * las dudas" — pero CashLinker lo bloquea de forma explícita (ver
+     * comentario en linkInvoicePayment) para que siga sin pasar aunque algún
+     * día alguien dispare ese mismo pago desde una acción de staff CON caja
+     * abierta, como se simula acá.
+     */
+    public function test_el_pago_de_una_venta_de_tienda_online_nunca_se_anota_en_caja(): void
+    {
+        $admin = $this->admin();
+        $this->openCashSession($admin);
+        $this->actingAs($admin);
+
+        $client = Client::create(['name' => 'Cliente online', 'email' => 'online@test.com']);
+        $invoice = Invoice::create([
+            'number' => 'REM-9001', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+            'tienda_pedido_id' => \App\Models\TiendaPedido::create([
+                'token' => 'tok-9001', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'pending_payment',
+                'customer_name' => 'Cliente online', 'customer_email' => 'online@test.com',
+                'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+            ])->id,
+        ]);
+
+        $payment = $invoice->payments()->create(['method' => 'mercadopago', 'amount' => 900]);
+
+        CashLinker::linkInvoicePayment($invoice, $payment);
+
+        $this->assertSame(0, CashMovement::count());
+    }
+
     public function test_devolucion_repone_stock_y_genera_egreso_de_caja(): void
     {
         $admin = $this->admin();

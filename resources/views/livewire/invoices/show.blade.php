@@ -9,6 +9,11 @@
             <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
                 {{ $invoice->tipo_comprobante_interno->label() }}
             </span>
+            @if ($invoice->esDeTiendaOnline())
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
+                    <x-heroicon-o-shopping-bag class="w-3.5 h-3.5" /> Tienda online
+                </span>
+            @endif
             <x-status-badge :status="$invoice->effective_status" />
         </x-slot:actions>
     </x-page-header>

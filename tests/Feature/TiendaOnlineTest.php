@@ -316,6 +316,13 @@ class TiendaOnlineTest extends TestCase
         $this->assertSame('draft', $factura->status->value);
         $this->assertFalse($factura->afecta_stock);
         $this->assertNull($factura->cae ?? null);
+
+        // La factura resultante tiene que seguir identificable como venta de
+        // la tienda online (ver Invoice::esDeTiendaOnline()) — sin esto, se
+        // pierde la marca de origen al convertir el remito y la venta
+        // termina indistinguible de una del POS en Informes/Dashboard.
+        $this->assertSame($pedido->id, $factura->tienda_pedido_id);
+        $this->assertTrue($factura->esDeTiendaOnline());
     }
 
     public function test_mercadopago_webhook_leaves_remito_as_is_when_no_fiscal_type_enabled(): void

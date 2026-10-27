@@ -70,6 +70,10 @@ class SalesReport
         $byArticle = collect();
         $byCategory = collect();
         $byMethod = collect();
+        $byChannel = collect([
+            'local' => ['label' => 'Local (POS)', 'total' => 0.0, 'count' => 0],
+            'online' => ['label' => 'Tienda online', 'total' => 0.0, 'count' => 0],
+        ]);
         $byClient = collect();
         $bySucursal = collect();
         $byDay = collect();
@@ -96,6 +100,12 @@ class SalesReport
             $client['total'] += $total;
             $client['count']++;
             $byClient->put($clientKey, $client);
+
+            $channelKey = $invoice->esDeTiendaOnline() ? 'online' : 'local';
+            $channel = $byChannel->get($channelKey);
+            $channel['total'] += $total;
+            $channel['count']++;
+            $byChannel->put($channelKey, $channel);
 
             $sucursalKey = $invoice->sucursal_id ?? 'sin-sucursal';
             $sucursalLabel = $invoice->sucursal?->name ?? 'Sin sucursal';
@@ -139,6 +149,7 @@ class SalesReport
         $byArticle = $byArticle->sortByDesc('total')->values();
         $byCategory = $byCategory->sortByDesc('total')->values();
         $byMethod = $byMethod->sortByDesc('total')->values();
+        $byChannel = $byChannel->values();
         $byClient = $byClient->sortByDesc('total')->take(8)->values();
         $bySucursal = $bySucursal->sortByDesc('total')->values();
         $byDay = $byDay->sortKeys()->values();
@@ -174,6 +185,7 @@ class SalesReport
             'byArticle' => $byArticle,
             'byCategory' => $byCategory,
             'byMethod' => $byMethod,
+            'byChannel' => $byChannel,
             'byClient' => $byClient,
             'bySucursal' => $bySucursal,
             'byDay' => $byDay,
@@ -181,6 +193,7 @@ class SalesReport
             'maxArticle' => $byArticle->max('total') ?? 0,
             'maxCategory' => $byCategory->max('total') ?? 0,
             'maxMethod' => $byMethod->max('total') ?? 0,
+            'maxChannel' => $byChannel->max('total') ?? 0,
             'maxClient' => $byClient->max('total') ?? 0,
             'maxSucursal' => $bySucursal->max('total') ?? 0,
             'maxDay' => $byDay->max('total') ?? 0,

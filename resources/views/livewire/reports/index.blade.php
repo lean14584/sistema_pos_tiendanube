@@ -183,6 +183,23 @@
             </section>
 
             <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5">
+                <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por canal</h2>
+                <div class="space-y-3">
+                    @foreach ($byChannel as $row)
+                        <div wire:key="bychannel-{{ $loop->index }}">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ $row['label'] }}</span>
+                                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{ $row['count'] }} {{ $row['count'] === 1 ? 'venta' : 'ventas' }} · ${{ money($row['total']) }}</span>
+                            </div>
+                            <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+                                <div class="h-1.5 rounded-full bg-sky-500 dark:bg-sky-400" style="width: {{ $barPct($row['total'], $maxChannel) }}%"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+
+            <section class="rounded-2xl border border-sky-200 dark:border-gray-800 bg-sky-200/70 dark:bg-gray-900 shadow-sm p-5">
                 <h2 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Ventas por método de pago</h2>
                 <div class="space-y-3">
                     @forelse ($byMethod as $row)

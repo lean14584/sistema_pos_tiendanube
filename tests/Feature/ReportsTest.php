@@ -8,7 +8,9 @@ use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Sucursal;
+use App\Models\TiendaPedido;
 use App\Models\User;
+use App\Support\SalesReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -52,6 +54,37 @@ class ReportsTest extends TestCase
             ->assertSee('Bebidas')
             ->assertSee('200,00') // only the in-range paid invoice's total, not draft or out-of-range
             ->assertDontSee('600.00'); // sum if draft/out-of-range were wrongly included
+    }
+
+    public function test_separa_ventas_locales_de_ventas_de_tienda_online(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $local = Invoice::create([
+            'number' => 'FAC-0010', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+        $local->items()->create(['description' => 'Item local', 'quantity' => 1, 'unit_price' => 1000]);
+
+        $pedido = TiendaPedido::create([
+            'token' => 'tok-report-1', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'paid',
+            'customer_name' => 'Cliente online', 'customer_email' => 'online@test.com',
+            'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+        ]);
+        $online = Invoice::create([
+            'number' => 'FAC-0011', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+            'tienda_pedido_id' => $pedido->id,
+        ]);
+        $online->items()->create(['description' => 'Item online', 'quantity' => 1, 'unit_price' => 500]);
+
+        $data = SalesReport::build(now()->subDay()->toDateString(), now()->toDateString());
+
+        $byChannel = $data['byChannel']->keyBy('label');
+        $this->assertSame(1, $byChannel['Local (POS)']['count']);
+        $this->assertEquals(1000.0, $byChannel['Local (POS)']['total']);
+        $this->assertSame(1, $byChannel['Tienda online']['count']);
+        $this->assertEquals(500.0, $byChannel['Tienda online']['total']);
     }
 
     public function test_no_duplica_una_venta_cuyo_remito_ya_fue_facturado(): void
