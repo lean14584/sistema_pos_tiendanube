@@ -25,10 +25,12 @@
                 @endif
 
                 <div class="mb-4">
-                    @if($stock > 0)
-                        <span class="tn-badge-ok"><i class="fas fa-check me-1"></i> Hay stock</span>
-                    @else
+                    @if($stock <= 0)
                         <span class="tn-badge-off">Sin stock por ahora</span>
+                    @elseif($stock <= 10)
+                        <span class="tn-badge-warn"><i class="fas fa-triangle-exclamation me-1"></i> Quedan {{ $stock }} unidades</span>
+                    @else
+                        <span class="tn-badge-ok"><i class="fas fa-check me-1"></i> Hay stock</span>
                     @endif
                 </div>
 

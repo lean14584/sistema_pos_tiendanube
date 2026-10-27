@@ -128,6 +128,19 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
         }
         .tn-card:hover { transform: translateY(-4px); box-shadow: 0 14px 28px rgba(20,24,31,.1); border-color: transparent; }
 
+        .tn-card-media { display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .tn-card-media img { transition: transform .35s ease; }
+        .tn-card:hover .tn-card-media img { transform: scale(1.08); }
+        .tn-card-media-out img, .tn-card-media-out i { opacity: .35; }
+
+        .tn-ribbon {
+            position: absolute; top: 10px; left: 10px; z-index: 2;
+            border-radius: 999px; padding: .3rem .7rem; font-size: .7rem; font-weight: 800;
+            text-transform: none; letter-spacing: 0;
+        }
+        .tn-ribbon-urgent { background: #FDECEC; color: #B3261E; }
+        .tn-ribbon-off { background: rgba(20,24,31,.75); color: #fff; }
+
         .tn-price { font-family: var(--font); font-weight: 800; color: var(--tn-ink); }
 
         .form-control, .form-select {
@@ -147,10 +160,15 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
         .alert-tn-danger { background: #FDECEC; border: 1px solid #F6C4C4; color: #B3261E; border-radius: 10px; }
 
         /* ---------- Hero ---------- */
+        @keyframes tn-hero-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .tn-hero {
             background: linear-gradient(120deg, var(--tn-700) 0%, var(--tn-500) 100%);
             border-radius: 20px; color: #fff; position: relative; overflow: hidden;
             padding: 2.75rem 2rem;
+            animation: tn-hero-in .5s ease both;
         }
         .tn-hero::after {
             content: ''; position: absolute; width: 340px; height: 340px; border-radius: 50%;
@@ -167,6 +185,16 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             text-decoration: none; margin: .2rem .35rem .2rem 0; position: relative; z-index: 1;
         }
         .tn-chip:hover { background: rgba(255,255,255,.28); color: #fff; }
+
+        .tn-trustbar {
+            display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center;
+            padding: .5rem 0;
+        }
+        .tn-trust-item {
+            display: flex; align-items: center; gap: .5rem;
+            font-size: .85rem; font-weight: 600; color: var(--tn-muted);
+        }
+        .tn-trust-item i { color: var(--tn-600); font-size: .95rem; }
 
         footer.tn-footer {
             padding: 3rem 0 2rem; text-align: center; color: var(--tn-muted); font-size: .85rem;

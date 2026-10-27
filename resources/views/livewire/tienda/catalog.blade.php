@@ -1,7 +1,7 @@
 <div class="container py-4 py-md-5">
 
     @if($query === '' && ! $categoryId)
-        <div class="tn-hero mb-5">
+        <div class="tn-hero mb-3">
             <div class="tn-hero-title">Todo lo que buscás,<br>a un clic de distancia</div>
             <p class="tn-hero-sub">Stock real, al mismo precio que en el local. Elegí, pagá online y listo.</p>
             <div class="mt-3">
@@ -9,6 +9,21 @@
                 @foreach($categories->take(4) as $cat)
                     <button type="button" wire:click="$set('categoryId', {{ $cat->id }})" class="tn-chip border-0">{{ $cat->name }}</button>
                 @endforeach
+            </div>
+        </div>
+
+        <div class="tn-trustbar mb-5">
+            <div class="tn-trust-item">
+                <i class="fas fa-boxes-stacked"></i>
+                <span>Stock real, al segundo</span>
+            </div>
+            <div class="tn-trust-item">
+                <i class="fas fa-lock"></i>
+                <span>Pago seguro con Mercado Pago</span>
+            </div>
+            <div class="tn-trust-item">
+                <i class="fas fa-shop"></i>
+                <span>Mismo precio que en el local</span>
             </div>
         </div>
     @endif
@@ -56,13 +71,20 @@
 
             <div class="row g-3 g-md-4">
                 @forelse($products as $item)
+                    @php $stock = $item->stockEnSucursal($sucursalId); @endphp
                     <div class="col-6 col-md-4 col-lg-3">
                         <a href="{{ route('tienda.product', $item) }}" class="text-decoration-none d-block tn-card h-100">
-                            <div class="d-flex align-items-center justify-content-center" style="aspect-ratio: 1; background: var(--tn-paper); padding: 1.5rem;">
+                            <div class="tn-card-media {{ $stock <= 0 ? 'tn-card-media-out' : '' }}" style="aspect-ratio: 1; background: var(--tn-paper); padding: 1.5rem;">
                                 @if($item->imageUrl())
                                     <img src="{{ $item->imageUrl() }}" alt="{{ $item->name }}" loading="lazy" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                 @else
                                     <i class="fas fa-basket-shopping" style="font-size: 2.4rem; color: var(--tn-line);"></i>
+                                @endif
+
+                                @if($stock <= 0)
+                                    <span class="tn-ribbon tn-ribbon-off">Sin stock</span>
+                                @elseif($stock <= 10)
+                                    <span class="tn-ribbon tn-ribbon-urgent">¡Últimas {{ $stock }}!</span>
                                 @endif
                             </div>
                             <div class="p-3">
@@ -70,7 +92,12 @@
                                 <div style="color: var(--tn-ink); font-weight: 700; font-size: .92rem; margin: .2rem 0 .5rem; line-height: 1.3;" class="text-truncate">
                                     {{ $item->name }}
                                 </div>
-                                <div class="tn-price" style="font-size: 1.35rem;">$ {{ number_format((float) $item->price, 2, ',', '.') }}</div>
+                                <div class="d-flex align-items-baseline justify-content-between">
+                                    <div class="tn-price" style="font-size: 1.35rem;">$ {{ number_format((float) $item->price, 2, ',', '.') }}</div>
+                                    @if($stock > 0 && $stock <= 10)
+                                        <span style="font-size: .72rem; font-weight: 700; color: #B3261E;">Quedan {{ $stock }}</span>
+                                    @endif
+                                </div>
                             </div>
                         </a>
                     </div>

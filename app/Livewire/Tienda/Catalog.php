@@ -47,7 +47,7 @@ class Catalog extends Component
     {
         $sucursalId = CompanySettings::current()->tiendaOnlineSucursalId();
 
-        $products = Product::with('category')
+        $products = Product::with(['category', 'stocks' => fn ($q) => $q->where('sucursal_id', $sucursalId)])
             ->when($this->query !== '', function ($q) {
                 $term = '%'.$this->query.'%';
                 $q->where(fn ($q2) => $q2->where('name', 'like', $term)
