@@ -26,6 +26,23 @@
                 <span>Mismo precio que en el local</span>
             </div>
         </div>
+
+        @if($categories->isNotEmpty())
+            @php $catIcons = ['fa-bag-shopping', 'fa-carrot', 'fa-soap', 'fa-mug-hot', 'fa-box-open', 'fa-wine-bottle', 'fa-cookie', 'fa-pump-soap']; @endphp
+            <div class="mb-5">
+                <h2 class="h5 mb-3">Categorías</h2>
+                <div class="row g-3">
+                    @foreach($categories as $i => $cat)
+                        <div class="col-4 col-md-3 col-lg-2">
+                            <button type="button" wire:click="$set('categoryId', {{ $cat->id }})" class="tn-cat-tile border-0 w-100">
+                                <div class="tn-cat-tile-icon"><i class="fas {{ $catIcons[$i % count($catIcons)] }}"></i></div>
+                                <div class="tn-cat-tile-name text-truncate">{{ $cat->name }}</div>
+                            </button>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     @endif
 
     <div class="row">

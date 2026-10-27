@@ -22,6 +22,18 @@ class ProductDetail extends Component
         $this->product = $product->load('category');
     }
 
+    public function incrementQuantity(): void
+    {
+        $stock = $this->product->stockEnSucursal(CompanySettings::current()->tiendaOnlineSucursalId());
+
+        $this->quantity = min($this->quantity + 1, max($stock, 1));
+    }
+
+    public function decrementQuantity(): void
+    {
+        $this->quantity = max(1, $this->quantity - 1);
+    }
+
     public function addToCart(): void
     {
         $stock = $this->product->stockEnSucursal(CompanySettings::current()->tiendaOnlineSucursalId());

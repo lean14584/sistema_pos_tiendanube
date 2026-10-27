@@ -196,10 +196,55 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
         }
         .tn-trust-item i { color: var(--tn-600); font-size: .95rem; }
 
-        footer.tn-footer {
-            padding: 3rem 0 2rem; text-align: center; color: var(--tn-muted); font-size: .85rem;
-            margin-top: 4rem; border-top: 1px solid var(--tn-line);
+        /* ---------- Breadcrumb ---------- */
+        .tn-breadcrumb { font-size: .85rem; color: var(--tn-muted); margin-bottom: 1.25rem; }
+        .tn-breadcrumb a { color: var(--tn-muted); font-weight: 600; }
+        .tn-breadcrumb a:hover { color: var(--tn-700); }
+        .tn-breadcrumb .sep { margin: 0 .5rem; opacity: .5; }
+
+        /* ---------- Quantity stepper ---------- */
+        .tn-stepper { display: inline-flex; align-items: stretch; border: 1px solid var(--tn-line); border-radius: 10px; overflow: hidden; }
+        .tn-stepper button {
+            width: 42px; border: none; background: var(--tn-paper); color: var(--tn-ink);
+            font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
         }
+        .tn-stepper button:hover { background: var(--tn-line); }
+        .tn-stepper button:disabled { opacity: .35; }
+        .tn-stepper input {
+            width: 50px; border: none; border-left: 1px solid var(--tn-line); border-right: 1px solid var(--tn-line);
+            text-align: center; font-weight: 700; -moz-appearance: textfield;
+        }
+        .tn-stepper input::-webkit-outer-spin-button, .tn-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        /* ---------- Category tiles ---------- */
+        .tn-cat-tile {
+            background: #fff; border: 1px solid var(--tn-line); border-radius: 14px;
+            padding: 1.25rem 1rem; text-align: center; color: var(--tn-ink);
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+        .tn-cat-tile:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(20,24,31,.08); border-color: transparent; color: var(--tn-ink); }
+        .tn-cat-tile-icon {
+            width: 46px; height: 46px; border-radius: 12px; margin: 0 auto .6rem;
+            display: flex; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--tn-500) 14%, white); color: var(--tn-700); font-size: 1.1rem;
+        }
+        .tn-cat-tile-name { font-weight: 700; font-size: .85rem; }
+
+        /* ---------- Footer ---------- */
+        footer.tn-footer {
+            background: var(--tn-ink); color: rgba(255,255,255,.65);
+            margin-top: 4rem; padding: 3rem 0 1.5rem; font-size: .88rem;
+        }
+        footer.tn-footer h6 { color: #fff; font-weight: 800; font-size: .85rem; margin-bottom: 1rem; }
+        footer.tn-footer a { color: rgba(255,255,255,.65); }
+        footer.tn-footer a:hover { color: #fff; }
+        footer.tn-footer .tn-footer-brand { color: #fff; font-weight: 800; font-size: 1.2rem; margin-bottom: .6rem; }
+        footer.tn-footer .tn-footer-bottom {
+            border-top: 1px solid rgba(255,255,255,.12); margin-top: 2rem; padding-top: 1.5rem;
+            display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;
+            font-size: .8rem; color: rgba(255,255,255,.45);
+        }
+        footer.tn-footer .tn-pay-icons { display: flex; gap: .6rem; font-size: 1.4rem; color: rgba(255,255,255,.55); }
     </style>
     {{ $head ?? '' }}
 </head>
@@ -252,7 +297,39 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
 {{ $slot }}
 
 <footer class="tn-footer">
-    {{ $tnCompany->display_name }} © {{ now()->year }}
+    <div class="container">
+        <div class="row gy-4">
+            <div class="col-12 col-md-4">
+                <div class="tn-footer-brand">{{ $tnCompany->display_name }}</div>
+                <p class="mb-0" style="max-width: 320px;">Stock real y el mismo precio que en el local, todos los días.</p>
+            </div>
+            <div class="col-6 col-md-4">
+                <h6>Ayuda</h6>
+                <div class="d-flex flex-column gap-2">
+                    <a href="{{ route('tienda.catalog') }}" class="text-decoration-none">Catálogo</a>
+                    @auth('customer')
+                        <a href="{{ route('tienda.account.orders') }}" class="text-decoration-none">Mis pedidos</a>
+                    @else
+                        <a href="{{ route('tienda.account.login') }}" class="text-decoration-none">Ingresar</a>
+                    @endauth
+                    <a href="{{ route('tienda.cart') }}" class="text-decoration-none">Carrito</a>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <h6>Medios de pago</h6>
+                <div class="tn-pay-icons mb-2">
+                    <i class="fa-brands fa-cc-visa" title="Visa"></i>
+                    <i class="fa-brands fa-cc-mastercard" title="Mastercard"></i>
+                    <i class="fa-solid fa-money-bill-wave" title="Efectivo"></i>
+                </div>
+                <small>Pagos procesados de forma segura por Mercado Pago.</small>
+            </div>
+        </div>
+        <div class="tn-footer-bottom">
+            <span>{{ $tnCompany->display_name }} © {{ now()->year }}</span>
+            <span><i class="fas fa-lock me-1"></i> Compra 100% segura</span>
+        </div>
+    </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

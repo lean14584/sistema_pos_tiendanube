@@ -1,4 +1,14 @@
 <div class="container py-4 py-md-5">
+    <nav class="tn-breadcrumb">
+        <a href="{{ route('tienda.catalog') }}">Catálogo</a>
+        @if($product->category)
+            <span class="sep">/</span>
+            <a href="{{ route('tienda.catalog', ['categoria' => $product->category->id]) }}">{{ $product->category->name }}</a>
+        @endif
+        <span class="sep">/</span>
+        <span>{{ $product->name }}</span>
+    </nav>
+
     <a href="{{ route('tienda.catalog') }}" class="tn-back-link">
         <i class="fas fa-arrow-left"></i> Volver al catálogo
     </a>
@@ -42,7 +52,11 @@
                         </div>
                     @else
                         <form wire:submit="addToCart" class="d-flex align-items-center gap-2">
-                            <input type="number" wire:model="quantity" min="1" max="{{ $stock }}" class="form-control" style="width: 90px;">
+                            <div class="tn-stepper">
+                                <button type="button" wire:click="decrementQuantity" {{ $quantity <= 1 ? 'disabled' : '' }}>−</button>
+                                <input type="number" wire:model="quantity" min="1" max="{{ $stock }}" readonly>
+                                <button type="button" wire:click="incrementQuantity" {{ $quantity >= $stock ? 'disabled' : '' }}>+</button>
+                            </div>
                             <button type="submit" class="btn btn-tn-primary flex-grow-1">
                                 <i class="fas fa-cart-plus me-1"></i> Agregar al carrito
                             </button>
