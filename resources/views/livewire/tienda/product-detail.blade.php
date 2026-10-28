@@ -26,11 +26,10 @@
         $ph = $tnPh[$product->id % count($tnPh)];
     @endphp
     <div class="{{ $stock > 0 && ! $justAdded ? 'tn-sticky-cta-pad' : '' }}">
-        <div class="tn-card p-3 p-md-4">
-            <div class="row g-4 g-md-5" id="tnPdRow" style="position: relative;">
-                {{-- Panel izquierdo: imagen --}}
-                <div class="col-12 col-md-7">
-                    <div class="d-flex align-items-center justify-content-center" style="aspect-ratio: 1;"
+        <div class="row g-4 g-md-5" id="tnPdRow" style="position: relative;">
+            {{-- Panel izquierdo: imagen, sin marco, flotando sobre el fondo de la página --}}
+            <div class="col-12 col-md-7">
+                <div class="d-flex align-items-center justify-content-center" style="aspect-ratio: 1;"
                         @if($product->imageUrl())
                             onmouseenter="tnZoomShow(this)" onmouseleave="tnZoomHide(this)" onmousemove="tnZoomMove(event, this)"
                         @endif
@@ -94,10 +93,9 @@
                     </div>
                 </div>
 
-                @if($product->imageUrl())
-                    <div class="tn-zoom-pane" style="background-image: url('{{ $product->imageUrl() }}');"></div>
-                @endif
-            </div>
+            @if($product->imageUrl())
+                <div class="tn-zoom-pane" style="background-image: url('{{ $product->imageUrl() }}');"></div>
+            @endif
         </div>
     </div>
 </div>
