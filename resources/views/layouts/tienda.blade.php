@@ -303,6 +303,11 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
         .tn-zoom-pane { display: none; }
         @media (hover: hover) and (pointer: fine) {
             .tn-zoom-pane {
+                /* No es un .col-*, pero al ser hijo directo de un .row con
+                   gutter-y (g-4/g-md-5) Bootstrap igual le mete
+                   margin-top — lo cancela, si no el panel queda corrido
+                   hacia abajo respecto al recuadro que tiene que calcar. */
+                margin-top: 0 !important;
                 position: absolute; overflow: hidden;
                 background-color: #fff; background-repeat: no-repeat; background-size: 220%;
                 border: 1px solid var(--tn-line); border-radius: 16px;
