@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\Sucursal;
+use App\Models\TiendaPedido;
 use App\Models\User;
 use App\Support\CashLinker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -92,7 +93,7 @@ class InvoiceStockAndCashTest extends TestCase
         $invoice = Invoice::create([
             'number' => 'REM-9001', 'client_id' => $client->id, 'tax_rate' => 0,
             'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
-            'tienda_pedido_id' => \App\Models\TiendaPedido::create([
+            'tienda_pedido_id' => TiendaPedido::create([
                 'token' => 'tok-9001', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'pending_payment',
                 'customer_name' => 'Cliente online', 'customer_email' => 'online@test.com',
                 'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\CashMovement;
 use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\CompanySettings;
@@ -347,7 +348,7 @@ class InvoicesTest extends TestCase
         $this->assertSame('paid', $factura->status->value);
         $this->assertSame(1, $factura->payments()->count());
         $this->assertSame('efectivo', $factura->payments->first()->method->value);
-        $this->assertSame(1, \App\Models\CashMovement::count());
+        $this->assertSame(1, CashMovement::count());
 
         $this->assertNotNull($pedido->fresh()->picked_up_at);
         $this->assertSame('paid', $pedido->fresh()->status);
@@ -392,7 +393,7 @@ class InvoicesTest extends TestCase
         $this->assertSame('paid', $remito->status->value);
         $this->assertSame(1, $remito->payments()->count());
         $this->assertSame('tarjeta', $remito->payments->first()->method->value);
-        $this->assertSame(1, \App\Models\CashMovement::count());
+        $this->assertSame(1, CashMovement::count());
 
         $this->assertNotNull($pedido->fresh()->picked_up_at);
         $this->assertSame('paid', $pedido->fresh()->status);
@@ -454,7 +455,7 @@ class InvoicesTest extends TestCase
         $component->assertSee('Pendiente de retiro');
     }
 
-    public function test_toggleRetirado_rechaza_una_factura_que_no_es_de_tienda_online(): void
+    public function test_toggle_retirado_rechaza_una_factura_que_no_es_de_tienda_online(): void
     {
         $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
         $invoice = Invoice::create([

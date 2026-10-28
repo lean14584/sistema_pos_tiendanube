@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Models\CashSession;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
@@ -72,7 +73,7 @@ class PedidosOnlineTest extends TestCase
         $pedido = $this->crearPedidoConRemito('tok-list-3');
 
         $admin = $this->admin();
-        \App\Models\CashSession::create([
+        CashSession::create([
             'user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id,
             'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0,
         ]);

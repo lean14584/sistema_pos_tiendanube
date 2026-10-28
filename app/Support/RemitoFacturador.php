@@ -20,7 +20,7 @@ class RemitoFacturador
 {
     /**
      * @throws RuntimeException si el remito ya fue facturado (doble clic, o
-     *                           dos disparadores de pago casi simultáneos).
+     *                          dos disparadores de pago casi simultáneos).
      */
     public static function facturar(Invoice $remito, TipoComprobanteInterno $tipo): Invoice
     {

@@ -304,7 +304,7 @@ class Show extends Component
 
                 return $documento;
             });
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             $this->entregaError = $e->getMessage();
 
             return;

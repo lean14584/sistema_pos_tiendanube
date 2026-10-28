@@ -3,6 +3,7 @@
 namespace App\Livewire\Tienda;
 
 use App\Enums\TipoComprobanteInterno;
+use App\Exceptions\InsufficientStockException;
 use App\Models\Client;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
@@ -171,7 +172,7 @@ class Checkout extends Component
                     return $pedido;
                 }), $sucursalId, $puntoVentaNumero);
             });
-        } catch (\App\Exceptions\InsufficientStockException $e) {
+        } catch (InsufficientStockException $e) {
             $this->addError('cart', $e->getMessage());
 
             return;
