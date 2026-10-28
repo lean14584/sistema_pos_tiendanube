@@ -44,7 +44,7 @@
                 <div class="tn-destacados-scroll">
                     @foreach($destacados as $item)
                         @php $ph = $tnPh[$item->id % count($tnPh)]; $dstock = $item->stockEnSucursal($sucursalId); @endphp
-                        <a href="{{ route('tienda.product', $item) }}" class="text-decoration-none tn-card tn-destacados-card">
+                        <a href="{{ route('tienda.product', $item) }}" class="tn-tile tn-destacados-card">
                             <div class="tn-card-media {{ $dstock <= 0 ? 'tn-card-media-out' : '' }}" style="aspect-ratio: 1; background: var(--tn-paper);">
                                 @if($item->imageUrl())
                                     <img src="{{ $item->imageUrl() }}" alt="{{ $item->name }}" loading="lazy" style="max-width: 100%; max-height: 100%; object-fit: contain;">
@@ -55,7 +55,7 @@
                                     <span class="tn-ribbon tn-ribbon-off">Sin stock</span>
                                 @endif
                             </div>
-                            <div class="p-3">
+                            <div class="tn-tile-body">
                                 <div style="color: var(--tn-ink); font-weight: 700; font-size: .88rem; line-height: 1.3;" class="text-truncate">{{ $item->name }}</div>
                                 <div class="tn-price" style="font-size: 1.2rem;"><span class="tn-price-currency">$</span>{{ number_format((float) $item->price, 2, ',', '.') }}</div>
                             </div>
@@ -117,7 +117,7 @@
                 @forelse($products as $item)
                     @php $stock = $item->stockEnSucursal($sucursalId); $ph = $tnPh[$item->id % count($tnPh)]; @endphp
                     <div class="col-6 col-md-4 col-lg-3">
-                        <a href="{{ route('tienda.product', $item) }}" class="text-decoration-none d-block tn-card h-100">
+                        <a href="{{ route('tienda.product', $item) }}" class="tn-tile h-100">
                             <div class="tn-card-media {{ $stock <= 0 ? 'tn-card-media-out' : '' }}" style="aspect-ratio: 1; background: var(--tn-paper); {{ $item->imageUrl() ? 'padding: 1.5rem;' : '' }}">
                                 @if($item->imageUrl())
                                     <img src="{{ $item->imageUrl() }}" alt="{{ $item->name }}" loading="lazy" style="max-width: 100%; max-height: 100%; object-fit: contain;">
@@ -131,7 +131,7 @@
                                     <span class="tn-ribbon tn-ribbon-urgent">¡Últimas {{ $stock }}!</span>
                                 @endif
                             </div>
-                            <div class="p-3">
+                            <div class="tn-tile-body">
                                 <div style="font-size: .72rem; color: var(--tn-muted); font-weight: 600;">{{ $item->category?->name ?? 'General' }}</div>
                                 <div style="color: var(--tn-ink); font-weight: 700; font-size: .92rem; margin: .2rem 0 .5rem; line-height: 1.3; min-height: 2.4em;" class="text-truncate-2">
                                     {{ $item->name }}

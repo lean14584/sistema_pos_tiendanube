@@ -163,6 +163,20 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
         .tn-card:hover .tn-card-media img { transform: scale(1.08); }
         .tn-card-media-out img, .tn-card-media-out i { opacity: .35; }
 
+        /* ---------- Tile (grilla de producto) ----------
+           Más chata que .tn-card a propósito: la card elevada queda
+           reservada para superficies de decisión (buy-box, resumen de
+           carrito, sidebar de filtros) — si todo usa el mismo molde, nada
+           pesa más que el resto. Acá solo la imagen lleva marco; el texto
+           flota libre sobre el fondo de la página. */
+        .tn-tile { display: block; text-decoration: none; color: inherit; }
+        .tn-tile .tn-card-media {
+            border-radius: 12px; border: 1px solid var(--tn-line); background: #fff;
+            transition: border-color .18s ease, box-shadow .18s ease;
+        }
+        .tn-tile:hover .tn-card-media { border-color: transparent; box-shadow: 0 12px 24px rgba(20,24,31,.1); }
+        .tn-tile-body { padding-top: .65rem; }
+
         .tn-ribbon {
             position: absolute; top: 10px; left: 10px; z-index: 2;
             border-radius: 999px; padding: .3rem .7rem; font-size: .7rem; font-weight: 800;
@@ -202,11 +216,6 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             border-radius: 20px; color: #fff; position: relative; overflow: hidden;
             padding: 2.75rem 2rem;
             animation: tn-hero-in .5s ease both;
-        }
-        .tn-hero::after {
-            content: ''; position: absolute; width: 340px; height: 340px; border-radius: 50%;
-            background: color-mix(in srgb, var(--tn-acc-400) 55%, transparent);
-            top: -140px; right: -100px; filter: blur(5px);
         }
         .tn-hero-title { font-family: var(--font-display); font-size: 2.3rem; font-weight: 700; position: relative; z-index: 1; margin-bottom: .4rem; }
         @media (min-width: 768px) { .tn-hero-title { font-size: 2.6rem; } }
