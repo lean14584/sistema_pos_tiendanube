@@ -26,76 +26,78 @@
         $ph = $tnPh[$product->id % count($tnPh)];
     @endphp
     <div class="{{ $stock > 0 && ! $justAdded ? 'tn-sticky-cta-pad' : '' }}">
-        <div class="row g-4 g-md-5" id="tnPdRow" style="position: relative;">
-            {{-- Panel izquierdo: imagen --}}
-            <div class="col-12 col-md-7">
-                <div class="tn-card d-flex align-items-center justify-content-center p-4" style="aspect-ratio: 1;"
-                    @if($product->imageUrl())
-                        onmouseenter="tnZoomShow(this)" onmouseleave="tnZoomHide(this)" onmousemove="tnZoomMove(event, this)"
-                    @endif
-                >
-                    @if($product->imageUrl())
-                        <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" style="max-width: 85%; max-height: 85%; object-fit: contain;">
-                    @else
-                        <div class="tn-media-ph tn-media-ph-lg" style="background: {{ $ph['bg'] }}; width: 100%; height: 100%; border-radius: 12px;"><i class="fas {{ $ph['icon'] }}"></i></div>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Panel derecho: categoría, nombre, stock, y abajo precio/cantidad/botones --}}
-            <div class="col-12 col-md-5">
-                <div class="tn-card p-3 p-md-4 h-100" id="tnPdInfoCard">
-                    <div style="font-size: .8rem; color: var(--tn-muted); font-weight: 600;">{{ $product->category?->name ?? 'General' }}</div>
-                    <h1 class="h3 mt-1 mb-2">{{ $product->name }}</h1>
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        @if($stock <= 0)
-                            <span class="tn-badge-off">Sin stock por ahora</span>
-                        @elseif($stock <= 10)
-                            <span class="tn-badge-warn"><i class="fas fa-triangle-exclamation me-1"></i> Quedan {{ $stock }} unidades</span>
+        <div class="tn-card p-3 p-md-4">
+            <div class="row g-4 g-md-5" id="tnPdRow" style="position: relative;">
+                {{-- Panel izquierdo: imagen --}}
+                <div class="col-12 col-md-7">
+                    <div class="d-flex align-items-center justify-content-center" style="aspect-ratio: 1;"
+                        @if($product->imageUrl())
+                            onmouseenter="tnZoomShow(this)" onmouseleave="tnZoomHide(this)" onmousemove="tnZoomMove(event, this)"
+                        @endif
+                    >
+                        @if($product->imageUrl())
+                            <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" style="max-width: 85%; max-height: 85%; object-fit: contain;">
                         @else
-                            <span class="tn-badge-ok"><i class="fas fa-check me-1"></i> Quedan {{ $stock }} unidades</span>
-                        @endif
-                    </div>
-                    @if($product->description)
-                        <p class="text-muted">{{ $product->description }}</p>
-                    @endif
-
-                    <div class="mt-4 pt-4" style="border-top: 1px solid var(--tn-line);">
-                        <div class="tn-price mb-1" style="font-size: 2.2rem;"><span class="tn-price-currency">$</span>{{ number_format((float) $product->price, 2, ',', '.') }}</div>
-                        @if((float) $product->price >= 3000)
-                            <div class="tn-installments mb-3">Hasta 3x $ {{ number_format((float) $product->price / 3, 2, ',', '.') }}</div>
-                        @endif
-
-                        @if($stock > 0)
-                            @if($justAdded)
-                                <div class="alert-tn-info p-3 mb-0 mt-3">
-                                    <div class="mb-2"><i class="fas fa-circle-check me-1"></i> Lo agregamos al carrito.</div>
-                                    <a href="{{ route('tienda.cart') }}" class="btn btn-tn-primary btn-sm w-100">Ver carrito</a>
-                                </div>
-                            @else
-                                <div class="mt-3" style="max-width: 320px;">
-                                    <label class="form-label small mb-1">Cantidad</label>
-                                    <div class="tn-stepper mb-3 w-100">
-                                        <button type="button" wire:click="decrementQuantity" {{ $quantity <= 1 ? 'disabled' : '' }}>−</button>
-                                        <input type="number" wire:model="quantity" min="1" max="{{ $stock }}" readonly style="flex: 1;">
-                                        <button type="button" wire:click="incrementQuantity" {{ $quantity >= $stock ? 'disabled' : '' }}>+</button>
-                                    </div>
-                                    <button type="button" wire:click="buyNow" class="btn btn-tn-primary w-100 mb-2">
-                                        Comprar ahora
-                                    </button>
-                                    <button type="button" wire:click="addToCart" class="btn btn-tn-soft w-100">
-                                        <i class="fas fa-cart-plus me-1"></i> Agregar al carrito
-                                    </button>
-                                </div>
-                            @endif
+                            <div class="tn-media-ph tn-media-ph-lg" style="background: {{ $ph['bg'] }}; width: 100%; height: 100%; border-radius: 12px;"><i class="fas {{ $ph['icon'] }}"></i></div>
                         @endif
                     </div>
                 </div>
-            </div>
 
-            @if($product->imageUrl())
-                <div class="tn-zoom-pane" style="background-image: url('{{ $product->imageUrl() }}');"></div>
-            @endif
+                {{-- Panel derecho: recuadro de línea fina con categoría, nombre, stock, y abajo precio/cantidad/botones --}}
+                <div class="col-12 col-md-5">
+                    <div class="p-3 p-md-4 h-100" id="tnPdInfoCard" style="border: 1px solid var(--tn-line); border-radius: 12px;">
+                        <div style="font-size: .8rem; color: var(--tn-muted); font-weight: 600;">{{ $product->category?->name ?? 'General' }}</div>
+                        <h1 class="h3 mt-1 mb-2">{{ $product->name }}</h1>
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            @if($stock <= 0)
+                                <span class="tn-badge-off">Sin stock por ahora</span>
+                            @elseif($stock <= 10)
+                                <span class="tn-badge-warn"><i class="fas fa-triangle-exclamation me-1"></i> Quedan {{ $stock }} unidades</span>
+                            @else
+                                <span class="tn-badge-ok"><i class="fas fa-check me-1"></i> Quedan {{ $stock }} unidades</span>
+                            @endif
+                        </div>
+                        @if($product->description)
+                            <p class="text-muted">{{ $product->description }}</p>
+                        @endif
+
+                        <div class="mt-4 pt-4" style="border-top: 1px solid var(--tn-line);">
+                            <div class="tn-price mb-1" style="font-size: 2.2rem;"><span class="tn-price-currency">$</span>{{ number_format((float) $product->price, 2, ',', '.') }}</div>
+                            @if((float) $product->price >= 3000)
+                                <div class="tn-installments mb-3">Hasta 3x $ {{ number_format((float) $product->price / 3, 2, ',', '.') }}</div>
+                            @endif
+
+                            @if($stock > 0)
+                                @if($justAdded)
+                                    <div class="alert-tn-info p-3 mb-0 mt-3">
+                                        <div class="mb-2"><i class="fas fa-circle-check me-1"></i> Lo agregamos al carrito.</div>
+                                        <a href="{{ route('tienda.cart') }}" class="btn btn-tn-primary btn-sm w-100">Ver carrito</a>
+                                    </div>
+                                @else
+                                    <div class="mt-3" style="max-width: 320px;">
+                                        <label class="form-label small mb-1">Cantidad</label>
+                                        <div class="tn-stepper mb-3 w-100">
+                                            <button type="button" wire:click="decrementQuantity" {{ $quantity <= 1 ? 'disabled' : '' }}>−</button>
+                                            <input type="number" wire:model="quantity" min="1" max="{{ $stock }}" readonly style="flex: 1;">
+                                            <button type="button" wire:click="incrementQuantity" {{ $quantity >= $stock ? 'disabled' : '' }}>+</button>
+                                        </div>
+                                        <button type="button" wire:click="buyNow" class="btn btn-tn-primary w-100 mb-2">
+                                            Comprar ahora
+                                        </button>
+                                        <button type="button" wire:click="addToCart" class="btn btn-tn-soft w-100">
+                                            <i class="fas fa-cart-plus me-1"></i> Agregar al carrito
+                                        </button>
+                                    </div>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                @if($product->imageUrl())
+                    <div class="tn-zoom-pane" style="background-image: url('{{ $product->imageUrl() }}');"></div>
+                @endif
+            </div>
         </div>
     </div>
 </div>
