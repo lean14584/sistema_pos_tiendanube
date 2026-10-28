@@ -19,6 +19,21 @@ jobs:
       - name: Instalar dependencias de Composer
         run: composer install --no-progress --prefer-dist
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias de npm
+        run: npm ci
+
+      # Las vistas usan @vite(...), que necesita public/build/manifest.json
+      # para resolver el <link>/<script> — sin este paso, CUALQUIER test que
+      # renderice una página completa (la gran mayoría) revienta acá, no por
+      # un bug real. El job de deploy más abajo reusa este mismo build (ver
+      # upload/download-artifact) en vez de compilarlo dos veces.
+      - name: Build de assets (Tailwind/Vite)
+        run: npm run build
+
       - name: Preparar .env de testing
         run: |
           cp .env.example .env
@@ -26,6 +41,13 @@ jobs:
 
       - name: Correr la suite de tests
         run: php artisan test
+
+      - name: Guardar el build para el job de deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets
+          path: public/build
+          retention-days: 1
 
   deploy:
     name: Deploy a prueba.jjsoftware.click
@@ -35,20 +57,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Instalar dependencias de npm
-        run: npm ci
-
       # Tailwind v4 es JIT: el CSS final solo contiene las clases que
       # existían en el código fuente al momento del build. Sin este paso
       # (o si solo se sube el .blade.php sin rebuildear), cualquier clase
       # nueva queda invisible en producción — gotcha recurrente de este
-      # proyecto, ver memoria "gotcha_tailwind_jit_build_olvidado".
-      - name: Build de assets (Tailwind/Vite)
-        run: npm run build
+      # proyecto, ver memoria "gotcha_tailwind_jit_build_olvidado". Se
+      # reusa el MISMO build que ya corrió los tests arriba, no uno nuevo.
+      - name: Bajar el build ya probado
+        uses: actions/download-artifact@v4
+        with:
+          name: build-assets
+          path: public/build
 
       # Este hosting (arquitectura sibling-folder, igual que decohogar y
       # pos-tiendanube) guarda el código de Laravel en /sistema/ y sirve
