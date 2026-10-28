@@ -106,18 +106,18 @@ class CashLinker
      */
     public static function linkInvoicePayment(Invoice $invoice, InvoicePayment $payment, ?int $sucursalId = null): void
     {
-        // Una venta de la tienda online NUNCA tiene que aparecer en el
-        // arqueo de un cajero físico — hoy esto ya pasa de hecho porque el
-        // webhook de MP que confirma el pago no tiene sesión de staff
-        // autenticada (ver comentario de linkInvoicePayment más arriba),
-        // pero eso es un efecto colateral, no una regla. Este chequeo lo
-        // hace explícito para que siga siendo verdad aunque algún día
-        // alguien dispare este mismo pago desde una acción de staff con
-        // caja abierta (ej. confirmar un pedido a mano desde Invoices\Show).
-        if ($invoice->esDeTiendaOnline()) {
-            return;
-        }
-
+        // A propósito NO se excluye acá a las ventas de la tienda online por
+        // esDeTiendaOnline(): esta misma función es el único camino para
+        // anotar en caja un pago en efectivo/tarjeta que un cajero carga a
+        // mano cuando el cliente pasa a retirar y pagar un pedido online en
+        // el mostrador (ver Invoices\Edit) — eso SÍ es plata real en el
+        // cajón y tiene que quedar en el arqueo. Lo que nunca debe tocar
+        // caja es el pago AUTOMÁTICO que confirma el webhook de Mercado
+        // Pago de la tienda — y ESO ya queda afuera solo con el chequeo de
+        // sesión de abajo: el request del webhook nunca tiene un usuario de
+        // staff autenticado (es un POST público, sin cookie de sesión), así
+        // que openSession() da null ahí siempre, sin excepción — no depende
+        // de que algún cajero tenga o no una caja abierta en paralelo.
         if (CashMovement::where('source_id', "invoice_payment_{$payment->id}")->exists()) {
             return;
         }

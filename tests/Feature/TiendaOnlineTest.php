@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CashMovement;
 use App\Models\Category;
 use App\Models\CompanySettings;
 use App\Models\Invoice;
@@ -204,6 +205,27 @@ class TiendaOnlineTest extends TestCase
             ->assertSee('Agua 500ml');
     }
 
+    public function test_order_status_page_muestra_el_estado_de_retiro(): void
+    {
+        CompanySettings::current()->update(['tienda_online_habilitada' => true]);
+
+        $pedido = TiendaPedido::create([
+            'token' => 'tok-retiro-status', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'paid',
+            'customer_name' => 'Rocío Fernández', 'customer_email' => 'rocio@example.com',
+            'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+        ]);
+
+        $this->get(route('tienda.order-status', $pedido->token))
+            ->assertOk()
+            ->assertSee('Ya está pago y listo para retirar');
+
+        $pedido->update(['picked_up_at' => now()]);
+
+        $this->get(route('tienda.order-status', $pedido->token))
+            ->assertOk()
+            ->assertSee('Retiraste este pedido el');
+    }
+
     public function test_release_expired_pedidos_command_restores_stock_and_deletes_remito(): void
     {
         CompanySettings::current()->update(['tienda_online_habilitada' => true]);
@@ -275,6 +297,30 @@ class TiendaOnlineTest extends TestCase
             && $request['payer']['email'] === 'juan@example.com');
     }
 
+    public function test_checkout_elige_pagar_al_retirar_aunque_mercadopago_este_configurado(): void
+    {
+        CompanySettings::current()->update(['tienda_online_habilitada' => true]);
+        config(['mercadopago.access_token' => 'TEST-token']);
+        $product = Product::create(['name' => 'Agua 500ml', 'price' => 900, 'stock' => 10]);
+        ProductStock::create(['product_id' => $product->id, 'sucursal_id' => Sucursal::sole()->id, 'stock' => 10]);
+        TiendaCart::add($product->id, 2);
+
+        Http::fake();
+
+        Livewire::test('tienda.checkout')
+            ->set('customer_name', 'Juan Pérez')
+            ->set('customer_email', 'juan@example.com')
+            ->set('payment_choice', 'retiro')
+            ->call('confirmar')
+            ->assertRedirect(route('tienda.order-status', TiendaPedido::sole()->token));
+
+        $pedido = TiendaPedido::sole();
+        $this->assertSame('pending_payment', $pedido->status);
+        $this->assertNull($pedido->mp_preference_id);
+
+        Http::assertNotSent(fn ($request) => $request->url() === 'https://api.mercadopago.com/checkout/preferences');
+    }
+
     public function test_mercadopago_webhook_marks_pedido_paid_and_generates_factura_from_remito(): void
     {
         CompanySettings::current()->update(['tienda_online_habilitada' => true]);
@@ -331,6 +377,13 @@ class TiendaOnlineTest extends TestCase
         $this->assertSame(0, $remito->fresh()->payments()->count());
         $this->assertSame(1, $factura->fresh()->payments()->count());
         $this->assertSame('mercadopago', $factura->fresh()->payments->first()->method->value);
+
+        // El pago automático del webhook nunca tiene que anotarse en caja:
+        // el request del webhook no tiene sesión de staff autenticada (ver
+        // CashLinker::linkInvoicePayment), a diferencia de un cobro manual
+        // en el mostrador, que sí debe quedar en el arqueo (ver
+        // InvoiceStockAndCashTest::test_cobrar_a_mano_un_pedido_online_pendiente_si_se_anota_en_caja).
+        $this->assertSame(0, CashMovement::count());
     }
 
     public function test_mercadopago_webhook_leaves_remito_as_is_when_no_fiscal_type_enabled(): void

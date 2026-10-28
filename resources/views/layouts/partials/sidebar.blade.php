@@ -1,9 +1,11 @@
 @php
+    use App\Models\CompanySettings;
     use App\Models\Invoice;
     use App\Models\Message;
     use App\Models\Product;
     use App\Models\ProductBatch;
     use App\Models\Task;
+    use App\Models\TiendaPedido;
     use App\Support\Permissions;
 
     $lowStockCount = Product::lowStockCountCached();
@@ -11,6 +13,8 @@
     $pendientesEmision = Invoice::pendientesDeEmisionCountCached();
     $unreadMessagesCount = auth()->check() ? Message::unreadCountCached(auth()->id()) : 0;
     $openTasksCount = auth()->check() ? Task::openCountCached(auth()->user()) : 0;
+    $tiendaOnlineHabilitada = CompanySettings::current()->tienda_online_habilitada;
+    $pedidosOnlineEnCurso = $tiendaOnlineHabilitada ? TiendaPedido::enCursoCountCached() : 0;
 
     // route() explota si la ruta no está registrada (módulo apagado por
     // config/features.php): abajo el array se arma igual para todos los
@@ -25,6 +29,7 @@
         ['module' => 'pos', 'group' => 'Ventas', 'pattern' => 'pos.*', 'href' => route('pos.index'), 'label' => 'Venta rápida', 'icon' => 'bolt'],
         ['module' => 'quotes', 'group' => 'Ventas', 'pattern' => 'quotes.*', 'href' => route('quotes.index'), 'label' => 'Presupuestos', 'icon' => 'clipboard-document-list'],
         ['module' => 'invoices', 'group' => 'Ventas', 'pattern' => 'invoices.*', 'href' => route('invoices.index'), 'label' => 'Facturas', 'icon' => 'document-text', 'badge' => $pendientesEmision],
+        ['module' => 'invoices', 'group' => 'Ventas', 'pattern' => 'pedidos-online.*', 'href' => route('pedidos-online.index'), 'label' => 'Pedidos online', 'icon' => 'shopping-bag', 'badge' => $pedidosOnlineEnCurso],
         ['module' => 'cobranzas', 'group' => 'Ventas', 'pattern' => 'cobranzas.*', 'href' => route('cobranzas.index'), 'label' => 'Cobranzas', 'icon' => 'banknotes'],
         ['module' => 'clients', 'group' => 'Ventas', 'pattern' => 'clients.*', 'href' => route('clients.index'), 'label' => 'Clientes', 'icon' => 'users'],
 
@@ -91,7 +96,8 @@
     $user = auth()->user();
     $visibleItems = $user
         ? array_filter($navItems, fn ($item) => Permissions::canAccess($user->role, $item['module'])
-            && (! isset($featureGate[$item['pattern']]) || config('features.' . $featureGate[$item['pattern']])))
+            && (! isset($featureGate[$item['pattern']]) || config('features.' . $featureGate[$item['pattern']]))
+            && ($item['pattern'] !== 'pedidos-online.*' || $tiendaOnlineHabilitada))
         : [];
 
     // Ítems sueltos (sin grupo) y agrupados, respetando el orden de definición.

@@ -51,6 +51,7 @@ class SmokeTest extends TestCase
             'dashboard',
             'quotes.index', 'quotes.create', ['quotes.show', $quote], ['quotes.edit', $quote],
             'invoices.index', 'invoices.create', ['invoices.show', $invoice], ['invoices.edit', $invoice],
+            'pedidos-online.index',
             'clients.index', 'clients.create', ['clients.edit', $client], ['clients.account', $client],
             'products.index', 'products.create', ['products.edit', $product],
             'categories.index', 'categories.create', ['categories.edit', $category],

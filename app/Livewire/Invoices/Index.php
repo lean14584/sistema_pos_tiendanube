@@ -3,6 +3,7 @@
 namespace App\Livewire\Invoices;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\TipoComprobanteInterno;
 use App\Livewire\Concerns\ScopedToSucursal;
 use App\Models\Invoice;
 use App\Models\Sucursal;
@@ -40,7 +41,20 @@ class Index extends Component
             ? ($this->sucursal_id !== '' ? (int) $this->sucursal_id : null)
             : CurrentSucursal::id();
 
-        $invoices = Invoice::with('client', 'items', 'tiendaPedido')
+        $invoices = Invoice::with('client', 'items', 'tiendaPedido', 'payments')
+            // El Remito de un pedido online TODAVÍA PENDIENTE vive en
+            // Pedidos Online, nunca acá — mezclado con las facturas reales
+            // confundía al usuario (ver feedback). Una vez entregado
+            // (Invoices\Show::entregarYCobrar()) pasa a estar Pagado, y ahí
+            // sí aparece — como la Factura resultante si se eligió un tipo
+            // fiscal, o como el remito mismo si se eligió quedarse en
+            // Remito X (no toda venta online necesita AFIP). Lo único que
+            // se esconde para siempre es un remito ya superado por una
+            // factura generada a partir de él.
+            ->where(fn ($q) => $q->whereNull('tienda_pedido_id')
+                ->orWhere('tipo_comprobante_interno', '!=', TipoComprobanteInterno::RemitoX->value)
+                ->orWhere(fn ($q2) => $q2->where('status', InvoiceStatus::Paid->value)
+                    ->whereDoesntHave('facturasDelRemito')))
             ->when($sucursalId !== null, fn ($q) => $q->where('sucursal_id', $sucursalId))
             ->when($this->filter !== 'all', fn ($q) => $q->withEffectiveStatus($this->filter))
             ->when($this->query !== '', function ($q) {

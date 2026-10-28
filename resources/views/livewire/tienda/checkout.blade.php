@@ -33,13 +33,36 @@
                             @error('customer_phone') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="alert-tn-info p-3 small mb-3">
-                            <i class="fas fa-circle-info me-1"></i>
-                            Al confirmar te llevamos a pagar con Mercado Pago. Si todavía no está disponible el pago online, coordinamos el pago al retirar y te contactamos.
-                        </div>
+                        @if($mpConfigured)
+                            <div class="mb-4">
+                                <label class="form-label small d-block mb-2">¿Cómo querés pagar?</label>
+                                <label class="tn-pay-option d-flex align-items-center gap-2 mb-2">
+                                    <input type="radio" wire:model="payment_choice" value="mercadopago">
+                                    <span>
+                                        <span class="d-block fw-bold">Pagar ahora con Mercado Pago</span>
+                                        <span class="d-block small text-muted">Te llevamos a pagar online, al toque.</span>
+                                    </span>
+                                </label>
+                                <label class="tn-pay-option d-flex align-items-center gap-2">
+                                    <input type="radio" wire:model="payment_choice" value="retiro">
+                                    <span>
+                                        <span class="d-block fw-bold">Pagar al retirar en el local</span>
+                                        <span class="d-block small text-muted">Reservamos tu pedido y pagás en efectivo o tarjeta cuando pasás a buscarlo.</span>
+                                    </span>
+                                </label>
+                                @error('payment_choice') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            </div>
+                        @else
+                            <div class="alert-tn-info p-3 small mb-3">
+                                <i class="fas fa-circle-info me-1"></i>
+                                Coordinamos el pago al retirar y te contactamos.
+                            </div>
+                        @endif
 
                         <button type="submit" wire:loading.attr="disabled" wire:target="confirmar" class="btn btn-tn-primary w-100">
-                            <span wire:loading.remove wire:target="confirmar">Ir a pagar</span>
+                            <span wire:loading.remove wire:target="confirmar">
+                                {{ $mpConfigured && $payment_choice === 'mercadopago' ? 'Ir a pagar' : 'Confirmar pedido' }}
+                            </span>
                             <span wire:loading wire:target="confirmar">Confirmando...</span>
                         </button>
                     </form>

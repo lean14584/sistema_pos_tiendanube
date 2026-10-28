@@ -55,6 +55,7 @@
                         <th class="px-5 py-3 font-medium">Emisión</th>
                         <th class="px-5 py-3 font-medium">Vencimiento</th>
                         <th class="px-5 py-3 font-medium">Estado</th>
+                        <th class="px-5 py-3 font-medium">Pago</th>
                         <th class="px-5 py-3 font-medium text-right">Total</th>
                     </tr>
                 </thead>
@@ -74,6 +75,15 @@
                                         <span class="inline-flex items-center gap-0.5 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 px-1.5 py-0.5 text-[10px] font-semibold">
                                             <x-heroicon-o-shopping-bag class="w-2.5 h-2.5" /> Online
                                         </span>
+                                        @if ($invoice->tiendaPedido?->estaRetirado())
+                                            <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 text-[10px] font-semibold">
+                                                <x-heroicon-o-check-circle class="w-2.5 h-2.5" /> Retirado
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-semibold">
+                                                <x-heroicon-o-clock class="w-2.5 h-2.5" /> Sin retirar
+                                            </span>
+                                        @endif
                                     @endif
                                 </p>
                             </td>
@@ -83,6 +93,7 @@
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $invoice->issue_date->format('d/m/Y') }}</td>
                             <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $invoice->due_date->format('d/m/Y') }}</td>
                             <td class="px-5 py-3"><x-status-badge :status="$invoice->effective_status" /></td>
+                            <td class="px-5 py-3 text-gray-500 dark:text-gray-400">{{ $invoice->paymentMethodsLabel() ?? '—' }}</td>
                             <td class="px-5 py-3 text-right font-medium text-gray-900 dark:text-gray-100">${{ money($invoice->total) }}</td>
                         </tr>
                     @endforeach
@@ -107,6 +118,15 @@
                                         <span class="inline-flex items-center gap-0.5 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 px-1.5 py-0.5 text-[10px] font-semibold">
                                             <x-heroicon-o-shopping-bag class="w-2.5 h-2.5" /> Online
                                         </span>
+                                        @if ($invoice->tiendaPedido?->estaRetirado())
+                                            <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 text-[10px] font-semibold">
+                                                <x-heroicon-o-check-circle class="w-2.5 h-2.5" /> Retirado
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-semibold">
+                                                <x-heroicon-o-clock class="w-2.5 h-2.5" /> Sin retirar
+                                            </span>
+                                        @endif
                                     @endif
                                 </p>
                                 <p class="text-sm text-gray-700 dark:text-gray-300 truncate">
@@ -120,6 +140,10 @@
                                 {{ $invoice->issue_date->format('d/m/Y') }}
                                 <span class="mx-1">·</span>
                                 vence {{ $invoice->due_date->format('d/m/Y') }}
+                                @if ($invoice->paymentMethodsLabel())
+                                    <span class="mx-1">·</span>
+                                    {{ $invoice->paymentMethodsLabel() }}
+                                @endif
                             </p>
                             <p class="font-semibold text-gray-900 dark:text-gray-100">${{ money($invoice->total) }}</p>
                         </div>

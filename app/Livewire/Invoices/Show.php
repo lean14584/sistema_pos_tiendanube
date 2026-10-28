@@ -3,17 +3,20 @@
 namespace App\Livewire\Invoices;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobanteInterno;
 use App\Exceptions\Afip\AfipConnectionException;
 use App\Exceptions\Afip\AfipRejectedException;
 use App\Exceptions\Afip\AfipValidationException;
 use App\Mail\InvoiceMail;
+use App\Models\CompanySettings;
 use App\Models\Invoice;
 use App\Services\Afip\InvoiceCaeEmitter;
 use App\Services\MercadoPago\MercadoPagoQrService;
 use App\Support\CashLinker;
 use App\Support\CurrentSucursal;
 use App\Support\MercadoPagoPaymentApplier;
+use App\Support\RemitoFacturador;
 use App\Support\StockAdjuster;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -39,6 +42,15 @@ class Show extends Component
     public string $qrState = 'idle'; // idle | waiting | paid | error
 
     public ?string $qrError = null;
+
+    // --- Entregar y cobrar (pedido de tienda online retirado en el mostrador) ---
+    public bool $showEntregaModal = false;
+
+    public string $entregaTipoComprobante = 'factura_b';
+
+    public string $entregaMetodoPago = 'efectivo';
+
+    public ?string $entregaError = null;
 
     public function mount(Invoice $invoice): void
     {
@@ -195,6 +207,129 @@ class Show extends Component
         $this->invoice->update(['status' => $status]);
     }
 
+    /**
+     * Tipos a los que se puede entregar: Remito X (queda como comprobante
+     * final, sin pasar por AFIP — no toda venta online necesita factura) +
+     * las fiscales habilitadas. A diferencia de FacturarRemito (que solo
+     * ofrece fiscales, porque ahí el remito YA está pagado de otra forma),
+     * acá "entregar" y "facturar" son la misma decisión.
+     */
+    private function entregaTiposDestino(): array
+    {
+        return array_values(array_filter(
+            CompanySettings::current()->tiposComprobanteSeleccionables(),
+            fn (TipoComprobanteInterno $t) => ! $t->esNotaCredito() && $t !== TipoComprobanteInterno::Devolucion,
+        ));
+    }
+
+    public function openEntregaModal(): void
+    {
+        $default = CompanySettings::current()->tipoComprobantePorDefecto();
+        $this->entregaTipoComprobante = $default->esFiscal() ? $default->value : TipoComprobanteInterno::FacturaB->value;
+        $this->entregaMetodoPago = 'efectivo';
+        $this->entregaError = null;
+        $this->showEntregaModal = true;
+    }
+
+    public function closeEntregaModal(): void
+    {
+        $this->showEntregaModal = false;
+    }
+
+    /**
+     * Acción única para cuando el cliente pasa a buscar y paga un pedido
+     * online en el mostrador: carga el pago completo elegido (se anota en
+     * caja) y marca el pedido retirado — todo junto, en vez de obligar a
+     * pasar por "Facturar remito" + "Editar" + "Marcar retirado" en
+     * pantallas separadas (ver feedback del usuario). Si se elige un tipo
+     * fiscal, además convierte el remito en factura; si se elige Remito X,
+     * el remito mismo queda como comprobante final — no toda venta online
+     * necesita pasar por AFIP. A propósito NO emite CAE a ARCA: eso sigue
+     * siendo manual, igual que para cualquier otra venta (ver InvoiceObserver).
+     */
+    public function entregarYCobrar(): void
+    {
+        abort_unless($this->invoice->esRemito() && $this->invoice->esDeTiendaOnline() && $this->invoice->tiendaPedido, 404);
+
+        $tipo = TipoComprobanteInterno::tryFrom($this->entregaTipoComprobante);
+
+        if (! $tipo || ! in_array($tipo, $this->entregaTiposDestino(), true)) {
+            $this->entregaError = 'Elegí un tipo de comprobante válido y habilitado.';
+
+            return;
+        }
+
+        $metodo = PaymentMethod::tryFrom($this->entregaMetodoPago);
+
+        if (! $metodo) {
+            $this->entregaError = 'Elegí un medio de pago.';
+
+            return;
+        }
+
+        $sucursalId = $this->invoice->sucursal_id;
+
+        if (! CashLinker::hasOpenSession($sucursalId)) {
+            $this->entregaError = 'Tenés que abrir la caja antes de cobrar.';
+
+            return;
+        }
+
+        try {
+            $documento = DB::transaction(function () use ($tipo, $metodo, $sucursalId) {
+                $esRemitoX = $tipo === TipoComprobanteInterno::RemitoX;
+                $documento = $esRemitoX ? $this->invoice : RemitoFacturador::facturar($this->invoice, $tipo);
+
+                $pago = $documento->payments()->create([
+                    'method' => $metodo->value,
+                    'amount' => $documento->total,
+                ]);
+
+                CashLinker::linkInvoicePayment($documento, $pago, $sucursalId);
+
+                if ($esRemitoX) {
+                    // Update por query builder (no dispara InvoiceObserver):
+                    // si se usara $documento->update() acá, el Observer vería
+                    // "remito online que pasó a Paid" y lo convertiría solo a
+                    // factura — justo lo que esta rama eligió NO hacer. Para
+                    // una Factura (rama de abajo) no hace falta este cuidado:
+                    // esRemito() ya da false ahí, el Observer no actúa.
+                    Invoice::where('id', $documento->id)->update(['status' => InvoiceStatus::Paid->value]);
+                    $documento->refresh();
+                } else {
+                    $documento->update(['status' => InvoiceStatus::Paid]);
+                }
+
+                $documento->tiendaPedido?->update(['picked_up_at' => now(), 'status' => 'paid']);
+
+                return $documento;
+            });
+        } catch (\RuntimeException $e) {
+            $this->entregaError = $e->getMessage();
+
+            return;
+        }
+
+        session()->flash('status', 'Pedido entregado y cobrado.');
+        $this->redirect(route('invoices.show', $documento), navigate: true);
+    }
+
+    /**
+     * Separado del pago a propósito (ver TiendaPedido::estaRetirado()): un
+     * pedido online puede estar pagado y sin retirar todavía, o pagarse
+     * recién en el mostrador junto con la entrega — no son el mismo paso.
+     */
+    public function toggleRetirado(): void
+    {
+        abort_unless($this->invoice->esDeTiendaOnline() && $this->invoice->tiendaPedido, 404);
+
+        $this->invoice->tiendaPedido->update([
+            'picked_up_at' => $this->invoice->tiendaPedido->estaRetirado() ? null : now(),
+        ]);
+
+        $this->invoice->load('tiendaPedido');
+    }
+
     public function emitirAfip(): void
     {
         $this->afipError = null;
@@ -316,6 +451,8 @@ class Show extends Component
             'statuses' => InvoiceStatus::cases(),
             'mpConfigured' => $this->mpConfigured(),
             'pollSeconds' => (int) config('mercadopago.poll_seconds', 3),
+            'entregaTiposDestino' => $this->entregaTiposDestino(),
+            'entregaMetodosPago' => PaymentMethod::cases(),
         ]);
     }
 }

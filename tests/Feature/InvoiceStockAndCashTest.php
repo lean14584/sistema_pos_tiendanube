@@ -74,14 +74,15 @@ class InvoiceStockAndCashTest extends TestCase
     }
 
     /**
-     * El webhook de Mercado Pago que paga un pedido de la tienda online ya
-     * no tiene sesión de staff autenticada, así que hoy esto no pasa "por
-     * las dudas" — pero CashLinker lo bloquea de forma explícita (ver
-     * comentario en linkInvoicePayment) para que siga sin pasar aunque algún
-     * día alguien dispare ese mismo pago desde una acción de staff CON caja
-     * abierta, como se simula acá.
+     * Un pedido online pendiente de pago (ej. el cliente eligió retirar y
+     * pagar en el local) se cobra a mano desde Invoices\Edit igual que
+     * cualquier otra factura — y ESE pago sí tiene que anotarse en caja,
+     * porque es plata real que entró al cajón del cajero que lo cobró. Lo
+     * único que CashLinker tiene que bloquear es el pago AUTOMÁTICO del
+     * webhook de MP (ver test en TiendaOnlineTest que confirma que ESE no
+     * toca caja, gracias a no tener sesión de staff autenticada).
      */
-    public function test_el_pago_de_una_venta_de_tienda_online_nunca_se_anota_en_caja(): void
+    public function test_cobrar_a_mano_un_pedido_online_pendiente_si_se_anota_en_caja(): void
     {
         $admin = $this->admin();
         $this->openCashSession($admin);
@@ -98,11 +99,11 @@ class InvoiceStockAndCashTest extends TestCase
             ])->id,
         ]);
 
-        $payment = $invoice->payments()->create(['method' => 'mercadopago', 'amount' => 900]);
+        $payment = $invoice->payments()->create(['method' => 'efectivo', 'amount' => 900]);
 
         CashLinker::linkInvoicePayment($invoice, $payment);
 
-        $this->assertSame(0, CashMovement::count());
+        $this->assertSame(1, CashMovement::count());
     }
 
     public function test_devolucion_repone_stock_y_genera_egreso_de_caja(): void

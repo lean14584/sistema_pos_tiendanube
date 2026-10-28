@@ -222,6 +222,14 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
         }
         .tn-stepper input::-webkit-outer-spin-button, .tn-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
+        /* ---------- Selector de medio de pago (checkout) ---------- */
+        .tn-pay-option {
+            border: 1px solid var(--tn-line); border-radius: 10px; padding: .75rem .9rem;
+            cursor: pointer; transition: border-color .15s ease, background .15s ease;
+        }
+        .tn-pay-option:has(input:checked) { border-color: var(--tn-600); background: color-mix(in srgb, var(--tn-500) 6%, white); }
+        .tn-pay-option input[type="radio"] { width: 18px; height: 18px; accent-color: var(--tn-600); flex-shrink: 0; }
+
         /* ---------- Category tiles ---------- */
         .tn-cat-tile {
             background: #fff; border: 1px solid var(--tn-line); border-radius: 14px;

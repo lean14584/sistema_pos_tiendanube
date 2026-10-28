@@ -23,10 +23,12 @@ use Livewire\Component;
  * Confirma el pedido reservando stock YA (crea un Remito, no una Factura
  * fiscal — ver app/Enums/TipoComprobanteInterno.php: RemitoX no se emite a
  * AFIP; eso pasa recién después, ver InvoiceObserver). Si Mercado Pago está
- * configurado para la sucursal de la tienda, redirige al cliente a pagar ahí
- * (Checkout Pro); si no, el pedido queda igual reservado y se coordina el
- * pago al retirar — así el flujo sigue siendo probable de punta a punta en
- * una instalación que todavía no cargó credenciales de Mercado Pago.
+ * configurado para la sucursal de la tienda, el cliente elige entre pagar
+ * ahí (Checkout Pro) o al retirar en el local ($payment_choice); si MP no
+ * está configurado no hay nada que elegir, el pedido queda igual reservado
+ * y se coordina el pago al retirar — así el flujo sigue siendo probable de
+ * punta a punta en una instalación que todavía no cargó credenciales de
+ * Mercado Pago.
  */
 #[Layout('layouts.tienda')]
 class Checkout extends Component
@@ -36,6 +38,14 @@ class Checkout extends Component
     public string $customer_email = '';
 
     public string $customer_phone = '';
+
+    /**
+     * 'mercadopago' | 'retiro'. Solo tiene sentido elegir cuando Mercado Pago
+     * está configurado para la sucursal (ver render()) — si no lo está, el
+     * pedido siempre queda pendiente para coordinar el pago al retirar,
+     * igual que antes de que existiera esta elección.
+     */
+    public string $payment_choice = 'mercadopago';
 
     /** Si hay un cliente logueado, precarga sus datos (los puede seguir editando). */
     public function mount(): void
@@ -53,6 +63,7 @@ class Checkout extends Component
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:50'],
+            'payment_choice' => ['required', 'in:mercadopago,retiro'],
         ];
     }
 
@@ -174,7 +185,7 @@ class Checkout extends Component
         // libera sola si nadie hace nada, ver tienda:release-expired-pedidos).
         $mp = app(MercadoPagoCheckoutProService::class);
 
-        if ($mp->isConfigured($sucursalId)) {
+        if ($mp->isConfigured($sucursalId) && $this->payment_choice === 'mercadopago') {
             try {
                 $preferencia = $mp->createPreference($pedido->invoice->load('items'), $token, $this->customer_email);
                 $pedido->update(['mp_preference_id' => $preferencia['id']]);
@@ -192,9 +203,12 @@ class Checkout extends Component
 
     public function render()
     {
+        $sucursalId = CompanySettings::current()->tiendaOnlineSucursalId();
+
         return view('livewire.tienda.checkout', [
             'lines' => TiendaCart::lines(),
             'total' => TiendaCart::total(),
+            'mpConfigured' => $sucursalId !== null && app(MercadoPagoCheckoutProService::class)->isConfigured($sucursalId),
         ]);
     }
 }

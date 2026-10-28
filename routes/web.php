@@ -52,6 +52,7 @@ use App\Livewire\Products\Edit as ProductEdit;
 use App\Livewire\Products\Historial;
 use App\Livewire\Products\Import;
 use App\Livewire\Products\Index as ProductIndex;
+use App\Livewire\PedidosOnline\Index as PedidosOnlineIndex;
 use App\Livewire\Products\Labels;
 use App\Livewire\Providers\Account as ProviderAccount;
 use App\Livewire\Providers\Create as ProviderCreate;
@@ -175,6 +176,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{invoice}/facturar', FacturarRemito::class)->name('facturar-remito');
         Route::get('/{invoice}/nota-credito', NotaCreditoCreate::class)->name('nota-credito.create');
     });
+
+    Route::middleware('module:invoices')->get('pedidos-online', PedidosOnlineIndex::class)->name('pedidos-online.index');
 
     Route::middleware('module:clients')->prefix('clients')->name('clients.')->group(function () {
         Route::get('/', ClientIndex::class)->name('index');

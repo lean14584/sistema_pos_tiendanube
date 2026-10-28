@@ -37,6 +37,16 @@
                     Sin precios
                 </a>
                 @if ($invoice->facturaGenerada() === null)
+                    @if ($invoice->esDeTiendaOnline())
+                        <button
+                            type="button"
+                            wire:click="openEntregaModal"
+                            class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-emerald-600/30 hover:from-emerald-700 hover:to-emerald-600 active:scale-[0.98] transition-all"
+                        >
+                            <x-heroicon-o-shopping-bag class="w-4 h-4" />
+                            Entregar y cobrar
+                        </button>
+                    @endif
                     <a
                         href="{{ route('invoices.facturar-remito', $invoice) }}"
                         wire:navigate
@@ -239,6 +249,29 @@
                     <p class="font-medium text-gray-900 dark:text-gray-100">{{ $invoice->tiendaPedido->customer_name }}</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ $invoice->tiendaPedido->customer_email }}</p>
                     @if ($invoice->tiendaPedido->customer_phone)<p class="text-sm text-gray-500 dark:text-gray-400">{{ $invoice->tiendaPedido->customer_phone }}</p>@endif
+
+                    <div class="mt-3 flex items-center gap-2">
+                        @if ($invoice->tiendaPedido->estaRetirado())
+                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 text-xs font-semibold">
+                                <x-heroicon-o-check-circle class="w-3.5 h-3.5" />
+                                Retirado el {{ $invoice->tiendaPedido->picked_up_at->format('d/m/Y H:i') }}
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-2.5 py-1 text-xs font-semibold">
+                                <x-heroicon-o-clock class="w-3.5 h-3.5" />
+                                Pendiente de retiro
+                            </span>
+                        @endif
+                        <button
+                            type="button"
+                            wire:click="toggleRetirado"
+                            wire:loading.attr="disabled"
+                            wire:target="toggleRetirado"
+                            class="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                        >
+                            {{ $invoice->tiendaPedido->estaRetirado() ? 'Deshacer' : 'Marcar retirado' }}
+                        </button>
+                    </div>
                 </div>
             @endif
         </div>
@@ -375,6 +408,69 @@
                             </button>
                         </div>
                     @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal de "Entregar y cobrar" (pedido online retirado en el mostrador) --}}
+    @if ($showEntregaModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data x-on:keydown.escape.window="$wire.closeEntregaModal()">
+            <div class="absolute inset-0 bg-gray-900/60" wire:click="closeEntregaModal"></div>
+
+            <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-4 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <x-heroicon-o-shopping-bag class="w-5 h-5" />
+                            <h2 class="font-semibold">Entregar y cobrar</h2>
+                        </div>
+                        <button wire:click="closeEntregaModal" aria-label="Cerrar" class="text-white/80 hover:text-white">
+                            <x-heroicon-o-x-mark class="w-5 h-5" />
+                        </button>
+                    </div>
+                    <p class="text-sm text-white/90 mt-1">Pedido {{ $invoice->number }} · ${{ money($invoice->total) }}</p>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de comprobante</label>
+                        <select wire:model.live="entregaTipoComprobante" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            @foreach ($entregaTiposDestino as $t)
+                                <option value="{{ $t->value }}">{{ $t->label() }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Medio de pago</label>
+                        <select wire:model="entregaMetodoPago" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            @foreach ($entregaMetodosPago as $m)
+                                <option value="{{ $m->value }}">{{ $m->label() }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    @if ($entregaError)
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $entregaError }}</p>
+                    @endif
+
+                    <button
+                        type="button"
+                        wire:click="entregarYCobrar"
+                        wire:loading.attr="disabled"
+                        wire:target="entregarYCobrar"
+                        class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/30 hover:from-emerald-700 hover:to-emerald-600 disabled:opacity-60 active:scale-[0.98] transition-all"
+                    >
+                        <span wire:loading.remove wire:target="entregarYCobrar">Confirmar entrega por ${{ money($invoice->total) }}</span>
+                        <span wire:loading wire:target="entregarYCobrar">Procesando...</span>
+                    </button>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 text-center">
+                        @if ($entregaTipoComprobante === 'remito_x')
+                            Carga el pago completo sobre el remito y marca el pedido como retirado, sin convertirlo en factura.
+                        @else
+                            Convierte el remito en factura, carga el pago completo y marca el pedido como retirado.
+                        @endif
+                    </p>
                 </div>
             </div>
         </div>

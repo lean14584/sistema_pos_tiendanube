@@ -21,7 +21,15 @@
                 <p class="text-muted small mb-0">Pedido #{{ $pedido->id }} · {{ $pedido->created_at->format('d/m/Y H:i') }}</p>
             </div>
 
-            @if($pedido->status === 'pending_payment' && $pedido->mp_preference_id)
+            @if($pedido->status === 'paid' && $pedido->estaRetirado())
+                <div class="p-3 small" style="background: #E6F6EC; border-radius: 10px; color: #1B7A3D;">
+                    <i class="fas fa-circle-check me-1"></i> Retiraste este pedido el {{ $pedido->picked_up_at->format('d/m/Y H:i') }}.
+                </div>
+            @elseif($pedido->status === 'paid')
+                <div class="alert-tn-info p-3 small">
+                    Ya está pago y listo para retirar. Te esperamos con este número de pedido.
+                </div>
+            @elseif($pedido->status === 'pending_payment' && $pedido->mp_preference_id)
                 <div class="alert-tn-info p-3 small">
                     Estamos confirmando tu pago con Mercado Pago. En unos minutos te llega la confirmación a
                     <strong>{{ $pedido->customer_email }}</strong>. Guardamos tu stock reservado hasta {{ $pedido->expires_at?->format('d/m H:i') }}.

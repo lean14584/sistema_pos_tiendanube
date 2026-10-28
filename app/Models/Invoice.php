@@ -6,6 +6,7 @@ use App\Concerns\Auditable;
 use App\Concerns\HasBillingTotals;
 use App\Concerns\HasOverdueStatus;
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\TipoComprobante;
 use App\Enums\TipoComprobanteInterno;
 use App\Observers\InvoiceObserver;
@@ -212,6 +213,21 @@ class Invoice extends Model
     public function esDeTiendaOnline(): bool
     {
         return $this->tienda_pedido_id !== null;
+    }
+
+    /**
+     * "Efectivo" / "Efectivo + Transferencia" / null si todavía no tiene
+     * ningún pago cargado — usado en el listado de Facturas para no tener
+     * que abrir cada comprobante solo para ver con qué se cobró.
+     */
+    public function paymentMethodsLabel(): ?string
+    {
+        $metodos = ($this->relationLoaded('payments') ? $this->payments : $this->payments()->get())
+            ->pluck('method')
+            ->unique()
+            ->map(fn (PaymentMethod $m) => $m->label());
+
+        return $metodos->isEmpty() ? null : $metodos->implode(' + ');
     }
 
     /**

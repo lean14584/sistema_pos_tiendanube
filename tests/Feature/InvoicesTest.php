@@ -312,6 +312,182 @@ class InvoicesTest extends TestCase
             ->assertDontSee('Online');
     }
 
+    public function test_entregar_y_cobrar_factura_registra_pago_en_caja_y_marca_retirado(): void
+    {
+        $admin = $this->admin();
+        CashSession::create([
+            'user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id,
+            'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0,
+        ]);
+
+        $client = Client::create(['name' => 'Consumidor Final', 'email' => 'cf@test.com']);
+        $product = Product::create(['name' => 'Agua 500ml', 'price' => 900, 'stock' => 10]);
+
+        $pedido = TiendaPedido::create([
+            'token' => 'tok-entrega-1', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'pending_payment',
+            'customer_name' => 'Rocío Fernández', 'customer_email' => 'rocio@example.com',
+            'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+        ]);
+        $remito = Invoice::create([
+            'number' => 'REM-8001', 'client_id' => $client->id, 'tax_rate' => 0,
+            'tipo_comprobante_interno' => 'remito_x',
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'pending',
+            'tienda_pedido_id' => $pedido->id,
+        ]);
+        $remito->items()->create(['product_id' => $product->id, 'description' => 'Agua 500ml', 'quantity' => 2, 'unit_price' => 900, 'iva_rate' => 21]);
+
+        Livewire::actingAs($admin)->test('invoices.show', ['invoice' => $remito])
+            ->call('openEntregaModal')
+            ->set('entregaMetodoPago', 'efectivo')
+            ->call('entregarYCobrar')
+            ->assertRedirect();
+
+        $factura = $remito->fresh()->facturaGenerada();
+        $this->assertNotNull($factura);
+        $this->assertSame('paid', $factura->status->value);
+        $this->assertSame(1, $factura->payments()->count());
+        $this->assertSame('efectivo', $factura->payments->first()->method->value);
+        $this->assertSame(1, \App\Models\CashMovement::count());
+
+        $this->assertNotNull($pedido->fresh()->picked_up_at);
+        $this->assertSame('paid', $pedido->fresh()->status);
+    }
+
+    public function test_entregar_y_cobrar_eligiendo_remito_x_no_convierte_a_factura(): void
+    {
+        // No toda venta online necesita AFIP (ver feedback del usuario) — si
+        // el cajero elige Remito X, el remito mismo queda como comprobante
+        // final: pagado, retirado, sin generar ninguna factura nueva.
+        $admin = $this->admin();
+        CashSession::create([
+            'user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id,
+            'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0,
+        ]);
+
+        $client = Client::create(['name' => 'Consumidor Final', 'email' => 'cf@test.com']);
+        $product = Product::create(['name' => 'Agua 500ml', 'price' => 900, 'stock' => 10]);
+
+        $pedido = TiendaPedido::create([
+            'token' => 'tok-entrega-remito', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'pending_payment',
+            'customer_name' => 'Rocío Fernández', 'customer_email' => 'rocio@example.com',
+            'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+        ]);
+        $remito = Invoice::create([
+            'number' => 'REM-8003', 'client_id' => $client->id, 'tax_rate' => 0,
+            'tipo_comprobante_interno' => 'remito_x',
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'pending',
+            'tienda_pedido_id' => $pedido->id,
+        ]);
+        $remito->items()->create(['product_id' => $product->id, 'description' => 'Agua 500ml', 'quantity' => 2, 'unit_price' => 900, 'iva_rate' => 21]);
+
+        Livewire::actingAs($admin)->test('invoices.show', ['invoice' => $remito])
+            ->call('openEntregaModal')
+            ->set('entregaTipoComprobante', 'remito_x')
+            ->set('entregaMetodoPago', 'tarjeta')
+            ->call('entregarYCobrar')
+            ->assertRedirect(route('invoices.show', $remito));
+
+        $remito->refresh();
+        $this->assertNull($remito->facturaGenerada());
+        $this->assertSame('paid', $remito->status->value);
+        $this->assertSame(1, $remito->payments()->count());
+        $this->assertSame('tarjeta', $remito->payments->first()->method->value);
+        $this->assertSame(1, \App\Models\CashMovement::count());
+
+        $this->assertNotNull($pedido->fresh()->picked_up_at);
+        $this->assertSame('paid', $pedido->fresh()->status);
+
+        // Al quedar pagado sin generar factura, el remito mismo pasa a
+        // aparecer en Facturas (ver Index.php) — ya no es "pendiente".
+        Livewire::actingAs($admin)->test('invoices.index')
+            ->assertSee('REM-8003');
+    }
+
+    public function test_entregar_y_cobrar_exige_caja_abierta(): void
+    {
+        $client = Client::create(['name' => 'Consumidor Final', 'email' => 'cf@test.com']);
+        $pedido = TiendaPedido::create([
+            'token' => 'tok-entrega-2', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'pending_payment',
+            'customer_name' => 'Rocío Fernández', 'customer_email' => 'rocio@example.com',
+            'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+        ]);
+        $remito = Invoice::create([
+            'number' => 'REM-8002', 'client_id' => $client->id, 'tax_rate' => 0,
+            'tipo_comprobante_interno' => 'remito_x',
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'pending',
+            'tienda_pedido_id' => $pedido->id,
+        ]);
+        $remito->items()->create(['description' => 'Item', 'quantity' => 1, 'unit_price' => 900, 'iva_rate' => 21]);
+
+        Livewire::actingAs($this->admin())->test('invoices.show', ['invoice' => $remito])
+            ->call('openEntregaModal')
+            ->call('entregarYCobrar')
+            ->assertSet('entregaError', 'Tenés que abrir la caja antes de cobrar.');
+
+        $this->assertNull($remito->fresh()->facturaGenerada());
+        $this->assertNull($pedido->fresh()->picked_up_at);
+    }
+
+    public function test_marcar_y_desmarcar_retirado_en_una_venta_de_tienda_online(): void
+    {
+        $client = Client::create(['name' => 'Consumidor Final', 'email' => 'cf@test.com']);
+        $pedido = TiendaPedido::create([
+            'token' => 'tok-retiro-1', 'sucursal_id' => Sucursal::sole()->id, 'status' => 'paid',
+            'customer_name' => 'Rocío Fernández', 'customer_email' => 'rocio@example.com',
+            'cart_snapshot' => [], 'expires_at' => now()->addMinutes(30),
+        ]);
+        $invoice = Invoice::create([
+            'number' => 'FAC-7004', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+            'tienda_pedido_id' => $pedido->id,
+        ]);
+
+        $component = Livewire::actingAs($this->admin())->test('invoices.show', ['invoice' => $invoice])
+            ->assertSee('Pendiente de retiro');
+
+        $component->call('toggleRetirado');
+        $this->assertNotNull($pedido->fresh()->picked_up_at);
+        $component->assertSee('Retirado el');
+
+        $component->call('toggleRetirado');
+        $this->assertNull($pedido->fresh()->picked_up_at);
+        $component->assertSee('Pendiente de retiro');
+    }
+
+    public function test_toggleRetirado_rechaza_una_factura_que_no_es_de_tienda_online(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+        $invoice = Invoice::create([
+            'number' => 'FAC-7005', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+
+        Livewire::actingAs($this->admin())->test('invoices.show', ['invoice' => $invoice])
+            ->call('toggleRetirado')
+            ->assertStatus(404);
+    }
+
+    public function test_invoices_index_muestra_el_medio_de_pago(): void
+    {
+        $client = Client::create(['name' => 'Cliente 1', 'email' => 'c1@test.com']);
+
+        $pagada = Invoice::create([
+            'number' => 'FAC-7010', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'paid',
+        ]);
+        $pagada->payments()->create(['method' => 'efectivo', 'amount' => 1000]);
+
+        $sinPago = Invoice::create([
+            'number' => 'FAC-7011', 'client_id' => $client->id, 'tax_rate' => 0,
+            'issue_date' => now(), 'due_date' => now(), 'status' => 'pending',
+        ]);
+
+        Livewire::actingAs($this->admin())->test('invoices.index')
+            ->assertSee('FAC-7010')
+            ->assertSee('Efectivo')
+            ->assertSee('FAC-7011');
+    }
+
     public function test_invoices_index_y_show_muestran_el_comprador_real_de_tienda_online(): void
     {
         // El checkout de la tienda siempre factura a Consumidor Final (ver
