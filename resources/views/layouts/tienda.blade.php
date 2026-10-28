@@ -145,6 +145,16 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
         }
         .btn-tn-outline:hover { border-color: var(--tn-600); color: var(--tn-700); }
 
+        /* Acción secundaria junto a un btn-tn-primary (ej. "Agregar al
+           carrito" al lado de "Comprar ahora"): relleno tenue del mismo
+           color en vez de blanco con borde — mantiene las dos acciones
+           en la misma familia visual sin competir con la principal. */
+        .btn-tn-soft {
+            background: color-mix(in srgb, var(--tn-500) 12%, white); border: none; color: var(--tn-700);
+            border-radius: 10px; font-weight: 700; padding: .75rem 1.6rem;
+        }
+        .btn-tn-soft:hover { background: color-mix(in srgb, var(--tn-500) 20%, white); color: var(--tn-700); }
+
         .tn-back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--tn-muted); text-decoration: none; font-size: .88rem; font-weight: 600; margin-bottom: 1.25rem; }
         .tn-back-link:hover { color: var(--tn-700); }
         .tn-back-link i { font-size: .75em; }

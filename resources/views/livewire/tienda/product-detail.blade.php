@@ -71,17 +71,20 @@
                                 <a href="{{ route('tienda.cart') }}" class="btn btn-tn-primary btn-sm w-100">Ver carrito</a>
                             </div>
                         @else
-                            <form wire:submit="addToCart">
+                            <div>
                                 <label class="form-label small mb-1">Cantidad</label>
                                 <div class="tn-stepper mb-3 w-100">
                                     <button type="button" wire:click="decrementQuantity" {{ $quantity <= 1 ? 'disabled' : '' }}>−</button>
                                     <input type="number" wire:model="quantity" min="1" max="{{ $stock }}" readonly style="flex: 1;">
                                     <button type="button" wire:click="incrementQuantity" {{ $quantity >= $stock ? 'disabled' : '' }}>+</button>
                                 </div>
-                                <button type="submit" class="btn btn-tn-primary w-100">
+                                <button type="button" wire:click="buyNow" class="btn btn-tn-primary w-100 mb-2">
+                                    Comprar ahora
+                                </button>
+                                <button type="button" wire:click="addToCart" class="btn btn-tn-soft w-100">
                                     <i class="fas fa-cart-plus me-1"></i> Agregar al carrito
                                 </button>
-                            </form>
+                            </div>
                         @endif
                     @endif
 

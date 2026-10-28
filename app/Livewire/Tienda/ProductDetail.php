@@ -36,13 +36,25 @@ class ProductDetail extends Component
 
     public function addToCart(): void
     {
+        $this->putInCart();
+
+        $this->justAdded = true;
+    }
+
+    public function buyNow(): void
+    {
+        $this->putInCart();
+
+        $this->redirect(route('tienda.checkout'), navigate: true);
+    }
+
+    private function putInCart(): void
+    {
         $stock = $this->product->stockEnSucursal(CompanySettings::current()->tiendaOnlineSucursalId());
 
         $qty = max(1, min($this->quantity, max($stock, 1)));
 
         TiendaCart::add($this->product->id, $qty);
-
-        $this->justAdded = true;
     }
 
     public function render()
