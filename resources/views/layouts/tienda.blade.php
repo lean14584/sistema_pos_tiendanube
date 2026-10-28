@@ -2,6 +2,9 @@
 $tnCompany = \App\Models\CompanySettings::current();
 $tnCartCount = \App\Support\TiendaCart::count();
 $tnCustomer = \Illuminate\Support\Facades\Auth::guard('customer')->user();
+// Tiras de categorías del header: mismo listado cacheado que ya usa el
+// sidebar del catálogo, no una query nueva por request.
+$tnCategories = \App\Models\Category::forSelectCached();
 
 // Paleta dinámica: si el cliente cargó su color de marca en Configuración
 // de Empresa, la tienda usa ESE color (misma escala OKLCH que ya genera
@@ -41,42 +44,52 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             font-family: var(--font);
             color: var(--tn-ink);
             background-color: var(--tn-paper);
-            padding-top: 68px;
+            padding-top: 108px;
             -webkit-font-smoothing: antialiased;
         }
+        @media (max-width: 767.98px) { body { padding-top: 100px; } }
 
         h1, h2, h3, .tn-display { font-family: var(--font-display); font-weight: 700; letter-spacing: -.01em; }
 
         a { color: var(--tn-700); text-decoration: none; }
         a:hover { color: var(--tn-800); }
 
-        /* ---------- Navbar ---------- */
+        /* ---------- Header (2 franjas, patrón marketplace: logo+buscador / categorías) ---------- */
+        .tn-header { position: fixed; top: 0; left: 0; right: 0; z-index: 1030; }
+
         .tn-navbar {
-            background: linear-gradient(135deg, var(--tn-700), var(--tn-600));
-            padding: .7rem 0;
-            box-shadow: 0 2px 16px rgba(0,0,0,.12);
+            background: var(--tn-700);
+            padding: .65rem 0;
         }
         .tn-navbar .navbar-brand {
             display: flex; align-items: center; gap: .6rem;
-            font-weight: 800; font-size: 1.35rem; color: #fff;
+            font-weight: 800; font-size: 1.25rem; color: #fff; flex-shrink: 0;
         }
         .tn-navbar .navbar-brand:hover { color: #fff; opacity: .92; }
         .tn-logo-chip {
-            background: #fff; border-radius: 10px; padding: 4px 8px;
-            display: inline-flex; align-items: center; height: 36px;
+            background: #fff; border-radius: 8px; padding: 4px 8px;
+            display: inline-flex; align-items: center; height: 34px;
         }
-        .tn-logo-chip img { max-height: 26px; max-width: 120px; display: block; }
+        .tn-logo-chip img { max-height: 24px; max-width: 110px; display: block; }
 
         .tn-nav-link { color: rgba(255,255,255,.92); text-decoration: none; font-size: .92rem; font-weight: 600; padding: .5rem .25rem; }
         .tn-nav-link:hover { color: #fff; }
 
+        /* Buscador protagonista: ancho máximo disponible, centro del header */
+        .tn-search-form { flex: 1 1 auto; max-width: 640px; position: relative; }
         .tn-search-bar {
-            background: #fff; border-radius: 10px; border: none;
-            padding: .6rem 1rem; font-size: .92rem; width: 100%;
+            background: #fff; border: none; border-radius: 8px;
+            padding: .6rem 2.8rem .6rem 1rem; font-size: .92rem; width: 100%;
         }
         .tn-search-bar:focus { outline: 3px solid rgba(255,255,255,.35); }
+        .tn-search-submit {
+            position: absolute; right: 0; top: 0; height: 100%; width: 2.8rem;
+            border: none; background: transparent; color: var(--tn-muted);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tn-search-submit:hover { color: var(--tn-700); }
 
-        .tn-cart-link { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 10px; background: rgba(255,255,255,.14); color: #fff; text-decoration: none; }
+        .tn-cart-link { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; text-decoration: none; flex-shrink: 0; }
         .tn-cart-link:hover { background: rgba(255,255,255,.24); color: #fff; }
         .tn-cart-badge {
             position: absolute; top: -6px; right: -6px;
@@ -88,10 +101,26 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
 
         .tn-account-pill {
             display: inline-flex; align-items: center; gap: .4rem;
-            background: rgba(255,255,255,.14); color: #fff; border-radius: 10px;
-            padding: .45rem .8rem; font-size: .88rem; font-weight: 600;
+            background: rgba(255,255,255,.14); color: #fff; border-radius: 8px;
+            padding: .45rem .8rem; font-size: .85rem; font-weight: 600; flex-shrink: 0;
         }
         .tn-account-pill:hover { background: rgba(255,255,255,.24); color: #fff; }
+
+        /* Segunda franja: categorías, estilo tira de navegación de marketplace */
+        .tn-catbar {
+            background: #fff; border-bottom: 1px solid var(--tn-line);
+            box-shadow: 0 2px 8px rgba(20,24,31,.05);
+        }
+        .tn-catbar-scroll {
+            display: flex; gap: 1.5rem; overflow-x: auto; white-space: nowrap;
+            padding: .65rem 0; -webkit-overflow-scrolling: touch;
+        }
+        .tn-catbar-scroll::-webkit-scrollbar { display: none; }
+        .tn-catbar-link {
+            color: var(--tn-ink); font-size: .82rem; font-weight: 600;
+            text-decoration: none; flex-shrink: 0;
+        }
+        .tn-catbar-link:hover, .tn-catbar-link.active { color: var(--tn-700); }
 
         /* ---------- Buttons ---------- */
         .btn-tn-primary {
@@ -144,6 +173,8 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
 
         .tn-price { font-family: var(--font-display); font-weight: 700; color: var(--tn-ink); }
         .tn-price-currency { font-family: var(--font); font-size: .5em; font-weight: 700; color: var(--tn-muted); margin-right: .2em; vertical-align: .15em; }
+        .tn-installments { color: #1B7A3D; font-size: .78rem; font-weight: 700; }
+        .text-truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
         .form-control, .form-select {
             border-color: var(--tn-line); border-radius: 10px; font-family: var(--font);
@@ -290,49 +321,72 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
 </head>
 <body>
 
-<nav class="navbar navbar-expand-md fixed-top tn-navbar">
-    <div class="container">
-        <a class="navbar-brand" href="{{ route('tienda.catalog') }}">
-            @if($tnLogoUrl)
-                <span class="tn-logo-chip"><img src="{{ $tnLogoUrl }}" alt=""></span>
-            @else
-                <i class="fas fa-bag-shopping"></i>
-            @endif
-            <span class="d-none d-sm-inline">{{ $tnCompany->display_name }}</span>
-        </a>
-        <div class="d-flex align-items-center ms-auto gap-2 gap-md-3">
-            @if($tnCustomer)
-                <div class="dropdown">
-                    <a href="#" class="tn-account-pill dropdown-toggle" data-bs-toggle="dropdown">
-                        <i class="fas fa-circle-user"></i>
-                        <span class="d-none d-sm-inline">{{ Str::before($tnCustomer->name, ' ') }}</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('tienda.account.orders') }}">Mis pedidos</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <form method="POST" action="{{ route('tienda.account.logout') }}">
-                                @csrf
-                                <button type="submit" class="dropdown-item">Salir</button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
-            @else
-                <a href="{{ route('tienda.account.login') }}" class="tn-account-pill">
-                    <i class="fas fa-circle-user"></i>
-                    <span class="d-none d-sm-inline">Ingresar</span>
-                </a>
-            @endif
-            <a href="{{ route('tienda.cart') }}" class="tn-cart-link">
-                <i class="fas fa-cart-shopping"></i>
-                @if($tnCartCount > 0)
-                    <span class="tn-cart-badge">{{ $tnCartCount }}</span>
+<header class="tn-header">
+    <nav class="tn-navbar">
+        <div class="container d-flex align-items-center gap-2 gap-md-3">
+            <a class="navbar-brand" href="{{ route('tienda.catalog') }}">
+                @if($tnLogoUrl)
+                    <span class="tn-logo-chip"><img src="{{ $tnLogoUrl }}" alt=""></span>
+                @else
+                    <i class="fas fa-bag-shopping"></i>
                 @endif
+                <span class="d-none d-lg-inline">{{ $tnCompany->display_name }}</span>
             </a>
+
+            <form method="GET" action="{{ route('tienda.catalog') }}" class="tn-search-form">
+                <input type="text" name="q" value="{{ request('q') }}" class="tn-search-bar" placeholder="Buscar productos...">
+                <button type="submit" class="tn-search-submit"><i class="fas fa-magnifying-glass"></i></button>
+            </form>
+
+            <div class="d-flex align-items-center gap-2 gap-md-3 ms-auto">
+                @if($tnCustomer)
+                    <div class="dropdown">
+                        <a href="#" class="tn-account-pill dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-circle-user"></i>
+                            <span class="d-none d-sm-inline">{{ Str::before($tnCustomer->name, ' ') }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ route('tienda.account.orders') }}">Mis pedidos</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="POST" action="{{ route('tienda.account.logout') }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item">Salir</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                @else
+                    <a href="{{ route('tienda.account.login') }}" class="tn-account-pill">
+                        <i class="fas fa-circle-user"></i>
+                        <span class="d-none d-sm-inline">Ingresar</span>
+                    </a>
+                @endif
+                <a href="{{ route('tienda.cart') }}" class="tn-cart-link">
+                    <i class="fas fa-cart-shopping"></i>
+                    @if($tnCartCount > 0)
+                        <span class="tn-cart-badge">{{ $tnCartCount }}</span>
+                    @endif
+                </a>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
+
+    @if($tnCategories->isNotEmpty())
+        <div class="tn-catbar">
+            <div class="container">
+                <div class="tn-catbar-scroll">
+                    @foreach($tnCategories as $tnCat)
+                        <a href="{{ route('tienda.catalog', ['categoria' => $tnCat->id]) }}"
+                           class="tn-catbar-link {{ (int) request('categoria') === (int) $tnCat->id ? 'active' : '' }}">
+                            {{ $tnCat->name }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    @endif
+</header>
 
 {{ $slot }}
 

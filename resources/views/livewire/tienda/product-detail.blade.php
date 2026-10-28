@@ -25,28 +25,24 @@
         ];
         $ph = $tnPh[$product->id % count($tnPh)];
     @endphp
-    <div class="tn-card p-3 p-md-4 {{ $stock > 0 && ! $justAdded ? 'tn-sticky-cta-pad' : '' }}">
-        <div class="row g-4 g-md-5">
-            <div class="col-12 col-md-6">
-                <div class="d-flex align-items-center justify-content-center" style="aspect-ratio: 1; background: var(--tn-paper); border-radius: 12px; overflow: hidden;">
+    <div class="{{ $stock > 0 && ! $justAdded ? 'tn-sticky-cta-pad' : '' }}">
+        <div class="row g-4">
+            {{-- Galería --}}
+            <div class="col-12 col-md-5">
+                <div class="tn-card d-flex align-items-center justify-content-center p-4" style="aspect-ratio: 1;">
                     @if($product->imageUrl())
-                        <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" style="max-width: 80%; max-height: 80%; object-fit: contain;">
+                        <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" style="max-width: 85%; max-height: 85%; object-fit: contain;">
                     @else
-                        <div class="tn-media-ph tn-media-ph-lg" style="background: {{ $ph['bg'] }};"><i class="fas {{ $ph['icon'] }}"></i></div>
+                        <div class="tn-media-ph tn-media-ph-lg" style="background: {{ $ph['bg'] }}; width: 100%; height: 100%; border-radius: 12px;"><i class="fas {{ $ph['icon'] }}"></i></div>
                     @endif
                 </div>
             </div>
-            <div class="col-12 col-md-6 d-flex flex-column justify-content-center">
+
+            {{-- Info --}}
+            <div class="col-12 col-md-4">
                 <div style="font-size: .8rem; color: var(--tn-muted); font-weight: 600;">{{ $product->category?->name ?? 'General' }}</div>
-                <h1 class="h3 mt-1 mb-3">{{ $product->name }}</h1>
-
-                <div class="tn-price mb-3" style="font-size: 2.4rem;"><span class="tn-price-currency">$</span>{{ number_format((float) $product->price, 2, ',', '.') }}</div>
-
-                @if($product->description)
-                    <p class="text-muted mb-3">{{ $product->description }}</p>
-                @endif
-
-                <div class="mb-4">
+                <h1 class="h4 mt-1 mb-2">{{ $product->name }}</h1>
+                <div class="d-flex align-items-center gap-2 mb-3">
                     @if($stock <= 0)
                         <span class="tn-badge-off">Sin stock por ahora</span>
                     @elseif($stock <= 10)
@@ -55,26 +51,44 @@
                         <span class="tn-badge-ok"><i class="fas fa-check me-1"></i> Quedan {{ $stock }} unidades</span>
                     @endif
                 </div>
-
-                @if($stock > 0)
-                    @if($justAdded)
-                        <div class="alert-tn-info p-3 d-flex align-items-center justify-content-between">
-                            <span><i class="fas fa-circle-check me-1"></i> Lo agregamos al carrito.</span>
-                            <a href="{{ route('tienda.cart') }}" class="btn btn-tn-primary btn-sm">Ver carrito</a>
-                        </div>
-                    @else
-                        <form wire:submit="addToCart" class="d-flex align-items-center gap-2">
-                            <div class="tn-stepper">
-                                <button type="button" wire:click="decrementQuantity" {{ $quantity <= 1 ? 'disabled' : '' }}>−</button>
-                                <input type="number" wire:model="quantity" min="1" max="{{ $stock }}" readonly>
-                                <button type="button" wire:click="incrementQuantity" {{ $quantity >= $stock ? 'disabled' : '' }}>+</button>
-                            </div>
-                            <button type="submit" class="btn btn-tn-primary flex-grow-1">
-                                <i class="fas fa-cart-plus me-1"></i> Agregar al carrito
-                            </button>
-                        </form>
-                    @endif
+                @if($product->description)
+                    <p class="text-muted">{{ $product->description }}</p>
                 @endif
+            </div>
+
+            {{-- Buy-box --}}
+            <div class="col-12 col-md-3">
+                <div class="tn-card p-3 p-md-4">
+                    <div class="tn-price mb-1" style="font-size: 2rem;"><span class="tn-price-currency">$</span>{{ number_format((float) $product->price, 2, ',', '.') }}</div>
+                    @if((float) $product->price >= 3000)
+                        <div class="tn-installments mb-3">Hasta 3x $ {{ number_format((float) $product->price / 3, 2, ',', '.') }}</div>
+                    @endif
+
+                    @if($stock > 0)
+                        @if($justAdded)
+                            <div class="alert-tn-info p-3 mb-0">
+                                <div class="mb-2"><i class="fas fa-circle-check me-1"></i> Lo agregamos al carrito.</div>
+                                <a href="{{ route('tienda.cart') }}" class="btn btn-tn-primary btn-sm w-100">Ver carrito</a>
+                            </div>
+                        @else
+                            <form wire:submit="addToCart">
+                                <label class="form-label small mb-1">Cantidad</label>
+                                <div class="tn-stepper mb-3 w-100">
+                                    <button type="button" wire:click="decrementQuantity" {{ $quantity <= 1 ? 'disabled' : '' }}>−</button>
+                                    <input type="number" wire:model="quantity" min="1" max="{{ $stock }}" readonly style="flex: 1;">
+                                    <button type="button" wire:click="incrementQuantity" {{ $quantity >= $stock ? 'disabled' : '' }}>+</button>
+                                </div>
+                                <button type="submit" class="btn btn-tn-primary w-100">
+                                    <i class="fas fa-cart-plus me-1"></i> Agregar al carrito
+                                </button>
+                            </form>
+                        @endif
+                    @endif
+
+                    <div class="d-flex align-items-center gap-2 mt-3 pt-3" style="border-top: 1px solid var(--tn-line); font-size: .8rem; color: var(--tn-muted);">
+                        <i class="fas fa-shop"></i> Mismo precio que en el local
+                    </div>
+                </div>
             </div>
         </div>
     </div>

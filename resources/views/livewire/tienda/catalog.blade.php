@@ -110,9 +110,15 @@
         <main class="col-12 col-md-9 col-lg-10" id="tn-grid">
 
             <div class="tn-card d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-between p-3 mb-4">
-                <div class="position-relative" style="max-width: 420px; width: 100%;">
-                    <i class="fas fa-magnifying-glass position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); color: var(--tn-muted); font-size: .85rem;"></i>
-                    <input type="text" wire:model.live.debounce.400ms="query" class="form-control" style="padding-left: 2.3rem;" placeholder="Buscar en el catálogo...">
+                <div>
+                    @if($query !== '')
+                        <span class="fw-bold">Resultados para "{{ $query }}"</span>
+                        <button type="button" wire:click="$set('query', '')" class="btn btn-sm btn-link p-0 ms-2 text-decoration-none">Quitar</button>
+                    @elseif($categoryId)
+                        <span class="fw-bold">{{ $categories->firstWhere('id', $categoryId)?->name ?? 'Categoría' }}</span>
+                    @else
+                        <span class="text-muted small">{{ $products->total() }} productos</span>
+                    @endif
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">Ordenar:</span>
@@ -144,7 +150,7 @@
                             </div>
                             <div class="p-3">
                                 <div style="font-size: .72rem; color: var(--tn-muted); font-weight: 600;">{{ $item->category?->name ?? 'General' }}</div>
-                                <div style="color: var(--tn-ink); font-weight: 700; font-size: .92rem; margin: .2rem 0 .5rem; line-height: 1.3;" class="text-truncate">
+                                <div style="color: var(--tn-ink); font-weight: 700; font-size: .92rem; margin: .2rem 0 .5rem; line-height: 1.3; min-height: 2.4em;" class="text-truncate-2">
                                     {{ $item->name }}
                                 </div>
                                 <div class="d-flex align-items-baseline justify-content-between">
@@ -153,6 +159,9 @@
                                         <span style="font-size: .72rem; font-weight: 700; color: #B3261E;">Quedan {{ $stock }}</span>
                                     @endif
                                 </div>
+                                @if((float) $item->price >= 3000)
+                                    <div class="tn-installments mt-1">Hasta 3x $ {{ number_format((float) $item->price / 3, 2, ',', '.') }}</div>
+                                @endif
                             </div>
                         </a>
                     </div>
