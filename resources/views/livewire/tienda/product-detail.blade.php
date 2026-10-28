@@ -28,7 +28,7 @@
     <div class="{{ $stock > 0 && ! $justAdded ? 'tn-sticky-cta-pad' : '' }}">
         <div class="row g-4 g-md-5">
             {{-- Panel izquierdo: imagen --}}
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-7">
                 <div class="tn-card d-flex align-items-center justify-content-center p-4" style="aspect-ratio: 1;">
                     @if($product->imageUrl())
                         <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" style="max-width: 85%; max-height: 85%; object-fit: contain;">
@@ -39,7 +39,7 @@
             </div>
 
             {{-- Panel derecho: categoría, nombre, stock, y abajo precio/cantidad/botones --}}
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-5">
                 <div style="font-size: .8rem; color: var(--tn-muted); font-weight: 600;">{{ $product->category?->name ?? 'General' }}</div>
                 <h1 class="h3 mt-1 mb-2">{{ $product->name }}</h1>
                 <div class="d-flex align-items-center gap-2 mb-3">
