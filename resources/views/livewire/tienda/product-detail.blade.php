@@ -26,30 +26,25 @@
         $ph = $tnPh[$product->id % count($tnPh)];
     @endphp
     <div class="{{ $stock > 0 && ! $justAdded ? 'tn-sticky-cta-pad' : '' }}">
-        <div class="row g-4 g-md-5">
+        <div class="row g-4 g-md-5" id="tnPdRow" style="position: relative;">
             {{-- Panel izquierdo: imagen --}}
             <div class="col-12 col-md-7">
-                <div class="tn-zoom-wrap" style="position: relative;">
-                    <div class="tn-card d-flex align-items-center justify-content-center p-4" style="aspect-ratio: 1;"
-                        @if($product->imageUrl())
-                            onmouseenter="tnZoomShow(this)" onmouseleave="tnZoomHide(this)" onmousemove="tnZoomMove(event, this)"
-                        @endif
-                    >
-                        @if($product->imageUrl())
-                            <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" style="max-width: 85%; max-height: 85%; object-fit: contain;">
-                        @else
-                            <div class="tn-media-ph tn-media-ph-lg" style="background: {{ $ph['bg'] }}; width: 100%; height: 100%; border-radius: 12px;"><i class="fas {{ $ph['icon'] }}"></i></div>
-                        @endif
-                    </div>
+                <div class="tn-card d-flex align-items-center justify-content-center p-4" style="aspect-ratio: 1;"
                     @if($product->imageUrl())
-                        <div class="tn-zoom-pane" style="background-image: url('{{ $product->imageUrl() }}');"></div>
+                        onmouseenter="tnZoomShow(this)" onmouseleave="tnZoomHide(this)" onmousemove="tnZoomMove(event, this)"
+                    @endif
+                >
+                    @if($product->imageUrl())
+                        <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" style="max-width: 85%; max-height: 85%; object-fit: contain;">
+                    @else
+                        <div class="tn-media-ph tn-media-ph-lg" style="background: {{ $ph['bg'] }}; width: 100%; height: 100%; border-radius: 12px;"><i class="fas {{ $ph['icon'] }}"></i></div>
                     @endif
                 </div>
             </div>
 
             {{-- Panel derecho: categoría, nombre, stock, y abajo precio/cantidad/botones --}}
             <div class="col-12 col-md-5">
-                <div class="tn-card p-3 p-md-4 h-100">
+                <div class="tn-card p-3 p-md-4 h-100" id="tnPdInfoCard">
                     <div style="font-size: .8rem; color: var(--tn-muted); font-weight: 600;">{{ $product->category?->name ?? 'General' }}</div>
                     <h1 class="h3 mt-1 mb-2">{{ $product->name }}</h1>
                     <div class="d-flex align-items-center gap-2 mb-3">
@@ -97,6 +92,10 @@
                     </div>
                 </div>
             </div>
+
+            @if($product->imageUrl())
+                <div class="tn-zoom-pane" style="background-image: url('{{ $product->imageUrl() }}');"></div>
+            @endif
         </div>
     </div>
 </div>
@@ -116,16 +115,36 @@
 @endif
 
 <script>
+    // El panel de zoom se calca exacto sobre la card de categoría/precio
+    // (mismo top/left/width/height), no un recuadro de tamaño fijo propio
+    // — así nunca se sale de ese recuadro, solo lo "reemplaza" visualmente
+    // mientras se pasa el mouse por la foto.
+    function tnZoomPositionPane(el) {
+        var row = el.closest('#tnPdRow');
+        var pane = row ? row.querySelector('.tn-zoom-pane') : null;
+        var infoCard = row ? row.querySelector('#tnPdInfoCard') : null;
+        if (!pane || !infoCard) return null;
+
+        var rowRect = row.getBoundingClientRect();
+        var infoRect = infoCard.getBoundingClientRect();
+        pane.style.top = (infoRect.top - rowRect.top) + 'px';
+        pane.style.left = (infoRect.left - rowRect.left) + 'px';
+        pane.style.width = infoRect.width + 'px';
+        pane.style.height = infoRect.height + 'px';
+
+        return pane;
+    }
     function tnZoomShow(el) {
-        var pane = el.closest('.tn-zoom-wrap').querySelector('.tn-zoom-pane');
+        var pane = tnZoomPositionPane(el);
         if (pane) pane.style.display = 'block';
     }
     function tnZoomHide(el) {
-        var pane = el.closest('.tn-zoom-wrap').querySelector('.tn-zoom-pane');
+        var row = el.closest('#tnPdRow');
+        var pane = row ? row.querySelector('.tn-zoom-pane') : null;
         if (pane) pane.style.display = 'none';
     }
     function tnZoomMove(event, el) {
-        var pane = el.closest('.tn-zoom-wrap').querySelector('.tn-zoom-pane');
+        var pane = tnZoomPositionPane(el);
         if (!pane) return;
         var rect = el.getBoundingClientRect();
         var x = ((event.clientX - rect.left) / rect.width) * 100;

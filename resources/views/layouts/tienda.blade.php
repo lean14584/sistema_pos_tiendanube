@@ -296,14 +296,16 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
 
         /* ---------- Zoom de imagen en el detalle (hover, estilo ML) ----------
            Oculto por defecto (y en touch, que no tiene mousemove); solo se
-           activa por JS en dispositivos con mouse real. */
+           activa por JS en dispositivos con mouse real. top/left/width/height
+           los fija el JS para calcar exacto el recuadro de #tnPdInfoCard —
+           overflow:hidden asegura que la imagen ampliada nunca se salga de
+           ese recuadro. */
         .tn-zoom-pane { display: none; }
         @media (hover: hover) and (pointer: fine) {
             .tn-zoom-pane {
-                position: absolute; top: 0; left: calc(100% + 1.5rem);
-                width: 420px; height: 420px; max-width: 40vw;
+                position: absolute; overflow: hidden;
                 background-color: #fff; background-repeat: no-repeat; background-size: 220%;
-                border: 1px solid var(--tn-line); border-radius: 12px;
+                border: 1px solid var(--tn-line); border-radius: 16px;
                 box-shadow: 0 16px 32px rgba(20,24,31,.16);
                 z-index: 20; pointer-events: none;
             }
