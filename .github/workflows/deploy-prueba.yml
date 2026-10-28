@@ -1,0 +1,95 @@
+name: Tests y deploy a prueba
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite, dom, curl, libxml, bcmath
+          coverage: none
+
+      - name: Instalar dependencias de Composer
+        run: composer install --no-progress --prefer-dist
+
+      - name: Preparar .env de testing
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Correr la suite de tests
+        run: php artisan test
+
+  deploy:
+    name: Deploy a prueba.jjsoftware.click
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias de npm
+        run: npm ci
+
+      # Tailwind v4 es JIT: el CSS final solo contiene las clases que
+      # existían en el código fuente al momento del build. Sin este paso
+      # (o si solo se sube el .blade.php sin rebuildear), cualquier clase
+      # nueva queda invisible en producción — gotcha recurrente de este
+      # proyecto, ver memoria "gotcha_tailwind_jit_build_olvidado".
+      - name: Build de assets (Tailwind/Vite)
+        run: npm run build
+
+      # Este hosting (arquitectura sibling-folder, igual que decohogar y
+      # pos-tiendanube) guarda el código de Laravel en /sistema/ y sirve
+      # estáticos desde /public_html/ — DOS copias separadas, no un
+      # symlink. Este primer paso sube todo el código (menos lo que no
+      # corresponde subir por FTP) a /sistema/, incluyendo
+      # sistema/public/build/ (de ahí lee Laravel el manifest.json de Vite
+      # para generar el <link> del HTML).
+      - name: Subir código a sistema/
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: prueba.jjsoftware.click
+          username: ${{ secrets.PRUEBA_FTP_USERNAME }}
+          password: ${{ secrets.PRUEBA_FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: /sistema/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/node_modules/**/*
+            **/vendor/**
+            **/vendor/**/*
+            **/tests/**
+            **/tests/**/*
+            **/.env
+            **/.env.example
+            **/storage/**
+            **/storage/**/*
+            **/.github/**
+            **/.github/**/*
+
+      # Segunda copia: lo que el navegador pide directo (CSS/JS con hash)
+      # vive en public_html/build/, no en sistema/public/build/ — sin este
+      # paso, el HTML (generado leyendo el manifest de sistema/) apuntaría
+      # a archivos que el webserver no tiene. Ver el mismo gotcha de arriba.
+      - name: Subir build de assets a public_html/
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: prueba.jjsoftware.click
+          username: ${{ secrets.PRUEBA_FTP_USERNAME }}
+          password: ${{ secrets.PRUEBA_FTP_PASSWORD }}
+          local-dir: ./public/build/
+          server-dir: /public_html/build/
