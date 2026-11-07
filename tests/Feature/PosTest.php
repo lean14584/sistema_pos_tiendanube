@@ -909,4 +909,36 @@ class PosTest extends TestCase
         $component->assertOk();
         $this->assertSame([], $component->get('payments'));
     }
+
+    public function test_el_resumen_de_medios_de_pago_solo_aparece_con_mas_de_uno_cargado(): void
+    {
+        // "Tarjeta"/"Efectivo" y el monto formateado como texto no sirven
+        // para distinguir si el resumen está o no: el primero es siempre
+        // una <option> del select de cada renglón (cargado o no), y el
+        // segundo coincide con "Pagado (precio de lista)" apenas hay un
+        // solo pago cargado (es la misma suma). Lo único que realmente
+        // marca si el bloque de resumen se renderizó es su propio wrapper.
+        $resumenWrapper = 'rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden';
+
+        $admin = $this->admin();
+        $product = Product::create(['name' => 'Producto', 'price' => 10000, 'iva_rate' => 0, 'stock' => 5]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('addPayment')
+            ->set('payments.0.method', 'tarjeta')
+            ->set('payments.0.amount', '5000');
+
+        $this->assertStringNotContainsString($resumenWrapper, $pos->html());
+
+        $pos->call('addPayment')
+            ->set('payments.1.method', 'efectivo')
+            ->set('payments.1.amount', '5000');
+
+        $html = $pos->html();
+        $this->assertStringContainsString($resumenWrapper, $html);
+        $this->assertStringContainsString('Tarjeta', $html);
+        $this->assertStringContainsString('Efectivo', $html);
+    }
 }

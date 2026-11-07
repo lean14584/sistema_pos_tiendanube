@@ -294,6 +294,26 @@
                     </div>
 
                     {{--
+                        Con 2+ medios cargados, un resumen de solo lectura
+                        arriba de los renglones ayuda a repasar de un vistazo
+                        qué se cargó sin tener que leer cada select/input -
+                        con uno solo no hace falta, ya se ve en su propio
+                        renglón. No reemplaza los renglones editables de
+                        abajo (ver comentario siguiente): esto es solo un
+                        resumen, la carga/edición sigue siendo por renglón.
+                    --}}
+                    @if (count($payments) > 1)
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
+                            @foreach ($payments as $payment)
+                                <div class="flex items-center justify-between px-3 py-1.5 text-sm bg-gray-50/60 dark:bg-gray-800/40">
+                                    <span class="text-gray-600 dark:text-gray-300">{{ $this->paymentMethodLabel($payment) }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-gray-100">${{ money((float) ($payment['amount'] ?? 0)) }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    {{--
                         Medio y monto comparten renglón al 50/50, con un botón
                         "Cargar" explícito ABAJO (ancho completo): antes method/
                         amount quedaban en dos líneas y se guardaban solos apenas

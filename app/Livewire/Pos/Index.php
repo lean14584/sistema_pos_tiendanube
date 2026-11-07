@@ -654,6 +654,21 @@ class Index extends Component
     }
 
     /**
+     * Nombre legible del medio de pago de un renglón de $payments, para el
+     * resumen que se muestra arriba de los renglones editables cuando hay
+     * más de uno cargado (con un solo medio no hace falta, ya se ve en el
+     * propio renglón).
+     *
+     * @param  array{method: string, amount: string}  $payment
+     */
+    public function paymentMethodLabel(array $payment): string
+    {
+        $method = PaymentMethod::tryFrom($payment['method'] ?? '');
+
+        return $method?->label() ?? 'Sin elegir';
+    }
+
+    /**
      * Total que termina cobrándose (y facturándose) una vez aplicado el
      * descuento por medio de pago, cuando la venta se paga completa en el
      * momento. Si queda saldo en cuenta corriente no se aplica ningún
