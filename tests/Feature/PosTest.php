@@ -677,6 +677,43 @@ class PosTest extends TestCase
         $this->assertDatabaseCount('invoices', 0);
     }
 
+    public function test_cargar_un_pago_que_cubre_el_total_limpia_el_error_de_saldo_pendiente(): void
+    {
+        $admin = $this->admin();
+        $product = Product::create(['name' => 'Pan', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index') // client_id queda en Consumidor Final por defecto
+            ->call('addProduct', $product->id)
+            ->call('cobrar') // sin pagos => quedaría saldo a Consumidor Final
+            ->assertHasErrors('client_id');
+
+        // Cargar un medio de pago que cubre el total es la forma de resolver
+        // ese error — no debería quedar pegado en pantalla si el cajero ya
+        // solucionó lo que lo causaba, sin necesidad de reintentar "Cobrar".
+        $pos->call('addPayment')
+            ->set('payments.0.method', 'efectivo')
+            ->assertHasNoErrors('client_id');
+    }
+
+    public function test_elegir_un_cliente_real_limpia_el_error_de_saldo_pendiente(): void
+    {
+        $admin = $this->admin();
+        $cliente = Client::create(['name' => 'Cliente Real', 'email' => 'cliente-real@test.com', 'credit_limit' => 10000]);
+        $product = Product::create(['name' => 'Pan', 'price' => 1000, 'iva_rate' => 0, 'stock' => 10]);
+        CashSession::create(['user_id' => $admin->id, 'sucursal_id' => Sucursal::sole()->id, 'status' => 'open', 'opened_at' => now(), 'opening_amount' => 0]);
+
+        $pos = Livewire::actingAs($admin)
+            ->test('pos.index')
+            ->call('addProduct', $product->id)
+            ->call('cobrar')
+            ->assertHasErrors('client_id');
+
+        $pos->set('client_id', $cliente->id)
+            ->assertHasNoErrors('client_id');
+    }
+
     public function test_descuento_por_medio_de_pago_se_aplica_prorrateado_cuando_la_venta_queda_pagada_por_completo(): void
     {
         $admin = $this->admin();

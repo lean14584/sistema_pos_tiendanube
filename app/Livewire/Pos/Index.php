@@ -165,6 +165,12 @@ class Index extends Component
         $client = Client::find($value);
         $this->price_list_id = $client?->price_list_id;
         $this->repriceCart();
+
+        // Elegir un cliente real es justamente la forma de resolver el error
+        // "elegí un cliente real para cargarlo a su cuenta corriente" de un
+        // intento de cobro anterior — si se queda pegado en pantalla después
+        // de este cambio, parece que la venta sigue bloqueada aunque ya no lo esté.
+        $this->resetErrorBag('client_id');
     }
 
     public function updatedPriceListId(): void
@@ -836,6 +842,13 @@ class Index extends Component
                 $this->payments,
                 fn (array $p) => isset($p['method'], $p['amount'])
             ));
+
+            // Cargar o ajustar un medio de pago es la forma de resolver los
+            // errores de "saldo pendiente"/"lo pagado supera el total" de un
+            // intento de cobro anterior — sin esto, el cartel rojo quedaba
+            // pegado en pantalla aunque el pago ya cubriera el total, y el
+            // cajero no sabía si la venta se podía cerrar o no.
+            $this->resetErrorBag(['client_id', 'payments']);
         }
 
         if (str_starts_with($name, 'itemsADevolver.')) {
