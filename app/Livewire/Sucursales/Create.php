@@ -4,6 +4,7 @@ namespace App\Livewire\Sucursales;
 
 use App\Models\PuntoVenta;
 use App\Models\Sucursal;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -33,13 +34,19 @@ class Create extends Component
         $puntoVentaNumero = (int) $data['punto_venta'];
         unset($data['punto_venta']);
 
-        $sucursal = Sucursal::create($data);
+        // Dos escrituras relacionadas: una sucursal sin su punto de venta
+        // (si la segunda falla) no puede facturar nada.
+        $sucursal = DB::transaction(function () use ($data, $puntoVentaNumero) {
+            $sucursal = Sucursal::create($data);
 
-        PuntoVenta::create([
-            'sucursal_id' => $sucursal->id,
-            'numero' => $puntoVentaNumero,
-            'active' => true,
-        ]);
+            PuntoVenta::create([
+                'sucursal_id' => $sucursal->id,
+                'numero' => $puntoVentaNumero,
+                'active' => true,
+            ]);
+
+            return $sucursal;
+        });
 
         session()->flash('status', 'Sucursal creada.');
         $this->redirect(route('sucursales.index'), navigate: true);

@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\PuntoVenta;
 use App\Models\Sucursal;
 use App\Models\SucursalMercadoPagoConfig;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -150,6 +151,7 @@ class Edit extends Component
         $hayDatosDeMp = filled($data['mp_access_token']) || filled($data['mp_webhook_secret']) || filled($data['mp_store_external_id'])
             || filled($data['mp_pos_external_id']) || filled($data['mp_store_name']) || filled($data['mp_pos_name']);
 
+        $mpData = null;
         if ($hayDatosDeMp || $this->sucursal->mercadoPagoConfig) {
             $mpData = [
                 'store_external_id' => $data['mp_store_external_id'] ?: null,
@@ -166,13 +168,19 @@ class Edit extends Component
             if (filled($data['mp_webhook_secret'])) {
                 $mpData['webhook_secret'] = $data['mp_webhook_secret'];
             }
-
-            SucursalMercadoPagoConfig::updateOrCreate(['sucursal_id' => $this->sucursal->id], $mpData);
         }
 
         unset($data['mp_access_token'], $data['mp_webhook_secret'], $data['mp_store_external_id'], $data['mp_pos_external_id'], $data['mp_store_name'], $data['mp_pos_name']);
 
-        $this->sucursal->update($data);
+        // Dos escrituras relacionadas (sucursal + su config de Mercado Pago)
+        // de un mismo guardado — una sola transacción.
+        DB::transaction(function () use ($data, $mpData) {
+            $this->sucursal->update($data);
+
+            if ($mpData !== null) {
+                SucursalMercadoPagoConfig::updateOrCreate(['sucursal_id' => $this->sucursal->id], $mpData);
+            }
+        });
 
         session()->flash('status', 'Sucursal actualizada.');
 

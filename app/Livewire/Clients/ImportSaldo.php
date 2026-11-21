@@ -27,7 +27,8 @@ class ImportSaldo extends Component
 
     /**
      * No crea clientes nuevos: solo carga el saldo de apertura de clientes
-     * ya existentes (matcheados por CUIT/DNI o, si no, por nombre exacto).
+     * ya existentes (matcheados por CUIT/DNI o, si no, por nombre exacto
+     * salvo mayúsculas/minúsculas).
      *
      * @return array{creados: int, actualizados: int, omitidos: array<int, string>}
      */
@@ -39,9 +40,13 @@ class ImportSaldo extends Component
         // MEJORA: cada fila disparaba 1-2 queries (Client::where('tax_id',...)
         // y, si no matcheaba, Client::where('name',...)) — precargado una
         // sola vez en memoria, mismo patrón que Clients\Import.
+        // MEJORA: el match por nombre era sensible a mayúsculas/minúsculas
+        // (a diferencia de Clients\Import, que ya normaliza con
+        // mb_strtolower) — una fila con distinta capitalización que la base
+        // no encontraba al cliente y se omitía el saldo en vez de cargarlo.
         $todosLosClientes = Client::all();
-        $clientesPorTaxId = $todosLosClientes->filter(fn (Client $c) => filled($c->tax_id))->keyBy('tax_id');
-        $clientesPorNombre = $todosLosClientes->keyBy('name');
+        $clientesPorTaxId = $todosLosClientes->filter(fn (Client $c) => filled($c->tax_id))->keyBy(fn (Client $c) => mb_strtolower($c->tax_id));
+        $clientesPorNombre = $todosLosClientes->keyBy(fn (Client $c) => mb_strtolower($c->name));
 
         DB::transaction(function () use ($filas, &$actualizados, &$omitidos, $clientesPorTaxId, $clientesPorNombre) {
             foreach ($filas as $numero => $fila) {
@@ -63,10 +68,10 @@ class ImportSaldo extends Component
 
                 $cliente = null;
                 if ($taxId !== '') {
-                    $cliente = $clientesPorTaxId->get($taxId);
+                    $cliente = $clientesPorTaxId->get(mb_strtolower($taxId));
                 }
                 if (! $cliente && $nombre !== '') {
-                    $cliente = $clientesPorNombre->get($nombre);
+                    $cliente = $clientesPorNombre->get(mb_strtolower($nombre));
                 }
 
                 if (! $cliente) {

@@ -148,6 +148,13 @@ class Index extends Component
 
     public function save(): void
     {
+        // Mismo criterio que Discounts\Index: crear/editar una promoción (no
+        // solo borrarla) queda reservado a Admin/Encargado — sin este
+        // chequeo, un Vendedor (que sí tiene el módulo "promotions" para
+        // verlas/usarlas en el POS) podía dar de alta o modificar promos de
+        // toda la empresa, igual que ya estaba protegido delete() más abajo.
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para gestionar promociones.');
+
         $this->validate();
 
         if ($this->seSuperponeConOtraPromo()) {
@@ -187,6 +194,8 @@ class Index extends Component
 
     public function toggle(Promotion $promotion): void
     {
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para gestionar promociones.');
+
         $promotion->update(['active' => ! $promotion->active]);
     }
 

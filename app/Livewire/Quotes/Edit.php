@@ -78,10 +78,6 @@ class Edit extends Component
             return;
         }
 
-        if ($this->quote->status === QuoteStatus::Converted) {
-            return;
-        }
-
         $this->validate([
             'client_id' => ['required', 'exists:clients,id'],
             'issue_date' => ['required', 'date'],
@@ -101,6 +97,14 @@ class Edit extends Component
 
             return;
         }
+
+        // Re-chequeo por si se convirtió a factura desde otra pestaña
+        // mientras esta seguía abierta con datos viejos (mismo mecanismo que
+        // Invoices\Edit::saveInterno() con el CAE): el lock de arriba es por
+        // edición ('quotes:edit:ID'), distinto del de conversión
+        // ('quote:convert:ID') en Quotes\Show, así que no sirve para
+        // serializar entre los dos — hace falta releer de la base.
+        abort_if($this->quote->fresh()->status === QuoteStatus::Converted, 403, 'Este presupuesto ya fue convertido a factura y no puede editarse.');
 
         // Recién acá, pasadas todas las validaciones: una falla de
         // validación legítima no debe dejar al usuario sin poder reintentar.

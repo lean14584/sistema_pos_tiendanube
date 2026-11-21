@@ -59,15 +59,17 @@ class Account extends Component
             return;
         }
 
-        $payment = ProviderPayment::create([
-            'provider_id' => $this->provider->id,
-            'date' => $this->date,
-            'amount' => $this->amount,
-            'method' => $this->method,
-            'notes' => $this->notes ?: null,
-        ]);
+        DB::transaction(function () {
+            $payment = ProviderPayment::create([
+                'provider_id' => $this->provider->id,
+                'date' => $this->date,
+                'amount' => $this->amount,
+                'method' => $this->method,
+                'notes' => $this->notes ?: null,
+            ]);
 
-        CashLinker::linkProviderPayment($payment);
+            CashLinker::linkProviderPayment($payment);
+        });
 
         $this->amount = '';
         $this->notes = '';

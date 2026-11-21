@@ -35,9 +35,14 @@ class Import extends Component
         // MEJORA: cada fila disparaba 1-2 queries (Provider::where('tax_id',...)
         // y, si no matcheaba, Provider::where('name',...)) — precargado una
         // sola vez en memoria, mismo patrón que Clients\Import.
+        // MEJORA: el match por nombre era sensible a mayúsculas/minúsculas
+        // (a diferencia de Clients\Import, que ya normaliza con
+        // mb_strtolower) — "distribuidora norte" en el Excel no encontraba a
+        // "Distribuidora Norte" en la base y creaba un proveedor duplicado
+        // en vez de actualizar el existente.
         $todosLosProveedores = Provider::all();
-        $proveedoresPorTaxId = $todosLosProveedores->filter(fn (Provider $p) => filled($p->tax_id))->keyBy('tax_id');
-        $proveedoresPorNombre = $todosLosProveedores->keyBy('name');
+        $proveedoresPorTaxId = $todosLosProveedores->filter(fn (Provider $p) => filled($p->tax_id))->keyBy(fn (Provider $p) => mb_strtolower($p->tax_id));
+        $proveedoresPorNombre = $todosLosProveedores->keyBy(fn (Provider $p) => mb_strtolower($p->name));
 
         DB::transaction(function () use ($filas, &$creados, &$actualizados, &$omitidos, $proveedoresPorTaxId, $proveedoresPorNombre) {
             foreach ($filas as $numero => $fila) {
@@ -71,10 +76,10 @@ class Import extends Component
 
                 $existente = null;
                 if (! empty($datos['tax_id'])) {
-                    $existente = $proveedoresPorTaxId->get($datos['tax_id']);
+                    $existente = $proveedoresPorTaxId->get(mb_strtolower($datos['tax_id']));
                 }
                 if (! $existente) {
-                    $existente = $proveedoresPorNombre->get($nombre);
+                    $existente = $proveedoresPorNombre->get(mb_strtolower($nombre));
                 }
 
                 if ($existente) {
@@ -89,9 +94,9 @@ class Import extends Component
                     // Una fila duplicada más adelante en el mismo Excel tiene
                     // que encontrar este proveedor recién creado.
                     if (filled($nuevo->tax_id)) {
-                        $proveedoresPorTaxId->put($nuevo->tax_id, $nuevo);
+                        $proveedoresPorTaxId->put(mb_strtolower($nuevo->tax_id), $nuevo);
                     }
-                    $proveedoresPorNombre->put($nuevo->name, $nuevo);
+                    $proveedoresPorNombre->put(mb_strtolower($nuevo->name), $nuevo);
 
                     $creados++;
                 }

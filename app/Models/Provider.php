@@ -44,7 +44,11 @@ class Provider extends Model
      */
     public function debitLines(): Collection
     {
-        $this->loadMissing(['purchases' => fn ($q) => $q->whereNot('status', 'draft')->with('items', 'payments')]);
+        // MEJORA: traía también 'items' de cada compra (with('items',
+        // 'payments')) aunque nunca se usan acá abajo — ni en la pantalla
+        // de cuenta corriente, ni en el PDF/email de resumen (únicos
+        // consumidores de este método). Mismo fix que Client::debitLines().
+        $this->loadMissing(['purchases' => fn ($q) => $q->whereNot('status', 'draft')->with('payments')]);
 
         $lineas = $this->purchases
             ->map(fn (Purchase $p) => [

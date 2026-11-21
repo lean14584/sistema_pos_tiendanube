@@ -1032,8 +1032,14 @@ class Index extends Component
         $priceList = $this->currentPriceList();
         $ocultarIva = CompanySettings::current()->debeOcultarIvaPorItem();
 
+        // Antes resolvía Product::find() por cada línea del carrito (una
+        // query por producto distinto, en vez de una sola) — mismo criterio
+        // que repriceCart(): se trae todo el catálogo involucrado de una vez.
+        $productIds = collect($this->cart)->pluck('product_id')->filter()->unique()->all();
+        $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+
         foreach ($this->cart as $i => $item) {
-            $product = Product::find($item['product_id'] ?? null);
+            $product = $products->get($item['product_id'] ?? null);
 
             if (! $product) {
                 unset($this->cart[$i]);

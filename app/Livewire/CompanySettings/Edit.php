@@ -10,6 +10,7 @@ use App\Models\PuntoVenta;
 use App\Models\Sucursal;
 use App\Models\SucursalMercadoPagoConfig;
 use App\Support\ThemeCss;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\MessageBag;
@@ -393,33 +394,37 @@ class Edit extends Component
         $data['tienda_online_sucursal_id'] = $data['tienda_online_sucursal_id'] !== '' ? $data['tienda_online_sucursal_id'] : null;
 
         if (! config('features.multisucursal') && $this->sucursal) {
-            $this->sucursal->update([
-                'name' => $data['sucursal_name'],
-                'razon_social' => $data['sucursal_razon_social'],
-                'active' => $data['sucursal_active'],
-            ]);
+            // Dos escrituras relacionadas (sucursal + su config de Mercado
+            // Pago) de un mismo guardado — una sola transacción.
+            DB::transaction(function () use ($data) {
+                $this->sucursal->update([
+                    'name' => $data['sucursal_name'],
+                    'razon_social' => $data['sucursal_razon_social'],
+                    'active' => $data['sucursal_active'],
+                ]);
 
-            $hayDatosDeMp = filled($data['mp_access_token']) || filled($data['mp_webhook_secret']) || filled($data['mp_store_external_id'])
-                || filled($data['mp_pos_external_id']) || filled($data['mp_store_name']) || filled($data['mp_pos_name']);
+                $hayDatosDeMp = filled($data['mp_access_token']) || filled($data['mp_webhook_secret']) || filled($data['mp_store_external_id'])
+                    || filled($data['mp_pos_external_id']) || filled($data['mp_store_name']) || filled($data['mp_pos_name']);
 
-            if ($hayDatosDeMp || $this->sucursal->mercadoPagoConfig) {
-                $mpData = [
-                    'store_external_id' => $data['mp_store_external_id'] ?: null,
-                    'pos_external_id' => $data['mp_pos_external_id'] ?: null,
-                    'store_name' => $data['mp_store_name'] ?: null,
-                    'pos_name' => $data['mp_pos_name'] ?: null,
-                ];
-                // Campo vacío = "no cambiar" el token/secret ya guardado
-                // (nunca se precarga el real, ver mount()).
-                if (filled($data['mp_access_token'])) {
-                    $mpData['access_token'] = $data['mp_access_token'];
+                if ($hayDatosDeMp || $this->sucursal->mercadoPagoConfig) {
+                    $mpData = [
+                        'store_external_id' => $data['mp_store_external_id'] ?: null,
+                        'pos_external_id' => $data['mp_pos_external_id'] ?: null,
+                        'store_name' => $data['mp_store_name'] ?: null,
+                        'pos_name' => $data['mp_pos_name'] ?: null,
+                    ];
+                    // Campo vacío = "no cambiar" el token/secret ya guardado
+                    // (nunca se precarga el real, ver mount()).
+                    if (filled($data['mp_access_token'])) {
+                        $mpData['access_token'] = $data['mp_access_token'];
+                    }
+                    if (filled($data['mp_webhook_secret'])) {
+                        $mpData['webhook_secret'] = $data['mp_webhook_secret'];
+                    }
+
+                    SucursalMercadoPagoConfig::updateOrCreate(['sucursal_id' => $this->sucursal->id], $mpData);
                 }
-                if (filled($data['mp_webhook_secret'])) {
-                    $mpData['webhook_secret'] = $data['mp_webhook_secret'];
-                }
-
-                SucursalMercadoPagoConfig::updateOrCreate(['sucursal_id' => $this->sucursal->id], $mpData);
-            }
+            });
         }
 
         unset(

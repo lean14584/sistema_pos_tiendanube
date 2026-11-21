@@ -6,6 +6,7 @@ use App\Livewire\Concerns\ShowsToasts;
 use App\Models\Product;
 use App\Models\PromotionGroup;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -116,6 +117,11 @@ class Index extends Component
 
     public function save(): void
     {
+        // Mismo criterio que Discounts\Index y Promotions\Index: solo
+        // Admin/Encargado pueden crear/editar una familia de promoción, no
+        // solo borrarla (ver delete() más abajo).
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para gestionar familias de promoción.');
+
         $this->validate();
 
         if (count($this->selected) < 2) {
@@ -133,11 +139,16 @@ class Index extends Component
             'ends_at' => $this->ends_at ?: null,
         ];
 
-        $group = $this->editingId
-            ? tap(PromotionGroup::findOrFail($this->editingId))->update($data)
-            : PromotionGroup::create($data);
+        // update()/create() + sync() de la tabla pivote son dos escrituras
+        // relacionadas — sin transacción, una falla entre medio deja la
+        // familia guardada con los productos viejos (o ninguno).
+        DB::transaction(function () use ($data) {
+            $group = $this->editingId
+                ? tap(PromotionGroup::findOrFail($this->editingId))->update($data)
+                : PromotionGroup::create($data);
 
-        $group->products()->sync(array_keys($this->selected));
+            $group->products()->sync(array_keys($this->selected));
+        });
 
         $this->cancel();
         session()->flash('status', 'Familia de promoción guardada.');
@@ -145,6 +156,8 @@ class Index extends Component
 
     public function toggle(PromotionGroup $promotionGroup): void
     {
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para gestionar familias de promoción.');
+
         $promotionGroup->update(['active' => ! $promotionGroup->active]);
     }
 

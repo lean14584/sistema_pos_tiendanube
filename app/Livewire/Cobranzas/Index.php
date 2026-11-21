@@ -15,6 +15,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -137,16 +138,18 @@ class Index extends Component
             return;
         }
 
-        $payment = ClientPayment::create([
-            'client_id' => $this->payingClientId,
-            'sucursal_id' => CurrentSucursal::id(),
-            'date' => $this->payDate,
-            'amount' => $this->payAmount,
-            'method' => $this->payMethod,
-            'notes' => 'Cobranza',
-        ]);
+        DB::transaction(function () {
+            $payment = ClientPayment::create([
+                'client_id' => $this->payingClientId,
+                'sucursal_id' => CurrentSucursal::id(),
+                'date' => $this->payDate,
+                'amount' => $this->payAmount,
+                'method' => $this->payMethod,
+                'notes' => 'Cobranza',
+            ]);
 
-        CashLinker::linkClientPayment($payment);
+            CashLinker::linkClientPayment($payment);
+        });
 
         $this->cancelPayment();
         session()->flash('status', 'Cobro registrado.');

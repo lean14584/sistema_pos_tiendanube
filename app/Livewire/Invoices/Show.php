@@ -276,33 +276,52 @@ class Show extends Component
         }
 
         try {
-            $documento = DB::transaction(function () use ($tipo, $metodo, $sucursalId) {
-                $esRemitoX = $tipo === TipoComprobanteInterno::RemitoX;
-                $documento = $esRemitoX ? $this->invoice : RemitoFacturador::facturar($this->invoice, $tipo);
+            // Todo el check-then-act bajo un lock por factura: la rama
+            // Remito X de abajo no pasa por RemitoFacturador (que ya tiene
+            // su propio lock + re-chequeo de "¿ya se facturó?"), así que sin
+            // este lock un doble clic (o dos pestañas) en "Entregar y
+            // cobrar" con Remito X elegido podía crear dos pagos y dos
+            // movimientos de caja del mismo pedido.
+            $documento = Cache::lock("invoice:entregar:{$this->invoice->id}", 10)->block(5, function () use ($tipo, $metodo, $sucursalId) {
+                return DB::transaction(function () use ($tipo, $metodo, $sucursalId) {
+                    // Releído fresco adentro del lock: ambas ramas marcan
+                    // tiendaPedido.picked_up_at al final, así que es la señal
+                    // uniforme de "este pedido ya se entregó y cobró",
+                    // válida tanto para la rama Remito X como para la fiscal.
+                    $invoice = $this->invoice->fresh('tiendaPedido');
+                    $tiendaPedido = $invoice->tiendaPedido;
 
-                $pago = $documento->payments()->create([
-                    'method' => $metodo->value,
-                    'amount' => $documento->total,
-                ]);
+                    if ($tiendaPedido?->picked_up_at !== null) {
+                        throw new RuntimeException('Este pedido ya fue entregado y cobrado.');
+                    }
 
-                CashLinker::linkInvoicePayment($documento, $pago, $sucursalId);
+                    $esRemitoX = $tipo === TipoComprobanteInterno::RemitoX;
+                    $documento = $esRemitoX ? $invoice : RemitoFacturador::facturar($invoice, $tipo);
 
-                if ($esRemitoX) {
-                    // Update por query builder (no dispara InvoiceObserver):
-                    // si se usara $documento->update() acá, el Observer vería
-                    // "remito online que pasó a Paid" y lo convertiría solo a
-                    // factura — justo lo que esta rama eligió NO hacer. Para
-                    // una Factura (rama de abajo) no hace falta este cuidado:
-                    // esRemito() ya da false ahí, el Observer no actúa.
-                    Invoice::where('id', $documento->id)->update(['status' => InvoiceStatus::Paid->value]);
-                    $documento->refresh();
-                } else {
-                    $documento->update(['status' => InvoiceStatus::Paid]);
-                }
+                    $pago = $documento->payments()->create([
+                        'method' => $metodo->value,
+                        'amount' => $documento->total,
+                    ]);
 
-                $documento->tiendaPedido?->update(['picked_up_at' => now(), 'status' => 'paid']);
+                    CashLinker::linkInvoicePayment($documento, $pago, $sucursalId);
 
-                return $documento;
+                    if ($esRemitoX) {
+                        // Update por query builder (no dispara InvoiceObserver):
+                        // si se usara $documento->update() acá, el Observer vería
+                        // "remito online que pasó a Paid" y lo convertiría solo a
+                        // factura — justo lo que esta rama eligió NO hacer. Para
+                        // una Factura (rama de abajo) no hace falta este cuidado:
+                        // esRemito() ya da false ahí, el Observer no actúa.
+                        Invoice::where('id', $documento->id)->update(['status' => InvoiceStatus::Paid->value]);
+                        $documento->refresh();
+                    } else {
+                        $documento->update(['status' => InvoiceStatus::Paid]);
+                    }
+
+                    $tiendaPedido?->update(['picked_up_at' => now(), 'status' => 'paid']);
+
+                    return $documento;
+                });
             });
         } catch (RuntimeException $e) {
             $this->entregaError = $e->getMessage();

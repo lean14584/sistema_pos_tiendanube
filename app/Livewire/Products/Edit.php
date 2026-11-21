@@ -119,17 +119,18 @@ class Edit extends Component
         $sinControlDeStock = (bool) $data['sold_by_weight'];
         unset($data['stock']);
 
-        $this->product->update($data);
+        // update() del producto + el delta de stock son dos escrituras
+        // relacionadas de un mismo guardado — una sola transacción. El delta
+        // se recalcula ADENTRO, con la fila de stock lockeada: sin esto, dos
+        // ediciones simultáneas del mismo producto (dos pestañas, o un doble
+        // clic en "Guardar") pueden leer el mismo stock de partida y calcular
+        // cada una su propio delta contra ese valor viejo — el resultado
+        // final termina sin corresponder al valor absoluto que ninguno de
+        // los dos admins tipeó.
+        DB::transaction(function () use ($data, $stockDeseado, $sinControlDeStock, $sucursalId) {
+            $this->product->update($data);
 
-        if (! $sinControlDeStock && $sucursalId !== null) {
-            // El delta se recalcula ADENTRO de la transacción, con la fila
-            // de stock lockeada: sin esto, dos ediciones simultáneas del
-            // mismo producto (dos pestañas, o un doble clic en "Guardar")
-            // pueden leer el mismo stock de partida y calcular cada una su
-            // propio delta contra ese valor viejo — el resultado final
-            // termina sin corresponder al valor absoluto que ninguno de los
-            // dos admins tipeó.
-            DB::transaction(function () use ($stockDeseado, $sucursalId) {
+            if (! $sinControlDeStock && $sucursalId !== null) {
                 $row = ProductStock::where('product_id', $this->product->id)
                     ->where('sucursal_id', $sucursalId)
                     ->lockForUpdate()
@@ -140,8 +141,8 @@ class Edit extends Component
                 if ($delta !== 0) {
                     StockAdjuster::applyManualDelta($this->product->id, $delta, $sucursalId);
                 }
-            });
-        }
+            }
+        });
 
         session()->flash('status', 'Producto actualizado.');
         $this->redirect(route('products.index'), navigate: true);

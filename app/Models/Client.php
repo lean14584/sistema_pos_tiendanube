@@ -47,7 +47,13 @@ class Client extends Model
      */
     public function debitLines(): Collection
     {
-        $this->loadMissing(['invoices' => fn ($q) => $q->whereNot('status', 'draft')->with('items', 'payments')]);
+        // MEJORA: traía también 'items' de cada factura (with('items',
+        // 'payments')) aunque nunca se usan acá abajo — ni en la pantalla
+        // de cuenta corriente, ni en el PDF/email de resumen (únicos
+        // consumidores de este método). Con muchas facturas/ítems por
+        // cliente era un fetch de filas completamente de más en cada visita
+        // a /clients/{client}/account.
+        $this->loadMissing(['invoices' => fn ($q) => $q->whereNot('status', 'draft')->with('payments')]);
 
         $remitosYaFacturados = $this->invoices->pluck('remito_id')->filter()->all();
 

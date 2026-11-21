@@ -28,7 +28,8 @@ class ImportSaldo extends Component
     /**
      * No crea proveedores nuevos: solo carga el saldo de apertura de
      * proveedores ya existentes (matcheados por CUIT/DNI o, si no, por
-     * nombre exacto). Espejo de Clients\ImportSaldo.
+     * nombre exacto salvo mayúsculas/minúsculas). Espejo de
+     * Clients\ImportSaldo.
      *
      * @return array{creados: int, actualizados: int, omitidos: array<int, string>}
      */
@@ -40,9 +41,13 @@ class ImportSaldo extends Component
         // MEJORA: cada fila disparaba 1-2 queries (Provider::where('tax_id',...)
         // y, si no matcheaba, Provider::where('name',...)) — precargado una
         // sola vez en memoria, mismo patrón que Providers\Import.
+        // MEJORA: el match por nombre era sensible a mayúsculas/minúsculas
+        // (a diferencia de Clients\Import, que ya normaliza con
+        // mb_strtolower) — una fila con distinta capitalización que la base
+        // no encontraba al proveedor y se omitía el saldo en vez de cargarlo.
         $todosLosProveedores = Provider::all();
-        $proveedoresPorTaxId = $todosLosProveedores->filter(fn (Provider $p) => filled($p->tax_id))->keyBy('tax_id');
-        $proveedoresPorNombre = $todosLosProveedores->keyBy('name');
+        $proveedoresPorTaxId = $todosLosProveedores->filter(fn (Provider $p) => filled($p->tax_id))->keyBy(fn (Provider $p) => mb_strtolower($p->tax_id));
+        $proveedoresPorNombre = $todosLosProveedores->keyBy(fn (Provider $p) => mb_strtolower($p->name));
 
         DB::transaction(function () use ($filas, &$actualizados, &$omitidos, $proveedoresPorTaxId, $proveedoresPorNombre) {
             foreach ($filas as $numero => $fila) {
@@ -64,10 +69,10 @@ class ImportSaldo extends Component
 
                 $proveedor = null;
                 if ($taxId !== '') {
-                    $proveedor = $proveedoresPorTaxId->get($taxId);
+                    $proveedor = $proveedoresPorTaxId->get(mb_strtolower($taxId));
                 }
                 if (! $proveedor && $nombre !== '') {
-                    $proveedor = $proveedoresPorNombre->get($nombre);
+                    $proveedor = $proveedoresPorNombre->get(mb_strtolower($nombre));
                 }
 
                 if (! $proveedor) {

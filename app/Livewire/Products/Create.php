@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductStock;
 use App\Support\CurrentSucursal;
 use App\Support\Ean13;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -138,15 +139,22 @@ class Create extends Component
         }
         unset($data['image']);
 
-        $product = Product::create($data);
-
-        // El stock inicial cargado acá es el de la sucursal activa: crear la
-        // fila de product_stocks correspondiente (products.stock ya quedó
-        // bien como agregado, por venir en $data desde la creación).
+        // Dos escrituras relacionadas (el producto + su fila de stock por
+        // sucursal): sin transacción, una falla entre medio deja el producto
+        // creado con products.stock > 0 pero sin fila en product_stocks.
         $sucursalId = CurrentSucursal::id();
-        if (! $data['sold_by_weight'] && $sucursalId !== null && (int) $data['stock'] > 0) {
-            ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $sucursalId, 'stock' => $data['stock']]);
-        }
+        $product = DB::transaction(function () use ($data, $sucursalId) {
+            $product = Product::create($data);
+
+            // El stock inicial cargado acá es el de la sucursal activa: crear la
+            // fila de product_stocks correspondiente (products.stock ya quedó
+            // bien como agregado, por venir en $data desde la creación).
+            if (! $data['sold_by_weight'] && $sucursalId !== null && (int) $data['stock'] > 0) {
+                ProductStock::create(['product_id' => $product->id, 'sucursal_id' => $sucursalId, 'stock' => $data['stock']]);
+            }
+
+            return $product;
+        });
 
         session()->flash('status', 'Producto creado.');
         $this->redirect(route('products.index'), navigate: true);

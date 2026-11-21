@@ -53,6 +53,13 @@ class Index extends Component
 
     public function save(): void
     {
+        // El módulo "price-lists" lo tiene habilitado también Vendedor (para
+        // poder elegir una lista en Pos/Invoices/Quotes) — mismo criterio
+        // que Discounts\Index y Promotions\Index: crear/editar una lista (no
+        // solo borrarla, ver delete() más abajo) queda reservado a
+        // Admin/Encargado, afecta el precio de TODA la empresa.
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para gestionar listas de precios.');
+
         $data = $this->validate();
 
         if ($this->editingId) {
@@ -68,6 +75,8 @@ class Index extends Component
     /** Marca una lista como la predeterminada (desmarca las demás). */
     public function makeDefault(PriceList $priceList): void
     {
+        abort_unless(Auth::user()->puedeEliminar(), 403, 'Tu rol no tiene permiso para gestionar listas de precios.');
+
         DB::transaction(function () use ($priceList) {
             PriceList::query()->update(['is_default' => false]);
             $priceList->update(['is_default' => true, 'active' => true]);

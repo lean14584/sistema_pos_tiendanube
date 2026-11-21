@@ -65,16 +65,18 @@ class Account extends Component
             return;
         }
 
-        $payment = ClientPayment::create([
-            'client_id' => $this->client->id,
-            'sucursal_id' => CurrentSucursal::id(),
-            'date' => $this->date,
-            'amount' => $this->amount,
-            'method' => $this->method,
-            'notes' => $this->notes ?: null,
-        ]);
+        DB::transaction(function () {
+            $payment = ClientPayment::create([
+                'client_id' => $this->client->id,
+                'sucursal_id' => CurrentSucursal::id(),
+                'date' => $this->date,
+                'amount' => $this->amount,
+                'method' => $this->method,
+                'notes' => $this->notes ?: null,
+            ]);
 
-        CashLinker::linkClientPayment($payment);
+            CashLinker::linkClientPayment($payment);
+        });
 
         $this->amount = '';
         $this->notes = '';
