@@ -16,6 +16,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="query"
+                aria-label="Buscar por número o proveedor"
                 placeholder="Buscar por número o proveedor..."
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             >

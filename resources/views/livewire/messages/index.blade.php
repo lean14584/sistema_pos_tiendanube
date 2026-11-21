@@ -36,7 +36,7 @@
                 </div>
             @else
                 <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
-                    <a href="{{ route('messages.index') }}" wire:navigate class="sm:hidden shrink-0 p-1 -ml-1 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200">
+                    <a href="{{ route('messages.index') }}" wire:navigate aria-label="Volver a mensajes" class="sm:hidden shrink-0 p-1 -ml-1 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200">
                         <x-heroicon-o-arrow-left class="w-5 h-5" />
                     </a>
                     <div class="min-w-0">

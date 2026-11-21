@@ -42,6 +42,7 @@
 
         <form wire:submit="confirmarRecepcion">
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-800/50">
                         <tr class="text-left text-gray-500 dark:text-gray-400">
@@ -57,7 +58,8 @@
                                 <td class="px-3 py-2 text-gray-500 dark:text-gray-400">{{ $item->quantity }}</td>
                                 <td class="px-3 py-2">
                                     @if ($puedeConfirmar)
-                                        <input type="number" min="0" max="{{ $item->quantity }}" wire:model="received.{{ $index }}" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <label for="received-{{ $index }}" class="sr-only">Cantidad recibida de {{ $item->product->name ?? 'producto eliminado' }}</label>
+                                        <input id="received-{{ $index }}" type="number" min="0" max="{{ $item->quantity }}" wire:model="received.{{ $index }}" class="w-24 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                         @error("received.{$index}") <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
                                     @else
                                         {{ $item->quantity_received ?? '—' }}
@@ -67,6 +69,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
 
             @if ($puedeConfirmar)

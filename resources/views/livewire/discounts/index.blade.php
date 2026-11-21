@@ -64,6 +64,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="query"
+                aria-label="Buscar por nombre"
                 placeholder="Buscar por nombre..."
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             >
@@ -106,7 +107,7 @@
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
                             @if ($canManage)
-                            <button wire:click="edit({{ $discount->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
+                            <button wire:click="edit({{ $discount->id }})" aria-label="Editar descuento" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
                             @endif
@@ -131,7 +132,7 @@
                         <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $discount->name }}</p>
                         <div class="flex gap-1 shrink-0">
                             @if ($canManage)
-                            <button wire:click="edit({{ $discount->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
+                            <button wire:click="edit({{ $discount->id }})" aria-label="Editar descuento" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
                             @endif

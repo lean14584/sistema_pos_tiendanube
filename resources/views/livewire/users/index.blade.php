@@ -13,6 +13,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="query"
+                aria-label="Buscar por nombre, usuario o email"
                 placeholder="Buscar por nombre, usuario o email..."
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             >
@@ -62,7 +63,7 @@
                             </td>
                             <td class="px-5 py-3">
                                 <div class="flex justify-end gap-2">
-                                    <a href="{{ route('users.edit', $user) }}" wire:navigate class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all">
+                                    <a href="{{ route('users.edit', $user) }}" wire:navigate aria-label="Editar usuario" class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all">
                                         <x-heroicon-o-pencil class="w-4 h-4" />
                                     </a>
                                     @unless ($user->id === auth()->id())
@@ -98,7 +99,7 @@
                                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ $user->username }} · {{ $user->role->label() }} · {{ $user->sucursal->name ?? 'Todas' }}</p>
                             </div>
                             <div class="flex gap-1 shrink-0">
-                                <a href="{{ route('users.edit', $user) }}" wire:navigate class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+                                <a href="{{ route('users.edit', $user) }}" wire:navigate aria-label="Editar usuario" class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
                                     <x-heroicon-o-pencil class="w-4 h-4" />
                                 </a>
                                 @unless ($user->id === auth()->id())

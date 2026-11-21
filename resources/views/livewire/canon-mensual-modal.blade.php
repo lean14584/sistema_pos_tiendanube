@@ -3,7 +3,7 @@
     <div x-data="{ open: true }" x-show="open" x-cloak x-on:keydown.escape.window="open = false" class="fixed inset-0 z-50 flex items-center justify-center px-4">
         <div class="fixed inset-0 bg-gray-900/60"></div>
 
-        <div class="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div role="dialog" aria-modal="true" aria-label="Servicio mensual" class="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div class="px-5 py-4 bg-gradient-to-r from-indigo-600 to-sky-500 flex items-center gap-3">
                 <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/20">
                     <x-heroicon-o-banknotes class="w-5 h-5 text-white" />

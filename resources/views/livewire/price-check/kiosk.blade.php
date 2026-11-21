@@ -22,6 +22,7 @@
                 type="text"
                 wire:model="code"
                 autocomplete="off"
+                aria-label="Código de producto"
                 placeholder="Escaneá o escribí el código y Enter"
                 class="w-full text-center text-xl rounded-2xl border-0 px-6 py-4 shadow-xl focus:outline-none focus:ring-4 focus:ring-white/50 text-gray-900"
             >

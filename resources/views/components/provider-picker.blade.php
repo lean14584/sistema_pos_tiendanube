@@ -33,6 +33,9 @@
             x-on:click.stop
             x-transition
             x-init="$watch('open', value => { if (value) { $nextTick(() => $refs.providerSearchInput.focus()) } })"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Buscar proveedor"
             class="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
         >
             <div class="p-3 border-b border-gray-100 dark:border-gray-800">
@@ -42,6 +45,7 @@
                         type="text"
                         x-ref="providerSearchInput"
                         wire:model.live.debounce.200ms="providerQuery"
+                        aria-label="Buscar proveedor por nombre, teléfono o CUIT"
                         placeholder="Buscar proveedor por nombre, teléfono o CUIT..."
                         class="w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >

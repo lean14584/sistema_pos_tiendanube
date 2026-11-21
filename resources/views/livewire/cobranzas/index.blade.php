@@ -13,6 +13,7 @@
         <input
             type="text"
             wire:model.live.debounce.300ms="search"
+            aria-label="Buscar cliente"
             placeholder="Buscar cliente..."
             class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         >

@@ -8,7 +8,7 @@
     </x-page-header>
 
     <div class="mb-4">
-        <input type="text" wire:model.live.debounce.400ms="buscar" placeholder="Buscar por cliente..." class="w-full sm:w-80 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        <input type="text" wire:model.live.debounce.400ms="buscar" aria-label="Buscar por cliente" placeholder="Buscar por cliente..." class="w-full sm:w-80 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
     </div>
 
     <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md shadow-gray-200/70 dark:shadow-black/40">

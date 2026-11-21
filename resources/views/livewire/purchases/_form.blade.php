@@ -39,6 +39,7 @@
                     <input
                         type="text"
                         wire:model.live.debounce.200ms="productQuery"
+                        aria-label="Buscar producto por nombre o SKU"
                         placeholder="Buscar producto por nombre o SKU..."
                         class="{{ $inputClass }} pl-9"
                     >

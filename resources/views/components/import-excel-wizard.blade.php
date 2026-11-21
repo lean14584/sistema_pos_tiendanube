@@ -27,7 +27,7 @@
         <div class="bg-gradient-to-b from-white to-gray-50/60 dark:from-gray-900 dark:to-gray-900/70 rounded-xl border border-gray-200 dark:border-gray-800 shadow-md p-8 text-center">
             <x-heroicon-o-document-arrow-up class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Elegí un archivo Excel (.xlsx, .xls) o CSV con tus {{ $indexLabel !== '' ? Str::lower($entidadSingular).'s' : '' }}.</p>
-            <input type="file" wire:model="archivo" accept=".xlsx,.xls,.csv" class="mx-auto block text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:text-sm file:font-medium hover:file:bg-indigo-500">
+            <input type="file" wire:model="archivo" accept=".xlsx,.xls,.csv" aria-label="Seleccionar archivo Excel o CSV" class="mx-auto block text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:text-sm file:font-medium hover:file:bg-indigo-500">
             <div wire:loading wire:target="archivo" class="text-xs text-gray-400 mt-3">Leyendo archivo...</div>
             @error('archivo') <p class="text-xs text-red-600 dark:text-red-400 mt-3">{{ $message }}</p> @enderror
         </div>

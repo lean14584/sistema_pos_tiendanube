@@ -56,6 +56,7 @@
                                     <a
                                         href="{{ route('sucursales.edit', $sucursal) }}"
                                         wire:navigate
+                                        aria-label="Editar sucursal"
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
                                     >
                                         <x-heroicon-o-pencil class="w-4 h-4" />
@@ -99,6 +100,7 @@
                                 <a
                                     href="{{ route('sucursales.edit', $sucursal) }}"
                                     wire:navigate
+                                    aria-label="Editar sucursal"
                                     class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                                 >
                                     <x-heroicon-o-pencil class="w-4 h-4" />

@@ -106,7 +106,7 @@
 
     @if ($bajaBatchId !== null)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" wire:click.self="cancelarBaja" x-data x-on:keydown.escape.window="$wire.cancelarBaja()">
-            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 w-full max-w-sm p-5">
+            <div role="dialog" aria-modal="true" aria-label="Dar de baja lote" class="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 w-full max-w-sm p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Dar de baja lote</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Descuenta stock del producto (motivo: Vencimiento) y reduce la cantidad restante del lote.</p>
 

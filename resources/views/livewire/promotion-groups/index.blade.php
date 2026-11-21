@@ -90,6 +90,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="query"
+                aria-label="Buscar por nombre de familia"
                 placeholder="Buscar por nombre de familia..."
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             >
@@ -122,7 +123,7 @@
                             </button>
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <button wire:click="edit({{ $group->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
+                            <button wire:click="edit({{ $group->id }})" aria-label="Editar grupo" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
                             @if (Auth::user()->puedeEliminar())
@@ -145,7 +146,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <p class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ $group->name }}</p>
                         <div class="flex gap-1 shrink-0">
-                            <button wire:click="edit({{ $group->id }})" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
+                            <button wire:click="edit({{ $group->id }})" aria-label="Editar grupo" class="p-1.5 rounded-md text-gray-500 hover:bg-sky-50 hover:text-sky-600 dark:text-gray-400 dark:hover:bg-sky-500/10 dark:hover:text-sky-400">
                                 <x-heroicon-o-pencil class="w-4 h-4" />
                             </button>
                             @if (Auth::user()->puedeEliminar())

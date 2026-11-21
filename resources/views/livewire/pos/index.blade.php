@@ -383,7 +383,7 @@
                                 @endforeach
                             </select>
                             @if ($discount_id)
-                                <button type="button" wire:click="$set('discount_id', null)" class="text-gray-400 hover:text-red-600">
+                                <button type="button" wire:click="$set('discount_id', null)" aria-label="Quitar descuento" class="text-gray-400 hover:text-red-600">
                                     <x-heroicon-o-x-mark class="w-4 h-4" />
                                 </button>
                             @endif

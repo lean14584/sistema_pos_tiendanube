@@ -13,6 +13,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="query"
+                aria-label="Buscar por nombre o descripción"
                 placeholder="Buscar por nombre o descripción..."
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             >
@@ -56,6 +57,7 @@
                                         href="{{ route('categories.pdf', $category) }}"
                                         target="_blank"
                                         title="Ver productos y stock en PDF"
+                                        aria-label="Ver productos y stock en PDF"
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
                                     >
                                         <x-heroicon-o-document-text class="w-4 h-4" />
@@ -63,6 +65,7 @@
                                     <a
                                         href="{{ route('categories.edit', $category) }}"
                                         wire:navigate
+                                        aria-label="Editar categoría"
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
                                     >
                                         <x-heroicon-o-pencil class="w-4 h-4" />
@@ -100,6 +103,7 @@
                                     href="{{ route('categories.pdf', $category) }}"
                                     target="_blank"
                                     title="Ver productos y stock en PDF"
+                                    aria-label="Ver productos y stock en PDF"
                                     class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                                 >
                                     <x-heroicon-o-document-text class="w-4 h-4" />
@@ -107,6 +111,7 @@
                                 <a
                                     href="{{ route('categories.edit', $category) }}"
                                     wire:navigate
+                                    aria-label="Editar categoría"
                                     class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                                 >
                                     <x-heroicon-o-pencil class="w-4 h-4" />

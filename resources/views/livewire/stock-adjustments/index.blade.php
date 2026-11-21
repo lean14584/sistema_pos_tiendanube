@@ -59,6 +59,7 @@
                     <input
                         type="text"
                         wire:model.live.debounce.200ms="filterProductQuery"
+                        aria-label="Filtrar por producto"
                         placeholder="Filtrar por producto..."
                         class="{{ $inputClass }} pl-9"
                     >

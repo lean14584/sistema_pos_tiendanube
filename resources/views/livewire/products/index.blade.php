@@ -24,6 +24,7 @@
             <input
                 type="text"
                 wire:model.live.debounce.300ms="query"
+                aria-label="Buscar por nombre, SKU o descripción"
                 placeholder="Buscar por nombre, SKU o descripción..."
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
             >
@@ -110,6 +111,7 @@
                                             href="{{ route('products.historial', $product) }}"
                                             wire:navigate
                                             title="Ver historial"
+                                            aria-label="Ver historial"
                                             class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
                                         >
                                             <x-heroicon-o-clock class="w-4 h-4" />
@@ -117,6 +119,7 @@
                                         <a
                                             href="{{ route('products.edit', $product) }}"
                                             wire:navigate
+                                            aria-label="Editar producto"
                                             class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:scale-110 transition-all"
                                         >
                                             <x-heroicon-o-pencil class="w-4 h-4" />
@@ -165,6 +168,7 @@
                                         href="{{ route('products.historial', $product) }}"
                                         wire:navigate
                                         title="Ver historial"
+                                        aria-label="Ver historial"
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                                     >
                                         <x-heroicon-o-clock class="w-4 h-4" />
@@ -172,6 +176,7 @@
                                     <a
                                         href="{{ route('products.edit', $product) }}"
                                         wire:navigate
+                                        aria-label="Editar producto"
                                         class="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
                                     >
                                         <x-heroicon-o-pencil class="w-4 h-4" />

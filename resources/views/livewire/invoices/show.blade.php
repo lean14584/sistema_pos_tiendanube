@@ -78,6 +78,7 @@
                 type="button"
                 onclick="printTicketConDialogo('{{ route('invoices.ticket-print', $invoice) }}')"
                 title="¿No imprimió solo? Mostrar el diálogo de impresión del navegador"
+                aria-label="Mostrar diálogo de impresión"
                 class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 p-2 text-gray-500 dark:text-gray-400 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-600 transition-all"
             >
                 <x-heroicon-o-ellipsis-horizontal class="w-4 h-4" />
@@ -351,7 +352,7 @@
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data x-on:keydown.escape.window="$wire.{{ $qrState === 'waiting' ? 'cancelQrCharge' : 'closeQrModal' }}()">
             <div class="absolute inset-0 bg-gray-900/60" wire:click="{{ $qrState === 'waiting' ? 'cancelQrCharge' : 'closeQrModal' }}"></div>
 
-            <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div role="dialog" aria-modal="true" aria-label="Cobrar con Mercado Pago" class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                 <div class="bg-gradient-to-r from-sky-500 to-cyan-500 px-6 py-4 text-white">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
@@ -418,7 +419,7 @@
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data x-on:keydown.escape.window="$wire.closeEntregaModal()">
             <div class="absolute inset-0 bg-gray-900/60" wire:click="closeEntregaModal"></div>
 
-            <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div role="dialog" aria-modal="true" aria-label="Entregar y cobrar" class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                 <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-4 text-white">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
