@@ -9,8 +9,11 @@
     @else
         <div class="row g-4 g-md-5">
             <div class="col-12 col-md-7">
-                <div class="tn-card p-3 p-md-4">
-                    <div style="font-weight: 800; font-size: .85rem; color: var(--tn-muted);" class="mb-3">Tus datos</div>
+                <div class="tn-card p-3 p-md-4 mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="tn-step-num">1</span>
+                        <span style="font-weight: 800; font-size: .85rem; color: var(--tn-muted);">Tus datos</span>
+                    </div>
 
                     @error('cart')
                         <div class="alert-tn-danger p-3 mb-3">{{ $message }}</div>
@@ -27,15 +30,23 @@
                             <input type="email" wire:model="customer_email" class="form-control @error('customer_email') is-invalid @enderror">
                             @error('customer_email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-                        <div class="mb-4">
+                        <div class="mb-0">
                             <label class="form-label small">Teléfono (opcional)</label>
                             <input type="text" wire:model="customer_phone" class="form-control @error('customer_phone') is-invalid @enderror">
                             @error('customer_phone') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+                    </form>
+                </div>
 
+                <div class="tn-card p-3 p-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="tn-step-num">2</span>
+                        <span style="font-weight: 800; font-size: .85rem; color: var(--tn-muted);">Forma de pago</span>
+                    </div>
+
+                    <form wire:submit="confirmar">
                         @if($mpConfigured)
                             <div class="mb-4">
-                                <label class="form-label small d-block mb-2">¿Cómo querés pagar?</label>
                                 <label class="tn-pay-option d-flex align-items-center gap-2 mb-2">
                                     <input type="radio" wire:model="payment_choice" value="mercadopago">
                                     <span>
@@ -71,7 +82,7 @@
 
             <div class="col-12 col-md-5">
                 <div class="tn-card p-3 p-md-4">
-                    <div style="font-weight: 800; font-size: .85rem; color: var(--tn-muted);" class="mb-3">Tu pedido</div>
+                    <div style="font-weight: 800; font-size: .85rem; color: var(--tn-muted);" class="mb-3">Resumen de compra</div>
                     @foreach($lines as $line)
                         <div class="d-flex justify-content-between small py-2" style="border-bottom: 1px solid var(--tn-line);">
                             <span>{{ $line['quantity'] }}× {{ $line['product']->name }}</span>

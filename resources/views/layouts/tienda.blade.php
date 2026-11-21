@@ -252,6 +252,13 @@ $tnLogoUrl = $tnCompany->logo_path ? asset('storage/'.$tnCompany->logo_path) : n
             background: color-mix(in srgb, var(--tn-500) 14%, white); color: var(--tn-700); font-size: .85rem;
         }
 
+        /* ---------- Paso numerado (checkout) ---------- */
+        .tn-step-num {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+            background: var(--tn-700); color: #fff; font-size: .8rem; font-weight: 800;
+        }
+
         /* ---------- Breadcrumb ---------- */
         .tn-breadcrumb { font-size: .85rem; color: var(--tn-muted); margin-bottom: 1.25rem; }
         .tn-breadcrumb a { color: var(--tn-muted); font-weight: 600; }

@@ -145,6 +145,9 @@
                                 @if((float) $item->price >= 3000)
                                     <div class="tn-installments mt-1">Hasta 3x $ {{ number_format((float) $item->price / 3, 2, ',', '.') }}</div>
                                 @endif
+                                @if($stock > 0)
+                                    <div class="tn-installments mt-1"><i class="fas fa-store"></i> Retirá gratis en el local</div>
+                                @endif
                             </div>
                         </a>
                     </div>

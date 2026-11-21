@@ -33,10 +33,11 @@
                                 @endif
                             </div>
                             <div class="col-6 col-md-3 mt-2 mt-md-0">
-                                <input type="number" min="1" max="{{ max($line['stock'], 1) }}"
-                                       value="{{ $line['quantity'] }}"
-                                       wire:change="updateQuantity({{ $line['product']->id }}, $event.target.value)"
-                                       class="form-control form-control-sm" style="width: 80px;">
+                                <div class="tn-stepper">
+                                    <button type="button" wire:click="updateQuantity({{ $line['product']->id }}, {{ $line['quantity'] - 1 }})" {{ $line['quantity'] <= 1 ? 'disabled' : '' }}>−</button>
+                                    <input type="number" value="{{ $line['quantity'] }}" readonly style="flex: 1;">
+                                    <button type="button" wire:click="updateQuantity({{ $line['product']->id }}, {{ $line['quantity'] + 1 }})" {{ $line['quantity'] >= $line['stock'] ? 'disabled' : '' }}>+</button>
+                                </div>
                             </div>
                             <div class="col-4 col-md-2 mt-2 mt-md-0 tn-price text-end">
                                 $ {{ number_format($line['subtotal'], 2, ',', '.') }}
@@ -57,9 +58,9 @@
 
             <div class="col-12 col-md-4">
                 <div class="tn-card p-3 p-md-4">
-                    <div style="font-weight: 800; font-size: .85rem; color: var(--tn-muted);" class="mb-3">Resumen</div>
+                    <div style="font-weight: 800; font-size: .85rem; color: var(--tn-muted);" class="mb-3">Resumen de compra</div>
                     <div class="d-flex justify-content-between pb-3" style="border-bottom: 1px solid var(--tn-line);">
-                        <span class="text-muted">Productos</span>
+                        <span class="text-muted">Productos ({{ $lines->sum('quantity') }})</span>
                         <span class="fw-bold">$ {{ number_format($total, 2, ',', '.') }}</span>
                     </div>
                     <div class="d-flex justify-content-between pt-3 mb-4">
@@ -67,8 +68,11 @@
                         <span class="tn-price" style="font-size: 1.6rem;">$ {{ number_format($total, 2, ',', '.') }}</span>
                     </div>
                     <a href="{{ route('tienda.checkout') }}" class="btn btn-tn-primary w-100">
-                        Finalizar compra <i class="fas fa-arrow-right ms-1"></i>
+                        Continuar compra <i class="fas fa-arrow-right ms-1"></i>
                     </a>
+                    <div class="small mt-3 text-center" style="color: var(--tn-muted);">
+                        <i class="fas fa-store"></i> Retirás gratis en el local
+                    </div>
                 </div>
             </div>
         </div>

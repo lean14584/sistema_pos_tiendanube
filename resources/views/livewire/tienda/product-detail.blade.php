@@ -57,14 +57,13 @@
                                 <span class="tn-badge-ok"><i class="fas fa-check me-1"></i> Quedan {{ $stock }} unidades</span>
                             @endif
                         </div>
-                        @if($product->description)
-                            <p class="text-muted">{{ $product->description }}</p>
-                        @endif
-
                         <div class="mt-4 pt-4" style="border-top: 1px solid var(--tn-line);">
                             <div class="tn-price mb-1" style="font-size: 2.2rem;"><span class="tn-price-currency">$</span>{{ number_format((float) $product->price, 2, ',', '.') }}</div>
                             @if((float) $product->price >= 3000)
-                                <div class="tn-installments mb-3">Hasta 3x $ {{ number_format((float) $product->price / 3, 2, ',', '.') }}</div>
+                                <div class="tn-installments mb-1">Hasta 3x $ {{ number_format((float) $product->price / 3, 2, ',', '.') }}</div>
+                            @endif
+                            @if($stock > 0)
+                                <div class="tn-installments mb-3"><i class="fas fa-store"></i> Retirá gratis en el local</div>
                             @endif
 
                             @if($stock > 0)
@@ -75,7 +74,7 @@
                                     </div>
                                 @else
                                     <div class="mt-3" style="max-width: 320px;">
-                                        <label class="form-label small mb-1">Cantidad</label>
+                                        <label class="form-label small mb-1 d-block">Cantidad: <span class="text-muted">({{ $stock }} disponibles)</span></label>
                                         <div class="tn-stepper mb-3 w-100">
                                             <button type="button" wire:click="decrementQuantity" {{ $quantity <= 1 ? 'disabled' : '' }}>−</button>
                                             <input type="number" wire:model="quantity" min="1" max="{{ $stock }}" readonly style="flex: 1;">
@@ -90,6 +89,15 @@
                                     </div>
                                 @endif
                             @endif
+
+                            <div class="mt-4 pt-3 d-flex flex-column gap-2" style="border-top: 1px solid var(--tn-line);">
+                                <div class="d-flex align-items-center gap-2 small" style="color: var(--tn-muted);">
+                                    <i class="fas fa-store" style="color: var(--tn-700); width: 16px;"></i> Retirás en nuestro local, sin costo
+                                </div>
+                                <div class="d-flex align-items-center gap-2 small" style="color: var(--tn-muted);">
+                                    <i class="fas fa-shield-halved" style="color: var(--tn-700); width: 16px;"></i> Reservamos tu stock al confirmar el pedido
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -99,6 +107,13 @@
             @endif
         </div>
         </div>
+
+        @if($product->description)
+            <div class="tn-card p-3 p-md-4 mt-4">
+                <h2 class="h6 mb-3">Descripción</h2>
+                <p class="text-muted mb-0" style="white-space: pre-line;">{{ $product->description }}</p>
+            </div>
+        @endif
     </div>
 </div>
 
