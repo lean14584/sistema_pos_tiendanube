@@ -46,6 +46,54 @@ class CashRegisterTest extends TestCase
         $this->assertEquals('closed', $session->fresh()->status->value);
     }
 
+    /**
+     * Pedido del usuario: al cerrar la caja, se abre de una la del próximo
+     * turno con el mismo monto declarado al cerrar como apertura - así no
+     * queda un hueco sin caja abierta entre un turno y el siguiente.
+     */
+    public function test_cerrar_la_caja_abre_automaticamente_la_del_proximo_turno(): void
+    {
+        $admin = $this->admin();
+
+        Livewire::actingAs($admin)
+            ->test('cash-register.index')
+            ->set('openingAmount', '1000')
+            ->call('openSession');
+
+        $sesionVieja = CashSession::first();
+
+        Livewire::actingAs($admin)
+            ->test('cash-register.index')
+            ->set('closingAmount', '750')
+            ->call('closeSession');
+
+        $this->assertEquals('closed', $sesionVieja->fresh()->status->value);
+
+        $sesionNueva = CashSession::where('status', 'open')->latest('id')->first();
+        $this->assertNotNull($sesionNueva, 'Debería haberse abierto una caja nueva automáticamente');
+        $this->assertEquals($admin->id, $sesionNueva->user_id);
+        $this->assertEquals($sesionVieja->sucursal_id, $sesionNueva->sucursal_id);
+        $this->assertEquals(750, (float) $sesionNueva->opening_amount, 'El monto de cierre de la vieja debería ser la apertura de la nueva');
+    }
+
+    public function test_no_abre_la_proxima_caja_si_se_destilda_la_opcion(): void
+    {
+        $admin = $this->admin();
+
+        Livewire::actingAs($admin)
+            ->test('cash-register.index')
+            ->set('openingAmount', '1000')
+            ->call('openSession');
+
+        Livewire::actingAs($admin)
+            ->test('cash-register.index')
+            ->set('closingAmount', '750')
+            ->set('abrirSiguienteTurno', false)
+            ->call('closeSession');
+
+        $this->assertEquals(0, CashSession::where('status', 'open')->count(), 'No debería haber ninguna caja abierta si se destildó la opción');
+    }
+
     public function test_manual_movement_affects_summary(): void
     {
         $admin = $this->admin();

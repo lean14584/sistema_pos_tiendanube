@@ -32,6 +32,8 @@ class Index extends Component
 
     public string $closingNotes = '';
 
+    public bool $abrirSiguienteTurno = true;
+
     public function mount(): void
     {
         $this->movDate = now()->toDateString();
@@ -158,6 +160,23 @@ class Index extends Component
                 'closing_amount' => $this->closingAmount,
                 'notes' => $this->closingNotes ?: $session->notes,
             ]);
+
+            // El efectivo que el cajero contó y declaró al cerrar ("Monto de
+            // cierre") sigue físicamente en el cajón - si tildó la opción, se
+            // abre de una la caja del próximo turno con ese mismo monto como
+            // apertura, para que no quede un hueco sin caja abierta entre un
+            // turno y el siguiente. Opcional (checkbox, tildado por default):
+            // no todos los locales quieren esto, algunos prefieren que cada
+            // turno abra a mano y cuente su propio efectivo desde cero.
+            if ($this->abrirSiguienteTurno) {
+                CashSession::create([
+                    'user_id' => $session->user_id,
+                    'sucursal_id' => $session->sucursal_id,
+                    'status' => CashSessionStatus::Open,
+                    'opened_at' => now(),
+                    'opening_amount' => $this->closingAmount,
+                ]);
+            }
         });
 
         $this->closingAmount = '';

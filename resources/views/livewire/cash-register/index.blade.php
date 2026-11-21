@@ -175,6 +175,10 @@
                         <input type="text" wire:model="closingNotes" class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 dark:text-gray-100 px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
                     </div>
                 </div>
+                <label class="flex items-center gap-2 mt-3 cursor-pointer">
+                    <input type="checkbox" wire:model="abrirSiguienteTurno" class="rounded border-gray-300 dark:border-gray-700 text-sky-600 focus:ring-sky-500">
+                    <span class="text-sm text-gray-700 dark:text-gray-300">Abrir la caja del próximo turno con este mismo monto</span>
+                </label>
                 <button
                     type="submit"
                     wire:loading.attr="disabled"
